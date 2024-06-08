@@ -1,11 +1,19 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, render_template_string
 import requests
 import datetime
+import json
 from dateutil import parser
+import warnings
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+# Suppress only the single InsecureRequestWarning from urllib3 needed for unverified HTTPS requests.
+warnings.simplefilter('ignore', InsecureRequestWarning)
 
 app = Flask(__name__)
 port = 3000
 api_key = '489331b7e9ff5b17f6f37e664ba10c08'
+sdql_token = '3b88dcbtr97bb8e89b74r'
+sdql_user = 'TimRoss'
 
 @app.route('/api/sports')
 def get_sports():
@@ -13,7 +21,6 @@ def get_sports():
         api_url = f"https://api.the-odds-api.com/v4/sports/?apiKey={api_key}"
         response = requests.get(api_url)
         response.raise_for_status()
-
         sports = response.json()
         return jsonify(sports)
     except Exception as e:
@@ -84,10 +91,156 @@ def get_sport_scores(sport_key):
                 'oddsText': odds_text
             })
 
-        return jsonify(formatted_scores)
+        # Convert the sport_key to the format recognized by SDQL
+        sdql_sport_key = convert_sport_key(sport_key)
+
+        # Fetch historical data from SDQL if the selected date is in the past
+        if selected_date_start.date() < datetime.datetime.now().date():
+            sdql_date = selected_date_start.strftime('%Y%m%d')
+            sdql_query = f"date,team,site,runs,total,line@date={sdql_date}"
+            sdql_url = f"https://s3.sportsdatabase.com/{sdql_sport_key}/query"
+            headers = {
+                'token': sdql_token,
+                'user': sdql_user
+            }
+            params = {
+                'sdql': sdql_query
+            }
+            print(f"SDQL Query: {sdql_query}")
+            print(f"SDQL URL: {sdql_url}")
+            response = requests.get(sdql_url, headers=headers, params=params, verify=False)  # Disable SSL verification
+            response.raise_for_status()
+
+            # Print raw response text for debugging
+            app.logger.debug(f"Raw response text: {response.text}")
+
+            result = response.json()
+
+            # Check the structure of the response
+            app.logger.debug(f"Response JSON: {json.dumps(result, indent=2)}")
+
+            # Extract and format the data
+            if result.get('headers') and result.get('groups'):
+                headers = result['headers']
+                rows = result['groups'][0]['columns']
+
+                # Combine headers with their corresponding data
+                formatted_result = [dict(zip(headers, row)) for row in rows]
+            else:
+                formatted_result = None
+
+            return render_template_string("""
+                <html>
+                <head>
+                    <title>Game Info</title>
+                    <style>
+                        table {
+                            width: 50%;
+                            border-collapse: collapse;
+                        }
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Game Information</h1>
+                    {% if result %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    {% for header in result[0].keys() %}
+                                        <th>{{ header }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in result %}
+                                    <tr>
+                                        {% for value in row.values() %}
+                                            <td>{{ value }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>No data available</p>
+                    {% endif %}
+                </body>
+                </html>
+            """, result=formatted_result)
+        else:
+            return render_template_string("""
+                <html>
+                <head>
+                    <title>Game Info</title>
+                    <style>
+                        table {
+                            width: 50%;
+                            border-collapse: collapse;
+                        }
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Game Information</h1>
+                    {% if result %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    {% for header in result[0].keys() %}
+                                        <th>{{ header }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in result %}
+                                    <tr>
+                                        {% for value in row.values() %}
+                                            <td>{{ value }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>No data available</p>
+                    {% endif %}
+                </body>
+                </html>
+            """, result=formatted_scores)
+    except requests.exceptions.RequestException as e:
+        print('Request error:', str(e))
+        return jsonify({'error': 'Request Error'}), 500
     except Exception as e:
         print('Error fetching scores:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
+
+def convert_sport_key(sport_key):
+    sport_mapping = {
+        'baseball_mlb': 'MLB',
+        'basketball_nba': 'NBA',
+        'football_nfl': 'NFL',
+        # Add other mappings as needed
+    }
+    return sport_mapping.get(sport_key, sport_key)
 
 @app.route('/')
 def home():
@@ -95,4 +248,3 @@ def home():
 
 if __name__ == '__main__':
     app.run(port=port)
-

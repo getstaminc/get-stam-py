@@ -299,43 +299,52 @@ app = Flask(__name__)
 api_key = '489331b7e9ff5b17f6f37e664ba10c08'
 port = 5000
 
+SDQL_USERNAME = 'TimRoss'
+SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
+
 def get_sdql_data(sport_key, date):
+    sdql_query = f"date,team,site,runs,total,line@date={date.strftime('%Y%m%d')}"
+    sdql_url = f"https://s3.sportsdatabase.com/{sport_key}/query"
+
+    headers = {
+        'user': SDQL_USERNAME,
+        'token': SDQL_TOKEN
+    }
+
+    data = {
+        'sdql': sdql_query
+    }
+
+    response = requests.get(sdql_url, headers=headers, params=data)
+
+    print(f"Request URL: {sdql_url}")
+    print(f"Request Headers: {headers}")
+    print(f"Request Data: {data}")
+    print(f"Response Status Code: {response.status_code}")
+    print(f"Response Headers: {response.headers}")
+    print(f"Response Content: {response.content}")
+
+    if response.status_code != 200:
+        print(f"Unexpected Content-Type: {response.headers['Content-Type']}")
+        print(f"Response content: {response.content.decode('utf-8')}")
+        return None
+
     try:
-        base_url = 'https://s3.sportsdatabase.com/{}/query'.format(sport_key.upper())
-        query = f'date,team,site,runs,total,line@date={date.strftime("%Y%m%d")}'
-        print(f"SDQL Query: {query}")
-        print(f"SDQL URL: {base_url}")
+        result = response.json()
+        print(f"Response JSON: {result}")
 
-        response = requests.get(base_url, params={'sdql': query})
-        content_type = response.headers.get('Content-Type')
-        print(f"Content-Type: {content_type}")
-
-        if 'json' not in content_type:
-            print(f"Unexpected Content-Type: {content_type}")
-            print(f"Response content: {response.text}")
-            return None
-
-        data = response.json()
-        print(f"Response content: {data}")
-
-        headers = data.get("headers")
-        columns = data.get("groups", [])[0].get("columns")
-        if headers and columns:
-            formatted_result = [{headers[j]: columns[j][i] for j in range(len(headers))} for i in range(len(columns[0]))]
-            return formatted_result
+        if result.get('headers') and result.get('groups'):
+            headers = result['headers']
+            rows = result['groups'][0]['columns']
+            formatted_result = [dict(zip(headers, row)) for row in zip(*rows)]
         else:
-            return None
+            formatted_result = None
 
-    except requests.exceptions.RequestException as e:
-        print('Request error:', str(e))
-        return None
+        return formatted_result
     except ValueError as e:
-        print('Error decoding JSON:', str(e))
-        print('Response content:', response.text)
+        print(f"Error parsing JSON response: {str(e)}")
         return None
-    except Exception as e:
-        print('Error fetching SDQL data:', str(e))
-        return None
+
 
 @app.route('/api/sports')
 def get_sports():

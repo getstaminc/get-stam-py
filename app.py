@@ -15,6 +15,70 @@ api_key = '489331b7e9ff5b17f6f37e664ba10c08'
 sdql_token = '3b88dcbtr97bb8e89b74r'
 sdql_user = 'TimRoss'
 
+def get_odds_data(sport_key):
+    try:
+        scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?apiKey={api_key}&daysFrom=1&dateFormat=iso"
+        odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers=bovada&markets=h2h,spreads,totals&oddsFormat=american"
+
+        scores_response = requests.get(scores_url)
+        odds_response = requests.get(odds_url)
+
+        scores_response.raise_for_status()
+        odds_response.raise_for_status()
+
+        scores = scores_response.json()
+        odds = odds_response.json()
+        return scores, odds
+
+    except requests.exceptions.RequestException as e:
+        print('Request error:', str(e))
+        return None, None
+
+def get_sdql_data(sport_key, selected_date_start):
+    try:
+        sdql_sport_key = convert_sport_key(sport_key)
+        sdql_date = selected_date_start.strftime('%Y%m%d')
+        sdql_query = f"date,team,site,runs,total,line@date={sdql_date}"
+        sdql_url = f"https://s3.sportsdatabase.com/{sdql_sport_key}/query"
+        headers = {
+            'token': sdql_token,
+            'user': sdql_user
+        }
+        params = {
+            'sdql': sdql_query
+        }
+        print(f"SDQL Query: {sdql_query}")
+        print(f"SDQL URL: {sdql_url}")
+        response = requests.get(sdql_url, headers=headers, params=params, verify=False)  # Disable SSL verification
+        response.raise_for_status()
+
+        # Print raw response text for debugging
+        app.logger.debug(f"Raw response text: {response.text}")
+
+        result = response.json()
+
+        # Check the structure of the response
+        app.logger.debug(f"Response JSON: {json.dumps(result, indent=2)}")
+
+        # Extract and format the data
+        if result.get('headers') and result.get('groups'):
+            headers = result['headers']
+            rows = result['groups'][0]['columns']
+
+            # Combine headers with their corresponding data
+            formatted_result = [dict(zip(headers, row)) for row in rows]
+        else:
+            formatted_result = None
+
+        return formatted_result
+
+    except requests.exceptions.RequestException as e:
+        print('Request error:', str(e))
+        return None
+    except Exception as e:
+        print('Error fetching SDQL data:', str(e))
+        return None
+
 @app.route('/api/sports')
 def get_sports():
     try:
@@ -40,17 +104,9 @@ def get_sport_scores(sport_key):
         print(f"Selected Date Start (UTC): {selected_date_start}")
         print(f"Selected Date End (UTC): {selected_date_end}")
 
-        scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?apiKey={api_key}&daysFrom=1&dateFormat=iso"
-        odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers=bovada&markets=h2h,spreads,totals&oddsFormat=american"
-
-        scores_response = requests.get(scores_url)
-        odds_response = requests.get(odds_url)
-
-        scores_response.raise_for_status()
-        odds_response.raise_for_status()
-
-        scores = scores_response.json()
-        odds = odds_response.json()
+        scores, odds = get_odds_data(sport_key)
+        if scores is None or odds is None:
+            return jsonify({'error': 'Error fetching odds data'}), 500
 
         filtered_scores = []
         for score in scores:
@@ -67,7 +123,7 @@ def get_sport_scores(sport_key):
             away_team = match.get('away_team', 'N/A')
             home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
             away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
-            
+
             match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
             odds_text = 'N/A'
             if match_odds:
@@ -82,7 +138,7 @@ def get_sport_scores(sport_key):
                             outcome_text += f" - {outcome['price']}"
                             odds_text_list.append(outcome_text)
                 odds_text = ', '.join(odds_text_list)
-            
+
             formatted_scores.append({
                 'homeTeam': home_team,
                 'awayTeam': away_team,
@@ -91,44 +147,8 @@ def get_sport_scores(sport_key):
                 'oddsText': odds_text
             })
 
-        # Convert the sport_key to the format recognized by SDQL
-        sdql_sport_key = convert_sport_key(sport_key)
-
-        # Fetch historical data from SDQL if the selected date is in the past
         if selected_date_start.date() < datetime.datetime.now().date():
-            sdql_date = selected_date_start.strftime('%Y%m%d')
-            sdql_query = f"date,team,site,runs,total,line@date={sdql_date}"
-            sdql_url = f"https://s3.sportsdatabase.com/{sdql_sport_key}/query"
-            headers = {
-                'token': sdql_token,
-                'user': sdql_user
-            }
-            params = {
-                'sdql': sdql_query
-            }
-            print(f"SDQL Query: {sdql_query}")
-            print(f"SDQL URL: {sdql_url}")
-            response = requests.get(sdql_url, headers=headers, params=params, verify=False)  # Disable SSL verification
-            response.raise_for_status()
-
-            # Print raw response text for debugging
-            app.logger.debug(f"Raw response text: {response.text}")
-
-            result = response.json()
-
-            # Check the structure of the response
-            app.logger.debug(f"Response JSON: {json.dumps(result, indent=2)}")
-
-            # Extract and format the data
-            if result.get('headers') and result.get('groups'):
-                headers = result['headers']
-                rows = result['groups'][0]['columns']
-
-                # Combine headers with their corresponding data
-                formatted_result = [dict(zip(headers, row)) for row in rows]
-            else:
-                formatted_result = None
-
+            sdql_data = get_sdql_data(sport_key, selected_date_start)
             return render_template_string("""
                 <html>
                 <head>
@@ -176,7 +196,7 @@ def get_sport_scores(sport_key):
                     {% endif %}
                 </body>
                 </html>
-            """, result=formatted_result)
+            """, result=sdql_data)
         else:
             return render_template_string("""
                 <html>
@@ -226,6 +246,7 @@ def get_sport_scores(sport_key):
                 </body>
                 </html>
             """, result=formatted_scores)
+
     except requests.exceptions.RequestException as e:
         print('Request error:', str(e))
         return jsonify({'error': 'Request Error'}), 500

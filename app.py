@@ -296,7 +296,7 @@ from dateutil import parser
 
 app = Flask(__name__)
 
-api_key = '489331b7e9ff5b17f6f37e664ba10c08'
+api_key = '0888cd14d7c715c2ee32735fba20b332'
 port = 5000
 
 SDQL_USERNAME = 'TimRoss'
@@ -345,7 +345,6 @@ def get_sdql_data(sport_key, date):
         print(f"Error parsing JSON response: {str(e)}")
         return None
 
-
 @app.route('/api/sports')
 def get_sports():
     try:
@@ -357,6 +356,26 @@ def get_sports():
     except Exception as e:
         print('Error fetching sports:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
+
+def get_odds_data(sport_key, date):
+    try:
+        date_str = date.strftime('%Y-%m-%d')
+        scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?apiKey={api_key}&date={date_str}&dateFormat=iso"
+        odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers=bovada&markets=h2h,spreads,totals&oddsFormat=american"
+
+        scores_response = requests.get(scores_url)
+        odds_response = requests.get(odds_url)
+
+        scores_response.raise_for_status()
+        odds_response.raise_for_status()
+
+        scores = scores_response.json()
+        odds = odds_response.json()
+
+        return scores, odds
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching odds data: {str(e)}")
+        return None, None
 
 @app.route('/sports/<sport_key>')
 def get_sport_scores(sport_key):
@@ -426,7 +445,7 @@ def get_sport_scores(sport_key):
                 </html>
             """, result=sdql_data)
         else:
-            scores, odds = get_odds_data(sdql_sport_key)
+            scores, odds = get_odds_data(sport_key, selected_date_start)
             if scores is None or odds is None:
                 return jsonify({'error': 'Error fetching odds data'}), 500
 
@@ -535,6 +554,7 @@ def convert_sport_key(sport_key):
         'baseball_mlb': 'MLB',
         'basketball_nba': 'NBA',
         'football_nfl': 'NFL',
+        'icehockey_nhl': 'NHL',
         # Add other mappings as needed
     }
     return sport_mapping.get(sport_key, sport_key)
@@ -545,5 +565,4 @@ def home():
 
 if __name__ == '__main__':
     app.run(port=port)
-
 

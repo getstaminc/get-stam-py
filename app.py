@@ -1,9 +1,9 @@
-# app.py
 from flask import Flask, render_template, jsonify, request, render_template_string
 import datetime
 from dateutil import parser
 from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
+from single_game_data import get_game_details
 
 app = Flask(__name__)
 port = 5000
@@ -29,7 +29,6 @@ def get_sport_scores(sport_key):
         print(f"Selected Date Start (UTC): {selected_date_start}")
         print(f"Selected Date End (UTC): {selected_date_end}")
 
-        # Convert the sport key to the correct format for the SDQL API
         sdql_sport_key = convert_sport_key(sport_key)
 
         if selected_date_start.date() < datetime.datetime.now().date():
@@ -124,7 +123,8 @@ def get_sport_scores(sport_key):
                     'awayTeam': away_team,
                     'homeScore': home_score,
                     'awayScore': away_score,
-                    'oddsText': odds_text
+                    'oddsText': odds_text,
+                    'game_id': match['id']  # Add game ID for hyperlink
                 })
 
             print(f"Formatted Scores: {formatted_scores}")
@@ -160,6 +160,7 @@ def get_sport_scores(sport_key):
                                     <th>Home Score</th>
                                     <th>Away Score</th>
                                     <th>Odds</th>
+                                    <th>Details</th>  <!-- Add column for game details -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -170,6 +171,9 @@ def get_sport_scores(sport_key):
                                         <td>{{ match.homeScore }}</td>
                                         <td>{{ match.awayScore }}</td>
                                         <td>{{ match.oddsText }}</td>
+                                        <td>
+                                            <a href="{{ url_for('get_single_game', game_id=match.game_id) }}?sport_key={{ sport_key }}&date={{ selected_date }}">View Details</a> <!-- Add link for game details -->
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -179,7 +183,7 @@ def get_sport_scores(sport_key):
                     {% endif %}
                 </body>
                 </html>
-            """, result=formatted_scores)
+            """, result=formatted_scores, sport_key=sport_key, selected_date=current_date)
 
     except requests.exceptions.RequestException as e:
         print('Request error:', str(e))
@@ -197,6 +201,23 @@ def convert_sport_key(sport_key):
         # Add other mappings as needed
     }
     return sport_mapping.get(sport_key, sport_key)
+
+@app.route('/game/<game_id>')
+def get_single_game(game_id):
+    try:
+        # Fetch the game details for the given game_id
+        sport_key = request.args.get('sport_key')
+        date = request.args.get('date')
+
+        if not sport_key or not date:
+            return "Missing sport_key or date", 400
+
+        date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
+        return get_game_details(sport_key, date_obj, game_id)
+
+    except Exception as e:
+        print('Error fetching game details:', str(e))
+        return "Internal Server Error", 500
 
 @app.route('/')
 def home():

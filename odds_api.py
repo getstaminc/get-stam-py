@@ -2,7 +2,7 @@
 import requests
 import datetime
 
-api_key = '0888cd14d7c715c2ee32735fba20b332'
+api_key = 'b83e9ab635f120c382b775fa1719d937'
 
 def get_odds_data(sport_key, date):
     try:
@@ -22,6 +22,7 @@ def get_odds_data(sport_key, date):
         return scores, odds
     except requests.exceptions.RequestException as e:
         print(f"Error fetching odds data: {str(e)}")
+        print(f"Error fetching odds data: {e.status_code} {e.reason}")
         return None, None
 
 def get_sports():

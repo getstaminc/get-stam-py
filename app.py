@@ -1,12 +1,132 @@
-from flask import Flask, render_template, jsonify, request, render_template_string
+from flask import Flask, render_template, render_template_string, request, jsonify
 import datetime
-from dateutil import parser
-from odds_api import get_odds_data, get_sports
-from historical_odds import get_sdql_data
+import traceback
 from single_game_data import get_game_details
+from sdql_queries import get_last_5_games
+from odds_api import get_sports, get_odds_data
+from dateutil import parser
 
 app = Flask(__name__)
 port = 5000
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+def convert_sport_key(sport_key):
+    # Define a mapping from URL sport keys to SDQL sport keys
+    sport_key_mapping = {
+        'americanfootball_cfl': 'cfl',
+        'baseball_mlb': 'mlb',
+        # Add more mappings as needed
+    }
+    return sport_key_mapping.get(sport_key, sport_key)  # Default to sport_key if not found
+
+@app.route('/game/<game_id>')
+def get_single_game(game_id):
+    try:
+        sport_key = request.args.get('sport_key')
+        date = request.args.get('date')
+
+        if not sport_key or not date:
+            return "Missing sport_key or date", 400
+
+        date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
+        game_details = get_game_details(sport_key, date_obj, game_id)
+
+        if not game_details:
+            return "Error fetching game details", 500
+
+        home_team = game_details.get('homeTeam')
+        away_team = game_details.get('awayTeam')
+        home_score = game_details.get('homeScore', 'N/A')
+        away_score = game_details.get('awayScore', 'N/A')
+        odds_text = game_details.get('oddsText', 'N/A')
+
+        home_team_last_5 = get_last_5_games(home_team)
+        away_team_last_5 = get_last_5_games(away_team)
+
+        return render_template_string("""
+            <html>
+            <head>
+                <title>Game Details</title>
+                <style>
+                    table {
+                        width: 50%;
+                        border-collapse: collapse;
+                    }
+                    table, th, td {
+                        border: 1px solid black;
+                    }
+                    th, td {
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Game Details</h1>
+                <p>Home Team: {{ home_team }}</p>
+                <p>Away Team: {{ away_team }}</p>
+                <p>Score: {{ home_score }} - {{ away_score }}</p>
+                <p>Odds: {{ odds_text }}</p>
+                <h2>Last 5 Games - {{ home_team }}</h2>
+                {% if home_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                {% for header in home_team_last_5[0].keys() %}
+                                    <th>{{ header }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in home_team_last_5 %}
+                                <tr>
+                                    {% for value in game.values() %}
+                                        <td>{{ value }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+                <h2>Last 5 Games - {{ away_team }}</h2>
+                {% if away_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                {% for header in away_team_last_5[0].keys() %}
+                                    <th>{{ header }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in away_team_last_5 %}
+                                <tr>
+                                    {% for value in game.values() %}
+                                        <td>{{ value }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+            </body>
+            </html>
+        """, home_team=home_team, away_team=away_team, home_score=home_score, away_score=away_score, odds_text=odds_text, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5)
+
+    except Exception as e:
+        print('Error fetching game details:', str(e))
+        traceback.print_exc()
+        return "Internal Server Error", 500
 
 @app.route('/api/sports')
 def api_get_sports():
@@ -171,9 +291,7 @@ def get_sport_scores(sport_key):
                                         <td>{{ match.homeScore }}</td>
                                         <td>{{ match.awayScore }}</td>
                                         <td>{{ match.oddsText }}</td>
-                                        <td>
-                                            <a href="{{ url_for('get_single_game', game_id=match.game_id) }}?sport_key={{ sport_key }}&date={{ selected_date }}">View Details</a> <!-- Add link for game details -->
-                                        </td>
+                                        <td><a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -183,45 +301,10 @@ def get_sport_scores(sport_key):
                     {% endif %}
                 </body>
                 </html>
-            """, result=formatted_scores, sport_key=sport_key, selected_date=current_date)
-
-    except requests.exceptions.RequestException as e:
-        print('Request error:', str(e))
-        return jsonify({'error': 'Request Error'}), 500
+            """, result=formatted_scores, sport_key=sport_key, current_date=current_date)
     except Exception as e:
-        print('Error fetching scores:', str(e))
-        return jsonify({'error': 'Internal Server Error'}), 500
-
-def convert_sport_key(sport_key):
-    sport_mapping = {
-        'baseball_mlb': 'MLB',
-        'basketball_nba': 'NBA',
-        'football_nfl': 'NFL',
-        'icehockey_nhl': 'NHL',
-        # Add other mappings as needed
-    }
-    return sport_mapping.get(sport_key, sport_key)
-
-@app.route('/game/<game_id>')
-def get_single_game(game_id):
-    try:
-        # Fetch the game details for the given game_id
-        sport_key = request.args.get('sport_key')
-        date = request.args.get('date')
-
-        if not sport_key or not date:
-            return "Missing sport_key or date", 400
-
-        date_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
-        return get_game_details(sport_key, date_obj, game_id)
-
-    except Exception as e:
-        print('Error fetching game details:', str(e))
+        print('Error fetching sport scores:', str(e))
         return "Internal Server Error", 500
-
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 if __name__ == '__main__':
     app.run(port=port)

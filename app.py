@@ -7,6 +7,7 @@ from historical_odds import get_sdql_data
 app = Flask(__name__)
 port = 5000
 
+# Route to fetch available sports
 @app.route('/api/sports')
 def api_get_sports():
     sports = get_sports()
@@ -15,6 +16,7 @@ def api_get_sports():
     else:
         return jsonify({'error': 'Internal Server Error'}), 500
 
+# Route to fetch scores and odds for a specific sport and date
 @app.route('/sports/<sport_key>')
 def get_sport_scores(sport_key):
     try:
@@ -25,14 +27,10 @@ def get_sport_scores(sport_key):
         selected_date_start = datetime.datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=datetime.timezone.utc)
         selected_date_end = selected_date_start + datetime.timedelta(hours=23, minutes=59, seconds=59)
 
-        print(f"Selected Date Start (UTC): {selected_date_start}")
-        print(f"Selected Date End (UTC): {selected_date_end}")
-
         sdql_sport_key = convert_sport_key(sport_key)
 
         if selected_date_start.date() < datetime.datetime.now().date():
             sdql_data = get_sdql_data(sdql_sport_key, selected_date_start)
-            print(f"SDQL Data: {sdql_data}")
             return render_template_string("""
                 <html>
                 <head>
@@ -90,7 +88,6 @@ def get_sport_scores(sport_key):
             for score in scores:
                 commence_time_str = score['commence_time']
                 commence_date = parser.parse(commence_time_str).astimezone(datetime.timezone.utc).date()
-                print(f"Commence Date (UTC): {commence_date}")
 
                 if commence_date == selected_date_start.date():
                     filtered_scores.append(score)
@@ -126,7 +123,6 @@ def get_sport_scores(sport_key):
                     'game_id': match['id']  # Add game ID for hyperlink
                 })
 
-            print(f"Formatted Scores: {formatted_scores}")
             return render_template_string("""
                 <html>
                 <head>
@@ -159,7 +155,7 @@ def get_sport_scores(sport_key):
                                     <th>Home Score</th>
                                     <th>Away Score</th>
                                     <th>Odds</th>
-                                    <th>Details</th>  <!-- Add column for game details -->
+                                    <th>Details</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -188,7 +184,8 @@ def get_sport_scores(sport_key):
     except Exception as e:
         print('Error fetching scores:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
-    
+
+# Route to fetch and display details for a specific game
 @app.route('/game/<game_id>')
 def game_details(game_id):
     sport_key = request.args.get('sport_key')
@@ -290,6 +287,7 @@ def game_details(game_id):
         print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
 
+# Helper function to convert sport keys
 def convert_sport_key(sport_key):
     sport_mapping = {
         'baseball_mlb': 'MLB',
@@ -300,6 +298,7 @@ def convert_sport_key(sport_key):
     }
     return sport_mapping.get(sport_key, sport_key)
 
+# Route for the home page
 @app.route('/')
 def home():
     return render_template('index.html')

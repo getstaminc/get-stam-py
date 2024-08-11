@@ -1,13 +1,14 @@
 import requests
 from datetime import datetime
+from sdql_queries import get_last_5_games
 
-api_key = 'b83e9ab635f120c382b775fa1719d937'
+api_key = '25312c698369617bc17f1f2634dd3996'
 
 def get_game_details(sport_key, date, game_id):
     try:
         date_str = date.strftime('%Y-%m-%d')
         scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?apiKey={api_key}&date={date_str}&dateFormat=iso"
-        odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&regions=us"
+        odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers=bovada&markets=h2h,spreads,totals&oddsFormat=american"
 
         scores_response = requests.get(scores_url)
         odds_response = requests.get(odds_url)
@@ -24,7 +25,6 @@ def get_game_details(sport_key, date, game_id):
                 game_details['homeTeam'] = game['home_team']
                 game_details['awayTeam'] = game['away_team']
 
-                # Ensure scores key exists and is not None
                 if game.get('scores') and game['scores'][0]:
                     game_details['homeScore'] = game['scores'][0].get('score', 'N/A')
                 else:
@@ -34,6 +34,10 @@ def get_game_details(sport_key, date, game_id):
                     game_details['awayScore'] = game['scores'][1].get('score', 'N/A')
                 else:
                     game_details['awayScore'] = 'N/A'
+
+                 # Fetch last 5 games for both teams, passing both arguments
+                game_details['homeTeamLast5'] = get_last_5_games(game['home_team'], date)
+                game_details['awayTeamLast5'] = get_last_5_games(game['away_team'], date)
 
                 break
 

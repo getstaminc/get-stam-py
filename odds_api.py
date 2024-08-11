@@ -2,7 +2,7 @@
 import requests
 import datetime
 
-api_key = 'b83e9ab635f120c382b775fa1719d937'
+api_key = '25312c698369617bc17f1f2634dd3996'
 
 def get_odds_data(sport_key, date):
     try:

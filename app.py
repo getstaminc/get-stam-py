@@ -3,6 +3,8 @@ import datetime
 from dateutil import parser
 from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
+from single_game_data import get_game_details
+from sdql_queries import get_last_5_games
 
 app = Flask(__name__)
 port = 5000
@@ -196,51 +198,26 @@ def game_details(game_id):
 
     try:
         selected_date = datetime.datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=datetime.timezone.utc)
-        scores, odds = get_odds_data(sport_key, selected_date)
+        game_details = get_game_details(sport_key, selected_date, game_id)
         
-        if scores is None or odds is None:
-            return jsonify({'error': 'Error fetching odds data'}), 500
-
-        game_data = next((score for score in scores if score['id'] == game_id), None)
-        
-        if game_data is None:
+        if not game_details:
             return jsonify({'error': 'Game not found'}), 404
 
-        home_team = game_data.get('home_team', 'N/A')
-        away_team = game_data.get('away_team', 'N/A')
-        home_score = game_data['scores'][0]['score'] if game_data.get('scores') else 'N/A'
-        away_score = game_data['scores'][1]['score'] if game_data.get('scores') else 'N/A'
-
-        match_odds = next((odds_match for odds_match in odds if odds_match['id'] == game_id), None)
-        odds_text = 'N/A'
-        if match_odds:
-            odds_text_list = []
-            for bookmaker in match_odds['bookmakers']:
-                for market in bookmaker['markets']:
-                    market_key = market['key']
-                    for outcome in market['outcomes']:
-                        outcome_text = f"{market_key}: {outcome['name']}"
-                        if market_key in ['spreads', 'totals'] and 'point' in outcome:
-                            outcome_text += f" - {outcome['point']}"
-                        outcome_text += f" - {outcome['price']}"
-                        odds_text_list.append(outcome_text)
-            odds_text = ', '.join(odds_text_list)
-
-        game_details = {
-            'homeTeam': home_team,
-            'awayTeam': away_team,
-            'homeScore': home_score,
-            'awayScore': away_score,
-            'oddsText': odds_text
-        }
-
+        try:
+            home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date)
+            away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date)
+        except Exception as e:
+            print('Error fetching last 5 games:', str(e))
+            home_team_last_5 = []
+            away_team_last_5 = []
+            
         return render_template_string("""
             <html>
             <head>
                 <title>Game Details</title>
                 <style>
                     table {
-                        width: 50%;
+                        width: 70%;
                         border-collapse: collapse;
                     }
                     table, th, td {
@@ -279,13 +256,87 @@ def game_details(game_id):
                         <td>{{ game.oddsText }}</td>
                     </tr>
                 </table>
+                
+                <h2>Last 5 Games - Home Team</h2>
+                {% if home_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Team</th>
+                                <th>Site</th>
+                                <th>Runs</th>
+                                <th>Total</th>
+                                <th>Opponent</th>
+                                <th>Opponent Runs</th>
+                                <th>Opponent Line</th>
+                                <th>Line</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in home_team_last_5 %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['team'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td>{{ game['runs'] }}</td>
+                                    <td>{{ game['total'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:runs'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['line'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+                
+                <h2>Last 5 Games - Away Team</h2>
+                {% if away_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Team</th>
+                                <th>Site</th>
+                                <th>Runs</th>
+                                <th>Total</th>
+                                <th>Opponent</th>
+                                <th>Opponent Runs</th>
+                                <th>Opponent Line</th>
+                                <th>Line</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in away_team_last_5 %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['team'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td>{{ game['runs'] }}</td>
+                                    <td>{{ game['total'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:runs'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['line'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
             </body>
             </html>
-        """, game=game_details)
+        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5)
 
     except Exception as e:
         print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
+
+
 
 # Helper function to convert sport keys
 def convert_sport_key(sport_key):

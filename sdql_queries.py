@@ -4,9 +4,46 @@ from datetime import datetime
 SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
+def convert_team_name(full_team_name):
+    team_map = {
+        'Arizona Diamondbacks': 'Diamondbacks',
+        'Atlanta Braves': 'Braves',
+        'Baltimore Orioles': 'Orioles',
+        'Boston Red Sox': 'Red Sox',
+        'Chicago Cubs': 'Cubs',
+        'Chicago White Sox': 'White Sox',
+        'Cincinnati Reds': 'Reds',
+        'Cleveland Guardians': 'Guardians',
+        'Colorado Rockies': 'Rockies',
+        'Detroit Tigers': 'Tigers',
+        'Houston Astros': 'Astros',
+        'Kansas City Royals': 'Royals',
+        'Los Angeles Angels': 'Angels',
+        'Los Angeles Dodgers': 'Dodgers',
+        'Miami Marlins': 'Marlins',
+        'Milwaukee Brewers': 'Brewers',
+        'Minnesota Twins': 'Twins',
+        'New York Mets': 'Mets',
+        'New York Yankees': 'Yankees',
+        'Oakland Athletics': 'Athletics',
+        'Philadelphia Phillies': 'Phillies',
+        'Pittsburgh Pirates': 'Pirates',
+        'San Diego Padres': 'Padres',
+        'San Francisco Giants': 'Giants',
+        'Seattle Mariners': 'Mariners',
+        'St Louis Cardinals': 'Cardinals',
+        'Tampa Bay Rays': 'Rays',
+        'Texas Rangers': 'Rangers',
+        'Toronto Blue Jays': 'Blue Jays',
+        'Washington Nationals': 'Nationals'
+    }
+    return team_map.get(full_team_name, full_team_name)
+
 def get_last_5_games(team, date):
     today_date = datetime.today().strftime('%Y%m%d')
-    sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='Angels' and date<{today_date} and n5:date>={today_date}"           
+    # Convert full team name to mascot name for SDQL query
+    team = convert_team_name(team)
+    sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and date<{today_date} and n5:date>={today_date}"           
     sdql_url = "https://s3.sportsdatabase.com/MLB/query"
     
     headers = {

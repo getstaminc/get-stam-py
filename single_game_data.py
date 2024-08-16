@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 from sdql_queries import get_last_5_games
+from utils import convert_sport_key
 
 api_key = '25312c698369617bc17f1f2634dd3996'
 
@@ -36,8 +37,8 @@ def get_game_details(sport_key, date, game_id):
                     game_details['awayScore'] = 'N/A'
 
                  # Fetch last 5 games for both teams, passing both arguments
-                game_details['homeTeamLast5'] = get_last_5_games(game['home_team'], date)
-                game_details['awayTeamLast5'] = get_last_5_games(game['away_team'], date)
+                game_details['homeTeamLast5'] = get_last_5_games(game['home_team'], date, sport_key)
+                game_details['awayTeamLast5'] = get_last_5_games(game['away_team'], date, sport_key)
 
                 break
 

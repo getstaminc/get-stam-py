@@ -5,6 +5,7 @@ from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
 from single_game_data import get_game_details
 from sdql_queries import get_last_5_games
+from utils import convert_sport_key
 
 app = Flask(__name__)
 port = 5000
@@ -204,8 +205,8 @@ def game_details(game_id):
             return jsonify({'error': 'Game not found'}), 404
 
         try:
-            home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date)
-            away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date)
+            home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key)
+            away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key)
         except Exception as e:
             print('Error fetching last 5 games:', str(e))
             home_team_last_5 = []
@@ -263,28 +264,28 @@ def game_details(game_id):
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Team</th>
                                 <th>Site</th>
-                                <th>Runs</th>
-                                <th>Total</th>
-                                <th>Opponent</th>
-                                <th>Opponent Runs</th>
-                                <th>Opponent Line</th>
+                                <th>Team</th>
                                 <th>Line</th>
+                                <th>Runs</th>
+                                <th>Opponent</th>
+                                <th>Opponent Line</th>
+                                <th>Opponent Runs</th>
+                                <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for game in home_team_last_5 %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>
-                                    <td>{{ game['team'] }}</td>
                                     <td>{{ game['site'] }}</td>
-                                    <td>{{ game['runs'] }}</td>
-                                    <td>{{ game['total'] }}</td>
-                                    <td>{{ game['o:team'] }}</td>
-                                    <td>{{ game['o:runs'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['team'] }}</td>
                                     <td>{{ game['line'] }}</td>
+                                    <td>{{ game['runs'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['o:runs'] }}</td>
+                                    <td>{{ game['total'] }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -299,28 +300,28 @@ def game_details(game_id):
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Team</th>
                                 <th>Site</th>
-                                <th>Runs</th>
-                                <th>Total</th>
-                                <th>Opponent</th>
-                                <th>Opponent Runs</th>
-                                <th>Opponent Line</th>
+                                <th>Team</th>
                                 <th>Line</th>
+                                <th>Runs</th>
+                                <th>Opponent</th>
+                                <th>Opponent Line</th>
+                                <th>Opponent Runs</th>
+                                <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for game in away_team_last_5 %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>
-                                    <td>{{ game['team'] }}</td>
                                     <td>{{ game['site'] }}</td>
-                                    <td>{{ game['runs'] }}</td>
-                                    <td>{{ game['total'] }}</td>
-                                    <td>{{ game['o:team'] }}</td>
-                                    <td>{{ game['o:runs'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['team'] }}</td>
                                     <td>{{ game['line'] }}</td>
+                                    <td>{{ game['runs'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['o:runs'] }}</td>
+                                    <td>{{ game['total'] }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -335,19 +336,6 @@ def game_details(game_id):
     except Exception as e:
         print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
-
-
-
-# Helper function to convert sport keys
-def convert_sport_key(sport_key):
-    sport_mapping = {
-        'baseball_mlb': 'MLB',
-        'basketball_nba': 'NBA',
-        'football_nfl': 'NFL',
-        'icehockey_nhl': 'NHL',
-        # Add other mappings as needed
-    }
-    return sport_mapping.get(sport_key, sport_key)
 
 # Route for the home page
 @app.route('/')

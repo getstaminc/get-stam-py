@@ -5,7 +5,16 @@ SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 def get_sdql_data(sport_key, date):
-    sdql_query = f"date,team,site,runs,total,line@date={date.strftime('%Y%m%d')}"
+
+     # Build SDQL query based on sport_key
+    if sport_key == 'MLB':
+        sdql_query = f"date,team,site,runs,total,line@date={date.strftime('%Y%m%d')}"
+    elif sport_key in ['NBA', 'NFL', 'NHL']:
+        sdql_query = f"date,team,site,points,total,line@date={date.strftime('%Y%m%d')}"
+    else:
+        raise ValueError(f"Unsupported sport: {sport_key}")
+
+
     sdql_url = f"https://s3.sportsdatabase.com/{sport_key}/query"
 
     headers = {
@@ -18,6 +27,9 @@ def get_sdql_data(sport_key, date):
     }
 
     try:
+        # Print full request URL and data for debugging
+        print(f"Full Request URL: {sdql_url}?{requests.compat.urlencode(data)}")
+
         response = requests.get(sdql_url, headers=headers, params=data)
 
         print(f"Request URL: {sdql_url}")

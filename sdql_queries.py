@@ -10,8 +10,15 @@ def get_last_5_games(team, date, sport_key):
     # Convert full team name to mascot name for SDQL query
     team = convert_team_name(team)
     sport_key = convert_sport_key(sport_key)
-    sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and date<{today_date} and n5:date>={today_date}"           
     sdql_url = f"https://s3.sportsdatabase.com/{sport_key}/query"
+
+    if sport_key == 'MLB':
+        sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and date<{today_date} and n5:date>={today_date}"           
+    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL']:
+        sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and date<{today_date} and n5:date>={today_date}"
+    else:
+        # Handle other sports or raise an error
+        raise ValueError(f"Unsupported league: {sport_key}")
     
     headers = {
         'user': SDQL_USERNAME,

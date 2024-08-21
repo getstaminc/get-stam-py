@@ -4,7 +4,7 @@ from dateutil import parser
 from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
 from single_game_data import get_game_details
-from sdql_queries import get_last_5_games
+from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
 from utils import convert_sport_key
 
 app = Flask(__name__)
@@ -207,10 +207,19 @@ def game_details(game_id):
         try:
             home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key)
             away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key)
+            
+            # Fetch the last 5 games between the home team and the away team
+            last_5_vs_opponent = get_last_5_games_vs_opponent(
+                team = game_details['homeTeam'],
+                opponent = game_details['awayTeam'],
+                today_date = selected_date,
+                sport_key = sport_key
+            )
         except Exception as e:
             print('Error fetching last 5 games:', str(e))
             home_team_last_5 = []
             away_team_last_5 = []
+            last_5_vs_opponent = []
             
         return render_template_string("""
             <html>
@@ -329,9 +338,45 @@ def game_details(game_id):
                 {% else %}
                     <p>No data available</p>
                 {% endif %}
+                
+                <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
+                {% if last_5_vs_opponent %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Line</th>
+                                <th>Runs</th>
+                                <th>Opponent</th>
+                                <th>Opponent Line</th>
+                                <th>Opponent Runs</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in last_5_vs_opponent %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td>{{ game['team'] }}</td>
+                                    <td>{{ game['line'] }}</td>
+                                    <td>{{ game['runs'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['o:runs'] }}</td>
+                                    <td>{{ game['total'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
             </body>
             </html>
-        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5)
+        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent)
 
     except Exception as e:
         print('Error fetching game details:', str(e))

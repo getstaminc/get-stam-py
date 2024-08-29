@@ -16,8 +16,8 @@ def get_last_5_games(team, date, sport_key):
 
     if sport_key == 'MLB':
         sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and date<{today_date} and n5:date>={today_date}"           
-    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL']:
-        sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and date<{today_date} and n5:date>={today_date}"
+    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL','NCAAFB']:
+        sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}'"
     else:
         # Handle other sports or raise an error
         raise ValueError(f"Unsupported league: {sport_key}")
@@ -40,13 +40,6 @@ def get_last_5_games(team, date, sport_key):
     try:
         result = response.json()
         print("SDQL response:", result)  # Print the whole response for debugging
-
-        '''if 'headers' in result and 'groups' in result:
-            headers = result['headers']
-            rows = result['groups'][0]['rows']
-
-            # Format the result into a list of dictionaries
-            formatted_result = [dict(zip(headers, row)) for row in rows]'''
 
 
         if result.get('headers') and result.get('groups'):
@@ -82,9 +75,9 @@ def get_last_5_games_vs_opponent(sport_key, team, opponent, today_date):
     sdql_url = f"https://s3.sportsdatabase.com/{sport_key}/query"
 
     if sport_key == 'MLB':
-        sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and o:team='{opponent}' and date<{today_date} and n5:date>={today_date}"           
-    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL']:
-        sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and o:team='{opponent}' and date<{today_date} and n5:date>={today_date}"
+        sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and o:team='{opponent}' and date<{today_date}"             
+    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL','NCAAFB']:
+        sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and o:team='{opponent}' and date<{today_date} and N5:date>={today_date}"
     else:
         raise ValueError(f"Unsupported league: {sport_key}")
 

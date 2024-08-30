@@ -23,6 +23,102 @@
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
+
+        /* Mobile Styles */
+        @media only screen and (max-width: 600px) {
+            body {
+                font-size: 14px;
+            }
+            .container {
+                padding: 10px;
+            }
+            .game-details, .last-5-games {
+                width: 100%;
+                margin: 0 auto;
+            }
+            table {
+                width: 100%;
+                font-size: 12px;
+            }
+            /* Ensure images are responsive on mobile */
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+            /* Make tables scrollable on smaller screens */
+            .responsive-table {
+                overflow-x: auto;
+                display: block;
+            }
+        }
+
+        /* Tablet Styles */
+        @media only screen and (min-width: 601px) and (max-width: 768px) {
+            body {
+                font-size: 16px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .game-details, .last-5-games {
+                width: 90%;
+            }
+            /* Ensure images are responsive on tablet */
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+            /* Make tables scrollable on smaller screens */
+            .responsive-table {
+                overflow-x: auto;
+                display: block;
+            }
+        }
+
+        /* Desktop Styles */
+        @media only screen and (min-width: 769px) {
+            body {
+                font-size: 18px;
+            }
+            .container {
+                padding: 30px;
+            }
+            .game-details, .last-5-games {
+                width: 80%;
+            }
+            /* Images and tables should already be fine on desktop */
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+            .responsive-table {
+                overflow-x: auto;
+                display: block;
+            }
+        }
+
+        /* Flexible Grid System for Different Screen Sizes */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .column {
+            flex: 100%;
+        }
+
+        @media only screen and (min-width: 600px) {
+            .column {
+                flex: 50%;
+            }
+        }
+
+        @media only screen and (min-width: 768px) {
+            .column {
+                flex: 33.33%;
+            }
+        }
+
+
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', () => {

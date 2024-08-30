@@ -9,11 +9,10 @@ def get_sdql_data(sport_key, date):
      # Build SDQL query based on sport_key
     if sport_key == 'MLB':
         sdql_query = f"date,team,site,runs,total,line@date={date.strftime('%Y%m%d')}"
-    elif sport_key in ['NBA', 'NFL', 'NHL','NCAAFB']:
+    elif sport_key in ['NBA', 'NFL', 'NHL', 'NCAAFB']:
         sdql_query = f"date,team,site,points,total,line@date={date.strftime('%Y%m%d')}"
     else:
         raise ValueError(f"Unsupported sport: {sport_key}")
-
 
     sdql_url = f"https://s3.sportsdatabase.com/{sport_key}/query"
 
@@ -29,7 +28,6 @@ def get_sdql_data(sport_key, date):
     try:
         # Print full request URL and data for debugging
         print(f"Full Request URL: {sdql_url}?{requests.compat.urlencode(data)}")
-
         response = requests.get(sdql_url, headers=headers, params=data)
 
         print(f"Request URL: {sdql_url}")
@@ -51,14 +49,19 @@ def get_sdql_data(sport_key, date):
             headers = result['headers']
             rows = result['groups'][0]['columns']
             formatted_result = [dict(zip(headers, row)) for row in zip(*rows)]
-        else:
-            formatted_result = None
 
-        return formatted_result
+            # Group data by pairs
+            grouped_result = []
+            for i in range(0, len(formatted_result), 2):
+                game_pair = formatted_result[i:i+2]
+                grouped_result.append(game_pair)
+
+            return grouped_result
+        else:
+            return None
     except ValueError as e:
         print(f"Error parsing JSON response: {str(e)}")
         return None
     except requests.RequestException as e:
         print(f"Request error: {str(e)}")
         return None
-

@@ -53,29 +53,36 @@ def get_sport_scores(sport_key):
                         th {
                             background-color: #f2f2f2;
                         }
+                        .game-pair {
+                            margin-bottom: 20px;
+                        }
                     </style>
                 </head>
                 <body>
                     <h1>Game Information</h1>
                     {% if result %}
-                        <table>
-                            <thead>
-                                <tr>
-                                    {% for header in result[0].keys() %}
-                                        <th>{{ header }}</th>
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for row in result %}
-                                    <tr>
-                                        {% for value in row.values() %}
-                                            <td>{{ value }}</td>
+                        {% for pair in result %}
+                            <div class="game-pair">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            {% for header in pair[0].keys() %}
+                                                <th>{{ header }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for game in pair %}
+                                            <tr>
+                                                {% for value in game.values() %}
+                                                    <td>{{ value }}</td>
+                                                {% endfor %}
+                                            </tr>
                                         {% endfor %}
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
                     {% else %}
                         <p>No data available</p>
                     {% endif %}
@@ -181,7 +188,7 @@ def get_sport_scores(sport_key):
                 </html>
             """, result=formatted_scores, sport_key=sport_key, current_date=current_date)
 
-    except requests.exceptions.RequestException as e:
+    except request.exceptions.RequestException as e:
         print('Request error:', str(e))
         return jsonify({'error': 'Request Error'}), 500
     except Exception as e:
@@ -389,3 +396,4 @@ def home():
 
 if __name__ == '__main__':
     app.run(port=port)
+

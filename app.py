@@ -227,8 +227,8 @@ def game_details(game_id):
             home_team_last_5 = []
             away_team_last_5 = []
             last_5_vs_opponent = []
-            
-        return render_template_string("""
+
+        mlb_template = render_template_string("""
             <html>
             <head>
                 <title>Game Details</title>
@@ -384,6 +384,170 @@ def game_details(game_id):
             </body>
             </html>
         """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent)
+        others_template = render_template_string("""
+            <html>
+            <head>
+                <title>Game Details</title>
+                <style>
+                    table {
+                        width: 70%;
+                        border-collapse: collapse;
+                    }
+                    table, th, td {
+                        border: 1px solid black;
+                    }
+                    th, td {
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Game Details</h1>
+                <table>
+                    <tr>
+                        <th>Home Team</th>
+                        <td>{{ game.homeTeam }}</td>
+                    </tr>
+                    <tr>
+                        <th>Away Team</th>
+                        <td>{{ game.awayTeam }}</td>
+                    </tr>
+                    <tr>
+                        <th>Home Score</th>
+                        <td>{{ game.homeScore }}</td>
+                    </tr>
+                    <tr>
+                        <th>Away Score</th>
+                        <td>{{ game.awayScore }}</td>
+                    </tr>
+                    <tr>
+                        <th>Odds</th>
+                        <td>{{ game.oddsText }}</td>
+                    </tr>
+                </table>
+                
+                <h2>Last 5 Games - Home Team</h2>
+                {% if home_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Line</th>
+                                <th>Points</th>
+                                <th>Opponent</th>
+                                <th>Opponent Line</th>
+                                <th>Opponent Points</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in home_team_last_5 %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td>{{ game['team'] }}</td>
+                                    <td>{{ game['line'] }}</td>
+                                    <td>{{ game['points'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>
+                                    <td>{{ game['total'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+                
+                <h2>Last 5 Games - Away Team</h2>
+                {% if away_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Line</th>
+                                <th>Points</th>
+                                <th>Opponent</th>
+                                <th>Opponent Line</th>
+                                <th>Opponent Points</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in away_team_last_5 %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td>{{ game['team'] }}</td>
+                                    <td>{{ game['line'] }}</td>
+                                    <td>{{ game['points'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>
+                                    <td>{{ game['total'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+                
+                <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
+                {% if last_5_vs_opponent %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Line</th>
+                                <th>Points</th>
+                                <th>Opponent</th>
+                                <th>Opponent Line</th>
+                                <th>Opponent Points</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in last_5_vs_opponent %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td>{{ game['team'] }}</td>
+                                    <td>{{ game['line'] }}</td>
+                                    <td>{{ game['points'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>
+                                    <td>{{ game['total'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+            </body>
+            </html>
+        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent)     
+       
+        if sport_key == 'baseball_mlb':
+            return mlb_template           
+        elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', 'NBA', 'NHL']:
+         return others_template
+        else:
+            # Handle other sports or raise an error
+            raise ValueError(f"Unsupported league: {sport_key}")
 
     except Exception as e:
         print('Error fetching game details:', str(e))
@@ -396,4 +560,3 @@ def home():
 
 if __name__ == '__main__':
     app.run(port=port)
-

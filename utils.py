@@ -62,7 +62,7 @@ def convert_team_name(full_team_name):
         'New York Jets': 'Jets',
         'Philadelphia Eagles': 'Eagles',
         'Pittsburgh Steelers': 'Steelers',
-        'San Francisco 49ers': '49ers',
+        'San Francisco 49ers': 'Fortyniners',
         'Seattle Seahawks': 'Seahawks',
         'Tampa Bay Buccaneers': 'Buccaneers',
         'Tennessee Titans': 'Titans',

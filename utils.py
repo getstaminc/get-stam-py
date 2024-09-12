@@ -335,3 +335,10 @@ def convert_sport_key(sport_key):
     }
     return sport_mapping.get(sport_key, sport_key)
 
+
+def mlb_totals(runs, opponent_runs, total):
+    return (runs + opponent_runs) > total
+
+def other_totals(points, opponent_points, total):
+            combined_score = points + opponent_points
+            return combined_score < total

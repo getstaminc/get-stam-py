@@ -5,7 +5,7 @@ from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
 from single_game_data import get_game_details
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
-from utils import convert_sport_key
+from utils import convert_sport_key, mlb_totals, other_totals
 
 app = Flask(__name__)
 port = 5000
@@ -200,27 +200,27 @@ def get_sport_scores(sport_key):
 def game_details(game_id):
     sport_key = request.args.get('sport_key')
     date = request.args.get('date')
-    
+
     if not sport_key or not date:
         return jsonify({'error': 'Missing sport_key or date'}), 400
 
     try:
         selected_date = datetime.datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=datetime.timezone.utc)
         game_details = get_game_details(sport_key, selected_date, game_id)
-        
+
         if not game_details:
             return jsonify({'error': 'Game not found'}), 404
 
         try:
             home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key)
             away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key)
-            
+
             # Fetch the last 5 games between the home team and the away team
             last_5_vs_opponent = get_last_5_games_vs_opponent(
-                team = game_details['homeTeam'],
-                opponent = game_details['awayTeam'],
-                today_date = selected_date,
-                sport_key = sport_key
+                team=game_details['homeTeam'],
+                opponent=game_details['awayTeam'],
+                today_date=selected_date,
+                sport_key=sport_key
             )
         except Exception as e:
             print('Error fetching last 5 games:', str(e))
@@ -228,162 +228,225 @@ def game_details(game_id):
             away_team_last_5 = []
             last_5_vs_opponent = []
 
+        # Define mlb_totals function for MLB games
+        def mlb_totals(runs, o_runs, total):
+            try:
+                if runs is None or o_runs is None or total is None:
+                    return False
+                return (runs + o_runs) > total
+            except TypeError:
+                return False
+
+        # Define other_totals function for non-MLB games
+        def other_totals(points, o_points, total):
+            try:
+                if points is None or o_points is None or total is None:
+                    return False
+                return (points + o_points) > total
+            except TypeError:
+                return False
+
+        # Determine winner for MLB games
+        def mlb_winner(runs, o_runs):
+            if runs is not None and o_runs is not None:
+                return runs > o_runs
+            return None
+
+        # Determine winner for other sports
+        def other_winner(points, o_points):
+            if points is not None and o_points is not None:
+                return points > o_points
+            return None
+
+        # MLB template rendering
         mlb_template = render_template_string("""
-            <html>
-            <head>
-                <title>Game Details</title>
-                <style>
-                    table {
-                        width: 70%;
-                        border-collapse: collapse;
-                    }
-                    table, th, td {
-                        border: 1px solid black;
-                    }
-                    th, td {
-                        padding: 8px;
-                        text-align: left;
-                    }
-                    th {
-                        background-color: #f2f2f2;
-                    }
-                </style>
-            </head>
-            <body>
-                <h1>Game Details</h1>
-                <table>
-                    <tr>
-                        <th>Home Team</th>
-                        <td>{{ game.homeTeam }}</td>
-                    </tr>
-                    <tr>
-                        <th>Away Team</th>
-                        <td>{{ game.awayTeam }}</td>
-                    </tr>
-                    <tr>
-                        <th>Home Score</th>
-                        <td>{{ game.homeScore }}</td>
-                    </tr>
-                    <tr>
-                        <th>Away Score</th>
-                        <td>{{ game.awayScore }}</td>
-                    </tr>
-                    <tr>
-                        <th>Odds</th>
-                        <td>{{ game.oddsText }}</td>
-                    </tr>
-                </table>
-                
-                <h2>Last 5 Games - Home Team</h2>
-                {% if home_team_last_5 %}
+           <html>
+                <head>
+                    <title>Game Details</title>
+                    <style>
+                        table {
+                            width: 70%;
+                            border-collapse: collapse;
+                        }
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                        }
+                        .green-bg {
+                            background-color: green;
+                        }
+                        .red-bg {
+                            background-color: red;
+                        }                          
+                    </style>
+                </head>
+                <body>
+                    <h1>Game Details</h1>
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Site</th>
-                                <th>Team</th>
-                                <th>Line</th>
-                                <th>Runs</th>
-                                <th>Opponent</th>
-                                <th>Opponent Line</th>
-                                <th>Opponent Runs</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for game in home_team_last_5 %}
-                                <tr>
-                                    <td>{{ game['date'] }}</td>
-                                    <td>{{ game['site'] }}</td>
-                                    <td>{{ game['team'] }}</td>
-                                    <td>{{ game['line'] }}</td>
-                                    <td>{{ game['runs'] }}</td>
-                                    <td>{{ game['o:team'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
-                                    <td>{{ game['o:runs'] }}</td>
-                                    <td>{{ game['total'] }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
+                        <tr>
+                            <th>Home Team</th>
+                            <td>{{ game.homeTeam }}</td>
+                        </tr>
+                        <tr>
+                            <th>Away Team</th>
+                            <td>{{ game.awayTeam }}</td>
+                        </tr>
+                        <tr>
+                            <th>Home Score</th>
+                            <td>{{ game.homeScore }}</td>
+                        </tr>
+                        <tr>
+                            <th>Away Score</th>
+                            <td>{{ game.awayScore }}</td>
+                        </tr>
+                        <tr>
+                            <th>Odds</th>
+                            <td>{{ game.oddsText }}</td>
+                        </tr>
                     </table>
-                {% else %}
-                    <p>No data available</p>
-                {% endif %}
-                
-                <h2>Last 5 Games - Away Team</h2>
-                {% if away_team_last_5 %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Site</th>
-                                <th>Team</th>
-                                <th>Line</th>
-                                <th>Runs</th>
-                                <th>Opponent</th>
-                                <th>Opponent Line</th>
-                                <th>Opponent Runs</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for game in away_team_last_5 %}
+                    
+                    <h2>Last 5 Games - Home Team</h2>
+                    {% if home_team_last_5 %}
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td>{{ game['date'] }}</td>
-                                    <td>{{ game['site'] }}</td>
-                                    <td>{{ game['team'] }}</td>
-                                    <td>{{ game['line'] }}</td>
-                                    <td>{{ game['runs'] }}</td>
-                                    <td>{{ game['o:team'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
-                                    <td>{{ game['o:runs'] }}</td>
-                                    <td>{{ game['total'] }}</td>
+                                    <th>Date</th>
+                                    <th>Site</th>
+                                    <th>Team</th>
+                                    <th>Runs</th>
+                                    <th>Line</th>
+                                    <th>Opponent</th>
+                                    <th>Opponent Runs</th>
+                                    <th>Opponent Line</th>
+                                    <th>Total</th>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <p>No data available</p>
-                {% endif %}
-                
-                <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
-                {% if last_5_vs_opponent %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Site</th>
-                                <th>Team</th>
-                                <th>Line</th>
-                                <th>Runs</th>
-                                <th>Opponent</th>
-                                <th>Opponent Line</th>
-                                <th>Opponent Runs</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for game in last_5_vs_opponent %}
+                            </thead>
+                            <tbody>
+                                {% for game in home_team_last_5 %}
+                                    {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
+                                    {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
+                                    <tr>
+                                        <td>{{ game['date'] }}</td>
+                                        <td>{{ game['site'] }}</td>
+                                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                            {{ game['team'] }}
+                                        </td>
+                                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                            {{ game['runs'] }}
+                                        </td>
+                                        <td>{{ game['line'] }}</td>
+                                        <td>{{ game['o:team'] }}</td>
+                                        <td>{{ game['o:runs'] }}</td>
+                                        <td>{{ game['o:line'] }}</td>
+                                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                            {{ game['total'] }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>No data available</p>
+                    {% endif %}
+                    
+                    <h2>Last 5 Games - Away Team</h2>
+                    {% if away_team_last_5 %}
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td>{{ game['date'] }}</td>
-                                    <td>{{ game['site'] }}</td>
-                                    <td>{{ game['team'] }}</td>
-                                    <td>{{ game['line'] }}</td>
-                                    <td>{{ game['runs'] }}</td>
-                                    <td>{{ game['o:team'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
-                                    <td>{{ game['o:runs'] }}</td>
-                                    <td>{{ game['total'] }}</td>
+                                    <th>Date</th>
+                                    <th>Site</th>
+                                    <th>Team</th>
+                                    <th>Runs</th>
+                                    <th>Line</th>
+                                    <th>Opponent</th>
+                                    <th>Opponent Runs</th>
+                                    <th>Opponent Line</th>
+                                    <th>Total</th>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <p>No data available</p>
-                {% endif %}
-            </body>
-            </html>
-        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent)
+                            </thead>
+                            <tbody>
+                                {% for game in away_team_last_5 %}
+                                    {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
+                                    {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
+                                    <tr>
+                                        <td>{{ game['date'] }}</td>
+                                        <td>{{ game['site'] }}</td>
+                                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                            {{ game['team'] }}
+                                        </td>
+                                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                            {{ game['runs'] }}
+                                        </td>
+                                        <td>{{ game['line'] }}</td>
+                                        <td>{{ game['o:team'] }}</td>
+                                        <td>{{ game['o:runs'] }}</td>
+                                        <td>{{ game['o:line'] }}</td>
+                                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                            {{ game['total'] }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>No data available</p>
+                    {% endif %}
+                    
+                    <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
+                    {% if last_5_vs_opponent %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Site</th>
+                                    <th>Team</th>
+                                    <th>Runs</th>
+                                    <th>Line</th>
+                                    <th>Opponent</th>
+                                    <th>Opponent Runs</th>
+                                    <th>Opponent Line</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for game in last_5_vs_opponent %}
+                                    {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
+                                    {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
+                                    <tr>
+                                        <td>{{ game['date'] }}</td>
+                                        <td>{{ game['site'] }}</td>
+                                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                            {{ game['team'] }}
+                                        </td>
+                                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                            {{ game['runs'] }}
+                                        </td>
+                                        <td>{{ game['line'] }}</td>
+                                        <td>{{ game['o:team'] }}</td>
+                                        <td>{{ game['o:runs'] }}</td>
+                                        <td>{{ game['o:line'] }}</td>
+                                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                            {{ game['total'] }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>No data available</p>
+                    {% endif %}
+                </body>
+                </html>
+            """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, mlb_totals=mlb_totals, mlb_winner=mlb_winner)
+        
+        # Other sports template rendering
         others_template = render_template_string("""
             <html>
             <head>
@@ -403,6 +466,12 @@ def game_details(game_id):
                     th {
                         background-color: #f2f2f2;
                     }
+                    .green-bg {
+                        background-color: green;
+                    }
+                    .red-bg {
+                        background-color: red;
+                    }
                 </style>
             </head>
             <body>
@@ -429,7 +498,7 @@ def game_details(game_id):
                         <td>{{ game.oddsText }}</td>
                     </tr>
                 </table>
-                
+
                 <h2>Last 5 Games - Home Team</h2>
                 {% if home_team_last_5 %}
                     <table>
@@ -438,26 +507,34 @@ def game_details(game_id):
                                 <th>Date</th>
                                 <th>Site</th>
                                 <th>Team</th>
+                                <th>Points</th>                 
                                 <th>Line</th>
-                                <th>Points</th>
                                 <th>Opponent</th>
-                                <th>Opponent Line</th>
                                 <th>Opponent Points</th>
+                                <th>Opponent Line</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for game in home_team_last_5 %}
+                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>
                                     <td>{{ game['site'] }}</td>
-                                    <td>{{ game['team'] }}</td>
-                                    <td>{{ game['line'] }}</td>
-                                    <td>{{ game['points'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['team'] }}
+                                    </td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['points'] }}
+                                    </td>
+                                    <td>{{ game['line'] }}</td>             
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:line'] }}</td>
                                     <td>{{ game['o:points'] }}</td>
-                                    <td>{{ game['total'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -465,7 +542,7 @@ def game_details(game_id):
                 {% else %}
                     <p>No data available</p>
                 {% endif %}
-                
+
                 <h2>Last 5 Games - Away Team</h2>
                 {% if away_team_last_5 %}
                     <table>
@@ -474,26 +551,34 @@ def game_details(game_id):
                                 <th>Date</th>
                                 <th>Site</th>
                                 <th>Team</th>
-                                <th>Line</th>
                                 <th>Points</th>
+                                <th>Line</th>                 
                                 <th>Opponent</th>
-                                <th>Opponent Line</th>
                                 <th>Opponent Points</th>
+                                <th>Opponent Line</th>                 
                                 <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for game in away_team_last_5 %}
+                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>
                                     <td>{{ game['site'] }}</td>
-                                    <td>{{ game['team'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['team'] }}
+                                    </td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['points'] }}
+                                    </td>             
                                     <td>{{ game['line'] }}</td>
-                                    <td>{{ game['points'] }}</td>
                                     <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>             
                                     <td>{{ game['o:line'] }}</td>
-                                    <td>{{ game['o:points'] }}</td>
-                                    <td>{{ game['total'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -501,7 +586,7 @@ def game_details(game_id):
                 {% else %}
                     <p>No data available</p>
                 {% endif %}
-                
+
                 <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
                 {% if last_5_vs_opponent %}
                     <table>
@@ -510,26 +595,30 @@ def game_details(game_id):
                                 <th>Date</th>
                                 <th>Site</th>
                                 <th>Team</th>
+                                <th>Points</th>                 
                                 <th>Line</th>
-                                <th>Points</th>
                                 <th>Opponent</th>
-                                <th>Opponent Line</th>
                                 <th>Opponent Points</th>
+                                <th>Opponent Line</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for game in last_5_vs_opponent %}
+                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>
                                     <td>{{ game['site'] }}</td>
-                                    <td>{{ game['team'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['team'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['points'] }}</td>             
                                     <td>{{ game['line'] }}</td>
-                                    <td>{{ game['points'] }}</td>
                                     <td>{{ game['o:team'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
                                     <td>{{ game['o:points'] }}</td>
-                                    <td>{{ game['total'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -539,14 +628,13 @@ def game_details(game_id):
                 {% endif %}
             </body>
             </html>
-        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent)     
-       
+        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, other_totals=other_totals, other_winner=other_winner)     
+
         if sport_key == 'baseball_mlb':
-            return mlb_template           
+            return mlb_template          
         elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', 'NBA', 'NHL']:
-         return others_template
+            return others_template
         else:
-            # Handle other sports or raise an error
             raise ValueError(f"Unsupported league: {sport_key}")
 
     except Exception as e:

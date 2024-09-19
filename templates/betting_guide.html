@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Betting Guide</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS if needed -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f9f9f9; /* Light background */
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+    
+        header {
+            background-color: #007bff; /* Primary color */
+            padding: 10px 20px;
+            text-align: center;
+            color: white;
+        }
+    
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    
+        h1 {
+            margin: 20px 0;
+        }
+    
+        label {
+            font-weight: bold;
+        }
+    
+        select, input[type="date"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: calc(100% - 22px); /* Adjust for padding and border */
+        }
+    
+        #gamesList {
+            list-style-type: none;
+            padding: 0;
+        }
+    
+        .game-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            background-color: #fff; /* Card background */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    
+        button, a {
+            background-color: #007bff; /* Primary color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+    
+        button:hover, a:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+    
+        /* Responsive Styles */
+        @media only screen and (max-width: 600px) {
+            body {
+                font-size: 14px;
+            }
+        }
+        @media only screen and (min-width: 601px) and (max-width: 768px) {
+            body {
+                font-size: 16px;
+            }
+        }
+        @media only screen and (min-width: 769px) {
+            body {
+                font-size: 18px;
+            }
+        }
+    </style>
+     <script>
+        function calculatePercentages() {
+            const inputField = document.getElementById('numberInput');
+            const resultDiv = document.getElementById('result');
+            const value = parseFloat(inputField.value);
+
+            if (isNaN(value) || value < 0 || value > 1000000) {
+                resultDiv.innerHTML = 'Please enter a valid number between 0 and 1,000,000.';
+                return;
+            }
+
+            const percentages = [1, 2, 3, 4, 5].map(percent => (value * percent / 100).toFixed(2));
+            resultDiv.innerHTML = `
+                <p>1%: ${percentages[0]}</p>
+                <p>2%: ${percentages[1]}</p>
+                <p>3%: ${percentages[2]}</p>
+                <p>4%: ${percentages[3]}</p>
+                <p>5%: ${percentages[4]}</p>
+            `;
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/betting-guide">Betting Guide</a> <!-- New link -->
+        </nav>
+    </header>
+    <main>
+        <h1>Exponential Betting Guide</h1>
+        <h2>What is exponential betting?</h2>
+        <p>Exponential betting is all about bankroll management, and ensuring that a bettor has a game plan for their bets. In the long run, this strategy helps you make more as you win. First, when we say ‘bankroll,’ we’re referring to how much money we are dedicating to sports betting. It could be twenty dollars, or it could be twenty thousand – we all start somewhere. The important part is to set a boundary on what we’re starting with and not to assume that we can keep adding to it if needed. That’s where you can get into trouble.</p>
+
+        <p>Once we’ve set our starting point, we then classify bets into five categories: 1%, 2%, 3%, 4%, and 5%. These percentages correlate to how much we’ll place on a bet, with 5% of your bankroll being the most you should ever lay on a single bet at one time. How do you determine how much to place on each bet? That’s up to you, or you can consult experts (disclaimer: look at real pros who know what they're doing, not social media hacks claiming they always win – spoiler alert: no one does). I highly recommend <a href="https://www.wagertalk.com" target="_blank">wagertalk.com</a>.</p>
+
+        <p>To circle back, your confidence in the bet should determine its classification. You’ll most likely find yourself in the 2% to 3% range most of the time. 5% bets should not be common – you should not be maxing out your bets every time you place one.</p>
+
+        <p>The benefit of this strategy is twofold: it helps grow your account when things are going well, and it also helps manage losses more effectively. When I’m winning, I’ll update my spreadsheet daily. This way, my 3% bet today is bigger than it was yesterday, meaning I win more. Conversely, when I’m hitting a skid and missing a lot of games, I make sure to update my numbers so I’m risking less. <strong>Do not chase losing bets.</strong> Don’t lose a 3% bet and then place a 6% bet thinking you’ll make it all back – you won’t. Stay disciplined and stick to this strategy to grow your bankroll steadily.</p>
+
+                <!-- Add more detailed content as needed -->
+                <h2>Bankroll Calculator</h2>
+                <form onsubmit="event.preventDefault(); calculatePercentages();">
+                    <label for="numberInput">Enter your Bankroll total:</label>
+                    <input type="number" id="numberInput" max="1000000" required>
+                    <button type="submit">Calculate</button>
+                </form>
+        
+                <div id="result"></div>
+    </main>
+</body>
+</html>

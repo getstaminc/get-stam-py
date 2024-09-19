@@ -4,121 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sports App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
     <style>
+        body {
+            background-color: #f9f9f9; /* Light background */
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+    
         header {
-            background-color: #f8f9fa;
+            background-color: #007bff; /* Primary color */
             padding: 10px 20px;
             text-align: center;
+            color: white;
         }
+    
         nav a {
+            color: white;
             text-decoration: none;
-            color: #007bff;
-            font-size: 16px;
+            margin: 0 10px;
         }
-        ul {
+    
+        h1 {
+            margin: 20px 0;
+        }
+    
+        label {
+            font-weight: bold;
+        }
+    
+        select, input[type="date"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: calc(100% - 22px); /* Adjust for padding and border */
+        }
+    
+        #gamesList {
             list-style-type: none;
             padding: 0;
         }
-        li {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
+    
+        .game-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            background-color: #fff; /* Card background */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-       
-        /* Mobile Styles */
+    
+        button, a {
+            background-color: #007bff; /* Primary color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+    
+        button:hover, a:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+    
+        /* Responsive Styles */
         @media only screen and (max-width: 600px) {
             body {
                 font-size: 14px;
             }
-            .container {
-                padding: 10px;
-            }
-            .game-details, .last-5-games {
-                width: 100%;
-                margin: 0 auto;
-            }
-            table {
-                width: 100%;
-                font-size: 12px;
-            }
-            /* Ensure images are responsive on mobile */
-            img {
-                max-width: 100%;
-                height: auto;
-            }
-            /* Make tables scrollable on smaller screens */
-            .responsive-table {
-                overflow-x: auto;
-                display: block;
-            }
         }
-
-        /* Tablet Styles */
         @media only screen and (min-width: 601px) and (max-width: 768px) {
             body {
                 font-size: 16px;
             }
-            .container {
-                padding: 20px;
-            }
-            .game-details, .last-5-games {
-                width: 90%;
-            }
-            /* Ensure images are responsive on tablet */
-            img {
-                max-width: 100%;
-                height: auto;
-            }
-            /* Make tables scrollable on smaller screens */
-            .responsive-table {
-                overflow-x: auto;
-                display: block;
-            }
         }
-
-        /* Desktop Styles */
         @media only screen and (min-width: 769px) {
             body {
                 font-size: 18px;
             }
-            .container {
-                padding: 30px;
-            }
-            .game-details, .last-5-games {
-                width: 80%;
-            }
-            /* Images and tables should already be fine on desktop */
-            img {
-                max-width: 100%;
-                height: auto;
-            }
-            .responsive-table {
-                overflow-x: auto;
-                display: block;
-            }
         }
-
-        /* Flexible Grid System for Different Screen Sizes */
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-        }
-        .column {
-            flex: 100%;
-        }
-
-        @media only screen and (min-width: 600px) {
-            .column {
-                flex: 50%;
-            }
-        }
-
-        @media only screen and (min-width: 768px) {
-            .column {
-                flex: 33.33%;
-            }
-        }
-
-
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -168,8 +136,10 @@
     <header>
         <nav>
             <a href="/">Home</a>
+            <a href="/betting-guide">Betting Guide</a> <!-- New link -->
         </nav>
-        <h1>Sports Scores and Odds</h1>
+        <h1>Get STAM</h1>
+        <h2>Stats That Actually Matter</h2>
     </header>
     <label for="sportSelect">Select Sport:</label>
     <select id="sportSelect"></select>

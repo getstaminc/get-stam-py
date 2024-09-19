@@ -1,11 +1,17 @@
 # odds_api.py
 import requests
 import datetime
+import pytz  # Import pytz for timezone handling
 
 api_key = '25312c698369617bc17f1f2634dd3996'
 
 def get_odds_data(sport_key, date):
     try:
+        # Ensure date is in Eastern timezone
+        eastern_tz = pytz.timezone('US/Eastern')
+        if date.tzinfo is None:
+            date = eastern_tz.localize(date)  # Localize to Eastern if naive
+
         date_str = date.strftime('%Y-%m-%d')
         scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?apiKey={api_key}&date={date_str}&dateFormat=iso"
         odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers=draftkings&markets=h2h,spreads,totals&oddsFormat=american"

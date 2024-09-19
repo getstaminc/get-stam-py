@@ -1,14 +1,25 @@
-from flask import Flask, render_template, jsonify, request, render_template_string
-import datetime
+from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint
+from datetime import datetime, timedelta  # Import timedelta here
+import pytz
 from dateutil import parser
 from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
 from single_game_data import get_game_details
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
 from utils import convert_sport_key, mlb_totals, other_totals
+from betting_guide import betting_guide
 
 app = Flask(__name__)
 port = 5000
+
+# Define the Eastern timezone
+eastern_tz = pytz.timezone('US/Eastern')
+
+# app.py
+from betting_guide import betting_guide  # Add this line
+
+app.register_blueprint(betting_guide)  # Register the blueprint
+
 
 # Route to fetch available sports
 @app.route('/api/sports')
@@ -18,6 +29,14 @@ def api_get_sports():
         return jsonify(sports)
     else:
         return jsonify({'error': 'Internal Server Error'}), 500
+    
+# Function to convert UTC time to Eastern time
+def convert_to_eastern(utc_time):
+    if utc_time is None:
+        return None
+    utc_time = utc_time.replace(tzinfo=pytz.utc)
+    eastern_time = utc_time.astimezone(eastern_tz)
+    return eastern_time
 
 # Route to fetch scores and odds for a specific sport and date
 @app.route('/sports/<sport_key>')
@@ -25,14 +44,14 @@ def get_sport_scores(sport_key):
     try:
         current_date = request.args.get('date', None)
         if not current_date:
-            current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+            current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
 
-        selected_date_start = datetime.datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=datetime.timezone.utc)
-        selected_date_end = selected_date_start + datetime.timedelta(hours=23, minutes=59, seconds=59)
+        selected_date_start = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+        selected_date_end = selected_date_start + timedelta(hours=23, minutes=59, seconds=59)  # Use timedelta
 
         sdql_sport_key = convert_sport_key(sport_key)
 
-        if selected_date_start.date() < datetime.datetime.now().date():
+        if selected_date_start.date() < datetime.now(eastern_tz).date():
             sdql_data = get_sdql_data(sdql_sport_key, selected_date_start)
             return render_template_string("""
                 <html>
@@ -97,9 +116,10 @@ def get_sport_scores(sport_key):
             filtered_scores = []
             for score in scores:
                 commence_time_str = score['commence_time']
-                commence_date = parser.parse(commence_time_str).astimezone(datetime.timezone.utc).date()
+                commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)  # Parse as UTC
+                commence_date_eastern = convert_to_eastern(commence_date)
 
-                if commence_date == selected_date_start.date():
+                if commence_date_eastern.date() == selected_date_start.date():
                     filtered_scores.append(score)
 
             formatted_scores = []
@@ -139,7 +159,7 @@ def get_sport_scores(sport_key):
                     <title>Game Info</title>
                     <style>
                         table {
-                            width: 50%;
+                            width: 70%;
                             border-collapse: collapse;
                         }
                         table, th, td {
@@ -151,10 +171,11 @@ def get_sport_scores(sport_key):
                         }
                         th {
                             background-color: #f2f2f2;
-                        }
+                        }                                         
                     </style>
                 </head>
                 <body>
+                 <div class="game-card">                       
                     <h1>Game Information</h1>
                     {% if result %}
                         <table>
@@ -184,6 +205,7 @@ def get_sport_scores(sport_key):
                     {% else %}
                         <p>No data available</p>
                     {% endif %}
+                  </div>                        
                 </body>
                 </html>
             """, result=formatted_scores, sport_key=sport_key, current_date=current_date)
@@ -205,7 +227,7 @@ def game_details(game_id):
         return jsonify({'error': 'Missing sport_key or date'}), 400
 
     try:
-        selected_date = datetime.datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=datetime.timezone.utc)
+        selected_date = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
         game_details = get_game_details(sport_key, selected_date, game_id)
 
         if not game_details:
@@ -277,6 +299,69 @@ def game_details(game_id):
                 <head>
                     <title>Game Details</title>
                     <style>
+                        body {
+                            background-color: #f9f9f9; /* Light background */
+                            font-family: 'Poppins', sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                        }
+                    
+                        header {
+                            background-color: #007bff; /* Primary color */
+                            padding: 10px 20px;
+                            text-align: center;
+                            color: white;
+                        }
+                    
+                        nav a {
+                            color: white;
+                            text-decoration: none;
+                            margin: 0 10px;
+                        }
+                    
+                        h1 {
+                            margin: 20px 0;
+                        }
+                    
+                        label {
+                            font-weight: bold;
+                        }
+                    
+                        select, input[type="date"] {
+                            margin: 10px 0;
+                            padding: 10px;
+                            border: 1px solid #ddd;
+                            border-radius: 5px;
+                            width: calc(100% - 22px); /* Adjust for padding and border */
+                        }
+                    
+                        #gamesList {
+                            list-style-type: none;
+                            padding: 0;
+                        }
+                    
+                        .game-card {
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                            padding: 20px;
+                            margin: 10px 0;
+                            background-color: #fff; /* Card background */
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        }
+                    
+                        button, a {
+                            background-color: #007bff; /* Primary color */
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            padding: 10px 15px;
+                            text-decoration: none;
+                            transition: background-color 0.3s;
+                        }
+                    
+                        button:hover, a:hover {
+                            background-color: #0056b3; /* Darker shade on hover */
+                        }                     
                         table {
                             width: 70%;
                             border-collapse: collapse;
@@ -296,12 +381,25 @@ def game_details(game_id):
                         }
                         .red-bg {
                             background-color: red;
-                        }                          
+                        }   
+                        .game-card {
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                            padding: 20px;
+                            margin: 10px 0;
+                            background-color: #fff; /* Card background */
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        }                                                
                     </style>
                 </head>
                 <body>
+                     <header>
+                        <nav>
+                            <a href="/">Home</a>
+                        </nav>
+                    </header>                         
                     <h1>Game Details</h1>
-                    <table>
+                    <table >
                         <tr>
                             <th>Home Team</th>
                             <td>{{ game.homeTeam }}</td>
@@ -326,6 +424,7 @@ def game_details(game_id):
                     
                     <h2>Last 5 Games - Home Team</h2>
                     {% if home_team_last_5 %}
+                       <div class="game-card">                       
                         <table>
                             <thead>
                                 <tr>
@@ -364,12 +463,14 @@ def game_details(game_id):
                                 {% endfor %}
                             </tbody>
                         </table>
+                      </div>                        
                     {% else %}
                         <p>No data available</p>
                     {% endif %}
                     
                     <h2>Last 5 Games - Away Team</h2>
                     {% if away_team_last_5 %}
+                      <div class="game-card">                        
                         <table>
                             <thead>
                                 <tr>
@@ -396,10 +497,10 @@ def game_details(game_id):
                                         </td>
                                         <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                             {{ game['runs'] }}
-                                        </td>
+                                        </td>             
                                         <td>{{ game['line'] }}</td>
                                         <td>{{ game['o:team'] }}</td>
-                                        <td>{{ game['o:runs'] }}</td>
+                                        <td>{{ game['o:runs'] }}</td>             
                                         <td>{{ game['o:line'] }}</td>
                                         <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
                                             {{ game['total'] }}
@@ -408,12 +509,14 @@ def game_details(game_id):
                                 {% endfor %}
                             </tbody>
                         </table>
+                      </div>                        
                     {% else %}
                         <p>No data available</p>
                     {% endif %}
                     
                     <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
                     {% if last_5_vs_opponent %}
+                       <div class="game-card">                       
                         <table>
                             <thead>
                                 <tr>
@@ -452,6 +555,7 @@ def game_details(game_id):
                                 {% endfor %}
                             </tbody>
                         </table>
+                       </div>                        
                     {% else %}
                         <p>No data available</p>
                     {% endif %}
@@ -461,196 +565,264 @@ def game_details(game_id):
         
         # Other sports template rendering
         others_template = render_template_string("""
-<html>
-<head>
-    <title>Game Details</title>
-    <style>
-        table {
-            width: 70%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .green-bg {
-            background-color: green;
-        }
-        .red-bg {
-            background-color: red;
-        }
-    </style>
-</head>
-<body>
-    <h1>Game Details</h1>
-    <table>
-        <tr>
-            <th>Home Team</th>
-            <td>{{ game.homeTeam }}</td>
-        </tr>
-        <tr>
-            <th>Away Team</th>
-            <td>{{ game.awayTeam }}</td>
-        </tr>
-        <tr>
-            <th>Home Score</th>
-            <td>{{ game.homeScore }}</td>
-        </tr>
-        <tr>
-            <th>Away Score</th>
-            <td>{{ game.awayScore }}</td>
-        </tr>
-        <tr>
-            <th>Odds</th>
-            <td>{{ game.oddsText }}</td>
-        </tr>
-    </table>
-
-    <h2>Last 5 Games - Home Team</h2>
-    {% if home_team_last_5 %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Site</th>
-                    <th>Team</th>
-                    <th>Points</th>                 
-                    <th>Line</th>
-                    <th>Opponent</th>
-                    <th>Opponent Points</th>
-                    <th>Opponent Line</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for game in home_team_last_5 %}
-                    {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
-                    {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                    {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
+            <html>
+            <head>
+                <title>Game Details</title>
+                <style>
+                    body {
+                        background-color: #f9f9f9; /* Light background */
+                        font-family: 'Poppins', sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                
+                    header {
+                        background-color: #007bff; /* Primary color */
+                        padding: 10px 20px;
+                        text-align: center;
+                        color: white;
+                    }
+                
+                    nav a {
+                        color: white;
+                        text-decoration: none;
+                        margin: 0 10px;
+                    }
+                
+                    h1 {
+                        margin: 20px 0;
+                    }
+                
+                    label {
+                        font-weight: bold;
+                    }
+                
+                    select, input[type="date"] {
+                        margin: 10px 0;
+                        padding: 10px;
+                        border: 1px solid #ddd;
+                        border-radius: 5px;
+                        width: calc(100% - 22px); /* Adjust for padding and border */
+                    }
+                
+                    #gamesList {
+                        list-style-type: none;
+                        padding: 0;
+                    }
+                
+                    .game-card {
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        padding: 20px;
+                        margin: 10px 0;
+                        background-color: #fff; /* Card background */
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                    }
+                
+                    button, a {
+                        background-color: #007bff; /* Primary color */
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        padding: 10px 15px;
+                        text-decoration: none;
+                        transition: background-color 0.3s;
+                    }
+                
+                    button:hover, a:hover {
+                        background-color: #0056b3; /* Darker shade on hover */
+                    }
+                    table {
+                        width: 70%;
+                        border-collapse: collapse;
+                    }
+                    table, th, td {
+                        border: 1px solid black;
+                    }
+                    th, td {
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                    .green-bg {
+                        background-color: green;
+                    }
+                    .red-bg {
+                        background-color: red;
+                    }
+                </style>
+            </head>
+            <body>
+                <header>
+                  <nav>
+                    <a href="/">Home</a>
+                    </nav>
+                </header> 
+                <h1>Game Details</h1>
+                <table>
                     <tr>
-                        <td>{{ game['date'] }}</td>
-                        <td>{{ game['site'] }}</td>
-                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
-                            {{ game['team'] }}
-                        </td>
-                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
-                            {{ game['points'] }}
-                        </td>
-                        <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
-                            {{ game['line'] }}
-                        </td>             
-                        <td>{{ game['o:team'] }}</td>
-                        <td>{{ game['o:points'] }}</td>
-                        <td>{{ game['o:line'] }}</td>
-                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
-                            {{ game['total'] }}
-                        </td>
+                        <th>Home Team</th>
+                        <td>{{ game.homeTeam }}</td>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No data available</p>
-    {% endif %}
-
-    <h2>Last 5 Games - Away Team</h2>
-    {% if away_team_last_5 %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Site</th>
-                    <th>Team</th>
-                    <th>Points</th>
-                    <th>Line</th>                 
-                    <th>Opponent</th>
-                    <th>Opponent Points</th>
-                    <th>Opponent Line</th>                 
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for game in away_team_last_5 %}
-                    {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
-                    {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                    {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                     <tr>
-                        <td>{{ game['date'] }}</td>
-                        <td>{{ game['site'] }}</td>
-                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
-                            {{ game['team'] }}
-                        </td>
-                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
-                            {{ game['points'] }}
-                        </td>             
-                        <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
-                            {{ game['line'] }}
-                        </td>
-                        <td>{{ game['o:team'] }}</td>
-                        <td>{{ game['o:points'] }}</td>             
-                        <td>{{ game['o:line'] }}</td>
-                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
-                            {{ game['total'] }}
-                        </td>
+                        <th>Away Team</th>
+                        <td>{{ game.awayTeam }}</td>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No data available</p>
-    {% endif %}
-
-    <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
-    {% if last_5_vs_opponent %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Site</th>
-                    <th>Team</th>
-                    <th>Points</th>                 
-                    <th>Line</th>
-                    <th>Opponent</th>
-                    <th>Opponent Points</th>
-                    <th>Opponent Line</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for game in last_5_vs_opponent %}
-                    {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
-                    {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                    {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                     <tr>
-                        <td>{{ game['date'] }}</td>
-                        <td>{{ game['site'] }}</td>
-                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['team'] }}</td>
-                        <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['points'] }}</td>             
-                        <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
-                            {{ game['line'] }}
-                        </td>
-                        <td>{{ game['o:team'] }}</td>
-                        <td>{{ game['o:points'] }}</td>
-                        <td>{{ game['o:line'] }}</td>
-                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
-                            {{ game['total'] }}
-                        </td>
+                        <th>Home Score</th>
+                        <td>{{ game.homeScore }}</td>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No data available</p>
-    {% endif %}
-</body>
-</html>
-""", game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, other_totals=other_totals, other_winner=other_winner, calculate_line_result=calculate_line_result)    
+                    <tr>
+                        <th>Away Score</th>
+                        <td>{{ game.awayScore }}</td>
+                    </tr>
+                    <tr>
+                        <th>Odds</th>
+                        <td>{{ game.oddsText }}</td>
+                    </tr>
+                </table>
+
+                <h2>Last 5 Games - Home Team</h2>
+                {% if home_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Points</th>                 
+                                <th>Line</th>
+                                <th>Opponent</th>
+                                <th>Opponent Points</th>
+                                <th>Opponent Line</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in home_team_last_5 %}
+                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
+                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['team'] }}
+                                    </td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['points'] }}
+                                    </td>
+                                    <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
+                                        {{ game['line'] }}
+                                    </td>             
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+
+                <h2>Last 5 Games - Away Team</h2>
+                {% if away_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Points</th>
+                                <th>Line</th>                 
+                                <th>Opponent</th>
+                                <th>Opponent Points</th>
+                                <th>Opponent Line</th>                 
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in away_team_last_5 %}
+                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
+                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['team'] }}
+                                    </td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['points'] }}
+                                    </td>             
+                                    <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
+                                        {{ game['line'] }}
+                                    </td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>             
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+
+                <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
+                {% if last_5_vs_opponent %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Points</th>                 
+                                <th>Line</th>
+                                <th>Opponent</th>
+                                <th>Opponent Points</th>
+                                <th>Opponent Line</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in last_5_vs_opponent %}
+                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
+                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['site'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['team'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['points'] }}</td>             
+                                    <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
+                                        {{ game['line'] }}
+                                    </td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+            </body>
+            </html>
+        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, other_totals=other_totals, other_winner=other_winner, calculate_line_result=calculate_line_result)    
 
         if sport_key == 'baseball_mlb':
             return mlb_template          

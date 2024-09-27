@@ -12,6 +12,9 @@ from betting_guide import betting_guide
 app = Flask(__name__)
 port = 5000
 
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 # Define the Eastern timezone
 eastern_tz = pytz.timezone('US/Eastern')
 

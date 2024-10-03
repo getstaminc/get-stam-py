@@ -56,6 +56,15 @@ def get_sport_scores(sport_key):
             return render_template_string("""
                 <html>
                 <head>
+                    <!-- Google tag (gtag.js) -->
+                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+                    <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', 'G-578SDWQPSK');
+                    </script>                      
                     <title>Game Info</title>
                     <style>
                         table {
@@ -156,6 +165,15 @@ def get_sport_scores(sport_key):
             return render_template_string("""
                 <html>
                 <head>
+                    <!-- Google tag (gtag.js) -->
+                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+                    <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', 'G-578SDWQPSK');
+                    </script>                      
                     <title>Game Info</title>
                     <style>
                         table {
@@ -297,6 +315,15 @@ def game_details(game_id):
         mlb_template = render_template_string("""
            <html>
                 <head>
+                    <!-- Google tag (gtag.js) -->
+                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+                    <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', 'G-578SDWQPSK');
+                    </script>                          
                     <title>Game Details</title>
                     <style>
                         body {
@@ -567,6 +594,15 @@ def game_details(game_id):
         others_template = render_template_string("""
             <html>
             <head>
+                <!-- Google tag (gtag.js) -->
+                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+                    <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', 'G-578SDWQPSK');
+                    </script>                                 
                 <title>Game Details</title>
                 <style>
                     body {

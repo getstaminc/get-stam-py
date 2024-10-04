@@ -108,7 +108,7 @@
                     .then(response => response.json())
                     .then(data => {
                         sportSelect.innerHTML = data.map(sport => `
-                            <option value="${sport.key}">${sport.title}</option>
+                            <option value="${sport.key}" ${sport.key === 'americanfootball_nfl' ? 'selected' : ''}>${sport.title}</option>
                         `).join('');
                         fetchAndDisplayGames(sportSelect.value, datePicker.value);
                     })

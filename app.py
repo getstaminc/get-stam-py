@@ -252,8 +252,8 @@ def game_details(game_id):
             return jsonify({'error': 'Game not found'}), 404
 
         try:
-            home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key)
-            away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key)
+            home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key) or []
+            away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key) or []
 
             # Fetch the last 5 games between the home team and the away team
             last_5_vs_opponent = get_last_5_games_vs_opponent(
@@ -261,12 +261,20 @@ def game_details(game_id):
                 opponent=game_details['awayTeam'],
                 today_date=selected_date,
                 sport_key=sport_key
-            )
+            ) or []
         except Exception as e:
             print('Error fetching last 5 games:', str(e))
             home_team_last_5 = []
             away_team_last_5 = []
             last_5_vs_opponent = []
+
+        # Prepare data for rendering
+        # Format the date from YYYYMMDD to MM/DD/YYYY in the loop below
+        for game in home_team_last_5 + away_team_last_5 + last_5_vs_opponent:
+            if 'date' in game:
+                # Convert date from int to formatted string
+                date_str = str(game['date'])  # Ensure the date is a string
+                game['date'] = f"{date_str[4:6]}/{date_str[6:8]}/{date_str[:4]}"
 
         # Define mlb_totals function for MLB games
         def mlb_totals(runs, o_runs, total):
@@ -275,7 +283,7 @@ def game_details(game_id):
                     return False
                 return (runs + o_runs) > total
             except TypeError:
-                return False
+                return False    
 
         # Define other_totals function for non-MLB games
         def other_totals(points, o_points, total):
@@ -332,41 +340,60 @@ def game_details(game_id):
                             margin: 0;
                             padding: 20px;
                         }
-                    
+
                         header {
                             background-color: #007bff; /* Primary color */
                             padding: 10px 20px;
                             text-align: center;
                             color: white;
                         }
-                    
+
                         nav a {
                             color: white;
                             text-decoration: none;
                             margin: 0 10px;
                         }
-                    
+
                         h1 {
                             margin: 20px 0;
                         }
-                    
-                        label {
-                            font-weight: bold;
+
+                        h2 {
+                            margin-top: 30px;
                         }
-                    
-                        select, input[type="date"] {
-                            margin: 10px 0;
-                            padding: 10px;
-                            border: 1px solid #ddd;
-                            border-radius: 5px;
-                            width: calc(100% - 22px); /* Adjust for padding and border */
+
+                        table {
+                            width: 70%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
                         }
-                    
+
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+
+                        th {
+                            background-color: #f2f2f2;
+                        }
+
+                        .green-bg {
+                            background-color: green;
+                        }
+
+                        .red-bg {
+                            background-color: red;
+                        }
+
                         #gamesList {
-                            list-style-type: none;
-                            padding: 0;
+                        list-style-type: none;
+                        padding: 0;
                         }
-                    
+                
                         .game-card {
                             border: 1px solid #ddd;
                             border-radius: 8px;
@@ -375,7 +402,7 @@ def game_details(game_id):
                             background-color: #fff; /* Card background */
                             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                         }
-                    
+
                         button, a {
                             background-color: #007bff; /* Primary color */
                             color: white;
@@ -385,39 +412,29 @@ def game_details(game_id):
                             text-decoration: none;
                             transition: background-color 0.3s;
                         }
-                    
+
                         button:hover, a:hover {
                             background-color: #0056b3; /* Darker shade on hover */
-                        }                     
-                        table {
-                            width: 70%;
-                            border-collapse: collapse;
                         }
-                        table, th, td {
-                            border: 1px solid black;
+
+                        /* Responsive Styles */
+                        @media only screen and (max-width: 600px) {
+                            body {
+                                font-size: 14px;
+                            }
                         }
-                        th, td {
-                            padding: 8px;
-                            text-align: left;
+                        @media only screen and (min-width: 601px) and (max-width: 768px) {
+                            body {
+                                font-size: 16px;
+                            }
                         }
-                        th {
-                            background-color: #f2f2f2;
+                        @media only screen and (min-width: 769px) {
+                            body {
+                                font-size: 18px;
+                            }
                         }
-                        .green-bg {
-                            background-color: green;
-                        }
-                        .red-bg {
-                            background-color: red;
-                        }   
-                        .game-card {
-                            border: 1px solid #ddd;
-                            border-radius: 8px;
-                            padding: 20px;
-                            margin: 10px 0;
-                            background-color: #fff; /* Card background */
-                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                        }                                                
                     </style>
+
                 </head>
                 <body>
                      <header>
@@ -471,7 +488,7 @@ def game_details(game_id):
                                     {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
                                     {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
                                     <tr>
-                                        <td>{{ game['date'] }}</td>
+                                        <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                         <td>{{ game['site'] }}</td>
                                         <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                             {{ game['team'] }}
@@ -517,7 +534,7 @@ def game_details(game_id):
                                     {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
                                     {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
                                     <tr>
-                                        <td>{{ game['date'] }}</td>
+                                        <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                         <td>{{ game['site'] }}</td>
                                         <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                             {{ game['team'] }}
@@ -563,7 +580,7 @@ def game_details(game_id):
                                     {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
                                     {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
                                     <tr>
-                                        <td>{{ game['date'] }}</td>
+                                        <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                         <td>{{ game['site'] }}</td>
                                         <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                             {{ game['team'] }}
@@ -605,90 +622,106 @@ def game_details(game_id):
                     </script>                                 
                 <title>Game Details</title>
                 <style>
-                    body {
-                        background-color: #f9f9f9; /* Light background */
-                        font-family: 'Poppins', sans-serif;
-                        margin: 0;
-                        padding: 20px;
-                    }
-                
-                    header {
-                        background-color: #007bff; /* Primary color */
-                        padding: 10px 20px;
-                        text-align: center;
-                        color: white;
-                    }
-                
-                    nav a {
-                        color: white;
-                        text-decoration: none;
-                        margin: 0 10px;
-                    }
-                
-                    h1 {
-                        margin: 20px 0;
-                    }
-                
-                    label {
-                        font-weight: bold;
-                    }
-                
-                    select, input[type="date"] {
-                        margin: 10px 0;
-                        padding: 10px;
-                        border: 1px solid #ddd;
-                        border-radius: 5px;
-                        width: calc(100% - 22px); /* Adjust for padding and border */
-                    }
-                
-                    #gamesList {
+                        body {
+                            background-color: #f9f9f9; /* Light background */
+                            font-family: 'Poppins', sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                        }
+
+                        header {
+                            background-color: #007bff; /* Primary color */
+                            padding: 10px 20px;
+                            text-align: center;
+                            color: white;
+                        }
+
+                        nav a {
+                            color: white;
+                            text-decoration: none;
+                            margin: 0 10px;
+                        }
+
+                        h1 {
+                            margin: 20px 0;
+                        }
+
+                        h2 {
+                            margin-top: 30px;
+                        }
+
+                        table {
+                            width: 70%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+
+                        th {
+                            background-color: #f2f2f2;
+                        }
+
+                        .green-bg {
+                            background-color: green;
+                        }
+
+                        .red-bg {
+                            background-color: red;
+                        }
+
+                        #gamesList {
                         list-style-type: none;
                         padding: 0;
-                    }
+                        }
                 
-                    .game-card {
-                        border: 1px solid #ddd;
-                        border-radius: 8px;
-                        padding: 20px;
-                        margin: 10px 0;
-                        background-color: #fff; /* Card background */
-                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                    }
-                
-                    button, a {
-                        background-color: #007bff; /* Primary color */
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        padding: 10px 15px;
-                        text-decoration: none;
-                        transition: background-color 0.3s;
-                    }
-                
-                    button:hover, a:hover {
-                        background-color: #0056b3; /* Darker shade on hover */
-                    }
-                    table {
-                        width: 70%;
-                        border-collapse: collapse;
-                    }
-                    table, th, td {
-                        border: 1px solid black;
-                    }
-                    th, td {
-                        padding: 8px;
-                        text-align: left;
-                    }
-                    th {
-                        background-color: #f2f2f2;
-                    }
-                    .green-bg {
-                        background-color: green;
-                    }
-                    .red-bg {
-                        background-color: red;
-                    }
-                </style>
+                        .game-card {
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                            padding: 20px;
+                            margin: 10px 0;
+                            background-color: #fff; /* Card background */
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        }
+
+                        button, a {
+                            background-color: #007bff; /* Primary color */
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            padding: 10px 15px;
+                            text-decoration: none;
+                            transition: background-color 0.3s;
+                        }
+
+                        button:hover, a:hover {
+                            background-color: #0056b3; /* Darker shade on hover */
+                        }
+
+                        /* Responsive Styles */
+                        @media only screen and (max-width: 600px) {
+                            body {
+                                font-size: 14px;
+                            }
+                        }
+                        @media only screen and (min-width: 601px) and (max-width: 768px) {
+                            body {
+                                font-size: 16px;
+                            }
+                        }
+                        @media only screen and (min-width: 769px) {
+                            body {
+                                font-size: 18px;
+                            }
+                        }
+                    </style>
             </head>
             <body>
                 <header>
@@ -740,9 +773,8 @@ def game_details(game_id):
                             {% for game in home_team_last_5 %}
                                 {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                                 <tr>
-                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                         {{ game['team'] }}
@@ -787,9 +819,8 @@ def game_details(game_id):
                             {% for game in away_team_last_5 %}
                                 {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                                 <tr>
-                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                         {{ game['team'] }}
@@ -834,9 +865,8 @@ def game_details(game_id):
                             {% for game in last_5_vs_opponent %}
                                 {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                                 <tr>
-                                    <td>{{ game['date'] }}</td>
+                                    <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['team'] }}</td>
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['points'] }}</td>             
@@ -870,6 +900,12 @@ def game_details(game_id):
     except Exception as e:
         print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
+
+
+    except Exception as e:
+        print('Error fetching game details:', str(e))
+        return jsonify({'error': 'Internal Server Error'}), 500
+
 
 # Route for the home page
 @app.route('/')

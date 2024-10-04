@@ -773,6 +773,7 @@ def game_details(game_id):
                             {% for game in home_team_last_5 %}
                                 {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
+                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}                 
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
@@ -819,6 +820,7 @@ def game_details(game_id):
                             {% for game in away_team_last_5 %}
                                 {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
+                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}                 
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
@@ -865,6 +867,7 @@ def game_details(game_id):
                             {% for game in last_5_vs_opponent %}
                                 {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
+                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>

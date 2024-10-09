@@ -299,6 +299,21 @@ def game_details(game_id):
             if runs is not None and o_runs is not None:
                 return runs > o_runs
             return None
+        
+        # Define nhl_totals function for NHL games
+        def nhl_totals(goals, o_goals, total):
+            try:
+                if goals is None or o_goals is None or total is None:
+                    return False
+                return (goals + o_goals) > total
+            except TypeError:
+                return False
+
+        # Determine winner for NHL games
+        def nhl_winner(goals, o_goals):
+            if goals is not None and o_goals is not None:
+                return goals > o_goals
+            return None
 
         # Determine winner for other sports
         def other_winner(points, o_points):
@@ -607,6 +622,274 @@ def game_details(game_id):
                 </html>
             """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, mlb_totals=mlb_totals, mlb_winner=mlb_winner)
         
+         # NHL template rendering
+        nhl_template = render_template_string("""
+            <html>
+            <head>
+                <title>Game Details</title>
+                <style>
+                        body {
+                            background-color: #f9f9f9; /* Light background */
+                            font-family: 'Poppins', sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                        }
+
+                        header {
+                            background-color: #007bff; /* Primary color */
+                            padding: 10px 20px;
+                            text-align: center;
+                            color: white;
+                        }
+
+                        nav a {
+                            color: white;
+                            text-decoration: none;
+                            margin: 0 10px;
+                        }
+
+                        h1 {
+                            margin: 20px 0;
+                        }
+
+                        h2 {
+                            margin-top: 30px;
+                        }
+
+                        table {
+                            width: 70%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+
+                        th {
+                            background-color: #f2f2f2;
+                        }
+
+                        .green-bg {
+                            background-color: green;
+                        }
+
+                        .red-bg {
+                            background-color: red;
+                        }
+
+                        #gamesList {
+                        list-style-type: none;
+                        padding: 0;
+                        }
+                
+                        .game-card {
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                            padding: 20px;
+                            margin: 10px 0;
+                            background-color: #fff; /* Card background */
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        }
+
+                        button, a {
+                            background-color: #007bff; /* Primary color */
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            padding: 10px 15px;
+                            text-decoration: none;
+                            transition: background-color 0.3s;
+                        }
+
+                        button:hover, a:hover {
+                            background-color: #0056b3; /* Darker shade on hover */
+                        }
+
+                        /* Responsive Styles */
+                        @media only screen and (max-width: 600px) {
+                            body {
+                                font-size: 14px;
+                            }
+                        }
+                        @media only screen and (min-width: 601px) and (max-width: 768px) {
+                            body {
+                                font-size: 16px;
+                            }
+                        }
+                        @media only screen and (min-width: 769px) {
+                            body {
+                                font-size: 18px;
+                            }
+                        }
+                    </style>
+            </head>
+            <body>
+                <header>
+                        <nav>
+                            <a href="/">Home</a>
+                        </nav>
+                    </header>                               
+                <h1>Game Details</h1>
+                <table>
+                    <tr>
+                        <th>Home Team</th>
+                        <td>{{ game.homeTeam }}</td>
+                    </tr>
+                    <tr>
+                        <th>Away Team</th>
+                        <td>{{ game.awayTeam }}</td>
+                    </tr>
+                    <tr>
+                        <th>Home Score</th>
+                        <td>{{ game.homeScore }}</td>
+                    </tr>
+                    <tr>
+                        <th>Away Score</th>
+                        <td>{{ game.awayScore }}</td>
+                    </tr>
+                    <tr>
+                        <th>Odds</th>
+                        <td>{{ game.oddsText }}</td>
+                    </tr>
+                </table>
+
+                <h2>Last 5 Games - Home Team</h2>
+                {% if home_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Goals</th>                 
+                                <th>Line</th>
+                                <th>Opponent</th>
+                                <th>Opponent Goals</th>
+                                <th>Opponent Line</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in home_team_last_5 %}
+                                {% set is_total_exceeded = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
+                                {% set is_winner = nhl_winner(game.get('goals', 0), game.get('o:goals', 0)) %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
+                                    <td>{{ game['site'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['team'] }}
+                                    </td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['goals'] }}
+                                    </td>
+                                    <td>{{ game['line'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:goals'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+
+                <h2>Last 5 Games - Away Team</h2>
+                {% if away_team_last_5 %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Goals</th>                 
+                                <th>Line</th>
+                                <th>Opponent</th>
+                                <th>Opponent Goals</th>
+                                <th>Opponent Line</th>                 
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in away_team_last_5 %}
+                                {% set is_total_exceeded = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
+                                {% set is_winner = nhl_winner(game.get('goals', 0), game.get('o:goals', 0)) %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
+                                    <td>{{ game['site'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['team'] }}
+                                    </td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
+                                        {{ game['goals'] }}
+                                    </td>
+                                    <td>{{ game['line'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:goals'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+
+                <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
+                {% if last_5_vs_opponent %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Site</th>
+                                <th>Team</th>
+                                <th>Goals</th>                 
+                                <th>Line</th>
+                                <th>Opponent</th>
+                                <th>Opponent Goals</th>
+                                <th>Opponent Line</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in last_5_vs_opponent %}
+                                {% set is_total_exceeded = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
+                                {% set is_winner = nhl_winner(game.get('goals', 0), game.get('o:goals', 0)) %}
+                                <tr>
+                                    <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
+                                    <td>{{ game['site'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['team'] }}</td>
+                                    <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['goals'] }}</td>             
+                                    <td>{{ game['line'] }}</td>
+                                    <td>{{ game['o:team'] }}</td>
+                                    <td>{{ game['o:goals'] }}</td>
+                                    <td>{{ game['o:line'] }}</td>
+                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        {{ game['total'] }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No data available</p>
+                {% endif %}
+            </body>
+            </html>
+        """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, nhl_totals=nhl_totals, nhl_winner=nhl_winner)
+
         # Other sports template rendering
         others_template = render_template_string("""
             <html>
@@ -894,7 +1177,9 @@ def game_details(game_id):
         """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, other_totals=other_totals, other_winner=other_winner, calculate_line_result=calculate_line_result)    
 
         if sport_key == 'baseball_mlb':
-            return mlb_template          
+            return mlb_template 
+        elif sport_key == 'icehockey_nhl':
+            return nhl_template         
         elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', 'basketball_nba', 'icehockey_nhl']:
             return others_template
         else:

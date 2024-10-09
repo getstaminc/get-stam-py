@@ -84,7 +84,7 @@ def convert_team_name(full_team_name):
         'Florida Panthers': 'Panthers',
         'Los Angeles Kings': 'Kings',
         'Minnesota Wild': 'Wild',
-        'Montreal Canadiens': 'Canadiens',
+        'Montréal Canadiens': 'Canadiens',
         'Nashville Predators': 'Predators',
         'New Jersey Devils': 'Devils',
         'New York Islanders': 'Islanders',

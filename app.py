@@ -895,7 +895,7 @@ def game_details(game_id):
 
         if sport_key == 'baseball_mlb':
             return mlb_template          
-        elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', 'NBA', 'NHL']:
+        elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', 'basketball_nba', 'icehockey_nhl']:
             return others_template
         else:
             raise ValueError(f"Unsupported league: {sport_key}")

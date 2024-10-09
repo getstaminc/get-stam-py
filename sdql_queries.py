@@ -15,8 +15,10 @@ def get_last_5_games(team, date, sport_key):
     sdql_url = f"https://s3.sportsdatabase.com/{sport_key}/query"
 
     if sport_key == 'MLB':
-        sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and date<{today_date} and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"           
-    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL','NCAAFB']:
+        sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and date<{today_date} and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})" 
+    elif sport_key == 'NHL':
+        sdql_query = f"date,team,site,final,total,o:team,o:line,o_points,line@team='{team}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"          
+    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NCAAFB']:
         sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"
     else:
         # Handle other sports or raise an error
@@ -75,8 +77,10 @@ def get_last_5_games_vs_opponent(sport_key, team, opponent, today_date):
     sdql_url = f"https://s3.sportsdatabase.com/{sport_key}/query"
 
     if sport_key == 'MLB':
-        sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNNN is None or N6:date>{today_date})"             
-    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL','NCAAFB']:
+        sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNNN is None or N6:date>{today_date})" 
+    elif sport_key == 'NHL':
+        sdql_query = f"date,team,site,final,total,o:team,o:line,o_points,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"         
+    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL']:
         sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"
     else:
         raise ValueError(f"Unsupported league: {sport_key}")

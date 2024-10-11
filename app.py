@@ -269,10 +269,8 @@ def game_details(game_id):
             last_5_vs_opponent = []
 
         # Prepare data for rendering
-        # Format the date from YYYYMMDD to MM/DD/YYYY in the loop below
         for game in home_team_last_5 + away_team_last_5 + last_5_vs_opponent:
             if 'date' in game:
-                # Convert date from int to formatted string
                 date_str = str(game['date'])  # Ensure the date is a string
                 game['date'] = f"{date_str[4:6]}/{date_str[6:8]}/{date_str[:4]}"
 
@@ -280,19 +278,31 @@ def game_details(game_id):
         def mlb_totals(runs, o_runs, total):
             try:
                 if runs is None or o_runs is None or total is None:
-                    return False
-                return (runs + o_runs) > total
+                    return False, ''
+                total_score = runs + o_runs
+                if total_score > total:
+                    return True, 'green-bg'
+                elif total_score < total:
+                    return False, 'red-bg'
+                else:
+                    return False, 'grey-bg'
             except TypeError:
-                return False    
+                return False, ''
 
         # Define other_totals function for non-MLB games
         def other_totals(points, o_points, total):
             try:
                 if points is None or o_points is None or total is None:
-                    return False
-                return (points + o_points) > total
+                    return False, ''
+                total_score = points + o_points
+                if total_score > total:
+                    return True, 'green-bg'
+                elif total_score < total:
+                    return False, 'red-bg'
+                else:
+                    return False, 'grey-bg'
             except TypeError:
-                return False
+                return False, ''
 
         # Determine winner for MLB games
         def mlb_winner(runs, o_runs):
@@ -304,10 +314,16 @@ def game_details(game_id):
         def nhl_totals(goals, o_goals, total):
             try:
                 if goals is None or o_goals is None or total is None:
-                    return False
-                return (goals + o_goals) > total
+                    return False, ''
+                total_score = goals + o_goals
+                if total_score > total:
+                    return True, 'green-bg'
+                elif total_score < total:
+                    return False, 'red-bg'
+                else:
+                    return False, 'grey-bg'
             except TypeError:
-                return False
+                return False, ''
 
         # Determine winner for NHL games
         def nhl_winner(goals, o_goals):
@@ -325,14 +341,17 @@ def game_details(game_id):
         def calculate_line_result(points, line, opponent_points):
             try:
                 if points is None or line is None or opponent_points is None:
-                    return None  # Incomplete data, can't determine line result
+                    return None, None  # Incomplete data, can't determine line result
                 # Line evaluation based on spread value
-                if line > 0:  # Underdog
-                    return (points + line) > opponent_points
-                else:  # Favorite
-                    return (points + line) > opponent_points
+                result = (points + line) > opponent_points  # True if win
+                if result:
+                    return True, 'green-bg'  # Win
+                elif (points + line) < opponent_points:
+                    return False, 'red-bg'  # Loss
+                else:
+                    return False, 'grey-bg'  # Push
             except TypeError:
-                return None
+                return None, None
 
         # MLB template rendering
         mlb_template = render_template_string("""
@@ -402,6 +421,10 @@ def game_details(game_id):
 
                         .red-bg {
                             background-color: red;
+                        }
+
+                        .grey-bg {
+                            background-color: grey;
                         }
 
                         #gamesList {
@@ -500,7 +523,7 @@ def game_details(game_id):
                             </thead>
                             <tbody>
                                 {% for game in home_team_last_5 %}
-                                    {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
+                                    {% set is_total_exceeded, total_class = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
                                     {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
                                     <tr>
                                         <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
@@ -515,7 +538,7 @@ def game_details(game_id):
                                         <td>{{ game['o:team'] }}</td>
                                         <td>{{ game['o:runs'] }}</td>
                                         <td>{{ game['o:line'] }}</td>
-                                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        <td class="{{ total_class }}">
                                             {{ game['total'] }}
                                         </td>
                                     </tr>
@@ -546,7 +569,7 @@ def game_details(game_id):
                             </thead>
                             <tbody>
                                 {% for game in away_team_last_5 %}
-                                    {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
+                                    {% set is_total_exceeded, total_class = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
                                     {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
                                     <tr>
                                         <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
@@ -561,7 +584,7 @@ def game_details(game_id):
                                         <td>{{ game['o:team'] }}</td>
                                         <td>{{ game['o:runs'] }}</td>             
                                         <td>{{ game['o:line'] }}</td>
-                                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        <td class="{{ total_class }}">
                                             {{ game['total'] }}
                                         </td>
                                     </tr>
@@ -592,7 +615,7 @@ def game_details(game_id):
                             </thead>
                             <tbody>
                                 {% for game in last_5_vs_opponent %}
-                                    {% set is_total_exceeded = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
+                                    {% set is_total_exceeded, total_class = mlb_totals(game.get('runs', 0), game.get('o:runs', 0), game.get('total', 0)) %}
                                     {% set is_winner = mlb_winner(game.get('runs', 0), game.get('o:runs', 0)) %}
                                     <tr>
                                         <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
@@ -607,7 +630,7 @@ def game_details(game_id):
                                         <td>{{ game['o:team'] }}</td>
                                         <td>{{ game['o:runs'] }}</td>
                                         <td>{{ game['o:line'] }}</td>
-                                        <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                        <td class="{{ total_class }}">
                                             {{ game['total'] }}
                                         </td>
                                     </tr>
@@ -622,7 +645,7 @@ def game_details(game_id):
                 </html>
             """, game=game_details, home_team_last_5=home_team_last_5, away_team_last_5=away_team_last_5, last_5_vs_opponent=last_5_vs_opponent, mlb_totals=mlb_totals, mlb_winner=mlb_winner)
         
-         # NHL template rendering
+        # NHL template rendering
         nhl_template = render_template_string("""
             <html>
             <head>
@@ -681,6 +704,10 @@ def game_details(game_id):
 
                         .red-bg {
                             background-color: red;
+                        }
+
+                        .grey-bg {
+                            background-color: grey;
                         }
 
                         #gamesList {
@@ -777,7 +804,7 @@ def game_details(game_id):
                         </thead>
                         <tbody>
                             {% for game in home_team_last_5 %}
-                                {% set is_total_exceeded = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
+                                {% set is_total_exceeded, total_class = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
                                 {% set is_winner = nhl_winner(game.get('goals', 0), game.get('o:goals', 0)) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
@@ -792,7 +819,7 @@ def game_details(game_id):
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:goals'] }}</td>
                                     <td>{{ game['o:line'] }}</td>
-                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                    <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
                                 </tr>
@@ -821,7 +848,7 @@ def game_details(game_id):
                         </thead>
                         <tbody>
                             {% for game in away_team_last_5 %}
-                                {% set is_total_exceeded = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
+                                {% set is_total_exceeded, total_class = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
                                 {% set is_winner = nhl_winner(game.get('goals', 0), game.get('o:goals', 0)) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
@@ -836,7 +863,7 @@ def game_details(game_id):
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:goals'] }}</td>
                                     <td>{{ game['o:line'] }}</td>
-                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                    <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
                                 </tr>
@@ -865,7 +892,7 @@ def game_details(game_id):
                         </thead>
                         <tbody>
                             {% for game in last_5_vs_opponent %}
-                                {% set is_total_exceeded = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
+                                {% set is_total_exceeded, total_class = nhl_totals(game.get('goals', 0), game.get('o:goals', 0), game.get('total', 0)) %}
                                 {% set is_winner = nhl_winner(game.get('goals', 0), game.get('o:goals', 0)) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
@@ -876,7 +903,7 @@ def game_details(game_id):
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:goals'] }}</td>
                                     <td>{{ game['o:line'] }}</td>
-                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                    <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
                                 </tr>
@@ -958,6 +985,10 @@ def game_details(game_id):
 
                         .red-bg {
                             background-color: red;
+                        }
+
+                        .grey-bg {
+                            background-color: grey;
                         }
 
                         #gamesList {
@@ -1045,7 +1076,7 @@ def game_details(game_id):
                                 <th>Site</th>
                                 <th>Team</th>
                                 <th>Points</th>                 
-                                <th>Line</th>
+                                <th>Spread</th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
                                 <th>Opponent Line</th>
@@ -1054,9 +1085,9 @@ def game_details(game_id):
                         </thead>
                         <tbody>
                             {% for game in home_team_last_5 %}
-                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_total_exceeded, total_class = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}                 
+                                {% set line_win, line_class = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}                 
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
@@ -1066,13 +1097,13 @@ def game_details(game_id):
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                         {{ game['points'] }}
                                     </td>
-                                    <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
+                                    <td class="{{ line_class }}">
                                         {{ game['line'] }}
                                     </td>             
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:points'] }}</td>
                                     <td>{{ game['o:line'] }}</td>
-                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                    <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
                                 </tr>
@@ -1092,7 +1123,7 @@ def game_details(game_id):
                                 <th>Site</th>
                                 <th>Team</th>
                                 <th>Points</th>
-                                <th>Line</th>                 
+                                <th>Spread</th>                 
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
                                 <th>Opponent Line</th>                 
@@ -1101,9 +1132,9 @@ def game_details(game_id):
                         </thead>
                         <tbody>
                             {% for game in away_team_last_5 %}
-                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_total_exceeded, total_class = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}                 
+                                {% set line_win, line_class = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
@@ -1113,13 +1144,13 @@ def game_details(game_id):
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">
                                         {{ game['points'] }}
                                     </td>             
-                                    <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
+                                    <td class="{{ line_class }}">
                                         {{ game['line'] }}
                                     </td>
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:points'] }}</td>             
                                     <td>{{ game['o:line'] }}</td>
-                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                    <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
                                 </tr>
@@ -1139,7 +1170,7 @@ def game_details(game_id):
                                 <th>Site</th>
                                 <th>Team</th>
                                 <th>Points</th>                 
-                                <th>Line</th>
+                                <th>Spread</th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
                                 <th>Opponent Line</th>
@@ -1148,21 +1179,21 @@ def game_details(game_id):
                         </thead>
                         <tbody>
                             {% for game in last_5_vs_opponent %}
-                                {% set is_total_exceeded = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
+                                {% set is_total_exceeded, total_class = other_totals(game.get('points', 0), game.get('o:points', 0), game.get('total', 0)) %}
                                 {% set is_winner = other_winner(game.get('points', 0), game.get('o:points', 0)) %}
-                                {% set line_win = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
+                                {% set line_win, line_class = calculate_line_result(game.get('points'), game.get('line'), game.get('o:points')) %}
                                 <tr>
                                     <td>{{ game['date'] }}</td>  <!-- Date will be formatted in the template -->
                                     <td>{{ game['site'] }}</td>
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['team'] }}</td>
                                     <td class="{{ 'green-bg' if is_winner else 'red-bg' if is_winner == False else '' }}">{{ game['points'] }}</td>             
-                                    <td class="{{ 'green-bg' if line_win else 'red-bg' if line_win == False else '' }}">
+                                    <td class="{{ line_class }}">
                                         {{ game['line'] }}
                                     </td>
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:points'] }}</td>
                                     <td>{{ game['o:line'] }}</td>
-                                    <td class="{{ 'green-bg' if is_total_exceeded else 'red-bg' }}">
+                                    <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
                                 </tr>
@@ -1188,12 +1219,6 @@ def game_details(game_id):
     except Exception as e:
         print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
-
-
-    except Exception as e:
-        print('Error fetching game details:', str(e))
-        return jsonify({'error': 'Internal Server Error'}), 500
-
 
 # Route for the home page
 @app.route('/')

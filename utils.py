@@ -353,7 +353,39 @@ def convert_team_name(full_team_name):
         'West Virginia Mountaineers': 'WVA',
         'Wyoming Cowboys': 'WYO',
         'Yale Bulldogs': 'YALE',
-        'Youngstown State Penguins': 'YST'
+        'Youngstown State Penguins': 'YST', 
+
+        #NBA teams 
+        'Atlanta Hawks': 'Hawks',
+        'Boston Celtics': 'Celtics',
+        'Brooklyn Nets': 'Nets',
+        'Charlotte Hornets': 'Hornets',
+        'Chicago Bulls': 'Bulls',
+        'Cleveland Cavaliers': 'Cavaliers',
+        'Dallas Mavericks': 'Mavericks',
+        'Denver Nuggets': 'Nuggets',
+        'Detroit Pistons': 'Pistons',
+        'Golden State Warriors': 'Warriors',
+        'Houston Rockets': 'Rockets',
+        'Indiana Pacers': 'Pacers',
+        'LA Clippers': 'Clippers',
+        'Los Angeles Lakers': 'Lakers',
+        'Memphis Grizzlies': 'Grizzlies',
+        'Miami Heat': 'Heat',
+        'Milwaukee Bucks': 'Bucks',
+        'Minnesota Timberwolves': 'Timberwolves',
+        'New Orleans Pelicans': 'Pelicans',
+        'New York Knicks': 'Knicks',
+        'Oklahoma City Thunder': 'Thunder',
+        'Orlando Magic': 'Magic',
+        'Philadelphia 76ers': '76ers',
+        'Phoenix Suns': 'Suns',
+        'Portland Trail Blazers': 'Trail Blazers',
+        'Sacramento Kings': 'Kings',
+        'San Antonio Spurs': 'Spurs',
+        'Toronto Raptors': 'Raptors',
+        'Utah Jazz': 'Jazz',
+        'Washington Wizards': 'Wizards'
     }
     return team_map.get(full_team_name, full_team_name)
 

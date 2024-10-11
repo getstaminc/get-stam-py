@@ -79,7 +79,7 @@ def get_last_5_games_vs_opponent(sport_key, team, opponent, today_date):
     if sport_key == 'MLB':
         sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNNN is None or N6:date>{today_date})" 
     elif sport_key == 'NHL':
-        sdql_query = f"date,team,site,goals,total,o:team,o:line,o:goals,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"         
+        sdql_query = f"date,team,site,goals,total,o:team,o:line,o:goals,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNNN is None or N5:date>{today_date})"         
     elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NHL']:
         sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and o:team='{opponent}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"
     else:

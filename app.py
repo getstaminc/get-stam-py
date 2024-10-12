@@ -397,7 +397,7 @@ def game_details(game_id):
                         }
 
                         table {
-                            width: 70%;
+                            width: 90%;
                             border-collapse: collapse;
                             margin-bottom: 20px;
                         }
@@ -407,8 +407,8 @@ def game_details(game_id):
                         }
 
                         th, td {
-                            padding: 8px;
-                            text-align: left;
+                            padding: 4px;
+                            text-align: left;                 
                         }
 
                         th {
@@ -471,6 +471,76 @@ def game_details(game_id):
                                 font-size: 18px;
                             }
                         }
+                        .info-icon {
+                            cursor: pointer;
+                            color: black; /* Color of the info icon */
+                            margin-left: 1px; /* Space between title and icon */
+                            padding: 1px;
+                            border: 1px solid black; /* Border color */
+                            border-radius: 50%; /* Makes the icon circular */
+                            width: 10px; /* Width of the icon */
+                            height: 10px; /* Height of the icon */
+                            display: inline-flex; /* Allows for centering */
+                            align-items: center; /* Center content vertically */
+                            justify-content: center; /* Center content horizontally */
+                            font-size: 14px; /* Font size of the "i" */
+                        }
+
+                        .info-icon:hover::after {
+                            content: attr(title);
+                            position: absolute;
+                            background: #fff;
+                            border: 1px solid #ccc;
+                            padding: 5px;
+                            border-radius: 4px;
+                            white-space: nowrap;
+                            z-index: 10;
+                            top: 20px; /* Adjust as needed */
+                            left: 0;
+                            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+                        }               
+                        .color-keys {
+                            margin: 20px 0;
+                            padding: 15px;
+                            border: 1px solid #ddd;
+                            background-color: #f9f9f9;
+                        }
+
+                        .color-key h2 {
+                            margin: 0 0 10px;
+                        }
+
+                        .color-key table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+
+                        .color-key th, .color-key td {
+                            padding: 8px;
+                            text-align: left;
+                            border: 1px solid #ccc;
+                        }
+
+                        .color-key th {
+                            background-color: #f2f2f2;
+                        }
+                        .color-key {
+                            display: none; /* Hide by default */
+                            background-color: #f9f9f9; /* Background color for the key */
+                            border: 1px solid #ccc; /* Border for the key */
+                            padding: 5px;
+                            position: absolute; /* Position it relative to the header */
+                            z-index: 10; /* Ensure it appears above other elements */
+                        }
+
+                        th {
+                            position: relative; /* Needed for absolute positioning of the color key */
+                        }
+
+                        th:hover .color-key {
+                            display: block; /* Show the key on hover */
+                        }                      
+                      
                     </style>
 
                 </head>
@@ -503,6 +573,8 @@ def game_details(game_id):
                             <td>{{ game.oddsText }}</td>
                         </tr>
                     </table>
+                                              
+                                               
                     
                     <h2>Last 5 Games - Home Team</h2>
                     {% if home_team_last_5 %}
@@ -512,13 +584,87 @@ def game_details(game_id):
                                 <tr>
                                     <th>Date</th>
                                     <th>Site</th>
-                                    <th>Team</th>
-                                    <th>Runs</th>
+                                    <th>Team <span class="info-icon">i</span>
+                                       <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>       
+                                    </th>
+                                    <th>Runs <span class="info-icon">i</span>
+                                    
+                                        <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>      
+                                    </th>
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Runs</th>
                                     <th>Opponent Line</th>
-                                    <th>Total</th>
+                                    <th>Total <span class="info-icon">i</span>
+                                         <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>     
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -558,13 +704,86 @@ def game_details(game_id):
                                 <tr>
                                     <th>Date</th>
                                     <th>Site</th>
-                                    <th>Team</th>
-                                    <th>Runs</th>
+                                    <th>Team <span class="info-icon">i</span>
+                                       <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>       
+                                    </th>
+                                    <th>Runs <span class="info-icon">i</span>
+                                        <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>      
+                                    </th>
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Runs</th>
                                     <th>Opponent Line</th>
-                                    <th>Total</th>
+                                    <th>Total <span class="info-icon">i</span>
+                                         <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>     
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -604,13 +823,86 @@ def game_details(game_id):
                                 <tr>
                                     <th>Date</th>
                                     <th>Site</th>
-                                    <th>Team</th>
-                                    <th>Runs</th>
+                                    <th>Team <span class="info-icon">i</span>
+                                       <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>       
+                                    </th>
+                                    <th>Runs <span class="info-icon">i</span>
+                                        <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>      
+                                    </th>
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Runs</th>
                                     <th>Opponent Line</th>
-                                    <th>Total</th>
+                                    <th>Total <span class="info-icon">i</span>
+                                         <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>     
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -649,6 +941,15 @@ def game_details(game_id):
         nhl_template = render_template_string("""
             <html>
             <head>
+                <!-- Google tag (gtag.js) -->
+                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+                    <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', 'G-578SDWQPSK');
+                    </script>                              
                 <title>Game Details</title>
                 <style>
                         body {
@@ -680,7 +981,7 @@ def game_details(game_id):
                         }
 
                         table {
-                            width: 70%;
+                            width: 90%;
                             border-collapse: collapse;
                             margin-bottom: 20px;
                         }
@@ -690,8 +991,8 @@ def game_details(game_id):
                         }
 
                         th, td {
-                            padding: 8px;
-                            text-align: left;
+                            padding: 4px;
+                            text-align: left;                 
                         }
 
                         th {
@@ -754,6 +1055,76 @@ def game_details(game_id):
                                 font-size: 18px;
                             }
                         }
+                        .info-icon {
+                            cursor: pointer;
+                            color: black; /* Color of the info icon */
+                            margin-left: 1px; /* Space between title and icon */
+                            padding: 1px;
+                            border: 1px solid black; /* Border color */
+                            border-radius: 50%; /* Makes the icon circular */
+                            width: 10px; /* Width of the icon */
+                            height: 10px; /* Height of the icon */
+                            display: inline-flex; /* Allows for centering */
+                            align-items: center; /* Center content vertically */
+                            justify-content: center; /* Center content horizontally */
+                            font-size: 14px; /* Font size of the "i" */
+                        }
+
+                        .info-icon:hover::after {
+                            content: attr(title);
+                            position: absolute;
+                            background: #fff;
+                            border: 1px solid #ccc;
+                            padding: 5px;
+                            border-radius: 4px;
+                            white-space: nowrap;
+                            z-index: 10;
+                            top: 20px; /* Adjust as needed */
+                            left: 0;
+                            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+                        }               
+                        .color-keys {
+                            margin: 20px 0;
+                            padding: 15px;
+                            border: 1px solid #ddd;
+                            background-color: #f9f9f9;
+                        }
+
+                        .color-key h2 {
+                            margin: 0 0 10px;
+                        }
+
+                        .color-key table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+
+                        .color-key th, .color-key td {
+                            padding: 8px;
+                            text-align: left;
+                            border: 1px solid #ccc;
+                        }
+
+                        .color-key th {
+                            background-color: #f2f2f2;
+                        }
+                        .color-key {
+                            display: none; /* Hide by default */
+                            background-color: #f9f9f9; /* Background color for the key */
+                            border: 1px solid #ccc; /* Border for the key */
+                            padding: 5px;
+                            position: absolute; /* Position it relative to the header */
+                            z-index: 10; /* Ensure it appears above other elements */
+                        }
+
+                        th {
+                            position: relative; /* Needed for absolute positioning of the color key */
+                        }
+
+                        th:hover .color-key {
+                            display: block; /* Show the key on hover */
+                        }                      
+                      
                     </style>
             </head>
             <body>
@@ -785,22 +1156,95 @@ def game_details(game_id):
                         <td>{{ game.oddsText }}</td>
                     </tr>
                 </table>
-
+                <div><p>Hover over column titles for color meanings</p></div>
                 <h2>Last 5 Games - Home Team</h2>
                 {% if home_team_last_5 %}
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Site</th>
-                                <th>Team</th>
-                                <th>Goals</th>                 
-                                <th>Line</th>
-                                <th>Opponent</th>
-                                <th>Opponent Goals</th>
-                                <th>Opponent Line</th>
-                                <th>Total</th>
-                            </tr>
+                                    <th>Date</th>
+                                    <th>Site</th>
+                                    <th>Team <span class="info-icon">i</span>
+                                       <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>       
+                                    </th>
+                                    <th>Goals <span class="info-icon">i</span>
+                                        <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>      
+                                    </th>
+                                    <th>Line</th>
+                                    <th>Opponent</th>
+                                    <th>Opponent Goals</th>
+                                    <th>Opponent Line</th>
+                                    <th>Total <span class="info-icon">i</span>
+                                         <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>     
+                                    </th>
+                                </tr>
                         </thead>
                         <tbody>
                             {% for game in home_team_last_5 %}
@@ -835,16 +1279,89 @@ def game_details(game_id):
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Site</th>
-                                <th>Team</th>
-                                <th>Goals</th>                 
-                                <th>Line</th>
-                                <th>Opponent</th>
-                                <th>Opponent Goals</th>
-                                <th>Opponent Line</th>                 
-                                <th>Total</th>
-                            </tr>
+                                    <th>Date</th>
+                                    <th>Site</th>
+                                    <th>Team <span class="info-icon">i</span>
+                                       <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>       
+                                    </th>
+                                    <th>Goals <span class="info-icon">i</span>
+                                        <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>      
+                                    </th>
+                                    <th>Line</th>
+                                    <th>Opponent</th>
+                                    <th>Opponent Goals</th>
+                                    <th>Opponent Line</th>
+                                    <th>Total <span class="info-icon">i</span>
+                                         <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>     
+                                    </th>
+                                </tr>
                         </thead>
                         <tbody>
                             {% for game in away_team_last_5 %}
@@ -879,16 +1396,89 @@ def game_details(game_id):
                     <table>
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Site</th>
-                                <th>Team</th>
-                                <th>Goals</th>                 
-                                <th>Line</th>
-                                <th>Opponent</th>
-                                <th>Opponent Goals</th>
-                                <th>Opponent Line</th>
-                                <th>Total</th>
-                            </tr>
+                                    <th>Date</th>
+                                    <th>Site</th>
+                                    <th>Team <span class="info-icon">i</span>
+                                       <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>       
+                                    </th>
+                                    <th>Goals <span class="info-icon">i</span>
+                                        <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>      
+                                    </th>
+                                    <th>Line</th>
+                                    <th>Opponent</th>
+                                    <th>Opponent Goals</th>
+                                    <th>Opponent Line</th>
+                                    <th>Total <span class="info-icon">i</span>
+                                         <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>     
+                                    </th>
+                                </tr>
                         </thead>
                         <tbody>
                             {% for game in last_5_vs_opponent %}
@@ -961,7 +1551,7 @@ def game_details(game_id):
                         }
 
                         table {
-                            width: 70%;
+                            width: 90%;
                             border-collapse: collapse;
                             margin-bottom: 20px;
                         }
@@ -971,8 +1561,8 @@ def game_details(game_id):
                         }
 
                         th, td {
-                            padding: 8px;
-                            text-align: left;
+                            padding: 4px;
+                            text-align: left;                 
                         }
 
                         th {
@@ -1018,6 +1608,76 @@ def game_details(game_id):
                         button:hover, a:hover {
                             background-color: #0056b3; /* Darker shade on hover */
                         }
+                        .info-icon {
+                            cursor: pointer;
+                            color: black; /* Color of the info icon */
+                            margin-left: 1px; /* Space between title and icon */
+                            padding: 1px;
+                            border: 1px solid black; /* Border color */
+                            border-radius: 50%; /* Makes the icon circular */
+                            width: 10px; /* Width of the icon */
+                            height: 10px; /* Height of the icon */
+                            display: inline-flex; /* Allows for centering */
+                            align-items: center; /* Center content vertically */
+                            justify-content: center; /* Center content horizontally */
+                            font-size: 14px; /* Font size of the "i" */
+                        }
+
+                        .info-icon:hover::after {
+                            content: attr(title);
+                            position: absolute;
+                            background: #fff;
+                            border: 1px solid #ccc;
+                            padding: 5px;
+                            border-radius: 4px;
+                            white-space: nowrap;
+                            z-index: 10;
+                            top: 20px; /* Adjust as needed */
+                            left: 0;
+                            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+                        }                         
+                                                 
+                        .color-keys {
+                            margin: 20px 0;
+                            padding: 15px;
+                            border: 1px solid #ddd;
+                            background-color: #f9f9f9;
+                        }
+
+                        .color-key h2 {
+                            margin: 0 0 10px;
+                        }
+
+                        .color-key table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+
+                        .color-key th, .color-key td {
+                            padding: 8px;
+                            text-align: left;
+                            border: 1px solid #ccc;
+                        }
+
+                        .color-key th {
+                            background-color: #f2f2f2;
+                        }
+                        .color-key {
+                            display: none; /* Hide by default */
+                            background-color: #f9f9f9; /* Background color for the key */
+                            border: 1px solid #ccc; /* Border for the key */
+                            padding: 5px;
+                            position: absolute; /* Position it relative to the header */
+                            z-index: 10; /* Ensure it appears above other elements */
+                        }
+
+                        th {
+                            position: relative; /* Needed for absolute positioning of the color key */
+                        }
+
+                        th:hover .color-key {
+                            display: block; /* Show the key on hover */
+                        }                         
 
                         /* Responsive Styles */
                         @media only screen and (max-width: 600px) {
@@ -1074,13 +1734,113 @@ def game_details(game_id):
                             <tr>
                                 <th>Date</th>
                                 <th>Site</th>
-                                <th>Team</th>
-                                <th>Points</th>                 
-                                <th>Spread</th>
+                                <th>Team <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
+                                <th>Points <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>                 
+                                <th>Spread <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Spread was covered</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Spread was not covered</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Spread was a push</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
                                 <th>Opponent Line</th>
-                                <th>Total</th>
+                                <th>Total <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1121,13 +1881,113 @@ def game_details(game_id):
                             <tr>
                                 <th>Date</th>
                                 <th>Site</th>
-                                <th>Team</th>
-                                <th>Points</th>
-                                <th>Spread</th>                 
+                                <th>Team <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
+                                <th>Points <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>                 
+                                <th>Spread <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Spread was covered</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Spread was not covered</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Spread was a push</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
-                                <th>Opponent Line</th>                 
-                                <th>Total</th>
+                                <th>Opponent Line</th>
+                                <th>Total <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1168,13 +2028,113 @@ def game_details(game_id):
                             <tr>
                                 <th>Date</th>
                                 <th>Site</th>
-                                <th>Team</th>
-                                <th>Points</th>                 
-                                <th>Spread</th>
+                                <th>Team <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
+                                <th>Points <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Team won</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Team lost</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>                 
+                                <th>Spread <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Spread was covered</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Spread was not covered</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Spread was a push</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
                                 <th>Opponent Line</th>
-                                <th>Total</th>
+                                <th>Total <span class="info-icon">i</span>
+                                    <span class="color-key">
+                                              <div class="color-keys">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Color</th>
+                                                                <th>Meaning</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td style="background-color: green;">&nbsp;</td>
+                                                                <td>Total went over</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: red;">&nbsp;</td>
+                                                                <td>Total went under</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="background-color: grey;">&nbsp;</td>
+                                                                <td>Push (tie with total)</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div> 
+                                        </span>             
+                                </th>
                             </tr>
                         </thead>
                         <tbody>

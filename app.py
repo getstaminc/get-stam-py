@@ -112,7 +112,7 @@ def get_sport_scores(sport_key):
                             </div>
                         {% endfor %}
                     {% else %}
-                        <p>No data available</p>
+                        <p>No games on this date</p>
                     {% endif %}
                 </body>
                 </html>
@@ -221,7 +221,7 @@ def get_sport_scores(sport_key):
                             </tbody>
                         </table>
                     {% else %}
-                        <p>No data available</p>
+                        <p>No games on this date</p>
                     {% endif %}
                   </div>                        
                 </body>
@@ -693,7 +693,7 @@ def game_details(game_id):
                         </table>
                       </div>                        
                     {% else %}
-                        <p>No data available</p>
+                        <p>No games on this date</p>
                     {% endif %}
                     
                     <h2>Last 5 Games - Away Team</h2>
@@ -812,7 +812,7 @@ def game_details(game_id):
                         </table>
                       </div>                        
                     {% else %}
-                        <p>No data available</p>
+                        <p>No games on this date</p>
                     {% endif %}
                     
                     <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -931,7 +931,7 @@ def game_details(game_id):
                         </table>
                        </div>                        
                     {% else %}
-                        <p>No data available</p>
+                        <p>No games on this date</p>
                     {% endif %}
                 </body>
                 </html>
@@ -1271,7 +1271,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No data available</p>
+                    <p>No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games - Away Team</h2>
@@ -1388,7 +1388,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No data available</p>
+                    <p>No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -1501,7 +1501,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No data available</p>
+                    <p>No games on this date</p>
                 {% endif %}
             </body>
             </html>
@@ -1871,7 +1871,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No data available</p>
+                    <p>No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games - Away Team</h2>
@@ -2018,7 +2018,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No data available</p>
+                    <p>No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -2161,7 +2161,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No data available</p>
+                    <p>No games on this date</p>
                 {% endif %}
             </body>
             </html>

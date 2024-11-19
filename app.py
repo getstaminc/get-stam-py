@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint
+from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, url_for
 from datetime import datetime, timedelta  # Import timedelta here
 import pytz
 from dateutil import parser
@@ -66,6 +66,7 @@ def get_sport_scores(sport_key):
                     gtag('config', 'G-578SDWQPSK');
                     </script>                      
                     <title>Game Info</title>
+                    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                     <style>
                         table {
                             width: 50%;
@@ -175,6 +176,7 @@ def get_sport_scores(sport_key):
                     gtag('config', 'G-578SDWQPSK');
                     </script>                      
                     <title>Game Info</title>
+                    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                     <style>
                         table {
                             width: 70%;
@@ -223,7 +225,7 @@ def get_sport_scores(sport_key):
                     {% else %}
                         <p>No games on this date</p>
                     {% endif %}
-                  </div>                        
+                  </div>
                 </body>
                 </html>
             """, result=formatted_scores, sport_key=sport_key, current_date=current_date)
@@ -367,6 +369,7 @@ def game_details(game_id):
                     gtag('config', 'G-578SDWQPSK');
                     </script>                          
                     <title>Game Details</title>
+                    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                     <style>
                         body {
                             background-color: #f9f9f9; /* Light background */
@@ -951,6 +954,7 @@ def game_details(game_id):
                     gtag('config', 'G-578SDWQPSK');
                     </script>                              
                 <title>Game Details</title>
+                <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                 <style>
                         body {
                             background-color: #f9f9f9; /* Light background */
@@ -1521,6 +1525,7 @@ def game_details(game_id):
                     gtag('config', 'G-578SDWQPSK');
                     </script>                                 
                 <title>Game Details</title>
+                <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                 <style>
                         body {
                             background-color: #f9f9f9; /* Light background */

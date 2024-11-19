@@ -141,6 +141,38 @@
             datePicker.addEventListener('change', (event) => {
                 fetchAndDisplayGames(sportSelect.value, event.target.value);
             });
+
+            // Add event listener for "View Trends" button
+            document.getElementById('view-trends').addEventListener('click', function() {
+                const sportKey = sportSelect.value;
+                const date = datePicker.value;
+                
+                fetch(`/api/trends?sport_key=${sportKey}&date=${date}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Process and display trends
+                        console.log(data); // You can display this data in your UI
+                        displayTrends(data); // Call a function to handle displaying trends
+                    })
+                    .catch(error => console.error('Error fetching trends:', error));
+            });
+
+            // Function to display trends
+            function displayTrends(trends) {
+                const trendsDisplay = document.getElementById('trendsDisplay');
+                trendsDisplay.innerHTML = ''; // Clear previous trends
+
+                trends.forEach(trend => {
+                    const trendElement = document.createElement('div');
+                    trendElement.className = 'trend';
+                    trendElement.innerHTML = `
+                        <h3>${trend.home_team} vs ${trend.away_team}</h3>
+                        <p>Home Trend: ${JSON.stringify(trend.home_trend)}</p>
+                        <p>Away Trend: ${JSON.stringify(trend.away_trend)}</p>
+                    `;
+                    trendsDisplay.appendChild(trendElement);
+                });
+            }
         });
     </script>
 </head>
@@ -158,6 +190,8 @@
     <br>
     <label for="datepicker">Select Date:</label>
     <input type="date" id="datepicker">
+    <button id="view-trends">View Trends</button>
     <ul id="gamesList"></ul>
+    <div id="trendsDisplay"></div> <!-- Add a container to display trends -->
 </body>
 </html>

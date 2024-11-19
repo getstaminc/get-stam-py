@@ -8,6 +8,8 @@ from single_game_data import get_game_details
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
 from utils import convert_sport_key, mlb_totals, other_totals
 from betting_guide import betting_guide
+import statsmodels.api as sm
+import pandas as pd
 
 app = Flask(__name__)
 port = 5000
@@ -38,6 +40,80 @@ def convert_to_eastern(utc_time):
     eastern_time = utc_time.astimezone(eastern_tz)
     return eastern_time
 
+# function to get trends
+@app.route('/api/trends')
+def get_trends():
+    sport_key = request.args.get('sport_key')
+    date = request.args.get('date')
+
+    # Convert date from string to datetime object
+    selected_date = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+
+    # Fetch game data for the specified date and sport
+    games = get_odds_data(sport_key, date)  # Pass the date string here
+
+    if not games:
+        return jsonify({'error': 'No games found for the selected date.'}), 404
+
+    trends = []
+
+    # Loop through each game and gather necessary data
+    for game in games:
+        # Debugging print to inspect the structure of 'game'
+        print(f"Inspecting game data: {game}")
+
+        # If game is a dictionary, access the data directly
+        if isinstance(game, dict):
+            home_team = game['home_team']
+            away_team = game['away_team']
+
+            home_last_5 = get_last_5_games(home_team, selected_date, sport_key)
+            away_last_5 = get_last_5_games(away_team, selected_date, sport_key)
+
+            # Analyze trends for both teams
+            def analyze_trend(games):
+                trends = {
+                    'spread': {},
+                    'line': {},
+                    'total': {}
+                }
+
+                for g in games:
+                    # Assuming game data contains the spread, line, and total information
+                    spread = g.get('line')
+                    total = g.get('total')
+
+                    # Increment counts for spreads and totals
+                    if spread in trends['spread']:
+                        trends['spread'][spread] += 1
+                    else:
+                        trends['spread'][spread] = 1
+
+                    if total in trends['total']:
+                        trends['total'][total] += 1
+                    else:
+                        trends['total'][total] = 1
+
+                return trends
+
+            # Append the trend data for both home and away teams
+            trends.append({
+                'home_team': home_team,
+                'away_team': away_team,
+                'home_trend': analyze_trend(home_last_5),
+                'away_trend': analyze_trend(away_last_5),
+            })
+
+        else:
+            # Handle unexpected data structure
+            print(f"Unexpected data format for game: {game}")
+
+    return jsonify(trends)
+
+
+
+
+
 # Route to fetch scores and odds for a specific sport and date
 @app.route('/sports/<sport_key>')
 def get_sport_scores(sport_key):
@@ -63,7 +139,7 @@ def get_sport_scores(sport_key):
                     function gtag(){dataLayer.push(arguments);}
                     gtag('js', new Date());
 
-                    gtag('config', 'G-578SDWQPSK');
+                    gtag('config', 'G-578SDWQPSK'); 
                     </script>                      
                     <title>Game Info</title>
                     <style>
@@ -87,6 +163,7 @@ def get_sport_scores(sport_key):
                     </style>
                 </head>
                 <body>
+                                          
                     <h1>Game Information</h1>
                     {% if result %}
                         {% for pair in result %}

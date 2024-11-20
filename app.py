@@ -46,11 +46,11 @@ def get_trends():
     sport_key = request.args.get('sport_key')
     date = request.args.get('date')
 
-    # Convert date from string to datetime object
+    # Convert date from string to datetime object with timezone
     selected_date = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
 
     # Fetch game data for the specified date and sport
-    games = get_odds_data(sport_key, date)  # Pass the date string here
+    games = get_odds_data(sport_key, selected_date)  # Pass the datetime object to get_odds_data
 
     if not games:
         return jsonify({'error': 'No games found for the selected date.'}), 404
@@ -62,7 +62,7 @@ def get_trends():
         # Debugging print to inspect the structure of 'game'
         print(f"Inspecting game data: {game}")
 
-        # If game is a dictionary, access the data directly
+        # Assuming game is a dictionary, access the data
         if isinstance(game, dict):
             home_team = game['home_team']
             away_team = game['away_team']

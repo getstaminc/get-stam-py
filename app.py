@@ -80,7 +80,8 @@ def get_sport_scores(sport_key):
                             text-align: left;
                         }
                         th {
-                            background-color: #f2f2f2;
+                            background-color: #007bff;
+                            font-color: white;
                         }
                         .game-pair {
                             margin-bottom: 20px;
@@ -179,23 +180,28 @@ def get_sport_scores(sport_key):
                     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                     <style>
                         table {
-                            width: 70%;
+                            width: 80%;
                             border-collapse: collapse;
+                            margin-left: auto;
+                            margin-right: auto;
                         }
                         table, th, td {
-                            border: 1px solid black;
                         }
                         th, td {
                             padding: 8px;
                             text-align: left;
                         }
                         th {
-                            background-color: #f2f2f2;
-                        }                                         
+                            background-color: #007bff;
+                            color: white;
+                        }
+                        tr:nth-child(even) {
+                            background-color: #c4e1ff;
+                        }                                       
                     </style>
                 </head>
                 <body>
-                 <div class="game-card">                       
+                 <div class="game-card games-card">                       
                     <h1>Game Information</h1>
                     {% if result %}
                         <table>

@@ -196,8 +196,11 @@ def get_sport_scores(sport_key):
                             color: white;
                         }
                         tr:nth-child(even) {
-                            background-color: #c4e1ff;
-                        }                                       
+                            background-color: #d8ebff;
+                        }
+                        tr:nth-child(odd) {
+                            background-color: #FFFFFF;
+                        }                                   
                     </style>
                 </head>
                 <body>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, url_for
+from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
 from datetime import datetime, timedelta  # Import timedelta here
 import pytz
 from dateutil import parser
@@ -257,7 +257,7 @@ def game_details(game_id):
         game_details = get_game_details(sport_key, selected_date, game_id)
 
         if not game_details:
-            return jsonify({'error': 'Game not found'}), 404
+            return redirect(url_for('home'))
 
         try:
             home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key) or []

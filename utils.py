@@ -97,6 +97,7 @@ def convert_team_name(full_team_name):
         'St. Louis Blues': 'Blues',
         'Tampa Bay Lightning': 'Lightning',
         'Toronto Maple Leafs': 'Maple Leafs',
+        'Utah Hockey Club': 'Hockey Club',
         'Vancouver Canucks': 'Canucks',
         'Vegas Golden Knights': 'Golden Knights',
         'Washington Capitals': 'Capitals',
@@ -378,9 +379,9 @@ def convert_team_name(full_team_name):
         'New York Knicks': 'Knicks',
         'Oklahoma City Thunder': 'Thunder',
         'Orlando Magic': 'Magic',
-        'Philadelphia 76ers': '76ers',
+        'Philadelphia 76ers': 'Seventysixers',
         'Phoenix Suns': 'Suns',
-        'Portland Trail Blazers': 'Trail Blazers',
+        'Portland Trail Blazers': 'Trailblazers',
         'Sacramento Kings': 'Kings',
         'San Antonio Spurs': 'Spurs',
         'Toronto Raptors': 'Raptors',
@@ -396,7 +397,8 @@ def convert_sport_key(sport_key):
         'americanfootball_nfl': 'NFL',
         'americanfootball_nfl_preseason': 'NFL',
         'icehockey_nhl': 'NHL',
-        'americanfootball_ncaaf': 'NCAAFB'
+        'americanfootball_ncaaf': 'NCAAFB',
+        'basketball_ncaab': 'NCAABB'
         # Add other mappings as needed
     }
     return sport_mapping.get(sport_key, sport_key)

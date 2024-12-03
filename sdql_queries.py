@@ -18,7 +18,7 @@ def get_last_5_games(team, date, sport_key):
         sdql_query = f"date,team,site,runs,total,o:team,o:line,o:runs,line@team='{team}' and date<{today_date} and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})" 
     elif sport_key == 'NHL':
         sdql_query = f"date,team,site,goals,total,o:team,o:line,o:goals,line@team='{team}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"          
-    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NCAAFB']:
+    elif sport_key in ['NFL', 'NCAAFB', 'NBA', 'NCAABB']:
         sdql_query = f"date,team,site,points,total,o:team,o:line,o:points,line@team='{team}' and date<{today_date} and (_tNNNNN is None or N5:date>{today_date})"
     else:
         # Handle other sports or raise an error

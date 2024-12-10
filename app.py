@@ -103,8 +103,19 @@ def get_sport_scores(sport_key):
                             for outcome in market['outcomes']:
                                 outcome_text = f"{outcome['name']}"
                                 if market_key in ['spreads', 'totals'] and 'point' in outcome:
-                                    outcome_text += f" - {outcome['point']}"
-                                outcome_text += f" - {outcome['price']}"
+                                    outcome_text += f": {outcome['point']}"
+                                if market_key == 'h2h':
+                                    price = outcome['price']
+                                    if price > 0:
+                                        outcome_text += f": +{price}"
+                                    else:
+                                        outcome_text += f": {price}"
+                                else:
+                                    price = outcome['price']
+                                    if price > 0:
+                                        outcome_text += f" +{price}"
+                                    else:
+                                        outcome_text += f" {price}"
                                 odds_data[market_key].append(outcome_text)
 
                 formatted_scores.append({

@@ -63,11 +63,11 @@ def get_sport_scores(sport_key):
                     </style>
                 </head>
                 <body>
-                    <h1>Game Information</h1>
+                    <h1 class="center">Game Information</h1>
                     {% if result %}
                         <p>Past game information displayed here...</p>
                     {% else %}
-                        <p>No games on this date</p>
+                        <p class="center">No games on this date</p>
                     {% endif %}
                 </body>
                 </html>
@@ -163,11 +163,14 @@ def get_sport_scores(sport_key):
                             list-style-type: none;
                             padding: 0;
                         }
+                        .center {
+                            text-align: center;
+                        }
                         
                     </style>
                 </head>
                 <body>
-                    <h1>Game Information</h1>
+                    <h1 class="center">Game Information</h1>
                     {% if result %}
                         <table>
                             <thead>
@@ -217,7 +220,7 @@ def get_sport_scores(sport_key):
                             </tbody>
                         </table>
                     {% else %}
-                        <p>No games on this date</p>
+                        <p class="center">No games on this date</p>
                     {% endif %}
                 </body>
                 </html>
@@ -690,7 +693,7 @@ def game_details(game_id):
                         </table>
                       </div>                        
                     {% else %}
-                        <p>No games on this date</p>
+                        <p class="center">No games on this date</p>
                     {% endif %}
                     
                     <h2>Last 5 Games - Away Team</h2>
@@ -809,7 +812,7 @@ def game_details(game_id):
                         </table>
                       </div>                        
                     {% else %}
-                        <p>No games on this date</p>
+                        <p class="center">No games on this date</p>
                     {% endif %}
                     
                     <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -928,7 +931,7 @@ def game_details(game_id):
                         </table>
                        </div>                        
                     {% else %}
-                        <p>No games on this date</p>
+                        <p class="center">No games on this date</p>
                     {% endif %}
                 </body>
                 </html>
@@ -1269,7 +1272,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No games on this date</p>
+                    <p class="center">No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games - Away Team</h2>
@@ -1386,7 +1389,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No games on this date</p>
+                    <p class="center">No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -1499,7 +1502,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No games on this date</p>
+                    <p class="center">No games on this date</p>
                 {% endif %}
             </body>
             </html>
@@ -1870,7 +1873,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No games on this date</p>
+                    <p class="center">No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games - Away Team</h2>
@@ -2017,7 +2020,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No games on this date</p>
+                    <p class="center">No games on this date</p>
                 {% endif %}
 
                 <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -2160,7 +2163,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No games on this date</p>
+                    <p class="center">No games on this date</p>
                 {% endif %}
             </body>
             </html>

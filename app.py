@@ -1,6 +1,8 @@
 from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
 from datetime import datetime, timedelta  # Import timedelta here
 import pytz
+import pandas as pd
+import statsmodels.api as sm
 from dateutil import parser
 from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
@@ -37,6 +39,81 @@ def convert_to_eastern(utc_time):
     utc_time = utc_time.replace(tzinfo=pytz.utc)
     eastern_time = utc_time.astimezone(eastern_tz)
     return eastern_time
+
+# Function to prepare game data for analysis
+def prepare_game_data(games):
+    data = []
+    for game in games:
+        if game.get('homeScore') != 'N/A' and game.get('awayScore') != 'N/A':
+            game_data = {
+                'home_team': game['homeTeam'],
+                'away_team': game['awayTeam'],
+                'home_score': game['homeScore'],
+                'away_score': game['awayScore'],
+                'line': game.get('line', None),  # Some games might not have line data
+                'total': game.get('total', None),  # For games with over/under totals
+                'odds': game.get('odds', None)  # Odds data
+            }
+            data.append(game_data)
+
+    return pd.DataFrame(data)
+
+# Example usage
+games_data = get_sdql_data('americanfootball_nfl', datetime.now())  # Assuming this function gets game data
+df = prepare_game_data(games_data)
+
+def analyze_trends(df):
+    # Ensure that columns are numeric
+    df['home_score'] = pd.to_numeric(df['home_score'], errors='coerce')
+    df['away_score'] = pd.to_numeric(df['away_score'], errors='coerce')
+    df['line'] = pd.to_numeric(df['line'], errors='coerce')
+
+    # Create the independent variable (X) and dependent variable (y)
+    X = df[['line']]  # Let's assume we are analyzing the relationship with the line
+    y = df['home_score'] - df['away_score']  # Home score difference
+
+    # Add constant to the model (intercept)
+    X = sm.add_constant(X)
+
+    # Fit an OLS model (Ordinary Least Squares)
+    model = sm.OLS(y, X)
+    results = model.fit()
+
+    # Print the summary of the regression model
+    return results.summary()
+
+# Example usage:
+summary = analyze_trends(df)
+print(summary)
+
+@app.route('/sports/<sport_key>/trends')
+def show_trends(sport_key):
+    try:
+        # Get game data for the selected sport (or a default)
+        games_data = get_sdql_data(sport_key, datetime.now())  # You can customize the date
+        df = prepare_game_data(games_data)
+
+        # Perform trend analysis
+        trend_results = analyze_trends(df)
+
+        # Render the page with the trend analysis results
+        return render_template_string("""
+            <html>
+            <head>
+                <title>Trend Analysis for {{ sport_key }}</title>
+            </head>
+            <body>
+                <h1>Trend Analysis for {{ sport_key }}</h1>
+                <h2>Trend Summary:</h2>
+                <pre>{{ trend_results }}</pre>
+            </body>
+            </html>
+        """, sport_key=sport_key, trend_results=trend_results)
+
+    except Exception as e:
+        print(f"Error fetching trend data: {e}")
+        return jsonify({'error': 'Error fetching trend data'}), 500
+
 
 # Route to fetch scores and odds for a specific sport and date
 @app.route('/sports/<sport_key>')

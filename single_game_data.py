@@ -9,7 +9,7 @@ def get_game_details(sport_key, date, game_id):
     try:
         date_str = date.strftime('%Y-%m-%d')
         scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?apiKey={api_key}&date={date_str}&dateFormat=iso"
-        odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers=draftkings&markets=h2h,spreads,totals&oddsFormat=american"
+        odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers=williamhill_us&markets=h2h,spreads,totals&oddsFormat=american"
 
         scores_response = requests.get(scores_url)
         odds_response = requests.get(odds_url)

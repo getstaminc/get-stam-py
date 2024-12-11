@@ -54,20 +54,65 @@ def get_sport_scores(sport_key):
         if selected_date_start.date() < datetime.now(eastern_tz).date():
             sdql_data = get_sdql_data(sdql_sport_key, selected_date_start)
             return render_template_string("""
-                <!-- Simplified past games display (unchanged) -->
                 <html>
                 <head>
+                    <!-- Google tag (gtag.js) -->
+                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+                    <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', 'G-578SDWQPSK');
+                    </script>                      
                     <title>Game Info</title>
                     <style>
-                        /* Add your existing CSS here */
+                        table {
+                            width: 50%;
+                            border-collapse: collapse;
+                        }
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                        }
+                        .game-pair {
+                            margin-bottom: 20px;
+                        }
                     </style>
                 </head>
                 <body>
-                    <h1 class="center">Game Information</h1>
+                    <h1>Game Information</h1>
                     {% if result %}
-                        <p>Past game information displayed here...</p>
+                        {% for pair in result %}
+                            <div class="game-pair">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            {% for header in pair[0].keys() %}
+                                                <th>{{ header }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for game in pair %}
+                                            <tr>
+                                                {% for value in game.values() %}
+                                                    <td>{{ value }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
                     {% else %}
-                        <p class="center">No games on this date</p>
+                        <p>No data available</p>
                     {% endif %}
                 </body>
                 </html>

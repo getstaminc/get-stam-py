@@ -166,8 +166,9 @@ def get_sport_scores(sport_key):
                 formatted_scores.append({
                     'homeTeam': home_team,
                     'awayTeam': away_team,
-                    'homeScore': home_score,
-                    'awayScore': away_score,
+                    #cores are purposefully switched investigating why they're backwards
+                    'homeScore': away_score,
+                    'awayScore': home_score,
                     'odds': odds_data,
                     'game_id': match['id'],
                 })
@@ -233,8 +234,8 @@ def get_sport_scores(sport_key):
                                     <tr>
                                         <td>{{ match.homeTeam }}</td>
                                         <td>{{ match.awayTeam }}</td>
-                                        <td>{{ match.homeScore }}</td>
                                         <td>{{ match.awayScore }}</td>
+                                        <td>{{ match.homeScore }}</td>
                                         <td>
                                             <div class="odds-category">
                                                 <h4>H2H:</h4>

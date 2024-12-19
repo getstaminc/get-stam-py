@@ -162,6 +162,9 @@
     <br>
     <label for="datepicker">Select Date:</label>
     <input type="date" id="datepicker">
+    <form method="POST" action="{{ url_for('show_trends', sport_key=sport_key) }}">
+        <button type="submit">View Trends</button>
+    </form>
     <ul id="gamesList"></ul>
 </body>
 </html>

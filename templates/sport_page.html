@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport Page</title>
+    <style>
+        table {
+            width: 90%;
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        .center {
+            text-align: center;
+        }
+        .trend-section {
+            margin: 20px auto;
+            width: 90%;
+            background: #f4f4f4;
+            padding: 15px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="center">Game Information for {{ sport_key }}</h1>
+
+    {% if trend_results %}
+        <div class="trend-section">
+            <h2>Trend Analysis</h2>
+            <pre>{{ trend_results }}</pre>
+        </div>
+    {% endif %}
+
+    {% if games %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Home Team</th>
+                    <th>Away Team</th>
+                    <th>Home Score</th>
+                    <th>Away Score</th>
+                    <th>Odds</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for game in games %}
+                    <tr>
+                        <td>{{ game.homeTeam }}</td>
+                        <td>{{ game.awayTeam }}</td>
+                        <td>{{ game.homeScore }}</td>
+                        <td>{{ game.awayScore }}</td>
+                        <td>
+                            <ul>
+                                {% for key, odds in game.odds.items() %}
+                                    <li>{{ key }}: {{ odds }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td><a href="/game/{{ game.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">Details</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="center">No games available.</p>
+    {% endif %}
+
+    <form method="POST" action="/sports/{{ sport_key }}">
+        <div class="center">
+            <button type="submit">View Trends</button>
+        </div>
+    </form>
+</body>
+</html>
+

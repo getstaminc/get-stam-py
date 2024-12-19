@@ -41,7 +41,7 @@ def convert_to_eastern(utc_time):
     return eastern_time
 
 # Route to fetch scores and odds for a specific sport and date
-@app.route('/sports/<sport_key>')
+@app.route('/sports/<sport_key>', methods=['GET', 'POST'])
 def get_sport_scores(sport_key):
     try:
         current_date = request.args.get('date', None)
@@ -49,77 +49,27 @@ def get_sport_scores(sport_key):
             current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
 
         selected_date_start = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
-        selected_date_end = selected_date_start + timedelta(hours=23, minutes=59, seconds=59)
-
         sdql_sport_key = convert_sport_key(sport_key)
 
-        if selected_date_start.date() < datetime.now(eastern_tz).date():
-            sdql_data = get_sdql_data(sdql_sport_key, selected_date_start)
-            return render_template_string("""
-                <html>
-                <head>
-                    <!-- Google tag (gtag.js) -->
-                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
-                    <script>
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
+        # Handle POST request for trend analysis
+        if request.method == 'POST':
+            games_data = get_sdql_data(sdql_sport_key, selected_date_start)
+            df = prepare_game_data(games_data)
 
-                    gtag('config', 'G-578SDWQPSK');
-                    </script>                      
-                    <title>Game Info</title>
-                    <style>
-                        table {
-                            width: 50%;
-                            border-collapse: collapse;
-                        }
-                        table, th, td {
-                            border: 1px solid black;
-                        }
-                        th, td {
-                            padding: 8px;
-                            text-align: left;
-                        }
-                        th {
-                            background-color: #f2f2f2;
-                        }
-                        .game-pair {
-                            margin-bottom: 20px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>Game Information</h1>
-                    {% if result %}
-                        {% for pair in result %}
-                            <div class="game-pair">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            {% for header in pair[0].keys() %}
-                                                <th>{{ header }}</th>
-                                            {% endfor %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for game in pair %}
-                                            <tr>
-                                                {% for value in game.values() %}
-                                                    <td>{{ value }}</td>
-                                                {% endfor %}
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <p>No data available</p>
-                    {% endif %}
-                </body>
-                </html>
-            """, result=sdql_data)
+            if df.empty:
+                trend_results = "No data available for trend analysis."
+            else:
+                trend_results = analyze_trends(df)
+
+            return render_template('sport_page.html', sport_key=sport_key, current_date=current_date, trend_results=trend_results)
+
+        # Handle GET request for game scores and odds
+        if selected_date_start.date() < datetime.now(eastern_tz).date():
+            # Past games
+            sdql_data = get_sdql_data(sdql_sport_key, selected_date_start)
+            return render_template('sport_page.html', sport_key=sport_key, current_date=current_date, games=sdql_data)
         else:
+            # Upcoming games
             scores, odds = get_odds_data(sport_key, selected_date_start)
             if scores is None or odds is None:
                 return jsonify({'error': 'Error fetching odds data'}), 500
@@ -153,126 +103,19 @@ def get_sport_scores(sport_key):
                                     outcome_text += f": {outcome['point']}"
                                 if market_key == 'h2h':
                                     price = outcome['price']
-                                    if price > 0:
-                                        outcome_text += f": +{price}"
-                                    else:
-                                        outcome_text += f": {price}"
-                                else:
-                                    price = outcome['price']
-                                    if price > 0:
-                                        outcome_text += f" +{price}"
-                                    else:
-                                        outcome_text += f" {price}"
+                                    outcome_text += f" {price:+}"
                                 odds_data[market_key].append(outcome_text)
 
                 formatted_scores.append({
                     'homeTeam': home_team,
                     'awayTeam': away_team,
-                    #cores are purposefully switched investigating why they're backwards
-                    'homeScore': away_score,
-                    'awayScore': home_score,
+                    'homeScore': home_score,
+                    'awayScore': away_score,
                     'odds': odds_data,
                     'game_id': match['id'],
                 })
 
-            return render_template_string("""
-                <html>
-                <head>
-                    <title>Game Info</title>
-                    <style>
-                        table {
-                            width: 80%;
-                            border-collapse: collapse;
-                            margin-left: auto;
-                            margin-right: auto;
-                        }
-                        th, td {
-                            padding: 8px;
-                            text-align: left;
-                        }
-                        th {
-                            background-color: #007bff;
-                            color: white;
-                        }
-                        tr:nth-child(even) {
-                            background-color: #d8ebff;
-                        }
-                        tr:nth-child(odd) {
-                            background-color: #FFFFFF;
-                        }
-                        .odds-category {
-                            margin-top: 10px;
-                        }
-                        .odds-category h4 {
-                            margin-bottom: 5px;
-                            color: #007bff;
-                        }
-                        .odds-category ul {
-                            list-style-type: none;
-                            padding: 0;
-                        }
-                        .center {
-                            text-align: center;
-                        }
-                        
-                    </style>
-                </head>
-                <body>
-                    <h1 class="center">Game Information</h1>
-                    {% if result %}
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Home Team</th>
-                                    <th>Away Team</th>
-                                    <th>Home Score</th>
-                                    <th>Away Score</th>
-                                    <th>Odds</th>
-                                    <th>Details</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for match in result %}
-                                    <tr>
-                                        <td>{{ match.homeTeam }}</td>
-                                        <td>{{ match.awayTeam }}</td>
-                                        <td>{{ match.awayScore }}</td>
-                                        <td>{{ match.homeScore }}</td>
-                                        <td>
-                                            <div class="odds-category">
-                                                <h4>H2H:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.h2h %}
-                                                        <li>{{ odd }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                                <h4>Spreads:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.spreads %}
-                                                        <li>{{ odd }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                                <h4>Totals:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.totals %}
-                                                        <li>{{ odd }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p class="center">No games on this date</p>
-                    {% endif %}
-                </body>
-                </html>
-            """, result=formatted_scores, sport_key=sport_key, current_date=current_date)
+            return render_template('sport_page.html', sport_key=sport_key, current_date=current_date, games=formatted_scores)
 
     except requests.exceptions.RequestException as e:
         print('Request error:', str(e))
@@ -280,6 +123,8 @@ def get_sport_scores(sport_key):
     except Exception as e:
         print('Error fetching scores:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
+
+
 
 # Function to prepare game data for analysis
 def prepare_game_data(games):
@@ -300,8 +145,7 @@ def prepare_game_data(games):
     return pd.DataFrame(data)
 
 # Example usage
-games_data = get_sdql_data('americanfootball_nfl', datetime.now())  # Assuming this function gets game data
-df = prepare_game_data(games_data)
+
 
 def analyze_trends(df):
     # Ensure that columns are numeric
@@ -320,14 +164,11 @@ def analyze_trends(df):
     model = sm.OLS(y, X)
     results = model.fit()
 
-    # Print the summary of the regression model
+    # Return the summary of the regression model
     return results.summary()
 
-# Example usage:
-summary = analyze_trends(df)
-print(summary)
-
-@app.route('/sports/<sport_key>/trends')
+# Route to trigger trend analysis for a given sport
+@app.route('/sports/<sport_key>/trends', methods=['POST'])
 def show_trends(sport_key):
     try:
         # Get game data for the selected sport (or a default)
@@ -338,22 +179,13 @@ def show_trends(sport_key):
         trend_results = analyze_trends(df)
 
         # Render the page with the trend analysis results
-        return render_template_string("""
-            <html>
-            <head>
-                <title>Trend Analysis for {{ sport_key }}</title>
-            </head>
-            <body>
-                <h1>Trend Analysis for {{ sport_key }}</h1>
-                <h2>Trend Summary:</h2>
-                <pre>{{ trend_results }}</pre>
-            </body>
-            </html>
-        """, sport_key=sport_key, trend_results=trend_results)
+        return render_template('trend_analysis.html', sport_key=sport_key, trend_results=trend_results)
 
     except Exception as e:
         print(f"Error fetching trend data: {e}")
         return jsonify({'error': 'Error fetching trend data'}), 500
+
+
 
 
 

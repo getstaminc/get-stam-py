@@ -50,7 +50,11 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            width: calc(100% - 22px); /* Adjust for padding and border */
+            width: 178px; /* Adjust for padding and border */
+            display: block;
+        }
+        .sportSelect {
+            width: 200px;
         }
     
         #gamesList {
@@ -158,7 +162,7 @@
         <h2>Stats That Actually Matter</h2>
     </header>
     <label for="sportSelect">Select Sport:</label>
-    <select id="sportSelect"></select>
+    <select id="sportSelect" class="sportSelect"></select>
     <br>
     <label for="datepicker">Select Date:</label>
     <input type="date" id="datepicker">

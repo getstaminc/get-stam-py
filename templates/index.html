@@ -104,7 +104,9 @@
             }
         }
     </style>
-    <script>
+    <script type="module">
+        import { filterSports } from './static/js/filterSports.js';
+
         document.addEventListener('DOMContentLoaded', () => {
             const datePicker = document.getElementById('datepicker');
             const gamesList = document.getElementById('gamesList');
@@ -114,7 +116,9 @@
                 fetch('/api/sports')
                     .then(response => response.json())
                     .then(data => {
-                        sportSelect.innerHTML = data.map(sport => `
+                        console.log('Sports data:', data);
+                        const filteredData = filterSports(data);
+                        sportSelect.innerHTML = filteredData.map(sport => `
                             <option value="${sport.key}" ${sport.key === 'americanfootball_nfl' ? 'selected' : ''}>${sport.title}</option>
                         `).join('');
                         fetchAndDisplayGames(sportSelect.value, datePicker.value);

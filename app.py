@@ -67,7 +67,70 @@ def get_sport_scores(sport_key):
         if selected_date_start.date() < datetime.now(eastern_tz).date():
             # Past games
             sdql_data = get_sdql_data(sdql_sport_key, selected_date_start)
-            return render_template('sport_page.html', sport_key=sport_key, current_date=current_date, games=sdql_data)
+            return render_template_string("""
+                <html>
+                <head>
+                    <!-- Google tag (gtag.js) -->
+                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+                    <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', 'G-578SDWQPSK');
+                    </script>                      
+                    <title>Game Info</title>
+                    <style>
+                        table {
+                            width: 50%;
+                            border-collapse: collapse;
+                        }
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                        }
+                        .game-pair {
+                            margin-bottom: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Game Information</h1>
+                    {% if result %}
+                        {% for pair in result %}
+                            <div class="game-pair">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            {% for header in pair[0].keys() %}
+                                                <th>{{ header }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for game in pair %}
+                                            <tr>
+                                                {% for value in game.values() %}
+                                                    <td>{{ value }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No data available</p>
+                    {% endif %}
+                </body>
+                </html>
+            """, result=sdql_data)
         else:
             # Upcoming games
             scores, odds = get_odds_data(sport_key, selected_date_start)

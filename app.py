@@ -226,7 +226,9 @@ def get_sport_scores(sport_key):
                                     <th>Home Score</th>
                                     <th>Away Score</th>
                                     <th>Odds</th>
-                                    <th>Details</th>
+                                    {% if sport_key not in ['mma_mixed_martial_arts', 'soccer_epl', 'soccer_france_ligue_one', 'soccer_germany_bundesliga', 'soccer_italy_serie_a', 'soccer_spain_la_liga', 'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'boxing_boxing'] %}
+                                        <th>Details</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -258,9 +260,11 @@ def get_sport_scores(sport_key):
                                                 </ul>
                                             </div>
                                         </td>
-                                        <td>
-                                            <a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a>
-                                        </td>
+                                        {% if sport_key not in ['mma_mixed_martial_arts', 'soccer_epl', 'soccer_france_ligue_one', 'soccer_germany_bundesliga', 'soccer_italy_serie_a', 'soccer_spain_la_liga', 'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'boxing_boxing'] %}
+                                            <td>
+                                                <a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a>
+                                            </td>
+                                        {% endif %}
                                     </tr>
                                 {% endfor %}
                             </tbody>

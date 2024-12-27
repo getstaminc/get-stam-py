@@ -436,6 +436,7 @@ def game_details(game_id):
                             color: white;
                             text-decoration: none;
                             margin: 0 10px;
+                            display: block;
                         }
 
                         h1 {
@@ -1021,6 +1022,7 @@ def game_details(game_id):
                             color: white;
                             text-decoration: none;
                             margin: 0 10px;
+                            display: block;
                         }
 
                         h1 {
@@ -1583,15 +1585,17 @@ def game_details(game_id):
 
                         header {
                             background-color: #007bff; /* Primary color */
-                            padding: 10px 20px;
+                           #padding: 10px 20px;
                             text-align: center;
                             color: white;
+                            border-radius: 5px;
                         }
 
                         nav a {
                             color: white;
                             text-decoration: none;
-                            margin: 0 10px;
+                            #margin: 0 10px;
+                            display: block;
                         }
 
                         h1 {

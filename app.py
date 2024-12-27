@@ -228,6 +228,7 @@ def get_sport_scores(sport_key):
                                     <th>Odds</th>
                                     {% if sport_key not in ['mma_mixed_martial_arts', 'soccer_epl', 'soccer_france_ligue_one', 'soccer_germany_bundesliga', 'soccer_italy_serie_a', 'soccer_spain_la_liga', 'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'boxing_boxing'] %}
                                         <th>Details</th>
+                                          
                                     {% endif %}
                                 </tr>
                             </thead>
@@ -436,7 +437,7 @@ def game_details(game_id):
                             color: white;
                             text-decoration: none;
                             margin: 0 10px;
-                            display: block;
+                            display: block;                  
                         }
 
                         h1 {
@@ -1022,7 +1023,7 @@ def game_details(game_id):
                             color: white;
                             text-decoration: none;
                             margin: 0 10px;
-                            display: block;
+                            display: block;                  
                         }
 
                         h1 {
@@ -1585,17 +1586,17 @@ def game_details(game_id):
 
                         header {
                             background-color: #007bff; /* Primary color */
-                           #padding: 10px 20px;
+                            padding: 10px 20px;
                             text-align: center;
                             color: white;
-                            border-radius: 5px;
+                            border-radius: 5px;                     
                         }
 
                         nav a {
                             color: white;
                             text-decoration: none;
-                            #margin: 0 10px;
-                            display: block;
+                            margin: 0 10px;
+                            display: block;                     
                         }
 
                         h1 {

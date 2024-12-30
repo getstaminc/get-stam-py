@@ -1,13 +1,15 @@
 from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
 from datetime import datetime, timedelta  # Import timedelta here
 import pytz
+import pandas as pd
 from dateutil import parser
 from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
 from single_game_data import get_game_details
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
-from utils import convert_sport_key, mlb_totals, other_totals
+from utils import convert_sport_key, mlb_totals, other_totals, convert_team_name
 from betting_guide import betting_guide
+from trend_analysis import analyze_trends_for_games
 
 app = Flask(__name__)
 port = 5000
@@ -39,9 +41,10 @@ def convert_to_eastern(utc_time):
     return eastern_time
 
 # Route to fetch scores and odds for a specific sport and date
-@app.route('/sports/<sport_key>')
+@app.route('/sports/<sport_key>', methods=['GET', 'POST'])
 def get_sport_scores(sport_key):
     try:
+        # Parse the date from query parameters
         current_date = request.args.get('date', None)
         if not current_date:
             current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
@@ -51,20 +54,16 @@ def get_sport_scores(sport_key):
 
         sdql_sport_key = convert_sport_key(sport_key)
 
+        # Initialize trends and result
+        trends = None
+        result = []
+
+        # Handle past dates
         if selected_date_start.date() < datetime.now(eastern_tz).date():
             sdql_data = get_sdql_data(sdql_sport_key, selected_date_start)
             return render_template_string("""
                 <html>
                 <head>
-                    <!-- Google tag (gtag.js) -->
-                    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
-                    <script>
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
-
-                    gtag('config', 'G-578SDWQPSK');
-                    </script>                      
                     <title>Game Info</title>
                     <style>
                         table {
@@ -117,172 +116,185 @@ def get_sport_scores(sport_key):
                 </body>
                 </html>
             """, result=sdql_data)
-        else:
-            scores, odds = get_odds_data(sport_key, selected_date_start)
-            if scores is None or odds is None:
-                return jsonify({'error': 'Error fetching odds data'}), 500
 
-            filtered_scores = []
-            for score in scores:
-                commence_time_str = score['commence_time']
-                commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
-                commence_date_eastern = convert_to_eastern(commence_date)
+        # Handle today and future dates
+        scores, odds = get_odds_data(sport_key, selected_date_start)
+        if scores is None or odds is None:
+            return jsonify({'error': 'Error fetching odds data'}), 500
 
-                if commence_date_eastern.date() == selected_date_start.date():
-                    filtered_scores.append(score)
+        filtered_scores = []
+        for score in scores:
+            commence_time_str = score['commence_time']
+            commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
+            commence_date_eastern = convert_to_eastern(commence_date)
 
-            formatted_scores = []
-            for match in filtered_scores:
-                home_team = match.get('home_team', 'N/A')
-                away_team = match.get('away_team', 'N/A')
-                home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
-                away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
+            if commence_date_eastern.date() == selected_date_start.date():
+                filtered_scores.append(score)
 
-                match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
-                odds_data = {'h2h': [], 'spreads': [], 'totals': []}
+        formatted_scores = []
+        for match in filtered_scores:
+            home_team = match.get('home_team', 'N/A')
+            away_team = match.get('away_team', 'N/A')
+            home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
+            away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
 
-                if match_odds:
-                    for bookmaker in match_odds['bookmakers']:
-                        for market in bookmaker['markets']:
-                            market_key = market['key']
-                            for outcome in market['outcomes']:
-                                outcome_text = f"{outcome['name']}"
-                                if market_key in ['spreads', 'totals'] and 'point' in outcome:
-                                    outcome_text += f": {outcome['point']}"
-                                if market_key == 'h2h':
-                                    price = outcome['price']
-                                    if price > 0:
-                                        outcome_text += f": +{price}"
-                                    else:
-                                        outcome_text += f": {price}"
+            match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
+            odds_data = {'h2h': [], 'spreads': [], 'totals': []}
+
+            if match_odds:
+                for bookmaker in match_odds['bookmakers']:
+                    for market in bookmaker['markets']:
+                        market_key = market['key']
+                        for outcome in market['outcomes']:
+                            outcome_text = f"{outcome['name']}"
+                            if market_key in ['spreads', 'totals'] and 'point' in outcome:
+                                outcome_text += f": {outcome['point']}"
+                            if market_key == 'h2h':
+                                price = outcome['price']
+                                if price > 0:
+                                    outcome_text += f": +{price}"
                                 else:
-                                    price = outcome['price']
-                                    if price > 0:
-                                        outcome_text += f" +{price}"
-                                    else:
-                                        outcome_text += f" {price}"
-                                odds_data[market_key].append(outcome_text)
+                                    outcome_text += f": {price}"
+                            else:
+                                price = outcome['price']
+                                if price > 0:
+                                    outcome_text += f" +{price}"
+                                else:
+                                    outcome_text += f" {price}"
+                            odds_data[market_key].append(outcome_text)
 
-                formatted_scores.append({
-                    'homeTeam': home_team,
-                    'awayTeam': away_team,
-                    #cores are purposefully switched investigating why they're backwards
-                    'homeScore': away_score,
-                    'awayScore': home_score,
-                    'odds': odds_data,
-                    'game_id': match['id'],
-                })
+            formatted_scores.append({
+                'homeTeam': home_team,
+                'awayTeam': away_team,
+                'homeScore': away_score,
+                'awayScore': home_score,
+                'odds': odds_data,
+                'game_id': match['id'],
+            })
 
-            return render_template_string("""
-                <html>
-                <head>
-                    <title>Game Info</title>
-                    <style>
-                        table {
-                            width: 80%;
-                            border-collapse: collapse;
-                            margin-left: auto;
-                            margin-right: auto;
-                        }
-                        th, td {
-                            padding: 8px;
-                            text-align: left;
-                        }
-                        th {
-                            background-color: #007bff;
-                            color: white;
-                        }
-                        tr:nth-child(even) {
-                            background-color: #d8ebff;
-                        }
-                        tr:nth-child(odd) {
-                            background-color: #FFFFFF;
-                        }
-                        .odds-category {
-                            margin-top: 10px;
-                        }
-                        .odds-category h4 {
-                            margin-bottom: 5px;
-                            color: #007bff;
-                        }
-                        .odds-category ul {
-                            list-style-type: none;
-                            padding: 0;
-                        }
-                        .center {
-                            text-align: center;
-                        }
-                        
-                    </style>
-                </head>
-                <body>
-                    <h1 class="center">Game Information</h1>
-                    {% if result %}
-                        <table>
-                            <thead>
+        # Handle POST request for trends
+        if request.method == 'POST':
+            trends = analyze_trends_for_games(filtered_scores, selected_date_start)
+
+        return render_template_string("""
+            <html>
+            <head>
+                <title>Game Info</title>
+                <style>
+                    table {
+                        width: 80%;
+                        border-collapse: collapse;
+                        margin-left: auto;
+                        margin-right: auto;
+                    }
+                    th, td {
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #007bff;
+                        color: white;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #d8ebff;
+                    }
+                    tr:nth-child(odd) {
+                        background-color: #FFFFFF;
+                    }
+                    .center {
+                        text-align: center;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1 class="center">Game Information</h1>
+                <form method="POST" action="/sports/{{ sport_key }}">
+                    <button type="submit">View Trends</button>
+                </form>
+                {% if trends %}
+                    <h2>Trends</h2>
+                    <ul>
+                        {% for matchup, matchup_trends in trends.items() %}
+                            <li>
+                                <strong>{{ matchup }}</strong>
+                                <ul>
+                                    {% for team, trend in matchup_trends.items() %}
+                                        <li>{{ trend }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if result %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Home Team</th>
+                                <th>Away Team</th>
+                                <th>Home Score</th>
+                                <th>Away Score</th>
+                                <th>Odds</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for match in result %}
                                 <tr>
-                                    <th>Home Team</th>
-                                    <th>Away Team</th>
-                                    <th>Home Score</th>
-                                    <th>Away Score</th>
-                                    <th>Odds</th>
-                                    {% if sport_key not in ['mma_mixed_martial_arts', 'soccer_epl', 'soccer_france_ligue_one', 'soccer_germany_bundesliga', 'soccer_italy_serie_a', 'soccer_spain_la_liga', 'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'boxing_boxing'] %}
-                                        <th>Details</th>
-                                          
-                                    {% endif %}
+                                    <td>{{ match.homeTeam }}</td>
+                                    <td>{{ match.awayTeam }}</td>
+                                    <td>{{ match.awayScore }}</td>
+                                    <td>{{ match.homeScore }}</td>
+                                    <td>
+                                        <ul>
+                                            {% for category, odds_list in match.odds.items() %}
+                                                <li>{{ category }}: {{ odds_list }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td><a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a></td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {% for match in result %}
-                                    <tr>
-                                        <td>{{ match.homeTeam }}</td>
-                                        <td>{{ match.awayTeam }}</td>
-                                        <td>{{ match.awayScore }}</td>
-                                        <td>{{ match.homeScore }}</td>
-                                        <td>
-                                            <div class="odds-category">
-                                                <h4>H2H:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.h2h %}
-                                                        <li>{{ odd }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                                <h4>Spreads:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.spreads %}
-                                                        <li>{{ odd }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                                <h4>Totals:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.totals %}
-                                                        <li>{{ odd }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                        </td>
-                                        {% if sport_key not in ['mma_mixed_martial_arts', 'soccer_epl', 'soccer_france_ligue_one', 'soccer_germany_bundesliga', 'soccer_italy_serie_a', 'soccer_spain_la_liga', 'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'boxing_boxing'] %}
-                                            <td>
-                                                <a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a>
-                                            </td>
-                                        {% endif %}
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p class="center">No games on this date</p>
-                    {% endif %}
-                </body>
-                </html>
-            """, result=formatted_scores, sport_key=sport_key, current_date=current_date)
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="center">No games available</p>
+                {% endif %}
+            </body>
+            </html>
+        """, trends=trends, result=formatted_scores, sport_key=sport_key, current_date=current_date)
 
-    except requests.exceptions.RequestException as e:
-        print('Request error:', str(e))
-        return jsonify({'error': 'Request Error'}), 500
     except Exception as e:
-        print('Error fetching scores:', str(e))
+        print(f"Error in get_sport_scores: {e}")
         return jsonify({'error': 'Internal Server Error'}), 500
+
+@app.route('/sports/<sport_key>/trends', methods=['POST'])
+def analyze_trends(sport_key):
+    try:
+        current_date = request.args.get('date', None)
+        if not current_date:
+            current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
+
+        selected_date = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+
+        # Fetch scores for the selected date
+        scores, _ = get_odds_data(sport_key, selected_date)
+        if not scores:
+            return jsonify({'error': 'No games found'}), 404
+
+        # Analyze trends using the external module
+        trends = analyze_trends_for_games(scores, selected_date)
+
+        return render_template(
+            'trends_page.html',  # Use a dedicated template
+            trends=trends,
+            current_date=current_date,
+            sport_key=sport_key
+        )
+
+    except Exception as e:
+        print(f"Error analyzing trends: {e}")
+        return jsonify({'error': 'Trend analysis failed'}), 500
 
 
 # Route to fetch and display details for a specific game

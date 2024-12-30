@@ -236,7 +236,6 @@
                 fetch('/api/sports')
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Sports data:', data);
                         const filteredData = filterSports(data);
                         sportSelect.innerHTML = filteredData.map(sport => `
                             <option value="${sport.key}" ${sport.key === 'americanfootball_nfl' ? 'selected' : ''}>${sport.title}</option>
@@ -267,9 +266,27 @@
             });
 
             datePicker.addEventListener('change', (event) => {
+                console.log('in change');
                 fetchAndDisplayGames(sportSelect.value, event.target.value);
             });
         });
+    </script>
+    <script>
+        function goToNextGame(nextGameDate) {
+            const datePicker = document.getElementById('datepicker');
+            
+            // Reformat nextGameDate from MM-DD-YYYY to YYYY-MM-DD
+            console.log(nextGameDate);
+            const [month, day, year] = nextGameDate.split('-');
+            const formattedDate = `${year}-${month}-${day}`;
+            console.log(nextGameDate); 
+            
+            datePicker.value = nextGameDate;
+            
+            // Manually dispatch the change event
+            const event = new Event('change');
+            datePicker.dispatchEvent(event);
+        }
     </script>
 </head>
 <body>

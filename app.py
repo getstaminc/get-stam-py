@@ -38,6 +38,26 @@ def convert_to_eastern(utc_time):
     eastern_time = utc_time.astimezone(eastern_tz)
     return eastern_time
 
+def get_next_game_date_within_7_days(scores, selected_date_start):
+    today = datetime.now(pytz.utc)
+    
+    # Check if selected_date_start is greater than 7 days from today
+    if selected_date_start.date() > (today + timedelta(days=7)).date():
+        return False
+
+    if not scores:
+        return False
+
+    for score in scores:
+        commence_time_str = score['commence_time']
+        commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
+        if commence_date.date() > today.date() and commence_date.date() > selected_date_start.date() and commence_date.date() <= (today + timedelta(days=7)).date():
+            score['commence_date'] = commence_date.strftime('%Y-%m-%d')  # YYYY-MM-DD format
+            score['pretty_date'] = commence_date.strftime('%m-%d-%Y')  # MM-DD-YYYY format
+            return score
+    
+    return False
+
 # Route to fetch scores and odds for a specific sport and date
 @app.route('/sports/<sport_key>')
 def get_sport_scores(sport_key):
@@ -130,6 +150,10 @@ def get_sport_scores(sport_key):
 
                 if commence_date_eastern.date() == selected_date_start.date():
                     filtered_scores.append(score)
+
+            next_game_date = False
+            if not filtered_scores:
+                next_game_date = get_next_game_date_within_7_days(scores, selected_date_start)
 
             formatted_scores = []
             for match in filtered_scores:
@@ -269,12 +293,15 @@ def get_sport_scores(sport_key):
                                 {% endfor %}
                             </tbody>
                         </table>
+                    {% elif next_game_date %}
+                        <p class="center">No games on this date. The next game is on {{ next_game_date['pretty_date'] }}.</p>
+                        <p class="center"><a href="javascript:void(0);" onclick="goToNextGame('{{ next_game_date['commence_date'] }}')" class="button center">Go to Next Game</a></p>
                     {% else %}
                         <p class="center">No games on this date</p>
                     {% endif %}
                 </body>
                 </html>
-            """, result=formatted_scores, sport_key=sport_key, current_date=current_date)
+            """, result=formatted_scores, sport_key=sport_key, current_date=current_date, next_game_date=next_game_date)
 
     except requests.exceptions.RequestException as e:
         print('Request error:', str(e))
@@ -743,7 +770,7 @@ def game_details(game_id):
                         </table>
                       </div>                        
                     {% else %}
-                        <p class="center">No games on this date</p>
+                        <p class="center">No data available.</p>
                     {% endif %}
                     
                     <h2>Last 5 Games - Away Team</h2>
@@ -862,7 +889,7 @@ def game_details(game_id):
                         </table>
                       </div>                        
                     {% else %}
-                        <p class="center">No games on this date</p>
+                        <p class="center">No data available.</p>
                     {% endif %}
                     
                     <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -981,7 +1008,7 @@ def game_details(game_id):
                         </table>
                        </div>                        
                     {% else %}
-                        <p class="center">No games on this date</p>
+                        <p class="center">No data available.</p>
                     {% endif %}
                 </body>
                 </html>
@@ -1322,7 +1349,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p class="center">No games on this date</p>
+                    <p class="center">No data available.</p>
                 {% endif %}
 
                 <h2>Last 5 Games - Away Team</h2>
@@ -1439,7 +1466,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p class="center">No games on this date</p>
+                    <p class="center">No data available.</p>
                 {% endif %}
 
                 <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -1552,7 +1579,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p class="center">No games on this date</p>
+                    <p class="center">No data available.</p>
                 {% endif %}
             </body>
             </html>
@@ -1923,7 +1950,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p class="center">No games on this date</p>
+                    <p class="center">No data available.</p>
                 {% endif %}
 
                 <h2>Last 5 Games - Away Team</h2>
@@ -2070,7 +2097,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p class="center">No games on this date</p>
+                    <p class="center">No data available.</p>
                 {% endif %}
 
                 <h2>Last 5 Games Between {{ game.homeTeam }} and {{ game.awayTeam }}</h2>
@@ -2213,7 +2240,7 @@ def game_details(game_id):
                         </tbody>
                     </table>
                 {% else %}
-                    <p class="center">No games on this date</p>
+                    <p class="center">No data available.</p>
                 {% endif %}
             </body>
             </html>

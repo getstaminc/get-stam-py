@@ -8,9 +8,17 @@ from single_game_data import get_game_details
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
 from utils import convert_sport_key, mlb_totals, other_totals
 from betting_guide import betting_guide
+from flask_caching import Cache
+import logging
 
 app = Flask(__name__)
 port = 5000
+
+# Configure Flask-Caching
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 3600})
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 # Define the Eastern timezone
 eastern_tz = pytz.timezone('US/Eastern')
@@ -20,16 +28,24 @@ from betting_guide import betting_guide  # Add this line
 
 app.register_blueprint(betting_guide)  # Register the blueprint
 
-
 # Route to fetch available sports
 @app.route('/api/sports')
+@cache.cached(timeout=3600, query_string=True)
 def api_get_sports():
+    logging.info("Fetching sports data")
     sports = get_sports()
     if sports is not None:
         return jsonify(sports)
     else:
         return jsonify({'error': 'Internal Server Error'}), 500
-    
+
+#Route to clear the cache
+@app.route('/clear_cache')
+def clear_cache():
+    cache.clear()
+    logging.info("Cache cleared")
+    return "Cache cleared", 200
+
 # Function to convert UTC time to Eastern time
 def convert_to_eastern(utc_time):
     if utc_time is None:
@@ -287,6 +303,7 @@ def get_sport_scores(sport_key):
 
 # Route to fetch and display details for a specific game
 @app.route('/game/<game_id>')
+@cache.cached(timeout=3600, query_string=True)
 def game_details(game_id):
     sport_key = request.args.get('sport_key')
     date = request.args.get('date')
@@ -2239,6 +2256,7 @@ def game_details(game_id):
 
 # Route for the home page
 @app.route('/')
+@cache.cached(timeout=3600, query_string=True)
 def home():
     return render_template('index.html')
 

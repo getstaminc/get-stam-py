@@ -32,7 +32,6 @@ app.register_blueprint(betting_guide)  # Register the blueprint
 @app.route('/api/sports')
 @cache.cached(timeout=3600, query_string=True)
 def api_get_sports():
-    logging.info("Fetching sports data")
     sports = get_sports()
     if sports is not None:
         return jsonify(sports)

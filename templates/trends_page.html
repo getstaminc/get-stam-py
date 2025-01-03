@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-578SDWQPSK"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-578SDWQPSK');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports App</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f9f9f9; /* Light background */
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+    
+        header {
+            background-color: #007bff; /* Primary color */
+            padding: 10px 20px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+    
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    
+        h1 {
+            margin: 20px 0;
+        }
+    
+        label {
+            font-weight: bold;
+        }
+    
+        select, input[type="date"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 178px; /* Adjust for padding and border */
+            display: block;
+        }
+        .sportSelect {
+            width: 200px;
+        }
+    
+        #gamesList {
+            list-style-type: none;
+            padding: 0;
+        }
+    
+        .game-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            background-color: #fff; /* Card background */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .games-card {
+            text-align: center;
+        }
+    
+        button, a {
+            background-color: #007bff; /* Primary color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px; /* Increased padding */
+            min-width: 120px; /* Set a minimum width */
+            text-align: center; /* Center text */
+            text-decoration: none;
+            transition: background-color 0.3s;
+            display: inline-block; /* Ensure it's treated as an inline-block element */
+        }
+
+        button:hover, a:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+
+        .circle{
+        position: absolute;
+        border-radius: 50%;
+        background: white;
+        animation: ripple 15s infinite;
+        box-shadow: 0px 0px 1px 0px #508fb9;
+        }
+
+        .small {
+            width: 50px;
+            height: 50px;
+            left: -25px;
+            bottom: -25px;
+        }
+
+        .medium {
+            width: 100px;
+            height: 100px;
+            left: -50px;
+            bottom: -50px;
+        }
+
+        .large {
+            width: 150px;
+            height: 150px;
+            left: -75px;
+            bottom: -75px;
+        }
+
+        .xlarge {
+            width: 200px;
+            height: 200px;
+            left: -100px;
+            bottom: -100px;
+        }
+
+        .xxlarge {
+            width: 250px;
+            height: 250px;
+            left: -125px;
+            bottom: -125px;
+        }
+
+        @media (min-width: 768px) {
+            .small {
+                width: 150px;
+                height: 150px;
+                left: -75px;
+                bottom: -75px;
+            }
+
+            .medium {
+                width: 300px;
+                height: 300px;
+                left: -150px;
+                bottom: -150px;
+            }
+
+            .large {
+                width: 450px;
+                height: 450px;
+                left: -225px;
+                bottom: -225px;
+            }
+
+            .xlarge {
+                width: 600px;
+                height: 600px;
+                left: -300px;
+                bottom: -300px;
+            }
+
+            .xxlarge {
+                width: 750px;
+                height: 750px;
+                left: -375px;
+                bottom: -375px;
+            }
+        }
+
+        .shade1{
+        opacity: 0.2;
+        }
+        .shade2{
+        opacity: 0.5;
+        }
+
+        .shade3{
+        opacity: 0.7;
+        }
+
+        .shade4{
+        opacity: 0.8;
+        }
+
+        .shade5{
+        opacity: 0.9;
+        }
+
+        @keyframes ripple{
+        0%{
+            transform: scale(0.8);
+        }
+        
+        50%{
+            transform: scale(1.2);
+        }
+        
+        100%{
+            transform: scale(0.8);
+        }
+        }
+
+    
+        /* Responsive Styles */
+        @media only screen and (max-width: 600px) {
+            body {
+                font-size: 14px;
+            }
+        }
+        @media only screen and (min-width: 601px) and (max-width: 768px) {
+            body {
+                font-size: 16px;
+            }
+        }
+        @media only screen and (min-width: 769px) {
+            body {
+                font-size: 18px;
+            }
+        }
+    </style>
+    <script type="module">
+        import { filterSports } from './static/js/filterSports.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const datePicker = document.getElementById('datepicker');
+            const gamesList = document.getElementById('gamesList');
+            const sportSelect = document.getElementById('sportSelect');
+
+            const fetchAndDisplaySports = () => {
+                fetch('/api/sports')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Sports data:', data);
+                        const filteredData = filterSports(data);
+                        sportSelect.innerHTML = filteredData.map(sport => `
+                            <option value="${sport.key}" ${sport.key === 'americanfootball_nfl' ? 'selected' : ''}>${sport.title}</option>
+                        `).join('');
+                        fetchAndDisplayGames(sportSelect.value, datePicker.value);
+                    })
+                    .catch(error => console.error('Error fetching sports:', error));
+            };
+
+            const fetchAndDisplayGames = (sportKey, date) => {
+                fetch(`/sports/${sportKey}?date=${date}`)
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('gamesList').innerHTML = html;
+                    })
+                    .catch(error => console.error('Error fetching games:', error));
+            };
+
+            // Set default date to today
+            const currentDate = new Date().toISOString().split('T')[0];
+            datePicker.value = currentDate;
+
+            // Fetch and display sports and games for the current date on load
+            fetchAndDisplaySports();
+
+            sportSelect.addEventListener('change', (event) => {
+                fetchAndDisplayGames(event.target.value, datePicker.value);
+            });
+
+            datePicker.addEventListener('change', (event) => {
+                fetchAndDisplayGames(sportSelect.value, event.target.value);
+            });
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <div class='ripple-background'>
+            <div class='circle xxlarge shade1'></div>
+            <div class='circle xlarge shade2'></div>
+            <div class='circle large shade3'></div>
+            <div class='circle mediun shade4'></div>
+            <div class='circle small shade5'></div>
+          
+            <nav>
+                <a href="/">Home</a>
+                <a href="/betting-guide">Betting Guide</a> <!-- New link -->
+            </nav>
+            <h1>Get STAM</h1>
+            <h2>Stats That Actually Matter</h2>
+            </div>
+    </header>
+    <label for="sportSelect">Select Sport:</label>
+    <select id="sportSelect" class="sportSelect"></select>
+    <br>
+    <label for="datepicker">Select Date:</label>
+    <input type="date" id="datepicker">
+    <ul id="gamesList"></ul>
+    <body>
+        <h1 class="center">Game Information</h1>
+        <form method="POST" action="/sports/{{ sport_key }}">
+            <button type="submit">View Trends</button>
+        </form>
+        {% if trends %}
+            <h2>Trends</h2>
+            <ul>
+                {% for matchup, matchup_trends in trends.items() %}
+                    <li>
+                        <strong>{{ matchup }}</strong>
+                        <ul>
+                            {% for team, trend in matchup_trends.items() %}
+                                <li>{{ trend }}</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if result %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Home Team</th>
+                        <th>Away Team</th>
+                        <th>Home Score</th>
+                        <th>Away Score</th>
+                        <th>Odds</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in result %}
+                        <tr>
+                            <td>{{ match.homeTeam }}</td>
+                            <td>{{ match.awayTeam }}</td>
+                            <td>{{ match.awayScore }}</td>
+                            <td>{{ match.homeScore }}</td>
+                            <td>
+                                <ul>
+                                    {% for category, odds_list in match.odds.items() %}
+                                        <li>{{ category }}: {{ odds_list }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td><a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="center">No games available</p>
+        {% endif %}
+    </body>
+</body>
+</html>

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
-from datetime import datetime, timedelta  # Import timedelta here
+from datetime import datetime, timedelta # Import timedelta here
 import pytz
 import pandas as pd
 from dateutil import parser
@@ -29,9 +29,8 @@ def api_get_sports():
     sports = get_sports()
     if sports is not None:
         return jsonify(sports)
-    else:
-        return jsonify({'error': 'Internal Server Error'}), 500
-    
+    return jsonify({'error': 'Unable to fetch sports'}), 500
+   
 # Function to convert UTC time to Eastern time
 def convert_to_eastern(utc_time):
     if utc_time is None:
@@ -119,6 +118,7 @@ def get_sport_scores(sport_key):
 
         # Handle today and future dates
         scores, odds = get_odds_data(sport_key, selected_date_start)
+        print(f"Fetched scores: {scores}") 
         if scores is None or odds is None:
             return jsonify({'error': 'Error fetching odds data'}), 500
 
@@ -173,9 +173,14 @@ def get_sport_scores(sport_key):
             })
 
         # Handle POST request for trends
-        if request.method == 'POST':
-            trends = analyze_trends_for_games(scores, selected_date_start, sport_key)
+        if request.method == 'POST' and selected_date_start.date() >= datetime.now(eastern_tz).date():
+            # Fetch scores for today or future dates
+            scores, _ = get_odds_data(sport_key, selected_date_start)
+            if not scores:
+                return jsonify({'error': 'No games found'}), 404
 
+            # Analyze trends using the external module
+            trends = analyze_trends_for_games(filtered_scores, selected_date_start, sport_key)
         return render_template_string("""
             <html>
             <head>
@@ -275,7 +280,7 @@ def analyze_trends(sport_key):
         if not current_date:
             current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
 
-        selected_date = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz).astimezone(pytz.utc)
+        selected_date = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
 
         # Fetch scores for the selected date
         scores, _ = get_odds_data(sport_key, selected_date)
@@ -283,8 +288,7 @@ def analyze_trends(sport_key):
             return jsonify({'error': 'No games found'}), 404
 
         # Analyze trends using the external module
-        trends = analyze_trends_for_games(scores, selected_date, sport_key)
-        print(f"Trends returned to get_sport_scores: {trends}")
+        trends = analyze_trends_for_games(scores, selected_date, sport_key)  # Pass sport_key here
 
         return render_template(
             'trends_page.html',  # Use a dedicated template
@@ -296,7 +300,6 @@ def analyze_trends(sport_key):
     except Exception as e:
         print(f"Error analyzing trends: {e}")
         return jsonify({'error': 'Trend analysis failed'}), 500
-
 
 
 # Route to fetch and display details for a specific game

@@ -174,7 +174,7 @@ def get_sport_scores(sport_key):
 
         # Handle POST request for trends
         if request.method == 'POST':
-            trends = analyze_trends_for_games(filtered_scores, selected_date_start)
+            trends = analyze_trends_for_games(scores, selected_date_start, sport_key)
 
         return render_template_string("""
             <html>
@@ -275,7 +275,7 @@ def analyze_trends(sport_key):
         if not current_date:
             current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
 
-        selected_date = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+        selected_date = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz).astimezone(pytz.utc)
 
         # Fetch scores for the selected date
         scores, _ = get_odds_data(sport_key, selected_date)
@@ -283,7 +283,8 @@ def analyze_trends(sport_key):
             return jsonify({'error': 'No games found'}), 404
 
         # Analyze trends using the external module
-        trends = analyze_trends_for_games(scores, selected_date)
+        trends = analyze_trends_for_games(scores, selected_date, sport_key)
+        print(f"Trends returned to get_sport_scores: {trends}")
 
         return render_template(
             'trends_page.html',  # Use a dedicated template
@@ -295,6 +296,7 @@ def analyze_trends(sport_key):
     except Exception as e:
         print(f"Error analyzing trends: {e}")
         return jsonify({'error': 'Trend analysis failed'}), 500
+
 
 
 # Route to fetch and display details for a specific game

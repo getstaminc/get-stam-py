@@ -27,23 +27,23 @@ def get_sdql_data(sport_key, date):
 
     try:
         # Print full request URL and data for debugging
-        print(f"Full Request URL: {sdql_url}?{requests.compat.urlencode(data)}")
+        # print(f"Full Request URL: {sdql_url}?{requests.compat.urlencode(data)}")
         response = requests.get(sdql_url, headers=headers, params=data)
 
-        print(f"Request URL: {sdql_url}")
-        print(f"Request Headers: {headers}")
-        print(f"Request Data: {data}")
-        print(f"Response Status Code: {response.status_code}")
-        print(f"Response Headers: {response.headers}")
-        print(f"Response Content: {response.content}")
+        # print(f"Request URL: {sdql_url}")
+        # print(f"Request Headers: {headers}")
+        # print(f"Request Data: {data}")
+        # print(f"Response Status Code: {response.status_code}")
+        # print(f"Response Headers: {response.headers}")
+        # print(f"Response Content: {response.content}")
 
         if response.status_code != 200:
-            print(f"Unexpected Content-Type: {response.headers.get('Content-Type')}")
-            print(f"Response content: {response.content.decode('utf-8')}")
+            # print(f"Unexpected Content-Type: {response.headers.get('Content-Type')}")
+            # print(f"Response content: {response.content.decode('utf-8')}")
             return None
 
         result = response.json()
-        print(f"Response JSON: {result}")
+        # print(f"Response JSON: {result}")
 
         if result.get('headers') and result.get('groups'):
             headers = result['headers']

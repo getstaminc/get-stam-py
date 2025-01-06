@@ -10,18 +10,26 @@ from utils import convert_sport_key, mlb_totals, other_totals
 from betting_guide import betting_guide
 from flask_caching import Cache
 import logging
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
 port = 5000
-
-# Configure Flask-Caching
-cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 3600})
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 # Define the Eastern timezone
 eastern_tz = pytz.timezone('US/Eastern')
+
+# Determine if caching should be enabled based on the environment
+if os.getenv('FLASK_ENV') == 'development':
+    cache = Cache(config={'CACHE_TYPE': 'null'})  # Disable caching in development
+else:
+    cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300})  # Enable caching with 5-minute timeout
+cache.init_app(app)
 
 # app.py
 from betting_guide import betting_guide  # Add this line

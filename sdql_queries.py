@@ -41,7 +41,7 @@ def get_last_5_games(team, date, sport_key):
 
     try:
         result = response.json()
-        print("SDQL response:", result)  # Print the whole response for debugging
+        # print("SDQL response:", result)  # Print the whole response for debugging
 
 
         if result.get('headers') and result.get('groups'):
@@ -57,7 +57,7 @@ def get_last_5_games(team, date, sport_key):
             # Get the last 5 games
             last_5_games = formatted_result[-5:] if formatted_result else []
 
-            print(last_5_games)
+            #print(last_5_games)
             return last_5_games
 
         else:
@@ -102,7 +102,7 @@ def get_last_5_games_vs_opponent(sport_key, team, opponent, today_date):
 
     try:
         result = response.json()
-        print("SDQL response for last 5 vs opponent:", result)  # Debugging output
+        #print("SDQL response for last 5 vs opponent:", result)  # Debugging output
 
         if result.get('headers') and result.get('groups'):
             headers = result['headers']

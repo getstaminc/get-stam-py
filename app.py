@@ -673,7 +673,7 @@ def game_details(game_id):
                         </tr>
                         <tr>
                             <th>Odds</th>
-                            <td>{{ game.oddsText }}</td>
+                            <td>{{ game.oddsText.replace('\n', '<br>')|safe }}</td>
                         </tr>
                     </table>
                                               
@@ -1258,7 +1258,7 @@ def game_details(game_id):
                     </tr>
                     <tr>
                         <th>Odds</th>
-                        <td>{{ game.oddsText }}</td>
+                        <td>{{ game.oddsText.replace('\n', '<br>')|safe }}</td>
                     </tr>
                 </table>
                 <div><p>Hover over column titles for color meanings</p></div>
@@ -1831,7 +1831,7 @@ def game_details(game_id):
                     </tr>
                     <tr>
                         <th>Odds</th>
-                        <td>{{ game.oddsText }}</td>
+                        <td>{{ game.oddsText.replace('\n', '<br>')|safe }}</td>
                     </tr>
                 </table>
 

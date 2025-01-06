@@ -52,12 +52,23 @@ def get_game_details(sport_key, date, game_id):
                     for market in bookmaker['markets']:
                         market_key = market['key']
                         for outcome in market['outcomes']:
-                            outcome_text = f"{market_key}: {outcome['name']}"
+                            outcome_text = f"{outcome['name']}"
                             if market_key in ['spreads', 'totals'] and 'point' in outcome:
-                                outcome_text += f" - {outcome['point']}"
-                            outcome_text += f" - {outcome['price']}"
+                                outcome_text += f": {outcome['point']}"
+                            if market_key == 'h2h':
+                                price = outcome['price']
+                                if price > 0:
+                                    outcome_text += f": +{price}"
+                                else:
+                                    outcome_text += f": {price}"
+                            else:
+                                price = outcome['price']
+                                if price > 0:
+                                    outcome_text += f" +{price}"
+                                else:
+                                    outcome_text += f" {price}"
                             odds_text_list.append(outcome_text)
-                game_details['oddsText'] = ', '.join(odds_text_list)
+                game_details['oddsText'] = '\n'.join(odds_text_list)
                 break
 
         return game_details if game_details else None

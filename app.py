@@ -679,7 +679,7 @@ def game_details(game_id):
                                               
                                                
                     
-                    <h2>Last 5 Games - Home Team</h2>
+                    <h2>Last 5 Games - {{ game.homeTeam }}</h2>
                     {% if home_team_last_5 %}
                        <div class="game-card">                       
                         <table>
@@ -799,7 +799,7 @@ def game_details(game_id):
                         <p class="center">No data available.</p>
                     {% endif %}
                     
-                    <h2>Last 5 Games - Away Team</h2>
+                    <h2>Last 5 Games - {{ game.awayTeam }}</h2>
                     {% if away_team_last_5 %}
                       <div class="game-card">                        
                         <table>
@@ -1262,7 +1262,7 @@ def game_details(game_id):
                     </tr>
                 </table>
                 <div><p>Hover over column titles for color meanings</p></div>
-                <h2>Last 5 Games - Home Team</h2>
+                <h2>Last 5 Games - {{ game.homeTeam }}</h2>
                 {% if home_team_last_5 %}
                     <table>
                         <thead>
@@ -1379,7 +1379,7 @@ def game_details(game_id):
                     <p class="center">No data available.</p>
                 {% endif %}
 
-                <h2>Last 5 Games - Away Team</h2>
+                <h2>Last 5 Games - {{ game.awayTeam }}</h2>
                 {% if away_team_last_5 %}
                     <table>
                         <thead>
@@ -1835,7 +1835,7 @@ def game_details(game_id):
                     </tr>
                 </table>
 
-                <h2>Last 5 Games - Home Team</h2>
+                <h2>Last 5 Games - {{ game.homeTeam }}</h2>
                 {% if home_team_last_5 %}
                     <table>
                         <thead>
@@ -1982,7 +1982,7 @@ def game_details(game_id):
                     <p class="center">No data available.</p>
                 {% endif %}
 
-                <h2>Last 5 Games - Away Team</h2>
+                <h2>Last 5 Games - {{ game.awayTeam }}</h2>
                 {% if away_team_last_5 %}
                     <table>
                         <thead>

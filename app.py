@@ -63,6 +63,7 @@ def convert_to_eastern(utc_time):
 
 def get_next_game_date_within_7_days(scores, selected_date_start):
     today = datetime.now(pytz.utc)
+    eastern = pytz.timezone('US/Eastern')
     
     # Check if selected_date_start is greater than 7 days from today
     if selected_date_start.date() > (today + timedelta(days=7)).date():
@@ -74,9 +75,11 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
     for score in scores:
         commence_time_str = score['commence_time']
         commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
-        if commence_date.date() > today.date() and commence_date.date() > selected_date_start.date() and commence_date.date() <= (today + timedelta(days=7)).date():
-            score['commence_date'] = commence_date.strftime('%Y-%m-%d')  # YYYY-MM-DD format
-            score['pretty_date'] = commence_date.strftime('%m-%d-%Y')  # MM-DD-YYYY format
+        commence_date_eastern = commence_date.astimezone(eastern)
+
+        if commence_date_eastern.date() > today.date() and commence_date_eastern.date() > selected_date_start.date() and commence_date_eastern.date() <= (today + timedelta(days=7)).date():
+            score['commence_date'] = commence_date_eastern.strftime('%Y-%m-%d')  # YYYY-MM-DD format
+            score['pretty_date'] = commence_date_eastern.strftime('%m-%d-%Y')  # MM-DD-YYYY format
             return score
     
     return False

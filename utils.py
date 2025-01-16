@@ -369,7 +369,7 @@ def convert_team_name(full_team_name):
         'Golden State Warriors': 'Warriors',
         'Houston Rockets': 'Rockets',
         'Indiana Pacers': 'Pacers',
-        'LA Clippers': 'Clippers',
+        'Los Angeles Clippers': 'Clippers',
         'Los Angeles Lakers': 'Lakers',
         'Memphis Grizzlies': 'Grizzlies',
         'Miami Heat': 'Heat',

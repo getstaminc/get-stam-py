@@ -223,16 +223,106 @@
                 font-size: 18px;
             }
         }
+
+        /* Button Group CSS */
+        .button-group {
+            display: inline-flex;
+            margin: 10px 0;
+        }
+
+        .button-group button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 1px solid #007bff;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .button-group button.active {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .split-button-left {
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+            border-right: none;
+            border-top-right-radius: 0px;
+            border-bottom-right-radius: 0px;
+        }
+
+        .split-button-right {
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            border-top-left-radius: 0px;
+            border-bottom-left-radius: 0px;
+        }
+
+        /* Loading Overlay CSS */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none; /* Initially hidden */
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+        }
     </style>
     <script type="module">
         import { filterSports } from './static/js/filterSports.js';
 
         document.addEventListener('DOMContentLoaded', () => {
+            const excludedSports = {{ excluded_sports | tojson }};
             const datePicker = document.getElementById('datepicker');
             const gamesList = document.getElementById('gamesList');
             const sportSelect = document.getElementById('sportSelect');
+            const allGamesButtonSingle = document.getElementById('allGamesButtonSingle');
+            const allGamesButtonGroup = document.getElementById('allGamesButtonGroup');
+            const trendsButton = document.getElementById('trendsButton');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const buttonGroup = document.querySelector('.button-group');
+            const allGamesButtonContainer = document.getElementById('allGamesButtonContainer');
 
             const fetchAndDisplaySports = () => {
+                setLoadingState(true);
                 fetch('/api/sports')
                     .then(response => response.json())
                     .then(data => {
@@ -240,18 +330,77 @@
                         sportSelect.innerHTML = filteredData.map(sport => `
                             <option value="${sport.key}" ${sport.key === 'americanfootball_nfl' ? 'selected' : ''}>${sport.title}</option>
                         `).join('');
+                        updateButtonDisplay(sportSelect.value);
                         fetchAndDisplayGames(sportSelect.value, datePicker.value);
+                        setLoadingState(false);
                     })
-                    .catch(error => console.error('Error fetching sports:', error));
+                    .catch(error => {
+                        console.error('Error fetching sports:', error);
+                        setLoadingState(false);
+                    });
             };
 
             const fetchAndDisplayGames = (sportKey, date) => {
+                setLoadingState(true);
                 fetch(`/sports/${sportKey}?date=${date}`)
                     .then(response => response.text())
                     .then(html => {
-                        document.getElementById('gamesList').innerHTML = html;
+                        gamesList.innerHTML = html;
+                        setLoadingState(false);
                     })
-                    .catch(error => console.error('Error fetching games:', error));
+                    .catch(error => {
+                        console.error('Error fetching games:', error);
+                        setLoadingState(false);
+                    });
+            };
+
+            const fetchAndDisplayTrends = () => {
+                setLoadingState(true);
+                const sportKey = sportSelect.value;
+                const date = datePicker.value;
+                fetch(`/trends?sport_key=${sportKey}&date=${date}`)
+                    .then(response => response.text())
+                    .then(html => {
+                        gamesList.innerHTML = html;
+                        setLoadingState(false);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching games with trends:', error);
+                        setLoadingState(false);
+                    });
+            };
+
+            const setLoadingState = (isLoading) => {
+                if (isLoading) {
+                    loadingOverlay.classList.add('active');
+                } else {
+                    loadingOverlay.classList.remove('active');
+                }
+            };
+
+            const handleButtonClick = (button) => {
+                // Fetch and display the appropriate data
+                if (button === allGamesButtonSingle || button === allGamesButtonGroup) {
+                    trendsButton.classList.remove('active');
+                    allGamesButtonSingle.classList.add('active');
+                    allGamesButtonGroup.classList.add('active');
+                    fetchAndDisplayGames(sportSelect.value, datePicker.value);
+                } else if (button === trendsButton) {
+                    allGamesButtonSingle.classList.remove('active');
+                    allGamesButtonGroup.classList.remove('active');
+                    trendsButton.classList.add('active');
+                    fetchAndDisplayTrends();
+                }
+            };
+
+            const updateButtonDisplay = (sportKey) => {
+                if (excludedSports.includes(sportKey)) {
+                    allGamesButtonContainer.style.display = 'block';
+                    buttonGroup.style.display = 'none';
+                } else {
+                    allGamesButtonContainer.style.display = 'none';
+                    buttonGroup.style.display = 'flex';
+                }
             };
 
             // Set default date to today
@@ -262,12 +411,41 @@
             fetchAndDisplaySports();
 
             sportSelect.addEventListener('change', (event) => {
+                // Update button display based on selected sport
+                updateButtonDisplay(event.target.value);
+                // Set allGamesButton as active and fetch games
+                handleButtonClick(allGamesButtonSingle);
                 fetchAndDisplayGames(event.target.value, datePicker.value);
             });
 
             datePicker.addEventListener('change', (event) => {
-                console.log('in change');
-                fetchAndDisplayGames(sportSelect.value, event.target.value);
+                // Set the active button based on the current active button
+                if (allGamesButtonSingle.classList.contains('active') || allGamesButtonGroup.classList.contains('active')) {
+                    handleButtonClick(allGamesButtonSingle);
+                    fetchAndDisplayGames(sportSelect.value, event.target.value);
+                } else if (trendsButton.classList.contains('active')) {
+                    handleButtonClick(trendsButton);
+                    fetchAndDisplayTrends();
+                }
+            });
+
+            // Add event listeners for the buttons
+            allGamesButtonSingle.addEventListener('click', () => handleButtonClick(allGamesButtonSingle));
+            allGamesButtonGroup.addEventListener('click', () => handleButtonClick(allGamesButtonGroup));
+            trendsButton.addEventListener('click', () => handleButtonClick(trendsButton));
+
+            // Add event listener for "View Details" links
+            document.addEventListener('click', (event) => {
+                if (event.target.matches('.view-details')) {
+                    setLoadingState(true);
+                }
+            });
+
+            // Add pageshow event listener to hide the loading spinner when navigating back
+            window.addEventListener('pageshow', (event) => {
+                if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                    setLoadingState(false);
+                }
             });
         });
     </script>
@@ -276,10 +454,8 @@
             const datePicker = document.getElementById('datepicker');
             
             // Reformat nextGameDate from MM-DD-YYYY to YYYY-MM-DD
-            console.log(nextGameDate);
             const [month, day, year] = nextGameDate.split('-');
             const formattedDate = `${year}-${month}-${day}`;
-            console.log(nextGameDate); 
             
             datePicker.value = nextGameDate;
             
@@ -311,6 +487,23 @@
     <br>
     <label for="datepicker">Select Date:</label>
     <input type="date" id="datepicker">
+    <!-- Add this inside the body tag where you want the buttons to appear -->
+    
+    <!-- Conditionally display the buttons based on sport_key -->
+    <div id="allGamesButtonContainer" style="display: none;">
+        <button id="allGamesButtonSingle">View All Games</button>
+    </div>
+    <div class="button-group" style="display: none;">
+        <button id="allGamesButtonGroup" class="split-button-left active">View All Games</button>
+        <button id="trendsButton" class="split-button-right">View Games with Trends</button>
+    </div>
     <ul id="gamesList"></ul>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
 </body>
 </html>

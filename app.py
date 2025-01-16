@@ -12,14 +12,15 @@ from flask_caching import Cache
 import logging
 import os
 from dotenv import load_dotenv
+from constants import EXCLUDED_SPORTS 
 
 load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
 port = 5000
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging to write to a file
+logging.basicConfig(filename='app.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Define the Eastern timezone
 eastern_tz = pytz.timezone('US/Eastern')
@@ -276,9 +277,8 @@ def get_sport_scores(sport_key):
                                     <th>Home Score</th>
                                     <th>Away Score</th>
                                     <th>Odds</th>
-                                    {% if sport_key not in ['mma_mixed_martial_arts', 'soccer_epl', 'soccer_france_ligue_one', 'soccer_germany_bundesliga', 'soccer_italy_serie_a', 'soccer_spain_la_liga', 'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'boxing_boxing'] %}
+                                    {% if sport_key not in excluded_sports %}
                                         <th>Details</th>
-                                          
                                     {% endif %}
                                 </tr>
                             </thead>
@@ -311,9 +311,9 @@ def get_sport_scores(sport_key):
                                                 </ul>
                                             </div>
                                         </td>
-                                        {% if sport_key not in ['mma_mixed_martial_arts', 'soccer_epl', 'soccer_france_ligue_one', 'soccer_germany_bundesliga', 'soccer_italy_serie_a', 'soccer_spain_la_liga', 'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'boxing_boxing'] %}
+                                        {% if sport_key not in excluded_sports %}
                                             <td>
-                                                <a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}">View Details</a>
+                                                <a href="/game/{{ match.game_id }}?sport_key={{ sport_key }}&date={{ current_date }}" class="view-details">View Details</a>
                                             </td>
                                         {% endif %}
                                     </tr>
@@ -328,7 +328,7 @@ def get_sport_scores(sport_key):
                     {% endif %}
                 </body>
                 </html>
-            """, result=formatted_scores, sport_key=sport_key, current_date=current_date, next_game_date=next_game_date)
+            """, result=formatted_scores, sport_key=sport_key, current_date=current_date, next_game_date=next_game_date, excluded_sports=EXCLUDED_SPORTS)
 
     except requests.exceptions.RequestException as e:
         print('Request error:', str(e))
@@ -337,6 +337,184 @@ def get_sport_scores(sport_key):
         print('Error fetching scores:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
 
+
+@app.route('/trends')
+@cache.cached(timeout=3600, query_string=True)
+def show_trends():
+    sport_key = request.args.get('sport_key')
+    date = request.args.get('date')
+
+    if not sport_key or not date:
+        return jsonify({'error': 'Missing sport_key or date'}), 400
+
+    try:
+        selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+        scores, odds = get_odds_data(sport_key, selected_date_start)
+        if scores is None or odds is None:
+            return jsonify({'error': 'Error fetching odds data'}), 500
+
+        filtered_scores = []
+        for score in scores:
+            commence_time_str = score['commence_time']
+            commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
+            commence_date_eastern = convert_to_eastern(commence_date)
+
+            if commence_date_eastern.date() == selected_date_start.date():
+                filtered_scores.append(score)
+
+        next_game_date = False
+        if not filtered_scores:
+            next_game_date = get_next_game_date_within_7_days(scores, selected_date_start)
+
+        formatted_scores = []
+        for match in filtered_scores:
+            home_team = match.get('home_team', 'N/A')
+            away_team = match.get('away_team', 'N/A')
+            home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
+            away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
+
+            match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
+            odds_data = {'h2h': [], 'spreads': [], 'totals': []}
+
+            if match_odds:
+                for bookmaker in match_odds['bookmakers']:
+                    for market in bookmaker['markets']:
+                        market_key = market['key']
+                        for outcome in market['outcomes']:
+                            outcome_text = f"{outcome['name']}"
+                            if market_key in ['spreads', 'totals'] and 'point' in outcome:
+                                outcome_text += f": {outcome['point']}"
+                            if market_key == 'h2h':
+                                price = outcome['price']
+                                if price > 0:
+                                    outcome_text += f": +{price}"
+                                else:
+                                    outcome_text += f": {price}"
+                            else:
+                                price = outcome['price']
+                                if price > 0:
+                                    outcome_text += f" +{price}"
+                                else:
+                                    outcome_text += f" {price}"
+                            odds_data[market_key].append(outcome_text)
+
+            formatted_scores.append({
+                'homeTeam': home_team,
+                'awayTeam': away_team,
+                'homeScore': away_score,
+                'awayScore': home_score,
+                'odds': odds_data,
+                'game_id': match['id'],
+            })
+
+        # Filter the games to include only those with trends
+        games_with_trends = [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
+
+        current_date = request.args.get('date', None)
+        if not current_date:
+            current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
+
+        return render_template('trends_list.html', result=games_with_trends, sport_key=sport_key, current_date=current_date)
+    except Exception as e:
+        print('Error fetching games with trends:', str(e))
+        return jsonify({'error': 'Internal Server Error'}), 500
+    
+def detect_trends(games, sport_key):
+    def is_winner(points, o_points):
+        if points is None or o_points is None:
+            return None
+        return points > o_points
+
+    def calculate_line_result(points, line, o_points):
+        if points is None or line is None or o_points is None:
+            return None, ''
+        if points + line > o_points:
+            return True, 'green-bg'
+        elif points + line < o_points:
+            return False, 'red-bg'
+        else:
+            return None, ''
+
+    def other_totals(points, o_points, total):
+        if points is None or o_points is None or total is None:
+            return None, ''
+        if points + o_points > total:
+            return True, 'green-bg'
+        elif points + o_points < total:
+            return False, 'red-bg'
+        else:
+            return None, ''
+
+    if sport_key == 'icehockey_nhl':
+        points_key = 'goals'
+    else:
+        points_key = 'points'
+
+    # Check for trends in the 'team' column
+    team_colors = []
+    for game in games:
+        result = is_winner(game[points_key], game[f'o:{points_key}'])
+        if result is not None:
+            color = 'green-bg' if result else 'red-bg'
+            team_colors.append(color)
+    if team_colors.count('green-bg') == 5 or team_colors.count('red-bg') == 5:
+        return True
+
+    # Check for trends in the 'points' column
+    points_colors = []
+    for game in games:
+        result = is_winner(game[points_key], game[f'o:{points_key}'])
+        if result is not None:
+            color = 'green-bg' if result else 'red-bg'
+            points_colors.append(color)
+    if points_colors.count('green-bg') == 5 or points_colors.count('red-bg') == 5:
+        return True
+
+    # Skip line trend check for NHL
+    if sport_key != 'icehockey_nhl':
+        # Check for trends in the 'line' column
+        line_colors = []
+        for game in games:
+            result, color = calculate_line_result(game[points_key], game['line'], game[f'o:{points_key}'])
+            if result is not None:
+                line_colors.append(color)
+        if line_colors.count('green-bg') == 5 or line_colors.count('red-bg') == 5:
+            return True
+
+    # Check for trends in the 'total' column
+    total_colors = []
+    for game in games:
+        result, color = other_totals(game[points_key], game[f'o:{points_key}'], game['total'])
+        if result is not None:
+            total_colors.append(color)
+    if total_colors.count('green-bg') == 5 or total_colors.count('red-bg') == 5:
+        return True
+
+    return False
+
+def check_for_trends(game_details, selected_date, sport_key):
+    home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key) or []
+    away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key) or []
+    last_5_vs_opponent = get_last_5_games_vs_opponent(
+        team=game_details['homeTeam'],
+        opponent=game_details['awayTeam'],
+        today_date=selected_date,
+        sport_key=sport_key
+    ) or []
+    #print("HOME", home_team_last_5, "AWAY", away_team_last_5, "LAST", last_5_vs_opponent)
+
+    home_trend = detect_trends(home_team_last_5, sport_key)
+    away_trend = detect_trends(away_team_last_5, sport_key)
+    vs_opponent_trend = detect_trends(last_5_vs_opponent, sport_key)
+
+    trend_detected = home_trend or away_trend or vs_opponent_trend
+
+    return {
+        'home_trend': home_trend,
+        'away_trend': away_trend,
+        'vs_opponent_trend': vs_opponent_trend,
+        'trend_detected': trend_detected
+    }
 
 # Route to fetch and display details for a specific game
 @app.route('/game/<game_id>')
@@ -2295,7 +2473,7 @@ def game_details(game_id):
 @app.route('/')
 @cache.cached(timeout=3600, query_string=True)
 def home():
-    return render_template('index.html')
+    return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
 if __name__ == '__main__':
     app.run(port=port)

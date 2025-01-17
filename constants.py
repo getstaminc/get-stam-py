@@ -8,5 +8,6 @@ EXCLUDED_SPORTS = [
     'soccer_spain_la_liga',
     'soccer_uefa_champs_league',
     'soccer_uefa_europa_league',
-    'boxing_boxing'
+    'boxing_boxing',
+    'basketball_ncaab'
 ]

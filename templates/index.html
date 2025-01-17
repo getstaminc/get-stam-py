@@ -75,6 +75,14 @@
         .games-card {
             text-align: center;
         }
+
+
+        button:disabled {
+            background-color: #cccccc; /* Light grey background */
+            color: #666666; /* Dark grey text */
+            cursor: not-allowed; /* Change cursor to not-allowed */
+            opacity: 0.6; /* Reduce opacity */
+        }
     
         button, a {
             background-color: #007bff; /* Primary color */
@@ -347,6 +355,17 @@
                     .then(html => {
                         gamesList.innerHTML = html;
                         setLoadingState(false);
+
+                        // Check if there are any games returned
+                        const noGames = gamesList.querySelectorAll('tr').length === 0;
+                        console.log(noGames);
+                        if (noGames) {
+                            allGamesButtonGroup.disabled = true;
+                            trendsButton.disabled = true;
+                        } else {
+                            allGamesButtonGroup.disabled = false;
+                            trendsButton.disabled = false;
+                        }
                     })
                     .catch(error => {
                         console.error('Error fetching games:', error);

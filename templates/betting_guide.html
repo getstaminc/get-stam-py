@@ -22,6 +22,7 @@
             font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 20px;
+            color: #354050
         }
     
         header {
@@ -67,7 +68,7 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
     
-        button, a {
+        button, .button {
             background-color: #007bff; /* Primary color */
             color: white;
             border: none;
@@ -79,6 +80,10 @@
     
         button:hover, a:hover {
             background-color: #0056b3; /* Darker shade on hover */
+        }
+
+        a {
+            color: #007bff;
         }
     
         /* Responsive Styles */
@@ -123,8 +128,8 @@
 <body>
     <header>
         <nav>
-            <a href="/">Home</a>
-            <a href="/betting-guide">Betting Guide</a> <!-- New link -->
+            <a class="button" href="/">Home</a>
+            <a class="button" href="/betting-guide">Betting Guide</a> <!-- New link -->
         </nav>
     </header>
     <main>

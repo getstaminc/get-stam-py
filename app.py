@@ -707,10 +707,12 @@ def game_details(game_id):
 
                         .red-bg {
                             background-color: #e35a69;
+                            color: black;
                         }
 
                         .grey-bg {
                             background-color: #c6c8ca;
+                            color: black;
                         }
 
                         #gamesList {
@@ -1302,10 +1304,12 @@ def game_details(game_id):
 
                         .red-bg {
                             background-color: #e35a69;
+                            color: black;
                         }
 
                         .grey-bg {
                             background-color: #c6c8ca;
+                            color: black;
                         }
 
                         #gamesList {
@@ -1884,10 +1888,12 @@ def game_details(game_id):
 
                         .red-bg {
                             background-color: #e35a69;
+                            color: black;
                         }
 
                         .grey-bg {
                             background-color: #c6c8ca;
+                            color: black;
                         }
 
                         #gamesList {

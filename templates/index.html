@@ -319,15 +319,14 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const excludedSports = {{ excluded_sports | tojson }};
+
             const datePicker = document.getElementById('datepicker');
             const gamesList = document.getElementById('gamesList');
             const sportSelect = document.getElementById('sportSelect');
-            const allGamesButtonSingle = document.getElementById('allGamesButtonSingle');
             const allGamesButtonGroup = document.getElementById('allGamesButtonGroup');
             const trendsButton = document.getElementById('trendsButton');
             const loadingOverlay = document.getElementById('loadingOverlay');
             const buttonGroup = document.querySelector('.button-group');
-            const allGamesButtonContainer = document.getElementById('allGamesButtonContainer');
 
             const fetchAndDisplaySports = () => {
                 setLoadingState(true);
@@ -399,13 +398,11 @@
 
             const handleButtonClick = (button) => {
                 // Fetch and display the appropriate data
-                if (button === allGamesButtonSingle || button === allGamesButtonGroup) {
+                if (button === allGamesButtonGroup) {
                     trendsButton.classList.remove('active');
-                    allGamesButtonSingle.classList.add('active');
                     allGamesButtonGroup.classList.add('active');
                     fetchAndDisplayGames(sportSelect.value, datePicker.value);
                 } else if (button === trendsButton) {
-                    allGamesButtonSingle.classList.remove('active');
                     allGamesButtonGroup.classList.remove('active');
                     trendsButton.classList.add('active');
                     fetchAndDisplayTrends();
@@ -414,10 +411,8 @@
 
             const updateButtonDisplay = (sportKey) => {
                 if (excludedSports.includes(sportKey)) {
-                    allGamesButtonContainer.style.display = 'block';
                     buttonGroup.style.display = 'none';
                 } else {
-                    allGamesButtonContainer.style.display = 'none';
                     buttonGroup.style.display = 'flex';
                 }
             };
@@ -432,15 +427,15 @@
             sportSelect.addEventListener('change', (event) => {
                 // Update button display based on selected sport
                 updateButtonDisplay(event.target.value);
-                // Set allGamesButton as active and fetch games
-                handleButtonClick(allGamesButtonSingle);
+                // Set the initial active button
+                handleButtonClick(allGamesButtonGroup);
                 fetchAndDisplayGames(event.target.value, datePicker.value);
             });
 
             datePicker.addEventListener('change', (event) => {
                 // Set the active button based on the current active button
-                if (allGamesButtonSingle.classList.contains('active') || allGamesButtonGroup.classList.contains('active')) {
-                    handleButtonClick(allGamesButtonSingle);
+                if (allGamesButtonGroup.classList.contains('active')) {
+                    handleButtonClick(allGamesButtonGroup);
                     fetchAndDisplayGames(sportSelect.value, event.target.value);
                 } else if (trendsButton.classList.contains('active')) {
                     handleButtonClick(trendsButton);
@@ -449,7 +444,6 @@
             });
 
             // Add event listeners for the buttons
-            allGamesButtonSingle.addEventListener('click', () => handleButtonClick(allGamesButtonSingle));
             allGamesButtonGroup.addEventListener('click', () => handleButtonClick(allGamesButtonGroup));
             trendsButton.addEventListener('click', () => handleButtonClick(trendsButton));
 
@@ -506,12 +500,6 @@
     <br>
     <label for="datepicker">Select Date:</label>
     <input type="date" id="datepicker">
-    <!-- Add this inside the body tag where you want the buttons to appear -->
-    
-    <!-- Conditionally display the buttons based on sport_key -->
-    <div id="allGamesButtonContainer" style="display: none;">
-        <button id="allGamesButtonSingle">View All Games</button>
-    </div>
     <div class="button-group" style="display: none;">
         <button id="allGamesButtonGroup" class="split-button-left active">View All Games</button>
         <button id="trendsButton" class="split-button-right">View Games with Trends</button>

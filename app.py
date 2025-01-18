@@ -119,7 +119,7 @@ def get_sport_scores(sport_key):
                             border-collapse: collapse;
                         }
                         table, th, td {
-                            border: 1px solid black;
+                            border: 1.5px solid #ddd;
                         }
                         th, td {
                             padding: 8px;
@@ -656,6 +656,7 @@ def game_details(game_id):
                             font-family: 'Poppins', sans-serif;
                             margin: 0;
                             padding: 20px;
+                            color: #354050;
                         }
 
                         header {
@@ -687,7 +688,7 @@ def game_details(game_id):
                         }
 
                         table, th, td {
-                            border: 1px solid black;
+                            border: 1.5px solid #ddd;
                         }
 
                         th, td {
@@ -700,20 +701,20 @@ def game_details(game_id):
                         }
 
                         .green-bg {
-                            background-color: green;
+                            background-color: #7ebe7e;
                         }
 
                         .red-bg {
-                            background-color: red;
+                            background-color: #e35a69;
                         }
 
                         .grey-bg {
-                            background-color: grey;
+                            background-color: #c6c8ca;
                         }
 
                         #gamesList {
-                        list-style-type: none;
-                        padding: 0;
+                            list-style-type: none;
+                            padding: 0;
                         }
                 
                         .game-card {
@@ -1242,6 +1243,7 @@ def game_details(game_id):
                             font-family: 'Poppins', sans-serif;
                             margin: 0;
                             padding: 20px;
+                            color: #354050;
                         }
 
                         header {
@@ -1273,7 +1275,7 @@ def game_details(game_id):
                         }
 
                         table, th, td {
-                            border: 1px solid black;
+                            border: 1.5px solid #ddd;
                         }
 
                         th, td {
@@ -1286,20 +1288,20 @@ def game_details(game_id):
                         }
 
                         .green-bg {
-                            background-color: green;
+                            background-color: #7ebe7e;
                         }
 
                         .red-bg {
-                            background-color: red;
+                            background-color: #e35a69;
                         }
 
                         .grey-bg {
-                            background-color: grey;
+                            background-color: #c6c8ca;
                         }
 
                         #gamesList {
-                        list-style-type: none;
-                        padding: 0;
+                            list-style-type: none;
+                            padding: 0;
                         }
                 
                         .game-card {
@@ -1814,6 +1816,7 @@ def game_details(game_id):
                             font-family: 'Poppins', sans-serif;
                             margin: 0;
                             padding: 20px;
+                            color: #354050;
                         }
 
                         header {
@@ -1846,7 +1849,7 @@ def game_details(game_id):
                         }
 
                         table, th, td {
-                            border: 1px solid black;
+                            border: 1.5px solid #ddd;
                         }
 
                         th, td {
@@ -1859,20 +1862,20 @@ def game_details(game_id):
                         }
 
                         .green-bg {
-                            background-color: green;
+                            background-color: #7ebe7e;
                         }
 
                         .red-bg {
-                            background-color: red;
+                            background-color: #e35a69;
                         }
 
                         .grey-bg {
-                            background-color: grey;
+                            background-color: #c6c8ca;
                         }
 
                         #gamesList {
-                        list-style-type: none;
-                        padding: 0;
+                            list-style-type: none;
+                            padding: 0;
                         }
                 
                         .game-card {

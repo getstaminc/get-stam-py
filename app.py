@@ -702,6 +702,7 @@ def game_details(game_id):
 
                         .green-bg {
                             background-color: #7ebe7e;
+                            color: black;
                         }
 
                         .red-bg {
@@ -1296,6 +1297,7 @@ def game_details(game_id):
 
                         .green-bg {
                             background-color: #7ebe7e;
+                            color: black;
                         }
 
                         .red-bg {
@@ -1877,6 +1879,7 @@ def game_details(game_id):
 
                         .green-bg {
                             background-color: #7ebe7e;
+                            color: black;
                         }
 
                         .red-bg {

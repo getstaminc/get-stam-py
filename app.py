@@ -740,6 +740,13 @@ def game_details(game_id):
                             background-color: #0056b3; /* Darker shade on hover */
                         }
 
+                        button:disabled {
+                            background-color: #cccccc; /* Light grey background */
+                            color: #666666; /* Dark grey text */
+                            cursor: not-allowed; /* Change cursor to not-allowed */
+                            opacity: 0.6; /* Reduce opacity */
+                        }
+
                         /* Responsive Styles */
                         @media only screen and (max-width: 600px) {
                             body {
@@ -1311,6 +1318,13 @@ def game_details(game_id):
                             margin: 10px 0;
                             background-color: #fff; /* Card background */
                             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        }
+                                              
+                        button:disabled {
+                            background-color: #cccccc; /* Light grey background */
+                            color: #666666; /* Dark grey text */
+                            cursor: not-allowed; /* Change cursor to not-allowed */
+                            opacity: 0.6; /* Reduce opacity */
                         }
 
                         button, a {
@@ -1885,6 +1899,13 @@ def game_details(game_id):
                             margin: 10px 0;
                             background-color: #fff; /* Card background */
                             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        }
+                        
+                        button:disabled {
+                            background-color: #cccccc; /* Light grey background */
+                            color: #666666; /* Dark grey text */
+                            cursor: not-allowed; /* Change cursor to not-allowed */
+                            opacity: 0.6; /* Reduce opacity */
                         }
 
                         button, a {

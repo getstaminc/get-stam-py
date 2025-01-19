@@ -928,7 +928,6 @@ def game_details(game_id):
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Runs</th>
-                                    <th>Opponent Line</th>
                                     <th>Total <span class="info-icon">i</span>
                                          <span class="color-key">
                                               <div class="color-keys">
@@ -975,7 +974,6 @@ def game_details(game_id):
                                         <td>{{ game['line'] }}</td>
                                         <td>{{ game['o:team'] }}</td>
                                         <td>{{ game['o:runs'] }}</td>
-                                        <td>{{ game['o:line'] }}</td>
                                         <td class="{{ total_class }}">
                                             {{ game['total'] }}
                                         </td>
@@ -1047,7 +1045,6 @@ def game_details(game_id):
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Runs</th>
-                                    <th>Opponent Line</th>
                                     <th>Total <span class="info-icon">i</span>
                                          <span class="color-key">
                                               <div class="color-keys">
@@ -1093,8 +1090,7 @@ def game_details(game_id):
                                         </td>             
                                         <td>{{ game['line'] }}</td>
                                         <td>{{ game['o:team'] }}</td>
-                                        <td>{{ game['o:runs'] }}</td>             
-                                        <td>{{ game['o:line'] }}</td>
+                                        <td>{{ game['o:runs'] }}</td>
                                         <td class="{{ total_class }}">
                                             {{ game['total'] }}
                                         </td>
@@ -1166,7 +1162,6 @@ def game_details(game_id):
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Runs</th>
-                                    <th>Opponent Line</th>
                                     <th>Total <span class="info-icon">i</span>
                                          <span class="color-key">
                                               <div class="color-keys">
@@ -1213,7 +1208,6 @@ def game_details(game_id):
                                         <td>{{ game['line'] }}</td>
                                         <td>{{ game['o:team'] }}</td>
                                         <td>{{ game['o:runs'] }}</td>
-                                        <td>{{ game['o:line'] }}</td>
                                         <td class="{{ total_class }}">
                                             {{ game['total'] }}
                                         </td>
@@ -1517,7 +1511,6 @@ def game_details(game_id):
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Goals</th>
-                                    <th>Opponent Line</th>
                                     <th>Total <span class="info-icon">i</span>
                                          <span class="color-key">
                                               <div class="color-keys">
@@ -1564,7 +1557,6 @@ def game_details(game_id):
                                     <td>{{ game['line'] }}</td>
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:goals'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
                                     <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
@@ -1634,7 +1626,6 @@ def game_details(game_id):
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Goals</th>
-                                    <th>Opponent Line</th>
                                     <th>Total <span class="info-icon">i</span>
                                          <span class="color-key">
                                               <div class="color-keys">
@@ -1681,7 +1672,6 @@ def game_details(game_id):
                                     <td>{{ game['line'] }}</td>
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:goals'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
                                     <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
@@ -1751,7 +1741,6 @@ def game_details(game_id):
                                     <th>Line</th>
                                     <th>Opponent</th>
                                     <th>Opponent Goals</th>
-                                    <th>Opponent Line</th>
                                     <th>Total <span class="info-icon">i</span>
                                          <span class="color-key">
                                               <div class="color-keys">
@@ -1794,7 +1783,6 @@ def game_details(game_id):
                                     <td>{{ game['line'] }}</td>
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:goals'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
                                     <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
@@ -2125,7 +2113,6 @@ def game_details(game_id):
                                 </th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
-                                <th>Opponent Line</th>
                                 <th>Total <span class="info-icon">i</span>
                                     <span class="color-key">
                                               <div class="color-keys">
@@ -2175,7 +2162,6 @@ def game_details(game_id):
                                     </td>             
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:points'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
                                     <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
@@ -2272,7 +2258,6 @@ def game_details(game_id):
                                 </th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
-                                <th>Opponent Line</th>
                                 <th>Total <span class="info-icon">i</span>
                                     <span class="color-key">
                                               <div class="color-keys">
@@ -2321,8 +2306,7 @@ def game_details(game_id):
                                         {{ game['line'] }}
                                     </td>
                                     <td>{{ game['o:team'] }}</td>
-                                    <td>{{ game['o:points'] }}</td>             
-                                    <td>{{ game['o:line'] }}</td>
+                                    <td>{{ game['o:points'] }}</td>
                                     <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>
@@ -2419,7 +2403,6 @@ def game_details(game_id):
                                 </th>
                                 <th>Opponent</th>
                                 <th>Opponent Points</th>
-                                <th>Opponent Line</th>
                                 <th>Total <span class="info-icon">i</span>
                                     <span class="color-key">
                                               <div class="color-keys">
@@ -2465,7 +2448,6 @@ def game_details(game_id):
                                     </td>
                                     <td>{{ game['o:team'] }}</td>
                                     <td>{{ game['o:points'] }}</td>
-                                    <td>{{ game['o:line'] }}</td>
                                     <td class="{{ total_class }}">
                                         {{ game['total'] }}
                                     </td>

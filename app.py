@@ -702,14 +702,17 @@ def game_details(game_id):
 
                         .green-bg {
                             background-color: #7ebe7e;
+                            color: black;
                         }
 
                         .red-bg {
                             background-color: #e35a69;
+                            color: black;
                         }
 
                         .grey-bg {
                             background-color: #c6c8ca;
+                            color: black;
                         }
 
                         #gamesList {
@@ -1290,14 +1293,17 @@ def game_details(game_id):
 
                         .green-bg {
                             background-color: #7ebe7e;
+                            color: black;
                         }
 
                         .red-bg {
                             background-color: #e35a69;
+                            color: black;
                         }
 
                         .grey-bg {
                             background-color: #c6c8ca;
+                            color: black;
                         }
 
                         #gamesList {
@@ -1865,14 +1871,17 @@ def game_details(game_id):
 
                         .green-bg {
                             background-color: #7ebe7e;
+                            color: black;
                         }
 
                         .red-bg {
                             background-color: #e35a69;
+                            color: black;
                         }
 
                         .grey-bg {
                             background-color: #c6c8ca;
+                            color: black;
                         }
 
                         #gamesList {

@@ -1,7 +1,7 @@
 import time
 import requests
 from datetime import datetime
-from utils import convert_team_name, convert_sport_key
+from shared_utils import convert_team_name, convert_sport_key
 
 SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'

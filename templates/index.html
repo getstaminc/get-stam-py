@@ -233,6 +233,41 @@
             }
         }
 
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #d8ebff;
+        }
+        tr:nth-child(odd) {
+            background-color: #FFFFFF;
+        }
+        .odds-category {
+            margin-top: 10px;
+        }
+        .odds-category h4 {
+            margin-bottom: 5px;
+            color: #007bff;
+        }
+        .odds-category ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .center {
+            text-align: center;
+        }
+
         /* Button Group CSS */
         .button-group {
             display: inline-flex;
@@ -378,15 +413,95 @@
                 const sportKey = sportSelect.value;
                 const date = datePicker.value;
                 fetch(`/trends?sport_key=${sportKey}&date=${date}`)
-                    .then(response => response.text())
-                    .then(html => {
-                        gamesList.innerHTML = html;
-                        setLoadingState(false);
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.task_id) {
+                            checkTaskStatus(data.task_id);
+                        } else {
+                            console.error('Error fetching trends:', data);
+                            setLoadingState(false);
+                        }
                     })
                     .catch(error => {
-                        console.error('Error fetching games with trends:', error);
+                        console.error('Error fetching trends:', error);
                         setLoadingState(false);
                     });
+            };
+
+            const checkTaskStatus = (taskId) => {
+                fetch(`/status/${taskId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.state === 'PENDING') {
+                            setTimeout(() => checkTaskStatus(taskId), 1000);
+                        } else if (data.state === 'SUCCESS') {
+                            displayTrends(data.result);
+                            setLoadingState(false);
+                        } else {
+                            console.error('Error fetching task status:', data);
+                            setLoadingState(false);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching task status:', error);
+                        setLoadingState(false);
+                    });
+            };
+
+            const displayTrends = (data) => {
+                const { result, sport_key, current_date } = data;
+                gamesList.innerHTML = ''; // Clear previous results
+
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Home Team</th>
+                            <th>Away Team</th>
+                            <th>Home Score</th>
+                            <th>Away Score</th>
+                            <th>Odds</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                `;
+                const tbody = table.querySelector('tbody');
+
+                if (Array.isArray(result)) {
+                    result.forEach(match => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${match.homeTeam}</td>
+                            <td>${match.awayTeam}</td>
+                            <td>${match.homeScore}</td>
+                            <td>${match.awayScore}</td>
+                            <td>
+                                <div class="odds-category">
+                                    <h4>H2H:</h4>
+                                    <ul>
+                                        ${match.odds.h2h.map(odd => `<li>${odd}</li>`).join('')}
+                                    </ul>
+                                    <h4>Spreads:</h4>
+                                    <ul>
+                                        ${match.odds.spreads.map(odd => `<li>${odd}</li>`).join('')}
+                                    </ul>
+                                    <h4>Totals:</h4>
+                                    <ul>
+                                        ${match.odds.totals.map(odd => `<li>${odd}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </td>
+                            <td><a href="/game/${match.game_id}?sport_key=${sport_key}&date=${current_date}" class="view-details">View Details</a></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    console.error('Unexpected result format:', result);
+                }
+
+                gamesList.appendChild(table);
             };
 
             const setLoadingState = (isLoading) => {

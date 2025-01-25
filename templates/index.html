@@ -450,58 +450,62 @@
 
             const displayTrends = (data) => {
                 const { result, sport_key, current_date } = data;
+                const gamesList = document.getElementById('gamesList'); // Assuming you have an element with id 'gamesList'
                 gamesList.innerHTML = ''; // Clear previous results
 
-                const table = document.createElement('table');
-                table.innerHTML = `
-                    <thead>
-                        <tr>
-                            <th>Home Team</th>
-                            <th>Away Team</th>
-                            <th>Home Score</th>
-                            <th>Away Score</th>
-                            <th>Odds</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                `;
-                const tbody = table.querySelector('tbody');
+                const title = document.createElement('h1');
+                title.className = 'center';
+                title.textContent = 'Game Information';
+                gamesList.appendChild(title);
 
-                if (Array.isArray(result)) {
-                    result.forEach(match => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${match.homeTeam}</td>
-                            <td>${match.awayTeam}</td>
-                            <td>${match.homeScore}</td>
-                            <td>${match.awayScore}</td>
-                            <td>
-                                <div class="odds-category">
-                                    <h4>H2H:</h4>
-                                    <ul>
-                                        ${match.odds.h2h.map(odd => `<li>${odd}</li>`).join('')}
-                                    </ul>
-                                    <h4>Spreads:</h4>
-                                    <ul>
-                                        ${match.odds.spreads.map(odd => `<li>${odd}</li>`).join('')}
-                                    </ul>
-                                    <h4>Totals:</h4>
-                                    <ul>
-                                        ${match.odds.totals.map(odd => `<li>${odd}</li>`).join('')}
-                                    </ul>
-                                </div>
-                            </td>
-                            <td><a href="/game/${match.game_id}?sport_key=${sport_key}&date=${current_date}" class="view-details">View Details</a></td>
-                        `;
-                        tbody.appendChild(row);
-                    });
+                if (Array.isArray(result) && result.length > 0) {
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Home Team</th>
+                                <th>Away Team</th>
+                                <th>Home Score</th>
+                                <th>Away Score</th>
+                                <th>Odds</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${result.map(match => `
+                                <tr>
+                                    <td>${match.homeTeam}</td>
+                                    <td>${match.awayTeam}</td>
+                                    <td>${match.homeScore}</td>
+                                    <td>${match.awayScore}</td>
+                                    <td>
+                                        <div class="odds-category">
+                                            <h4>H2H:</h4>
+                                            <ul>
+                                                ${match.odds.h2h.map(odd => `<li>${odd}</li>`).join('')}
+                                            </ul>
+                                            <h4>Spreads:</h4>
+                                            <ul>
+                                                ${match.odds.spreads.map(odd => `<li>${odd}</li>`).join('')}
+                                            </ul>
+                                            <h4>Totals:</h4>
+                                            <ul>
+                                                ${match.odds.totals.map(odd => `<li>${odd}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                    <td><a href="/game/${match.game_id}?sport_key=${sport_key}&date=${current_date}" class="view-details">View Details</a></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                    gamesList.appendChild(table);
                 } else {
-                    console.error('Unexpected result format:', result);
+                    const noGamesMessage = document.createElement('p');
+                    noGamesMessage.className = 'center';
+                    noGamesMessage.textContent = 'No games on this date';
+                    gamesList.appendChild(noGamesMessage);
                 }
-
-                gamesList.appendChild(table);
             };
 
             const setLoadingState = (isLoading) => {

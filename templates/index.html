@@ -233,6 +233,41 @@
             }
         }
 
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #d8ebff;
+        }
+        tr:nth-child(odd) {
+            background-color: #FFFFFF;
+        }
+        .odds-category {
+            margin-top: 10px;
+        }
+        .odds-category h4 {
+            margin-bottom: 5px;
+            color: #007bff;
+        }
+        .odds-category ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .center {
+            text-align: center;
+        }
+
         /* Button Group CSS */
         .button-group {
             display: inline-flex;
@@ -384,15 +419,107 @@
                 const sportKey = sportSelect.value;
                 const date = datePicker.value;
                 fetch(`/trends?sport_key=${sportKey}&date=${date}`)
-                    .then(response => response.text())
-                    .then(html => {
-                        gamesList.innerHTML = html;
-                        setLoadingState(false);
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.task_id) {
+                            const numGames = data.num_games;
+                            const gameText = numGames === 1 ? 'game' : 'games';
+                            document.querySelector('.loading-text').textContent = `Analyzing ${numGames} ${gameText} for trends...`;
+                            checkTaskStatus(data.task_id);
+                        } else {
+                            console.error('Error fetching trends:', data);
+                            setLoadingState(false);
+                            document.querySelector('.loading-text').textContent = 'Loading...';
+                        }
                     })
                     .catch(error => {
-                        console.error('Error fetching games with trends:', error);
+                        console.error('Error fetching trends:', error);
                         setLoadingState(false);
+                        document.querySelector('.loading-text').textContent = 'Loading...';
                     });
+            };
+
+            const checkTaskStatus = (taskId) => {
+                fetch(`/status/${taskId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.state === 'PENDING' || data.state === 'STARTED') {
+                            setTimeout(() => checkTaskStatus(taskId), 1000);
+                        } else if (data.state === 'SUCCESS') {
+                            displayTrends(data.result);
+                            setLoadingState(false);
+                            document.querySelector('.loading-text').textContent = 'Loading...';
+                        } else {
+                            console.error('Error processing trends:', data);
+                            setLoadingState(false);
+                            document.querySelector('.loading-text').textContent = 'Loading...';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking task status:', error);
+                        setLoadingState(false);
+                        document.querySelector('.loading-text').textContent = 'Loading...';
+                    });
+            };
+
+            const displayTrends = (data) => {
+                const { result, sport_key, current_date } = data;
+                const gamesList = document.getElementById('gamesList'); // Assuming you have an element with id 'gamesList'
+                gamesList.innerHTML = ''; // Clear previous results
+
+                const title = document.createElement('h1');
+                title.className = 'center';
+                title.textContent = 'Game Information';
+                gamesList.appendChild(title);
+
+                if (Array.isArray(result) && result.length > 0) {
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Home Team</th>
+                                <th>Away Team</th>
+                                <th>Home Score</th>
+                                <th>Away Score</th>
+                                <th>Odds</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${result.map(match => `
+                                <tr>
+                                    <td>${match.homeTeam}</td>
+                                    <td>${match.awayTeam}</td>
+                                    <td>${match.homeScore}</td>
+                                    <td>${match.awayScore}</td>
+                                    <td>
+                                        <div class="odds-category">
+                                            <h4>H2H:</h4>
+                                            <ul>
+                                                ${match.odds.h2h.map(odd => `<li>${odd}</li>`).join('')}
+                                            </ul>
+                                            <h4>Spreads:</h4>
+                                            <ul>
+                                                ${match.odds.spreads.map(odd => `<li>${odd}</li>`).join('')}
+                                            </ul>
+                                            <h4>Totals:</h4>
+                                            <ul>
+                                                ${match.odds.totals.map(odd => `<li>${odd}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                    <td><a href="/game/${match.game_id}?sport_key=${sport_key}&date=${current_date}" class="view-details">View Details</a></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                    gamesList.appendChild(table);
+                } else {
+                    const noGamesMessage = document.createElement('p');
+                    noGamesMessage.className = 'center';
+                    noGamesMessage.textContent = 'No games on this date';
+                    gamesList.appendChild(noGamesMessage);
+                }
             };
 
             const setLoadingState = (isLoading) => {
@@ -440,14 +567,8 @@
             });
 
             datePicker.addEventListener('change', (event) => {
-                // Set the active button based on the current active button
-                if (allGamesButtonGroup.classList.contains('active')) {
-                    handleButtonClick(allGamesButtonGroup);
-                    fetchAndDisplayGames(sportSelect.value, event.target.value);
-                } else if (trendsButton.classList.contains('active')) {
-                    handleButtonClick(trendsButton);
-                    fetchAndDisplayTrends();
-                }
+                handleButtonClick(allGamesButtonGroup);
+                fetchAndDisplayGames(sportSelect.value, event.target.value);
             });
 
             // Add event listeners for the buttons

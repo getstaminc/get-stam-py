@@ -561,14 +561,8 @@
             });
 
             datePicker.addEventListener('change', (event) => {
-                // Set the active button based on the current active button
-                if (allGamesButtonGroup.classList.contains('active')) {
-                    handleButtonClick(allGamesButtonGroup);
-                    fetchAndDisplayGames(sportSelect.value, event.target.value);
-                } else if (trendsButton.classList.contains('active')) {
-                    handleButtonClick(trendsButton);
-                    fetchAndDisplayTrends();
-                }
+                handleButtonClick(allGamesButtonGroup);
+                fetchAndDisplayGames(sportSelect.value, event.target.value);
             });
 
             // Add event listeners for the buttons

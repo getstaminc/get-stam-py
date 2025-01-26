@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from constants import EXCLUDED_SPORTS
 from celery_config import celery
 from tasks import show_trends_task  # Import the task from tasks module
+import subprocess
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -39,8 +40,19 @@ from betting_guide import betting_guide  # Add this line
 
 app.register_blueprint(betting_guide)  # Register the blueprint
 
+def filter_scores_by_date(scores, selected_date_start):
+    filtered_scores = []
+    for score in scores:
+        commence_time_str = score['commence_time']
+        commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
+        commence_date_eastern = convert_to_eastern(commence_date)
+
+        if commence_date_eastern.date() == selected_date_start.date():
+            filtered_scores.append(score)
+    return filtered_scores
 
 @app.route('/trends')
+@cache.cached(timeout=3600, query_string=True)
 def show_trends():
     sport_key = request.args.get('sport_key')
     date = request.args.get('date')
@@ -48,8 +60,85 @@ def show_trends():
     if not sport_key or not date:
         return jsonify({'error': 'Missing sport_key or date'}), 400
 
+    # Fetch the scores to determine the number of games
+    selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+    scores, _ = get_odds_data(sport_key, selected_date_start)
+
+    if scores is None:
+        return jsonify({'error': 'Error fetching odds data'}), 500
+
+    filtered_scores = filter_scores_by_date(scores, selected_date_start)
+    print(filtered_scores)
     task = show_trends_task.apply_async(args=[sport_key, date])
-    return jsonify({'task_id': task.id}), 202
+    return jsonify({'task_id': task.id, 'num_games': len(filtered_scores)}), 202
+
+    # IF WE DELETE THIS SOME DAY, DELETE the /immediate_trends route
+    # # If there are more than 5 games, use the background queue
+    # if len(filtered_scores) > 5:
+    #     task = show_trends_task.apply_async(args=[sport_key, date])
+    #     return jsonify({'task_id': task.id}), 202
+    # else:
+    #     # Process trends immediately if there are 5 or fewer games
+    #     return process_trends_immediately(sport_key, date)
+    
+@app.route('/immediate_trends')
+def process_trends_immediately(sport_key, date):
+    selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+    scores, odds = get_odds_data(sport_key, selected_date_start)
+    if scores is None or odds is None:
+        return jsonify({'error': 'Error fetching odds data'}), 500
+
+    filtered_scores = filter_scores_by_date(scores, selected_date_start)
+
+    formatted_scores = []
+    for match in filtered_scores:
+        home_team = match.get('home_team', 'N/A')
+        away_team = match.get('away_team', 'N/A')
+        home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
+        away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
+
+        match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
+        odds_data = {'h2h': [], 'spreads': [], 'totals': []}
+
+        if match_odds:
+            for bookmaker in match_odds['bookmakers']:
+                for market in bookmaker['markets']:
+                    market_key = market['key']
+                    for outcome in market['outcomes']:
+                        outcome_text = f"{outcome['name']}"
+                        if market_key in ['spreads', 'totals'] and 'point' in outcome:
+                            outcome_text += f": {outcome['point']}"
+                        if market_key == 'h2h':
+                            price = outcome['price']
+                            if price > 0:
+                                outcome_text += f": +{price}"
+                            else:
+                                outcome_text += f": {price}"
+                        else:
+                            price = outcome['price']
+                            if price > 0:
+                                outcome_text += f" +{price}"
+                            else:
+                                outcome_text += f" {price}"
+                        odds_data[market_key].append(outcome_text)
+
+        formatted_scores.append({
+            'homeTeam': home_team,
+            'awayTeam': away_team,
+            'homeScore': home_score,
+            'awayScore': away_score,
+            'odds': odds_data,
+            'game_id': match['id'],
+        })
+
+    # Filter the games to include only those with trends
+    games_with_trends = [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
+
+    return jsonify({
+        'result': games_with_trends,
+        'sport_key': sport_key,
+        'current_date': date
+    })
 
 @app.route('/status/<task_id>')
 def task_status(task_id):
@@ -513,78 +602,78 @@ def get_sport_scores(sport_key):
 #         print('Error fetching games with trends:', str(e))
 #         return jsonify({'error': 'Internal Server Error'}), 500
     
-def detect_trends(games, sport_key):
-    def is_winner(points, o_points):
-        if points is None or o_points is None:
-            return None
-        return points > o_points
+# def detect_trends(games, sport_key):
+#     def is_winner(points, o_points):
+#         if points is None or o_points is None:
+#             return None
+#         return points > o_points
 
-    def calculate_line_result(points, line, o_points):
-        if points is None or line is None or o_points is None:
-            return None, ''
-        if points + line > o_points:
-            return True, 'green-bg'
-        elif points + line < o_points:
-            return False, 'red-bg'
-        else:
-            return None, ''
+#     def calculate_line_result(points, line, o_points):
+#         if points is None or line is None or o_points is None:
+#             return None, ''
+#         if points + line > o_points:
+#             return True, 'green-bg'
+#         elif points + line < o_points:
+#             return False, 'red-bg'
+#         else:
+#             return None, ''
 
-    def other_totals(points, o_points, total):
-        if points is None or o_points is None or total is None:
-            return None, ''
-        if points + o_points > total:
-            return True, 'green-bg'
-        elif points + o_points < total:
-            return False, 'red-bg'
-        else:
-            return None, ''
+#     def other_totals(points, o_points, total):
+#         if points is None or o_points is None or total is None:
+#             return None, ''
+#         if points + o_points > total:
+#             return True, 'green-bg'
+#         elif points + o_points < total:
+#             return False, 'red-bg'
+#         else:
+#             return None, ''
 
-    if sport_key == 'icehockey_nhl':
-        points_key = 'goals'
-    else:
-        points_key = 'points'
+#     if sport_key == 'icehockey_nhl':
+#         points_key = 'goals'
+#     else:
+#         points_key = 'points'
 
-    # Check for trends in the 'team' column
-    team_colors = []
-    for game in games:
-        result = is_winner(game[points_key], game[f'o:{points_key}'])
-        if result is not None:
-            color = 'green-bg' if result else 'red-bg'
-            team_colors.append(color)
-    if team_colors.count('green-bg') == 5 or team_colors.count('red-bg') == 5:
-        return True
+#     # Check for trends in the 'team' column
+#     team_colors = []
+#     for game in games:
+#         result = is_winner(game[points_key], game[f'o:{points_key}'])
+#         if result is not None:
+#             color = 'green-bg' if result else 'red-bg'
+#             team_colors.append(color)
+#     if team_colors.count('green-bg') == 5 or team_colors.count('red-bg') == 5:
+#         return True
 
-    # Check for trends in the 'points' column
-    points_colors = []
-    for game in games:
-        result = is_winner(game[points_key], game[f'o:{points_key}'])
-        if result is not None:
-            color = 'green-bg' if result else 'red-bg'
-            points_colors.append(color)
-    if points_colors.count('green-bg') == 5 or points_colors.count('red-bg') == 5:
-        return True
+#     # Check for trends in the 'points' column
+#     points_colors = []
+#     for game in games:
+#         result = is_winner(game[points_key], game[f'o:{points_key}'])
+#         if result is not None:
+#             color = 'green-bg' if result else 'red-bg'
+#             points_colors.append(color)
+#     if points_colors.count('green-bg') == 5 or points_colors.count('red-bg') == 5:
+#         return True
 
-    # Skip line trend check for NHL
-    if sport_key != 'icehockey_nhl':
-        # Check for trends in the 'line' column
-        line_colors = []
-        for game in games:
-            result, color = calculate_line_result(game[points_key], game['line'], game[f'o:{points_key}'])
-            if result is not None:
-                line_colors.append(color)
-        if line_colors.count('green-bg') == 5 or line_colors.count('red-bg') == 5:
-            return True
+#     # Skip line trend check for NHL
+#     if sport_key != 'icehockey_nhl':
+#         # Check for trends in the 'line' column
+#         line_colors = []
+#         for game in games:
+#             result, color = calculate_line_result(game[points_key], game['line'], game[f'o:{points_key}'])
+#             if result is not None:
+#                 line_colors.append(color)
+#         if line_colors.count('green-bg') == 5 or line_colors.count('red-bg') == 5:
+#             return True
 
-    # Check for trends in the 'total' column
-    total_colors = []
-    for game in games:
-        result, color = other_totals(game[points_key], game[f'o:{points_key}'], game['total'])
-        if result is not None:
-            total_colors.append(color)
-    if total_colors.count('green-bg') == 5 or total_colors.count('red-bg') == 5:
-        return True
+#     # Check for trends in the 'total' column
+#     total_colors = []
+#     for game in games:
+#         result, color = other_totals(game[points_key], game[f'o:{points_key}'], game['total'])
+#         if result is not None:
+#             total_colors.append(color)
+#     if total_colors.count('green-bg') == 5 or total_colors.count('red-bg') == 5:
+#         return True
 
-    return False
+#     return False
 
 # Route to fetch and display details for a specific game
 @app.route('/game/<game_id>')
@@ -2561,4 +2650,11 @@ def home():
     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
 if __name__ == '__main__':
+    # Start the Celery worker in a subprocess
+    celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])
+
+    # Start the Flask application
     app.run(port=port)
+
+    # Ensure the Celery worker is terminated when the Flask app exits
+    celery_process.terminate()

@@ -993,13 +993,7 @@ def game_details(game_id):
 
                         th:hover .color-key {
                             display: block; /* Show the key on hover */
-                        }
-                        .team-won {
-                            background-color: #7ebe7e; /* Light green background */
-                        }
-                        .team-lost {
-                            background-color: #e35a69; /* Light red background */
-                        }                   
+                        }                      
                       
                     </style>
 
@@ -1056,11 +1050,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1081,11 +1075,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1108,11 +1102,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1174,11 +1168,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1198,11 +1192,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1225,11 +1219,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1291,11 +1285,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1315,11 +1309,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1342,11 +1336,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1590,13 +1584,7 @@ def game_details(game_id):
 
                         th:hover .color-key {
                             display: block; /* Show the key on hover */
-                        }    
-                        .team-won {
-                            background-color: #7ebe7e; /* Light green background */
-                        }
-                        .team-lost {
-                            background-color: #e35a69; /* Light red background */
-                        }                   
+                        }                      
                       
                     </style>
             </head>
@@ -1649,11 +1637,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1673,11 +1661,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1700,11 +1688,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1764,11 +1752,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1788,11 +1776,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1815,11 +1803,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1879,11 +1867,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1903,11 +1891,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1930,11 +1918,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -2158,13 +2146,7 @@ def game_details(game_id):
 
                         th:hover .color-key {
                             display: block; /* Show the key on hover */
-                        }
-                        .team-won {
-                            background-color: #7ebe7e; /* Light green background */
-                        }
-                        .team-lost {
-                            background-color: #e35a69; /* Light red background */
-                        }                       
+                        }                         
 
                         /* Responsive Styles */
                         @media only screen and (max-width: 600px) {
@@ -2233,11 +2215,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2257,11 +2239,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2281,11 +2263,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Spread was covered</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Spread was not covered</td>
                                                             </tr>
                                                             <tr>
@@ -2311,11 +2293,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -2378,14 +2360,14 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
-                                                        </tbody> 
+                                                        </tbody>
                                                     </table>
                                                 </div> 
                                         </span>             
@@ -2402,11 +2384,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2426,11 +2408,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Spread was covered</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Spread was not covered</td>
                                                             </tr>
                                                             <tr>
@@ -2456,11 +2438,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -2514,7 +2496,7 @@ def game_details(game_id):
                                 <th>Team <span class="info-icon">i</span>
                                     <span class="color-key">
                                               <div class="color-keys">
-                                                    <table>
+                                                    <table>can I
                                                         <thead>
                                                             <tr>
                                                                 <th>Color</th>
@@ -2523,11 +2505,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2547,11 +2529,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2571,11 +2553,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Spread was covered</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Spread was not covered</td>
                                                             </tr>
                                                             <tr>
@@ -2601,11 +2583,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>

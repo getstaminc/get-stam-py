@@ -244,7 +244,7 @@ def api_get_sports():
         return jsonify({'error': 'Internal Server Error'}), 500
 
 #Route to clear the cache
-@app.route('/clear_cache')
+@app.route('/clear-cache')
 def clear_cache():
     cache.clear()
     logging.info("Cache cleared")

@@ -4,11 +4,13 @@ from datetime import datetime
 import pytz
 from dateutil import parser
 from utils import convert_to_eastern, check_for_trends
+import logging
 
 eastern_tz = pytz.timezone('US/Eastern')
 
 @celery.task(name='app.show_trends_task')
 def show_trends_task(sport_key, date):
+    logging.info("In show trends task")
     selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
     scores, odds = get_odds_data(sport_key, selected_date_start)
     if scores is None or odds is None:

@@ -23,7 +23,7 @@ app = Flask(__name__)
 port = 5000
 
 # Configure logging to write to a file
-logging.basicConfig(filename='app.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Define the Eastern timezone
 eastern_tz = pytz.timezone('US/Eastern')

@@ -6,13 +6,16 @@ from odds_api import get_odds_data, get_sports
 from historical_odds import get_sdql_data
 from single_game_data import get_game_details
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
-from utils import convert_sport_key, mlb_totals, other_totals
+from utils import convert_sport_key, mlb_totals, other_totals, convert_to_eastern, check_for_trends
 from betting_guide import betting_guide
 from flask_caching import Cache
 import logging
 import os
 from dotenv import load_dotenv
-from constants import EXCLUDED_SPORTS 
+from constants import EXCLUDED_SPORTS
+from celery_config import celery
+from tasks import show_trends_task  # Import the task from tasks module
+import subprocess
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -37,6 +40,194 @@ from betting_guide import betting_guide  # Add this line
 
 app.register_blueprint(betting_guide)  # Register the blueprint
 
+def filter_scores_by_date(scores, selected_date_start):
+    filtered_scores = []
+    for score in scores:
+        commence_time_str = score['commence_time']
+        commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
+        commence_date_eastern = convert_to_eastern(commence_date)
+
+        if commence_date_eastern.date() == selected_date_start.date():
+            filtered_scores.append(score)
+    return filtered_scores
+
+@app.route('/trends')
+@cache.cached(timeout=3600, query_string=True)
+def show_trends():
+    sport_key = request.args.get('sport_key')
+    date = request.args.get('date')
+
+    if not sport_key or not date:
+        return jsonify({'error': 'Missing sport_key or date'}), 400
+
+    # Fetch the scores to determine the number of games
+    selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+    scores, _ = get_odds_data(sport_key, selected_date_start)
+
+    if scores is None:
+        return jsonify({'error': 'Error fetching odds data'}), 500
+
+    filtered_scores = filter_scores_by_date(scores, selected_date_start)
+    print(filtered_scores)
+    task = show_trends_task.apply_async(args=[sport_key, date])
+    return jsonify({'task_id': task.id, 'num_games': len(filtered_scores)}), 202
+
+    # IF WE DELETE THIS SOME DAY, DELETE the /immediate_trends route
+    # # If there are more than 5 games, use the background queue
+    # if len(filtered_scores) > 5:
+    #     task = show_trends_task.apply_async(args=[sport_key, date])
+    #     return jsonify({'task_id': task.id}), 202
+    # else:
+    #     # Process trends immediately if there are 5 or fewer games
+    #     return process_trends_immediately(sport_key, date)
+    
+@app.route('/immediate_trends')
+def process_trends_immediately(sport_key, date):
+    selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+    scores, odds = get_odds_data(sport_key, selected_date_start)
+    if scores is None or odds is None:
+        return jsonify({'error': 'Error fetching odds data'}), 500
+
+    filtered_scores = filter_scores_by_date(scores, selected_date_start)
+
+    formatted_scores = []
+    for match in filtered_scores:
+        home_team = match.get('home_team', 'N/A')
+        away_team = match.get('away_team', 'N/A')
+        home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
+        away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
+
+        match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
+        odds_data = {'h2h': [], 'spreads': [], 'totals': []}
+
+        if match_odds:
+            for bookmaker in match_odds['bookmakers']:
+                for market in bookmaker['markets']:
+                    market_key = market['key']
+                    for outcome in market['outcomes']:
+                        outcome_text = f"{outcome['name']}"
+                        if market_key in ['spreads', 'totals'] and 'point' in outcome:
+                            outcome_text += f": {outcome['point']}"
+                        if market_key == 'h2h':
+                            price = outcome['price']
+                            if price > 0:
+                                outcome_text += f": +{price}"
+                            else:
+                                outcome_text += f": {price}"
+                        else:
+                            price = outcome['price']
+                            if price > 0:
+                                outcome_text += f" +{price}"
+                            else:
+                                outcome_text += f" {price}"
+                        odds_data[market_key].append(outcome_text)
+
+        formatted_scores.append({
+            'homeTeam': home_team,
+            'awayTeam': away_team,
+            'homeScore': home_score,
+            'awayScore': away_score,
+            'odds': odds_data,
+            'game_id': match['id'],
+        })
+
+    # Filter the games to include only those with trends
+    games_with_trends = [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
+
+    return jsonify({
+        'result': games_with_trends,
+        'sport_key': sport_key,
+        'current_date': date
+    })
+
+@app.route('/status/<task_id>')
+def task_status(task_id):
+    task = show_trends_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'result': task.result
+        }
+    else:
+        response = {
+            'state': task.state,
+            'status': str(task.info)  # This will contain the exception raised
+        }
+    return jsonify(response)
+
+# @celery.task(name='app.show_trends_task')
+# def show_trends_task(sport_key, date):
+#     # Example task implementation
+#     selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+#     scores, odds = get_odds_data(sport_key, selected_date_start)
+#     if scores is None or odds is None:
+#         return {'error': 'Error fetching odds data'}
+
+#     filtered_scores = []
+#     for score in scores:
+#         commence_time_str = score['commence_time']
+#         commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
+#         commence_date_eastern = convert_to_eastern(commence_date)
+
+#         if commence_date_eastern.date() == selected_date_start.date():
+#             filtered_scores.append(score)
+
+#     formatted_scores = []
+#     for match in filtered_scores:
+#         home_team = match.get('home_team', 'N/A')
+#         away_team = match.get('away_team', 'N/A')
+#         home_score = match['scores' ][0]['score'] if match.get('scores') else 'N/A'
+#         away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
+
+#         match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
+#         odds_data = {'h2h': [], 'spreads': [], 'totals': []}
+
+#         if match_odds:
+#             for bookmaker in match_odds['bookmakers']:
+#                 for market in bookmaker['markets']:
+#                     market_key = market['key']
+#                     for outcome in market['outcomes']:
+#                         outcome_text = f"{outcome['name']}"
+#                         if market_key in ['spreads', 'totals'] and 'point' in outcome:
+#                             outcome_text += f": {outcome['point']}"
+#                         if market_key == 'h2h':
+#                             price = outcome['price']
+#                             if price > 0:
+#                                 outcome_text += f": +{price}"
+#                             else:
+#                                 outcome_text += f": {price}"
+#                         else:
+#                             price = outcome['price']
+#                             if price > 0:
+#                                 outcome_text += f" +{price}"
+#                             else:
+#                                 outcome_text += f" {price}"
+#                         odds_data[market_key].append(outcome_text)
+
+#         formatted_scores.append({
+#             'homeTeam': home_team,
+#             'awayTeam': away_team,
+#             'homeScore': home_score,
+#             'awayScore': away_score,
+#             'odds': odds_data,
+#             'game_id': match['id'],
+#         })
+    
+
+#     # Filter the games to include only those with trends
+#     games_with_trends = [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
+
+#     return {
+#         'result': games_with_trends,
+#         'sport_key': sport_key,
+#         'current_date': date
+#     }
+
 # Route to fetch available sports
 @app.route('/api/sports')
 @cache.cached(timeout=3600, query_string=True)
@@ -53,14 +244,6 @@ def clear_cache():
     cache.clear()
     logging.info("Cache cleared")
     return "Cache cleared", 200
-
-# Function to convert UTC time to Eastern time
-def convert_to_eastern(utc_time):
-    if utc_time is None:
-        return None
-    utc_time = utc_time.replace(tzinfo=pytz.utc)
-    eastern_time = utc_time.astimezone(eastern_tz)
-    return eastern_time
 
 def get_next_game_date_within_7_days(scores, selected_date_start):
     today = datetime.now(pytz.utc)
@@ -338,183 +521,159 @@ def get_sport_scores(sport_key):
         return jsonify({'error': 'Internal Server Error'}), 500
 
 
-@app.route('/trends')
-@cache.cached(timeout=3600, query_string=True)
-def show_trends():
-    sport_key = request.args.get('sport_key')
-    date = request.args.get('date')
+# @app.route('/trends')
+# @cache.cached(timeout=3600, query_string=True)
+# def show_trends():
+#     sport_key = request.args.get('sport_key')
+#     date = request.args.get('date')
 
-    if not sport_key or not date:
-        return jsonify({'error': 'Missing sport_key or date'}), 400
+#     if not sport_key or not date:
+#         return jsonify({'error': 'Missing sport_key or date'}), 400
 
-    try:
-        selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
-        scores, odds = get_odds_data(sport_key, selected_date_start)
-        if scores is None or odds is None:
-            return jsonify({'error': 'Error fetching odds data'}), 500
+#     try:
+#         selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+#         scores, odds = get_odds_data(sport_key, selected_date_start)
+#         if scores is None or odds is None:
+#             return jsonify({'error': 'Error fetching odds data'}), 500
 
-        filtered_scores = []
-        for score in scores:
-            commence_time_str = score['commence_time']
-            commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
-            commence_date_eastern = convert_to_eastern(commence_date)
+#         filtered_scores = []
+#         for score in scores:
+#             commence_time_str = score['commence_time']
+#             commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
+#             commence_date_eastern = convert_to_eastern(commence_date)
 
-            if commence_date_eastern.date() == selected_date_start.date():
-                filtered_scores.append(score)
+#             if commence_date_eastern.date() == selected_date_start.date():
+#                 filtered_scores.append(score)
 
-        next_game_date = False
-        if not filtered_scores:
-            next_game_date = get_next_game_date_within_7_days(scores, selected_date_start)
+#         next_game_date = False
+#         if not filtered_scores:
+#             next_game_date = get_next_game_date_within_7_days(scores, selected_date_start)
 
-        formatted_scores = []
-        for match in filtered_scores:
-            home_team = match.get('home_team', 'N/A')
-            away_team = match.get('away_team', 'N/A')
-            home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
-            away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
+#         formatted_scores = []
+#         for match in filtered_scores:
+#             home_team = match.get('home_team', 'N/A')
+#             away_team = match.get('away_team', 'N/A')
+#             home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
+#             away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
 
-            match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
-            odds_data = {'h2h': [], 'spreads': [], 'totals': []}
+#             match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
+#             odds_data = {'h2h': [], 'spreads': [], 'totals': []}
 
-            if match_odds:
-                for bookmaker in match_odds['bookmakers']:
-                    for market in bookmaker['markets']:
-                        market_key = market['key']
-                        for outcome in market['outcomes']:
-                            outcome_text = f"{outcome['name']}"
-                            if market_key in ['spreads', 'totals'] and 'point' in outcome:
-                                outcome_text += f": {outcome['point']}"
-                            if market_key == 'h2h':
-                                price = outcome['price']
-                                if price > 0:
-                                    outcome_text += f": +{price}"
-                                else:
-                                    outcome_text += f": {price}"
-                            else:
-                                price = outcome['price']
-                                if price > 0:
-                                    outcome_text += f" +{price}"
-                                else:
-                                    outcome_text += f" {price}"
-                            odds_data[market_key].append(outcome_text)
+#             if match_odds:
+#                 for bookmaker in match_odds['bookmakers']:
+#                     for market in bookmaker['markets']:
+#                         market_key = market['key']
+#                         for outcome in market['outcomes']:
+#                             outcome_text = f"{outcome['name']}"
+#                             if market_key in ['spreads', 'totals'] and 'point' in outcome:
+#                                 outcome_text += f": {outcome['point']}"
+#                             if market_key == 'h2h':
+#                                 price = outcome['price']
+#                                 if price > 0:
+#                                     outcome_text += f": +{price}"
+#                                 else:
+#                                     outcome_text += f": {price}"
+#                             else:
+#                                 price = outcome['price']
+#                                 if price > 0:
+#                                     outcome_text += f" +{price}"
+#                                 else:
+#                                     outcome_text += f" {price}"
+#                             odds_data[market_key].append(outcome_text)
 
-            formatted_scores.append({
-                'homeTeam': home_team,
-                'awayTeam': away_team,
-                'homeScore': away_score,
-                'awayScore': home_score,
-                'odds': odds_data,
-                'game_id': match['id'],
-            })
+#             formatted_scores.append({
+#                 'homeTeam': home_team,
+#                 'awayTeam': away_team,
+#                 'homeScore': away_score,
+#                 'awayScore': home_score,
+#                 'odds': odds_data,
+#                 'game_id': match['id'],
+#             })
 
-        # Filter the games to include only those with trends
-        games_with_trends = [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
+#         # Filter the games to include only those with trends
+#         games_with_trends = [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
 
-        current_date = request.args.get('date', None)
-        if not current_date:
-            current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
+#         current_date = request.args.get('date', None)
+#         if not current_date:
+#             current_date = datetime.now(eastern_tz).strftime('%Y-%m-%d')
 
-        return render_template('trends_list.html', result=games_with_trends, sport_key=sport_key, current_date=current_date)
-    except Exception as e:
-        print('Error fetching games with trends:', str(e))
-        return jsonify({'error': 'Internal Server Error'}), 500
+#         return render_template('trends_list.html', result=games_with_trends, sport_key=sport_key, current_date=current_date)
+#     except Exception as e:
+#         print('Error fetching games with trends:', str(e))
+#         return jsonify({'error': 'Internal Server Error'}), 500
     
-def detect_trends(games, sport_key):
-    def is_winner(points, o_points):
-        if points is None or o_points is None:
-            return None
-        return points > o_points
+# def detect_trends(games, sport_key):
+#     def is_winner(points, o_points):
+#         if points is None or o_points is None:
+#             return None
+#         return points > o_points
 
-    def calculate_line_result(points, line, o_points):
-        if points is None or line is None or o_points is None:
-            return None, ''
-        if points + line > o_points:
-            return True, 'green-bg'
-        elif points + line < o_points:
-            return False, 'red-bg'
-        else:
-            return None, ''
+#     def calculate_line_result(points, line, o_points):
+#         if points is None or line is None or o_points is None:
+#             return None, ''
+#         if points + line > o_points:
+#             return True, 'green-bg'
+#         elif points + line < o_points:
+#             return False, 'red-bg'
+#         else:
+#             return None, ''
 
-    def other_totals(points, o_points, total):
-        if points is None or o_points is None or total is None:
-            return None, ''
-        if points + o_points > total:
-            return True, 'green-bg'
-        elif points + o_points < total:
-            return False, 'red-bg'
-        else:
-            return None, ''
+#     def other_totals(points, o_points, total):
+#         if points is None or o_points is None or total is None:
+#             return None, ''
+#         if points + o_points > total:
+#             return True, 'green-bg'
+#         elif points + o_points < total:
+#             return False, 'red-bg'
+#         else:
+#             return None, ''
 
-    if sport_key == 'icehockey_nhl':
-        points_key = 'goals'
-    else:
-        points_key = 'points'
+#     if sport_key == 'icehockey_nhl':
+#         points_key = 'goals'
+#     else:
+#         points_key = 'points'
 
-    # Check for trends in the 'team' column
-    team_colors = []
-    for game in games:
-        result = is_winner(game[points_key], game[f'o:{points_key}'])
-        if result is not None:
-            color = 'green-bg' if result else 'red-bg'
-            team_colors.append(color)
-    if team_colors.count('green-bg') == 5 or team_colors.count('red-bg') == 5:
-        return True
+#     # Check for trends in the 'team' column
+#     team_colors = []
+#     for game in games:
+#         result = is_winner(game[points_key], game[f'o:{points_key}'])
+#         if result is not None:
+#             color = 'green-bg' if result else 'red-bg'
+#             team_colors.append(color)
+#     if team_colors.count('green-bg') == 5 or team_colors.count('red-bg') == 5:
+#         return True
 
-    # Check for trends in the 'points' column
-    points_colors = []
-    for game in games:
-        result = is_winner(game[points_key], game[f'o:{points_key}'])
-        if result is not None:
-            color = 'green-bg' if result else 'red-bg'
-            points_colors.append(color)
-    if points_colors.count('green-bg') == 5 or points_colors.count('red-bg') == 5:
-        return True
+#     # Check for trends in the 'points' column
+#     points_colors = []
+#     for game in games:
+#         result = is_winner(game[points_key], game[f'o:{points_key}'])
+#         if result is not None:
+#             color = 'green-bg' if result else 'red-bg'
+#             points_colors.append(color)
+#     if points_colors.count('green-bg') == 5 or points_colors.count('red-bg') == 5:
+#         return True
 
-    # Skip line trend check for NHL
-    if sport_key != 'icehockey_nhl':
-        # Check for trends in the 'line' column
-        line_colors = []
-        for game in games:
-            result, color = calculate_line_result(game[points_key], game['line'], game[f'o:{points_key}'])
-            if result is not None:
-                line_colors.append(color)
-        if line_colors.count('green-bg') == 5 or line_colors.count('red-bg') == 5:
-            return True
+#     # Skip line trend check for NHL
+#     if sport_key != 'icehockey_nhl':
+#         # Check for trends in the 'line' column
+#         line_colors = []
+#         for game in games:
+#             result, color = calculate_line_result(game[points_key], game['line'], game[f'o:{points_key}'])
+#             if result is not None:
+#                 line_colors.append(color)
+#         if line_colors.count('green-bg') == 5 or line_colors.count('red-bg') == 5:
+#             return True
 
-    # Check for trends in the 'total' column
-    total_colors = []
-    for game in games:
-        result, color = other_totals(game[points_key], game[f'o:{points_key}'], game['total'])
-        if result is not None:
-            total_colors.append(color)
-    if total_colors.count('green-bg') == 5 or total_colors.count('red-bg') == 5:
-        return True
+#     # Check for trends in the 'total' column
+#     total_colors = []
+#     for game in games:
+#         result, color = other_totals(game[points_key], game[f'o:{points_key}'], game['total'])
+#         if result is not None:
+#             total_colors.append(color)
+#     if total_colors.count('green-bg') == 5 or total_colors.count('red-bg') == 5:
+#         return True
 
-    return False
-
-def check_for_trends(game_details, selected_date, sport_key):
-    home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key) or []
-    away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key) or []
-    last_5_vs_opponent = get_last_5_games_vs_opponent(
-        team=game_details['homeTeam'],
-        opponent=game_details['awayTeam'],
-        today_date=selected_date,
-        sport_key=sport_key
-    ) or []
-    #print("HOME", home_team_last_5, "AWAY", away_team_last_5, "LAST", last_5_vs_opponent)
-
-    home_trend = detect_trends(home_team_last_5, sport_key)
-    away_trend = detect_trends(away_team_last_5, sport_key)
-    vs_opponent_trend = detect_trends(last_5_vs_opponent, sport_key)
-
-    trend_detected = home_trend or away_trend or vs_opponent_trend
-
-    return {
-        'home_trend': home_trend,
-        'away_trend': away_trend,
-        'vs_opponent_trend': vs_opponent_trend,
-        'trend_detected': trend_detected
-    }
+#     return False
 
 # Route to fetch and display details for a specific game
 @app.route('/game/<game_id>')
@@ -834,13 +993,7 @@ def game_details(game_id):
 
                         th:hover .color-key {
                             display: block; /* Show the key on hover */
-                        }
-                        .team-won {
-                            background-color: #7ebe7e; /* Light green background */
-                        }
-                        .team-lost {
-                            background-color: #e35a69; /* Light red background */
-                        }                   
+                        }                      
                       
                     </style>
 
@@ -897,11 +1050,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -922,11 +1075,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -949,11 +1102,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1015,11 +1168,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1039,11 +1192,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1066,11 +1219,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1132,11 +1285,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1156,11 +1309,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1183,11 +1336,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1431,13 +1584,7 @@ def game_details(game_id):
 
                         th:hover .color-key {
                             display: block; /* Show the key on hover */
-                        }    
-                        .team-won {
-                            background-color: #7ebe7e; /* Light green background */
-                        }
-                        .team-lost {
-                            background-color: #e35a69; /* Light red background */
-                        }                   
+                        }                      
                       
                     </style>
             </head>
@@ -1490,11 +1637,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1514,11 +1661,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1541,11 +1688,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1605,11 +1752,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1629,11 +1776,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1656,11 +1803,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1720,11 +1867,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1744,11 +1891,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -1771,11 +1918,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -1999,13 +2146,7 @@ def game_details(game_id):
 
                         th:hover .color-key {
                             display: block; /* Show the key on hover */
-                        }
-                        .team-won {
-                            background-color: #7ebe7e; /* Light green background */
-                        }
-                        .team-lost {
-                            background-color: #e35a69; /* Light red background */
-                        }                       
+                        }                         
 
                         /* Responsive Styles */
                         @media only screen and (max-width: 600px) {
@@ -2074,11 +2215,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2098,11 +2239,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2122,11 +2263,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Spread was covered</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Spread was not covered</td>
                                                             </tr>
                                                             <tr>
@@ -2152,11 +2293,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -2219,14 +2360,14 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
-                                                        </tbody> 
+                                                        </tbody>
                                                     </table>
                                                 </div> 
                                         </span>             
@@ -2243,11 +2384,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2267,11 +2408,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Spread was covered</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Spread was not covered</td>
                                                             </tr>
                                                             <tr>
@@ -2297,11 +2438,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -2355,7 +2496,7 @@ def game_details(game_id):
                                 <th>Team <span class="info-icon">i</span>
                                     <span class="color-key">
                                               <div class="color-keys">
-                                                    <table>
+                                                    <table>can I
                                                         <thead>
                                                             <tr>
                                                                 <th>Color</th>
@@ -2364,11 +2505,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2388,11 +2529,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Team won</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Team lost</td>
                                                             </tr>
                                                         </tbody>
@@ -2412,11 +2553,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Spread was covered</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Spread was not covered</td>
                                                             </tr>
                                                             <tr>
@@ -2442,11 +2583,11 @@ def game_details(game_id):
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="team-won">&nbsp;</td>
+                                                                <td style="background-color: green;">&nbsp;</td>
                                                                 <td>Total went over</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="team-lost">&nbsp;</td>
+                                                                <td style="background-color: red;">&nbsp;</td>
                                                                 <td>Total went under</td>
                                                             </tr>
                                                             <tr>
@@ -2509,4 +2650,11 @@ def home():
     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
 if __name__ == '__main__':
+    # Start the Celery worker in a subprocess
+    celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])
+
+    # Start the Flask application
     app.run(port=port)
+
+    # Ensure the Celery worker is terminated when the Flask app exits
+    celery_process.terminate()

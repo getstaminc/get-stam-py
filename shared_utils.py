@@ -411,14 +411,3 @@ def convert_sport_key(sport_key):
         # Add other mappings as needed
     }
     return sport_mapping.get(sport_key, sport_key)
-
-# def convert_sport_key(sport_key):
-#     sport_mapping = {
-#         'americanfootball_nfl': 'NFL',
-#         'americanfootball_nfl_preseason': 'NFL',
-#         'icehockey_nhl': 'NHL',
-#         'americanfootball_ncaaf': 'NCAAFB',
-#         'basketball_ncaab': 'NCAABB'
-#         # Add other mappings as needed
-#     }
-#     return sport_mapping.get(sport_key, sport_key)

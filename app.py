@@ -54,23 +54,28 @@ def filter_scores_by_date(scores, selected_date_start):
 @app.route('/trends')
 @cache.cached(timeout=3600, query_string=True)
 def show_trends():
-    sport_key = request.args.get('sport_key')
-    date = request.args.get('date')
+    try:
+        sport_key = request.args.get('sport_key')
+        date = request.args.get('date')
+        logging.info(f"Received request for sport_key: {sport_key}, date: {date}")
 
-    if not sport_key or not date:
-        return jsonify({'error': 'Missing sport_key or date'}), 400
+        if not sport_key or not date:
+            return jsonify({'error': 'Missing sport_key or date'}), 400
 
-    # Fetch the scores to determine the number of games
-    selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
-    scores, _ = get_odds_data(sport_key, selected_date_start)
+        # Fetch the scores to determine the number of games
+        selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+        scores, _ = get_odds_data(sport_key, selected_date_start)
 
-    if scores is None:
-        return jsonify({'error': 'Error fetching odds data'}), 500
+        if scores is None:
+            return jsonify({'error': 'Error fetching odds data'}), 500
 
-    filtered_scores = filter_scores_by_date(scores, selected_date_start)
-    print(filtered_scores)
-    task = show_trends_task.apply_async(args=[sport_key, date])
-    return jsonify({'task_id': task.id, 'num_games': len(filtered_scores)}), 202
+        filtered_scores = filter_scores_by_date(scores, selected_date_start)
+        print(filtered_scores)
+        task = show_trends_task.apply_async(args=[sport_key, date])
+        return jsonify({'task_id': task.id, 'num_games': len(filtered_scores)}), 202
+    except Exception as e:
+        logging.error(f"Error processing request: {e}")
+        return "Internal Server Error", 500
 
     # IF WE DELETE THIS SOME DAY, DELETE the /immediate_trends route
     # # If there are more than 5 games, use the background queue

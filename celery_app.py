@@ -7,8 +7,11 @@ load_dotenv()  # Load environment variables from .env file
 def make_celery():
     celery = Celery(
         'app',
-        backend=os.getenv('REDIS_URL'),
-        broker=os.getenv('REDIS_URL')
+        backend=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+        broker=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+        broker_use_ssl={
+            'ssl_cert_reqs': 'CERT_NONE'
+        }
     )
     
     # If using rediss://, configure SSL parameters

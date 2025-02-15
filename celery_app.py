@@ -2,6 +2,7 @@ from celery import Celery
 import os
 from dotenv import load_dotenv
 import logging
+import ssl  # Import ssl module to disable certificate verification
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -19,18 +20,30 @@ def make_celery():
         broker=redis_url,
     )
     
-    # If using rediss://, configure SSL parameters
+    # If using rediss://, configure SSL parameters to disable certificate verification
     if celery.conf.broker_url.startswith('rediss://'):
-        ssl_cert_reqs = None
-        logger.info(f"Disabling SSL certificate verification")
-        celery.conf.update(
-            broker_use_ssl={
-                'ssl_cert_reqs': ssl_cert_reqs
-            },
-            redis_backend_use_ssl={
-                'ssl_cert_reqs': ssl_cert_reqs
-            }
-        )
+        if os.getenv('FLASK_ENV') == 'development':
+            ssl_cert_reqs = ssl.CERT_NONE
+            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs} for development")
+            celery.conf.update(
+                broker_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs
+                },
+                redis_backend_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs
+                }
+            )
+        else:
+            ssl_cert_reqs = ssl.CERT_NONE  # Disable SSL certificate verification for production
+            logger.info(f"Disabling SSL certificate verification for production")
+            celery.conf.update(
+                broker_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs
+                },
+                redis_backend_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs
+                }
+            )
     
     return celery
 

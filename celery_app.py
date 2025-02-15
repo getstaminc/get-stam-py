@@ -1,31 +1,37 @@
 from celery import Celery
 import os
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()  # Load environment variables from .env file
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def make_celery():
+    redis_url = os.getenv('REDIS_URL')
+    logger.info(f"Using Redis URL: {redis_url}")
+    
     celery = Celery(
         'app',
-        backend=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
-        broker=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
-        broker_use_ssl={
-            'ssl_cert_reqs': 'CERT_NONE'
-        }
+        backend=redis_url,
+        broker=redis_url,
     )
     
     # If using rediss://, configure SSL parameters
     if celery.conf.broker_url.startswith('rediss://'):
+        ssl_cert_reqs = 'CERT_NONE' if os.getenv('FLASK_ENV') == 'development' else 'CERT_REQUIRED'
+        logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs}")
         celery.conf.update(
             broker_use_ssl={
-                'ssl_cert_reqs': 'CERT_NONE'  # Change to 'CERT_REQUIRED' for production
+                'ssl_cert_reqs': ssl_cert_reqs
             },
             redis_backend_use_ssl={
-                'ssl_cert_reqs': 'CERT_NONE'  # Change to 'CERT_REQUIRED' for production
+                'ssl_cert_reqs': ssl_cert_reqs
             }
         )
     
     return celery
 
 celery = make_celery()
-

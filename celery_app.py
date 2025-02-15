@@ -2,6 +2,8 @@ from celery import Celery
 import os
 from dotenv import load_dotenv
 import logging
+import ssl
+import certifi  # This can help provide a bundle of CA certificates
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -34,7 +36,7 @@ def make_celery():
             )
         else:
             ssl_cert_reqs = 'required'
-            ssl_ca_certs = '/etc/ssl/certs/ca-certificates.crt'
+            ssl_ca_certs = certifi.where()  # Uses certifi's bundle of certificates
             logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs} for production")
             logger.info(f"Using CA certificates from: {ssl_ca_certs}")
             celery.conf.update(

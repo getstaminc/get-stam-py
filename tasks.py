@@ -8,6 +8,10 @@ import logging
 
 eastern_tz = pytz.timezone('US/Eastern')
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @celery.task(name='app.show_trends_task')
 def show_trends_task(sport_key, date):
     logging.info("In show trends task")

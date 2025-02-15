@@ -2,8 +2,6 @@ from celery import Celery
 import os
 from dotenv import load_dotenv
 import logging
-import ssl
-import certifi  # This can help provide a bundle of CA certificates
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -23,32 +21,16 @@ def make_celery():
     
     # If using rediss://, configure SSL parameters
     if celery.conf.broker_url.startswith('rediss://'):
-        if os.getenv('FLASK_ENV') == 'development':
-            ssl_cert_reqs = 'CERT_NONE'
-            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs} for development")
-            celery.conf.update(
-                broker_use_ssl={
-                    'ssl_cert_reqs': ssl_cert_reqs
-                },
-                redis_backend_use_ssl={
-                    'ssl_cert_reqs': ssl_cert_reqs
-                }
-            )
-        else:
-            ssl_cert_reqs = 'required'
-            ssl_ca_certs = certifi.where()  # Uses certifi's bundle of certificates
-            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs} for production")
-            logger.info(f"Using CA certificates from: {ssl_ca_certs}")
-            celery.conf.update(
-                broker_use_ssl={
-                    'ssl_cert_reqs': ssl_cert_reqs,
-                    'ssl_ca_certs': ssl_ca_certs
-                },
-                redis_backend_use_ssl={
-                    'ssl_cert_reqs': ssl_cert_reqs,
-                    'ssl_ca_certs': ssl_ca_certs
-                }
-            )
+        ssl_cert_reqs = None
+        logger.info(f"Disabling SSL certificate verification")
+        celery.conf.update(
+            broker_use_ssl={
+                'ssl_cert_reqs': ssl_cert_reqs
+            },
+            redis_backend_use_ssl={
+                'ssl_cert_reqs': ssl_cert_reqs
+            }
+        )
     
     return celery
 

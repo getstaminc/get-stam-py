@@ -33,7 +33,7 @@ def make_celery():
                 }
             )
         else:
-            ssl_cert_reqs = 'CERT_REQUIRED'
+            ssl_cert_reqs = 'required'
             ssl_ca_certs = '/etc/ssl/certs/ca-certificates.crt'
             logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs}")
             celery.conf.update(

@@ -21,16 +21,31 @@ def make_celery():
     
     # If using rediss://, configure SSL parameters
     if celery.conf.broker_url.startswith('rediss://'):
-        ssl_cert_reqs = 'CERT_NONE' if os.getenv('FLASK_ENV') == 'development' else 'CERT_REQUIRED'
-        logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs}")
-        celery.conf.update(
-            broker_use_ssl={
-                'ssl_cert_reqs': ssl_cert_reqs
-            },
-            redis_backend_use_ssl={
-                'ssl_cert_reqs': ssl_cert_reqs
-            }
-        )
+        if os.getenv('FLASK_ENV') == 'development':
+            ssl_cert_reqs = 'CERT_NONE'
+            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs}")
+            celery.conf.update(
+                broker_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs
+                },
+                redis_backend_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs
+                }
+            )
+        else:
+            ssl_cert_reqs = 'CERT_REQUIRED'
+            ssl_ca_certs = '/etc/ssl/certs/ca-certificates.crt'
+            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs}")
+            celery.conf.update(
+                broker_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs,
+                    'ssl_ca_certs': ssl_ca_certs
+                },
+                redis_backend_use_ssl={
+                    'ssl_cert_reqs': ssl_cert_reqs,
+                    'ssl_ca_certs': ssl_ca_certs
+                }
+            )
     
     return celery
 

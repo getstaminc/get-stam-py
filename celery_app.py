@@ -23,7 +23,7 @@ def make_celery():
     if celery.conf.broker_url.startswith('rediss://'):
         if os.getenv('FLASK_ENV') == 'development':
             ssl_cert_reqs = 'CERT_NONE'
-            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs}")
+            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs} for development")
             celery.conf.update(
                 broker_use_ssl={
                     'ssl_cert_reqs': ssl_cert_reqs
@@ -35,7 +35,8 @@ def make_celery():
         else:
             ssl_cert_reqs = 'required'
             ssl_ca_certs = '/etc/ssl/certs/ca-certificates.crt'
-            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs}")
+            logger.info(f"Setting SSL cert requirements to: {ssl_cert_reqs} for production")
+            logger.info(f"Using CA certificates from: {ssl_ca_certs}")
             celery.conf.update(
                 broker_use_ssl={
                     'ssl_cert_reqs': ssl_cert_reqs,

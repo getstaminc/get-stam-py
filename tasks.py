@@ -12,7 +12,7 @@ eastern_tz = pytz.timezone('US/Eastern')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@celery.task(name='app.show_trends_task')
+@celery.task
 def show_trends_task(sport_key, date):
     logging.info("In show trends task")
     selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)

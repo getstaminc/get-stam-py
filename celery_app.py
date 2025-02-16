@@ -18,6 +18,7 @@ def make_celery():
         'app',
         backend=redis_url,
         broker=redis_url,
+        include=['tasks']  # Ensure tasks are included
     )
     
     # If using rediss://, configure SSL parameters to disable certificate verification

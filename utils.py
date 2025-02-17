@@ -10,6 +10,11 @@ import pytz
 from datetime import datetime
 from shared_utils import convert_to_eastern, convert_team_name, convert_sport_key
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def mlb_totals(runs, opponent_runs, total):
     return (runs + opponent_runs) > total
@@ -61,6 +66,15 @@ def detect_trends(games, sport_key):
     def calculate_line_result(points, line, o_points):
         if points is None or line is None or o_points is None:
             return None, ''
+        
+        # Check for invalid values
+        if points == '-' or line == '-' or o_points == '-':
+            return None, ''
+        
+        points = float(points)
+        line = float(line)
+        o_points = float(o_points)
+
         if points + line > o_points:
             return True, 'green-bg'
         elif points + line < o_points:
@@ -70,10 +84,26 @@ def detect_trends(games, sport_key):
 
     def other_totals(points, o_points, total):
         if points is None or o_points is None or total is None:
+            logger.error("One of the values is None: points={}, o_points={}, total={}".format(points, o_points, total))
             return None, ''
-        if points + o_points > total:
+        
+        # Check for invalid values
+        if points == '-' or o_points == '-' or total == '-':
+            logger.error("One of the values is invalid: points={}, o_points={}, total={}".format(points, o_points, total))
+            return None, ''
+        
+        try:
+            points = float(points)
+            o_points = float(o_points)
+            total = float(total)
+        except ValueError as e:
+            logger.error(f"Error converting values to float: {e}")
+            return None, ''
+
+        total_score = points + o_points
+        if total_score > total:
             return True, 'green-bg'
-        elif points + o_points < total:
+        elif total_score < total:
             return False, 'red-bg'
         else:
             return None, ''

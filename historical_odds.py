@@ -9,7 +9,7 @@ def get_sdql_data(sport_key, date):
      # Build SDQL query based on sport_key
     if sport_key == 'MLB':
         sdql_query = f"date,team,site,runs,total,line@date={date.strftime('%Y%m%d')}"
-    elif sport_key in ['NBA', 'NFL', 'NHL', 'NCAAFB']:
+    elif sport_key in ['NBA', 'NFL', 'NHL', 'NCAAFB', 'NCAABB']:
         sdql_query = f"date,team,site,points,total,line@date={date.strftime('%Y%m%d')}"
     else:
         raise ValueError(f"Unsupported sport: {sport_key}")

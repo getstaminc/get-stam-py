@@ -103,7 +103,7 @@ def convert_team_name(full_team_name):
         'Pittsburgh Penguins': 'Penguins',
         'San Jose Sharks': 'Sharks',
         'Seattle Kraken': 'Kraken',
-        'St. Louis Blues': 'Blues',
+        'St Louis Blues': 'Blues',
         'Tampa Bay Lightning': 'Lightning',
         'Toronto Maple Leafs': 'Maple Leafs',
         'Utah Hockey Club': 'Hockey Club',

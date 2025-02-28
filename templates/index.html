@@ -405,7 +405,7 @@
                             trendsButton.disabled = true;
                         } else {
                             allGamesButtonGroup.disabled = false;
-                            trendsButton.disabled = false;
+                            trendsButton.disabled = sportKey === 'basketball_ncaab';
                         }
                     })
                     .catch(error => {

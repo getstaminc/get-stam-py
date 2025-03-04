@@ -1,3 +1,6 @@
+import os
+import redis
+import json
 from celery_app import celery
 from odds_api import get_odds_data
 from datetime import datetime
@@ -5,19 +8,76 @@ import pytz
 from dateutil import parser
 from utils import convert_to_eastern, check_for_trends
 import logging
+import ssl
+from urllib.parse import urlparse, parse_qs
+from retrying import retry
+
+# Configure logging to write to a file
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+file_handler = logging.FileHandler('logs/app.log')
+file_handler.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# Configure Redis using the Redis URL from environment variables
+redis_url = os.getenv('REDIS_URL')
+if not redis_url:
+    raise ValueError("REDIS_URL environment variable is not set")
+
+# Parse the Redis URL to extract the SSL parameters
+url = urlparse(redis_url)
+query_params = parse_qs(url.query)
+ssl_cert_reqs = ssl.CERT_NONE if query_params.get('ssl_cert_reqs', [''])[0] == 'CERT_NONE' else ssl.CERT_REQUIRED
+
+try:
+    redis_client = redis.StrictRedis(
+        host=url.hostname,
+        port=url.port,
+        password=url.password,
+        ssl=True,
+        ssl_cert_reqs=ssl_cert_reqs,
+        ssl_keyfile=None,
+        ssl_certfile=None,
+        ssl_ca_certs=None,
+        socket_timeout=5,  # Adjust as needed
+        socket_connect_timeout=5  # Adjust as needed
+    )
+except Exception as e:
+    raise ValueError(f"Error configuring Redis client: {e}")
 
 eastern_tz = pytz.timezone('US/Eastern')
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+@retry(stop_max_attempt_number=3, wait_fixed=2000)
+def get_redis_cache(key):
+    return redis_client.get(key)
+
+@retry(stop_max_attempt_number=3, wait_fixed=2000)
+def set_redis_cache(key, value, ttl):
+    redis_client.setex(key, ttl, value)
+
+def filter_games_with_trends(formatted_scores, selected_date_start, sport_key):
+    return [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
 
 @celery.task
 def show_trends_task(sport_key, date):
-    logging.info("In show trends task")
+    cache_key = f"trends:{sport_key}:{date}"
     selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
     scores, odds = get_odds_data(sport_key, selected_date_start)
     if scores is None or odds is None:
+        logger.error('Error fetching odds data')
         return {'error': 'Error fetching odds data'}
 
     filtered_scores = []
@@ -70,11 +130,21 @@ def show_trends_task(sport_key, date):
             'game_id': match['id'],
         })
 
-    # Filter the games to include only those with trends
-    games_with_trends = [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
-
-    return {
+    # Use the function to filter games with trends
+    games_with_trends = filter_games_with_trends(formatted_scores, selected_date_start, sport_key)
+    logger.info(f"Games with trends: {games_with_trends}")
+    result = {
         'result': games_with_trends,
         'sport_key': sport_key,
-        'current_date': date
+        'current_date': date,
     }
+
+    # Cache the result for 6 hours (21600 seconds)
+    try:
+        logger.info("Setting cache")
+        set_redis_cache(cache_key, json.dumps(result), 21600)
+        logger.info(f"Cache set for key: {cache_key}")
+    except Exception as e:
+        logger.error(f"Error setting cache in Redis: {e}")
+
+    return result

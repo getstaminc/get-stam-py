@@ -426,6 +426,14 @@
                             const gameText = numGames === 1 ? 'game' : 'games';
                             document.querySelector('.loading-text').textContent = `Analyzing ${numGames} ${gameText} for trends...`;
                             checkTaskStatus(data.task_id);
+                        } else if (data.result !== null) {
+                            // Parse the data if it is a string
+                            if (typeof data === 'string') {
+                                data = JSON.parse(data);
+                            }
+                            displayTrends(data);
+                            setLoadingState(false);
+                            document.querySelector('.loading-text').textContent = 'Loading...';
                         } else {
                             console.error('Error fetching trends:', data);
                             setLoadingState(false);

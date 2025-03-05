@@ -72,7 +72,7 @@ try:
         port=url.port,
         password=url.password,
         ssl=True,
-        ssl_cert_reqs=ssl_cert_reqs,
+        ssl_cert_reqs=ssl.CERT_NONE,
         ssl_keyfile=None,
         ssl_certfile=None,
         ssl_ca_certs=None,

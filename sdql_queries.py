@@ -2,12 +2,35 @@ import time
 import requests
 from datetime import datetime
 from shared_utils import convert_team_name, convert_sport_key
+import logging
+import os
+# Configure logging to write to a file
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+file_handler = logging.FileHandler('logs/app.log')
+file_handler.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 def get_last_5_games(team, date, sport_key, retries=3, delay=1):
     today_date = datetime.today().strftime('%Y%m%d')
+    logger.info(f"Fetching last 5 games for team: {team}, date: {date}, sport_key: {sport_key}")
+
     # Convert full team name to mascot name for SDQL query
     team = convert_team_name(team)
     sport_key = convert_sport_key(sport_key)

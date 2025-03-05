@@ -16,6 +16,9 @@ from constants import EXCLUDED_SPORTS
 from celery_config import celery
 from tasks import show_trends_task  # Import the task from tasks module
 import subprocess
+import redis
+from urllib.parse import urlparse, parse_qs
+import ssl
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -23,7 +26,24 @@ app = Flask(__name__)
 port = 5000
 
 # Configure logging to write to a file
-logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+file_handler = logging.FileHandler('logs/app.log')
+file_handler.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 # Define the Eastern timezone
 eastern_tz = pytz.timezone('US/Eastern')
@@ -34,6 +54,47 @@ if os.getenv('FLASK_ENV') == 'development':
 else:
     cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300})  # Enable caching with 5-minute timeout
 cache.init_app(app)
+
+
+# Configure Redis using the Redis URL from environment variables
+redis_url = os.getenv('REDIS_URL')
+if not redis_url:
+    raise ValueError("REDIS_URL environment variable is not set")
+
+# Parse the Redis URL to extract the SSL parameters
+url = urlparse(redis_url)
+query_params = parse_qs(url.query)
+ssl_cert_reqs = ssl.CERT_NONE if query_params.get('ssl_cert_reqs', [''])[0] == 'CERT_NONE' else ssl.CERT_REQUIRED
+
+try:
+    redis_client = redis.StrictRedis(
+        host=url.hostname,
+        port=url.port,
+        password=url.password,
+        ssl=True,
+        ssl_cert_reqs=ssl_cert_reqs,
+        ssl_keyfile=None,
+        ssl_certfile=None,
+        ssl_ca_certs=None,
+        socket_timeout=5,  # Adjust as needed
+        socket_connect_timeout=5  # Adjust as needed
+    )
+except Exception as e:
+    raise ValueError(f"Error configuring Redis client: {e}")
+
+# Endpoint to get cache key value
+@app.route('/cache/<cache_key>')
+def get_cache_value(cache_key):
+    try:
+        cache_value = redis_client.get(cache_key)
+        if cache_value:
+            cache_value = cache_value.decode('utf-8') if isinstance(cache_value, bytes) else cache_value
+            return jsonify({cache_key: cache_value})
+        else:
+            return jsonify({'error': 'Cache key not found'}), 404
+    except Exception as e:
+        logging.error(f"Error fetching cache key {cache_key}: {e}")
+        return jsonify({'error': 'Internal Server Error'}), 500 
 
 # app.py
 from betting_guide import betting_guide  # Add this line
@@ -52,7 +113,6 @@ def filter_scores_by_date(scores, selected_date_start):
     return filtered_scores
 
 @app.route('/trends')
-@cache.cached(timeout=3600, query_string=True)
 def show_trends():
     try:
         sport_key = request.args.get('sport_key')
@@ -61,6 +121,17 @@ def show_trends():
 
         if not sport_key or not date:
             return jsonify({'error': 'Missing sport_key or date'}), 400
+        
+        cache_key = f"trends:{sport_key}:{date}"
+        cache_value = redis_client.get(cache_key)
+
+        if cache_value:
+            logger.info(f"Cache hit for key: {cache_key}")
+            cache_value = cache_value.decode('utf-8') if isinstance(cache_value, bytes) else cache_value
+            return jsonify(cache_value)
+        else:
+            logger.info(f"Cache miss for key: {cache_key}")
+            # Proceed with fetching new data and setting the cache
 
         # Fetch the scores to determine the number of games
         selected_date_start = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
@@ -70,7 +141,6 @@ def show_trends():
             return jsonify({'error': 'Error fetching odds data'}), 500
 
         filtered_scores = filter_scores_by_date(scores, selected_date_start)
-        print(filtered_scores)
         task = show_trends_task.apply_async(args=[sport_key, date])
         return jsonify({'task_id': task.id, 'num_games': len(filtered_scores)}), 202
     except Exception as e:

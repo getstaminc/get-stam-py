@@ -108,7 +108,7 @@ def convert_team_name(full_team_name):
         'Toronto Maple Leafs': 'Maple Leafs',
         'Utah Hockey Club': 'Hockey Club',
         'Vancouver Canucks': 'Canucks',
-        'Vegas Golden Knights': 'Golden Knights',
+        'Vegas Golden Knights': 'Knights',
         'Washington Capitals': 'Capitals',
         'Winnipeg Jets': 'Jets',
 

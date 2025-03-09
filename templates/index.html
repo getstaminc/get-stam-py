@@ -377,7 +377,7 @@
                     .then(data => {
                         const filteredData = filterSports(data);
                         sportSelect.innerHTML = filteredData.map(sport => `
-                            <option value="${sport.key}" ${sport.key === 'basketball_ncaab' ? 'selected' : ''}>${sport.title}</option>
+                            <option value="${sport.key}" ${sport.key === 'basketball_nba' ? 'selected' : ''}>${sport.title}</option>
                         `).join('');
                         updateButtonDisplay(sportSelect.value);
                         fetchAndDisplayGames(sportSelect.value, datePicker.value);

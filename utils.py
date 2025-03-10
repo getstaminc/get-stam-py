@@ -33,8 +33,6 @@ def convert_to_eastern(utc_time):
     return eastern_time
 
 def check_for_trends(game, selected_date_start, sport_key):
-
-
     home_team_last_5 = get_last_5_games(game['homeTeam'], selected_date_start, sport_key) or []
     away_team_last_5 = get_last_5_games(game['awayTeam'], selected_date_start, sport_key) or []
     last_5_vs_opponent = get_last_5_games_vs_opponent(
@@ -48,16 +46,27 @@ def check_for_trends(game, selected_date_start, sport_key):
     away_trend = detect_trends(away_team_last_5, sport_key)
     vs_opponent_trend = detect_trends(last_5_vs_opponent, sport_key)
 
-    trend_detected = home_trend or away_trend or vs_opponent_trend
+    # Combine trends
+    combined_trends = {
+        'points_trend': home_trend['points_trend'] or away_trend['points_trend'] or vs_opponent_trend['points_trend'],
+        'line_trend': home_trend['line_trend'] or away_trend['line_trend'] or vs_opponent_trend['line_trend'],
+        'total_trend': home_trend['total_trend'] or away_trend['total_trend'] or vs_opponent_trend['total_trend']
+    }
+
+    trend_detected = any(combined_trends.values())
 
     return {
-        'home_trend': home_trend,
-        'away_trend': away_trend,
-        'vs_opponent_trend': vs_opponent_trend,
+        'trends': combined_trends,
         'trend_detected': trend_detected
     }
 
 def detect_trends(games, sport_key):
+    trends = {
+        'points_trend': False,
+        'line_trend': False,
+        'total_trend': False
+    }
+        
     def is_winner(points, o_points):
         if points is None or o_points is None:
             return None
@@ -113,16 +122,6 @@ def detect_trends(games, sport_key):
     else:
         points_key = 'points'
 
-    # Check for trends in the 'team' column
-    team_colors = []
-    for game in games:
-        result = is_winner(game[points_key], game[f'o:{points_key}'])
-        if result is not None:
-            color = 'green-bg' if result else 'red-bg'
-            team_colors.append(color)
-    if team_colors.count('green-bg') == 5 or team_colors.count('red-bg') == 5:
-        return True
-
     # Check for trends in the 'points' column
     points_colors = []
     for game in games:
@@ -131,7 +130,7 @@ def detect_trends(games, sport_key):
             color = 'green-bg' if result else 'red-bg'
             points_colors.append(color)
     if points_colors.count('green-bg') == 5 or points_colors.count('red-bg') == 5:
-        return True
+        trends['points_trend'] = True
 
     # Skip line trend check for NHL
     if sport_key != 'icehockey_nhl':
@@ -142,7 +141,7 @@ def detect_trends(games, sport_key):
             if result is not None:
                 line_colors.append(color)
         if line_colors.count('green-bg') == 5 or line_colors.count('red-bg') == 5:
-            return True
+            trends['line_trend'] = True
 
     # Check for trends in the 'total' column
     total_colors = []
@@ -151,6 +150,6 @@ def detect_trends(games, sport_key):
         if result is not None:
             total_colors.append(color)
     if total_colors.count('green-bg') == 5 or total_colors.count('red-bg') == 5:
-        return True
+        trends['total_trend'] = True
 
-    return False
+    return trends

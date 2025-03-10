@@ -485,6 +485,7 @@
                     table.innerHTML = `
                         <thead>
                             <tr>
+                                <th>Trends</th>
                                 <th>Home Team</th>
                                 <th>Away Team</th>
                                 <th>Home Score</th>
@@ -494,8 +495,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${result.map(match => `
+                            ${result.map(match => {
+                                const trends = match.trends || {};
+                                return `
                                 <tr>
+                                    <td>
+                                        ${trends.points_trend ? '<p>Money Line Trend Detected</p>' : ''}
+                                        ${trends.line_trend ? '<p>Spread Trend Detected</p>' : ''}
+                                        ${trends.total_trend ? '<p>Total Trend Detected</p>' : ''}
+                                    </td>
                                     <td>${match.homeTeam}</td>
                                     <td>${match.awayTeam}</td>
                                     <td>${match.homeScore}</td>
@@ -518,7 +526,8 @@
                                     </td>
                                     <td><a href="/game/${match.game_id}?sport_key=${sport_key}&date=${current_date}" class="view-details">View Details</a></td>
                                 </tr>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </tbody>
                     `;
                     gamesList.appendChild(table);

@@ -69,7 +69,13 @@ def set_redis_cache(key, value, ttl):
     redis_client.setex(key, ttl, value)
 
 def filter_games_with_trends(formatted_scores, selected_date_start, sport_key):
-    return [game for game in formatted_scores if check_for_trends(game, selected_date_start, sport_key)['trend_detected']]
+    games_with_trends = []
+    for game in formatted_scores:
+        trends = check_for_trends(game, selected_date_start, sport_key)
+        game['trends'] = trends['trends']
+        if trends['trend_detected']:
+            games_with_trends.append(game)
+    return games_with_trends
 
 @celery.task
 def show_trends_task(sport_key, date):

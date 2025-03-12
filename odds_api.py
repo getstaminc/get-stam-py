@@ -3,7 +3,7 @@ import requests
 import datetime
 import pytz  # Import pytz for timezone handling
 
-api_key = '25312c698369617bc17f1f2634dd3996'
+api_key = 'e143ef401675904470a5b72e6145091a'
 
 def get_odds_data(sport_key, date):
     try:

@@ -3,7 +3,7 @@ from datetime import datetime
 from sdql_queries import get_last_5_games
 from utils import convert_sport_key
 
-api_key = '25312c698369617bc17f1f2634dd3996'
+api_key = 'e143ef401675904470a5b72e6145091a'
 
 def get_game_details(sport_key, date, game_id):
     try:

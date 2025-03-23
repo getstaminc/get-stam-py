@@ -369,7 +369,11 @@ def get_sport_scores(sport_key):
                     gtag('js', new Date());
 
                     gtag('config', 'G-578SDWQPSK');
-                    </script>                      
+                    </script> 
+                    <script 
+                        async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
+                        crossorigin="anonymous">
+                    </script>                     
                     <title>Game Info</title>
                     <style>
                         table {
@@ -486,6 +490,10 @@ def get_sport_scores(sport_key):
                 <html>
                 <head>
                     <title>Game Info</title>
+                    <script 
+                        async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
+                        crossorigin="anonymous">
+                    </script>
                     <style>
                         table {
                             width: 80%;
@@ -881,7 +889,11 @@ def game_details(game_id):
                     gtag('js', new Date());
 
                     gtag('config', 'G-578SDWQPSK');
-                    </script>                          
+                    </script> 
+                    <script 
+                        async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
+                        crossorigin="anonymous">
+                    </script>                         
                     <title>Game Details</title>
                     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                     <style>
@@ -1472,7 +1484,11 @@ def game_details(game_id):
                     gtag('js', new Date());
 
                     gtag('config', 'G-578SDWQPSK');
-                    </script>                              
+                    </script>   
+                    <script 
+                        async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
+                        crossorigin="anonymous">
+                    </script>                           
                 <title>Game Details</title>
                 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                 <style>
@@ -2049,7 +2065,11 @@ def game_details(game_id):
                     gtag('js', new Date());
 
                     gtag('config', 'G-578SDWQPSK');
-                    </script>                                 
+                    </script> 
+                    <script 
+                        async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
+                        crossorigin="anonymous">
+                    </script>                                
                 <title>Game Details</title>
                 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
                 <style>

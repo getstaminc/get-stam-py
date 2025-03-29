@@ -119,6 +119,8 @@ def detect_trends(games, sport_key):
 
     if sport_key == 'icehockey_nhl':
         points_key = 'goals'
+    elif sport_key == 'baseball_mlb':
+        points_key = 'runs'
     else:
         points_key = 'points'
 
@@ -132,8 +134,8 @@ def detect_trends(games, sport_key):
     if points_colors.count('green-bg') == 5 or points_colors.count('red-bg') == 5:
         trends['points_trend'] = True
 
-    # Skip line trend check for NHL
-    if sport_key != 'icehockey_nhl':
+    # Skip line trend check for NHL and MLB
+    if sport_key not in ['icehockey_nhl', 'baseball_mlb']:
         # Check for trends in the 'line' column
         line_colors = []
         for game in games:

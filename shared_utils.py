@@ -37,7 +37,7 @@ def convert_team_name(full_team_name):
         'San Diego Padres': 'Padres',
         'San Francisco Giants': 'Giants',
         'Seattle Mariners': 'Mariners',
-        'St Louis Cardinals': 'Cardinals',
+        'St. Louis Cardinals': 'Cardinals',
         'Tampa Bay Rays': 'Rays',
         'Texas Rangers': 'Rangers',
         'Toronto Blue Jays': 'Blue Jays',

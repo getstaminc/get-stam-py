@@ -29,6 +29,10 @@ target_metadata = Base.metadata
 # Get the DATABASE_URL from the environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Replace 'postgres://' with 'postgresql://' for SQLAlchemy compatibility
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 

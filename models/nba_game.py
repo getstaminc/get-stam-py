@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Date, JSON, ForeignKey, TIMESTAMP
 from sqlalchemy.sql import func
-from . import Base
+from .base import Base
 
 class NBA_Game(Base):
     __tablename__ = 'nba_games'

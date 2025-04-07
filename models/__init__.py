@@ -1,3 +1,4 @@
+from .base import Base
 from .nba_game import NBA_Game
 from .team import Team
 

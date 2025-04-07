@@ -5,6 +5,8 @@ import os
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 from models import Base  # Import Base from models
+from dotenv import load_dotenv
+load_dotenv()
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -29,12 +31,15 @@ target_metadata = Base.metadata
 # Get the DATABASE_URL from the environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Ensure DATABASE_URL is a string
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set.")
+
 # Replace 'postgres://' with 'postgresql://' for SQLAlchemy compatibility
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-config = context.config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", str(DATABASE_URL))  # Ensure it's a string
 
 
 def run_migrations_online():

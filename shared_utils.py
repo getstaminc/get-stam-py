@@ -442,3 +442,40 @@ def convert_sport_key(sport_key):
         # Add other mappings as needed
     }
     return sport_mapping.get(sport_key, sport_key)
+
+
+def convert_roto_team_names(team_name):
+    team_map = {
+       # MLB Teams
+        'Arizona Diamondbacks': 'ARI',
+        'Atlanta Braves': 'ATL',
+        'Baltimore Orioles': 'BAL',
+        'Boston Red Sox': 'BOS',
+        'Chicago Cubs': 'CHC',
+        'Chicago White Sox': 'CWS',
+        'Cincinnati Reds': 'CIN',
+        'Cleveland Guardians': 'CLE',
+        'Colorado Rockies': 'COL',
+        'Detroit Tigers': 'DET',
+        'Houston Astros': 'HOU',
+        'Kansas City Royals': 'KC',
+        'Los Angeles Angels': 'LAA',
+        'Los Angeles Dodgers': 'LAD',
+        'Miami Marlins': 'MIA',
+        'Milwaukee Brewers': 'MIL',
+        'Minnesota Twins': 'MIN',
+        'New York Mets': 'NYM',
+        'New York Yankees': 'NYY',
+        'Oakland Athletics': 'ATH',
+        'Philadelphia Phillies': 'PHI',
+        'Pittsburgh Pirates': 'PIT',
+        'San Diego Padres': 'SD',
+        'San Francisco Giants': 'SF',
+        'Seattle Mariners': 'SEA',
+        'St. Louis Cardinals': 'STL',
+        'Tampa Bay Rays': 'TB',
+        'Texas Rangers': 'TEX',
+        'Toronto Blue Jays': 'TOR',
+        'Washington Nationals': 'WSH',
+    }
+    return team_map.get(team_name, team_name)

@@ -80,6 +80,11 @@ def upgrade():
     for team in teams:
         games = get_historical_games(team)
         for game in games:
+            # Skip games with missing points
+            if game['points'] is None or game['o:points'] is None:
+                print(f"Skipping game due to missing points: {game}")
+                continue
+
             # Deserialize quarter scores back to lists
             home_quarter_scores = json.loads(game['quarter scores'])
             away_quarter_scores = json.loads(game['o:quarter scores'])
@@ -104,7 +109,7 @@ def upgrade():
                 'away_team': game['o:team'],
                 'home_points': game['points'],
                 'away_points': game['o:points'],
-                'total_points': game['points'] + game['o:points'],
+                'total_points': game['points'] + game['o:points'],  # Safe to add now
                 'total_margin': game['margin'],
                 'home_line': game['line'],
                 'away_line': game['o:line'],

@@ -12,6 +12,7 @@ import sqlalchemy as sa
 import requests
 import time
 from sqlalchemy.sql import text
+from datetime import datetime
 
 
 
@@ -48,6 +49,11 @@ def get_historical_games(team, retries=3, delay=1):
                 headers = result['headers']
                 rows = result['groups'][0]['columns']
                 formatted_result = [dict(zip(headers, row)) for row in zip(*rows)]
+
+                # Convert game_date to YYYY-MM-DD format
+                for game in formatted_result:
+                    game['date'] = datetime.strptime(str(game['date']), '%Y%m%d').strftime('%Y-%m-%d')
+
                 return formatted_result
             else:
                 return []

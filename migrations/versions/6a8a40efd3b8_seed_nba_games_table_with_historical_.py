@@ -13,6 +13,7 @@ import requests
 import time
 from sqlalchemy.sql import text
 from datetime import datetime
+import json
 
 
 
@@ -50,9 +51,11 @@ def get_historical_games(team, retries=3, delay=1):
                 rows = result['groups'][0]['columns']
                 formatted_result = [dict(zip(headers, row)) for row in zip(*rows)]
 
-                # Convert game_date to YYYY-MM-DD format
+                # Convert game_date to YYYY-MM-DD format and cast quarter scores to JSON
                 for game in formatted_result:
                     game['date'] = datetime.strptime(str(game['date']), '%Y%m%d').strftime('%Y-%m-%d')
+                    game['quarter scores'] = json.dumps(game['quarter scores'])  # Cast to JSON
+                    game['o:quarter scores'] = json.dumps(game['o:quarter scores'])  # Cast to JSON
 
                 return formatted_result
             else:

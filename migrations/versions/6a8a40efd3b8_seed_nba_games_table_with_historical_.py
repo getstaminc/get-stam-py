@@ -29,7 +29,7 @@ SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 def get_historical_games(team, retries=3, delay=1):
     sdql_url = f"https://s3.sportsdatabase.com/NBA/query"
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,_t@team='{team}' and site='home'"
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,_t@team='{team}' and site='home'and date>20150101"
 
     headers = {
         'user': SDQL_USERNAME,

@@ -80,6 +80,10 @@ def upgrade():
     for team in teams:
         games = get_historical_games(team)
         for game in games:
+            # Deserialize quarter scores back to lists
+            home_quarter_scores = json.loads(game['quarter scores'])
+            away_quarter_scores = json.loads(game['o:quarter scores'])
+
             # Insert data into nba_games table
             conn.execute(text("""
                 INSERT INTO nba_games (
@@ -106,8 +110,8 @@ def upgrade():
                 'away_line': game['o:line'],
                 'home_quarter_scores': game['quarter scores'],
                 'away_quarter_scores': game['o:quarter scores'],
-                'home_halftime_points': sum(game['quarter scores'][:2]),
-                'away_halftime_points': sum(game['o:quarter scores'][:2]),
+                'home_halftime_points': sum(home_quarter_scores[:2]),  # Use deserialized list
+                'away_halftime_points': sum(away_quarter_scores[:2]),  # Use deserialized list
                 'sdql_game_id': game['_t']
             })
 

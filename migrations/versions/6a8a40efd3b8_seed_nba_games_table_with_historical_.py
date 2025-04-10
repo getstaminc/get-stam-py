@@ -85,17 +85,6 @@ def upgrade():
                 print(f"Skipping game due to missing points: {game}")
                 continue
 
-            # Modify sdql_game_id to make it unique by appending the game_date
-            unique_sdql_game_id = f"{game['_t']}_{game['date']}"
-
-            # Check if the game already exists in the nba_games table
-            existing_game = conn.execute(text("""
-                SELECT 1 FROM nba_games WHERE sdql_game_id = :sdql_game_id
-            """), {'sdql_game_id': unique_sdql_game_id}).fetchone()
-
-            if existing_game:
-                raise ValueError(f"Duplicate game detected with sdql_game_id: {unique_sdql_game_id}")
-
             # Deserialize quarter scores back to lists
             home_quarter_scores = json.loads(game['quarter scores'])
             away_quarter_scores = json.loads(game['o:quarter scores'])

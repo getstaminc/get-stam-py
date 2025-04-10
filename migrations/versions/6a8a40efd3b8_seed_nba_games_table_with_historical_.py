@@ -85,6 +85,17 @@ def upgrade():
                 print(f"Skipping game due to missing points: {game}")
                 continue
 
+            # Modify sdql_game_id to make it unique by appending the game_date
+            unique_sdql_game_id = f"{game['_t']}_{game['date']}"
+
+            # Check if the game already exists in the nba_games table
+            existing_game = conn.execute(text("""
+                SELECT 1 FROM nba_games WHERE sdql_game_id = :sdql_game_id
+            """), {'sdql_game_id': unique_sdql_game_id}).fetchone()
+
+            if existing_game:
+                raise ValueError(f"Duplicate game detected with sdql_game_id: {unique_sdql_game_id}")
+
             # Deserialize quarter scores back to lists
             home_quarter_scores = json.loads(game['quarter scores'])
             away_quarter_scores = json.loads(game['o:quarter scores'])
@@ -109,15 +120,15 @@ def upgrade():
                 'away_team': game['o:team'],
                 'home_points': game['points'],
                 'away_points': game['o:points'],
-                'total_points': game['points'] + game['o:points'],  # Safe to add now
+                'total_points': game['points'] + game['o:points'],
                 'total_margin': game['margin'],
                 'home_line': game['line'],
                 'away_line': game['o:line'],
                 'home_quarter_scores': game['quarter scores'],
                 'away_quarter_scores': game['o:quarter scores'],
-                'home_halftime_points': sum(home_quarter_scores[:2]),  # Use deserialized list
-                'away_halftime_points': sum(away_quarter_scores[:2]),  # Use deserialized list
-                'sdql_game_id': game['_t']
+                'home_halftime_points': sum(home_quarter_scores[:2]),
+                'away_halftime_points': sum(away_quarter_scores[:2]),
+                'sdql_game_id': unique_sdql_game_id  # Use the unique sdql_game_id
             })
 
 def downgrade():

@@ -105,13 +105,13 @@ def upgrade():
                 INSERT INTO nba_games (
                     game_date, game_site, home_team_id, away_team_id, home_points, away_points,
                     total_points, total_margin, home_line, away_line, home_quarter_scores,
-                    away_quarter_scores, home_halftime_points, away_halftime_points, sdql_game_id
+                    away_quarter_scores, home_halftime_points, away_halftime_points
                 ) VALUES (
                     :game_date, :game_site, 
                     (SELECT team_id FROM teams WHERE team_name = :home_team),
                     (SELECT team_id FROM teams WHERE team_name = :away_team),
                     :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
-                    :home_quarter_scores, :away_quarter_scores, :home_halftime_points, :away_halftime_points, :sdql_game_id
+                    :home_quarter_scores, :away_quarter_scores, :home_halftime_points, :away_halftime_points
                 )
             """), {
                 'game_date': game['date'],
@@ -127,8 +127,7 @@ def upgrade():
                 'home_quarter_scores': game['quarter scores'],
                 'away_quarter_scores': game['o:quarter scores'],
                 'home_halftime_points': sum(home_quarter_scores[:2]),
-                'away_halftime_points': sum(away_quarter_scores[:2]),
-                'sdql_game_id': unique_sdql_game_id  # Use the unique sdql_game_id
+                'away_halftime_points': sum(away_quarter_scores[:2])
             })
 
 def downgrade():

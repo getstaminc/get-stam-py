@@ -1,8 +1,8 @@
-"""Seed nba_games table with historical data
+"""Add playoffs, home_money_line, and away_money_line to nba_games table
 
-Revision ID: 6a8a40efd3b8
-Revises: 0d53b6f42a64
-Create Date: 2025-04-08 21:25:13.306349
+Revision ID: 7db73c9b7216
+Revises: 6a8a40efd3b8
+Create Date: 2025-04-10 22:22:24.985962
 
 """
 from typing import Sequence, Union
@@ -15,13 +15,11 @@ from sqlalchemy.sql import text
 from datetime import datetime
 import json
 
-
 # revision identifiers, used by Alembic.
-revision: str = '6a8a40efd3b8'
-down_revision: Union[str, None] = '0d53b6f42a64'
+revision: str = '7db73c9b7216'
+down_revision: Union[str, None] = '6a8a40efd3b8'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-
 
 SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'

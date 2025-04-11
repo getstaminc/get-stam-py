@@ -118,7 +118,7 @@ def upgrade():
                 'away_halftime_points': sum(away_quarter_scores[:2]),
                 'home_money_line': game.get('money line'),
                 'away_money_line': game.get('o:money line'),
-                'playoffs': game.get('playoffs', 0)  # Default to 0 if not provided
+                'playoffs': bool(game.get('playoffs', 0))  # Cast to boolean
             })
 
 def downgrade():

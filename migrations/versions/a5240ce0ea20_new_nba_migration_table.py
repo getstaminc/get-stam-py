@@ -35,7 +35,8 @@ def upgrade() -> None:
         sa.Column('total_margin', sa.Float(), nullable=True),
         sa.Column('home_line', sa.Float(), nullable=True),
         sa.Column('away_line', sa.Float(), nullable=True),
-        sa.Column('quarter_scores', sa.JSON(), nullable=True),
+        sa.Column('home_quarter_scores', sa.JSON(), nullable=True),  # Add this column
+        sa.Column('away_quarter_scores', sa.JSON(), nullable=True),  # Add this column
         sa.Column('home_halftime_points', sa.Integer(), nullable=True),
         sa.Column('away_halftime_points', sa.Integer(), nullable=True),
         sa.Column('sdql_game_id', sa.Integer(), unique=True, nullable=True),

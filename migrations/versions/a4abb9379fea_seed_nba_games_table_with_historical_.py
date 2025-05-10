@@ -98,16 +98,28 @@ def upgrade():
 
             # Deserialize quarter scores back to lists
             try:
-                home_quarter_scores = json.loads(game['quarter scores'])
-                away_quarter_scores = json.loads(game['o:quarter scores'])
+                home_quarter_scores_raw = game['quarter scores']
+                away_quarter_scores_raw = game['o:quarter scores']
+
+                # Handle extra quotes around JSON strings
+                if isinstance(home_quarter_scores_raw, str):
+                    home_quarter_scores_raw = json.loads(home_quarter_scores_raw)
+                if isinstance(away_quarter_scores_raw, str):
+                    away_quarter_scores_raw = json.loads(away_quarter_scores_raw)
+
+                # Ensure the final deserialization in case of double quotes
+                if isinstance(home_quarter_scores_raw, str):
+                    home_quarter_scores = json.loads(home_quarter_scores_raw)
+                else:
+                    home_quarter_scores = home_quarter_scores_raw
+
+                if isinstance(away_quarter_scores_raw, str):
+                    away_quarter_scores = json.loads(away_quarter_scores_raw)
+                else:
+                    away_quarter_scores = away_quarter_scores_raw
             except (TypeError, json.JSONDecodeError) as e:
                 print(f"Invalid quarter scores detected! Raw game data: {game}")
                 raise Exception("Invalid quarter scores format. Stopping migration.") from e
-
-            # Ensure quarter scores are lists of integers
-            if not isinstance(home_quarter_scores, list) or not isinstance(away_quarter_scores, list):
-                print(f"Invalid quarter scores format detected! Raw game data: {game}")
-                raise Exception("Quarter scores are not lists. Stopping migration.")
 
             # Insert data into nba_games table
             conn.execute(text("""

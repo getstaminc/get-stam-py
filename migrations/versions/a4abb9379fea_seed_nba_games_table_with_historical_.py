@@ -97,8 +97,17 @@ def upgrade():
             ).scalar()
 
             # Deserialize quarter scores back to lists
-            home_quarter_scores = json.loads(game['quarter scores'])
-            away_quarter_scores = json.loads(game['o:quarter scores'])
+            try:
+                home_quarter_scores = json.loads(game['quarter scores'])
+                away_quarter_scores = json.loads(game['o:quarter scores'])
+            except (TypeError, json.JSONDecodeError) as e:
+                print(f"Invalid quarter scores detected! Raw game data: {game}")
+                raise Exception("Invalid quarter scores format. Stopping migration.") from e
+
+            # Ensure quarter scores are lists of integers
+            if not isinstance(home_quarter_scores, list) or not isinstance(away_quarter_scores, list):
+                print(f"Invalid quarter scores format detected! Raw game data: {game}")
+                raise Exception("Quarter scores are not lists. Stopping migration.")
 
             # Insert data into nba_games table
             conn.execute(text("""

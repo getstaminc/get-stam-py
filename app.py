@@ -447,8 +447,8 @@ def game_details(game_id):
         try:
             home_team_last_5 = get_last_5_games(game_details['homeTeam'], selected_date, sport_key) or []
             away_team_last_5 = get_last_5_games(game_details['awayTeam'], selected_date, sport_key) or []
-            print(f"Home Team Last 5: {home_team_last_5}")
-            print(f"Away Team Last 5: {away_team_last_5}")
+            #print(f"Home Team Last 5: {home_team_last_5}")
+            #print(f"Away Team Last 5: {away_team_last_5}")
             # Fetch the last 5 games between the home team and the away team
             last_5_vs_opponent = get_last_5_games_vs_opponent(
                 team=game_details['homeTeam'],

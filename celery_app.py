@@ -5,7 +5,6 @@ import logging
 import ssl  # Import ssl module to disable certificate verification
 
 load_dotenv()  # Load environment variables from .env file
-print(f"Using Redis URL: {os.getenv('REDIS_URL')}")
 
 # Configure logging to write to a file
 if not os.path.exists('logs'):

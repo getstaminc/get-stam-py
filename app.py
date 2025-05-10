@@ -563,7 +563,7 @@ def game_details(game_id):
         #pitchers = pitchers_data.get(matchup_key, {})
         #print(f"{away_abbr} @ {home_abbr} → Pitchers: {pitchers}")
 
-        print(f"Redirecting to game_details for game_id: {game_id}")
+        #print(f"Redirecting to game_details for game_id: {game_id}")
        
         if sport_key == 'baseball_mlb':
             return render_template_string(mlb_template,

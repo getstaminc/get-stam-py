@@ -120,6 +120,10 @@ def upgrade():
                 print(f"Invalid quarter scores detected! Raw game data: {game}")
                 raise Exception("Invalid quarter scores format. Stopping migration.") from e
 
+            # Convert quarter scores to JSON strings
+            home_quarter_scores_json = json.dumps(home_quarter_scores)
+            away_quarter_scores_json = json.dumps(away_quarter_scores)
+
             # Insert data into nba_games table
             conn.execute(text("""
                 INSERT INTO nba_games (
@@ -144,8 +148,8 @@ def upgrade():
                 'total_margin': game['margin'],
                 'home_line': game['line'],
                 'away_line': game['o:line'],
-                'home_quarter_scores': home_quarter_scores,
-                'away_quarter_scores': away_quarter_scores,
+                'home_quarter_scores': home_quarter_scores_json,  # Converted to JSON string
+                'away_quarter_scores': away_quarter_scores_json,  # Converted to JSON string
                 'home_halftime_points': sum(home_quarter_scores[:2]),
                 'away_halftime_points': sum(away_quarter_scores[:2])
             })

@@ -73,11 +73,13 @@ def get_historical_games(team, retries=3, delay=1):
 def upgrade():
     conn = op.get_bind()
 
-    # Get all teams from the teams table
-    teams = conn.execute(text("SELECT team_name FROM teams")).fetchall()
-    teams = [team[0] for team in teams]
+    # Fetch all teams and store them in a dictionary
+    teams_dict = {
+        team['team_name']: team['team_id']
+        for team in conn.execute(text("SELECT team_id, team_name FROM teams")).fetchall()
+    }
 
-    for team in teams:
+    for team in teams_dict.keys():
         games = get_historical_games(team)
         for game in games:
             # Skip games with missing points
@@ -85,16 +87,13 @@ def upgrade():
                 print(f"Skipping game due to missing points: {game}")
                 continue
 
-            # Fetch home_team_name and away_team_name from the teams table
-            home_team_name = conn.execute(
-                text("SELECT team_name FROM teams WHERE team_name = :home_team"),
-                {'home_team': game['team']}
-            ).scalar()
+            # Use the dictionary for lookups
+            home_team_id = teams_dict.get(game['team'])
+            away_team_id = teams_dict.get(game['o:team'])
 
-            away_team_name = conn.execute(
-                text("SELECT team_name FROM teams WHERE team_name = :away_team"),
-                {'away_team': game['o:team']}
-            ).scalar()
+            if home_team_id is None or away_team_id is None:
+                print(f"Skipping game due to missing team ID: {game}")
+                continue
 
             # Deserialize quarter scores back to lists
             try:
@@ -128,28 +127,25 @@ def upgrade():
                     total_points, total_margin, home_line, away_line, home_quarter_scores,
                     away_quarter_scores, home_halftime_points, away_halftime_points
                 ) VALUES (
-                    :game_date, :game_site, 
-                    (SELECT team_id FROM teams WHERE team_name = :home_team),
-                    (SELECT team_id FROM teams WHERE team_name = :away_team),
-                    :home_team_name, :away_team_name,
+                    :game_date, :game_site, :home_team_id, :away_team_id, :home_team_name, :away_team_name,
                     :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
                     :home_quarter_scores, :away_quarter_scores, :home_halftime_points, :away_halftime_points
                 )
             """), {
                 'game_date': game['date'],
                 'game_site': game['site'],
-                'home_team': game['team'],
-                'away_team': game['o:team'],
-                'home_team_name': home_team_name,
-                'away_team_name': away_team_name,
+                'home_team_id': home_team_id,
+                'away_team_id': away_team_id,
+                'home_team_name': game['team'],
+                'away_team_name': game['o:team'],
                 'home_points': game['points'],
                 'away_points': game['o:points'],
                 'total_points': game['points'] + game['o:points'],
                 'total_margin': game['margin'],
                 'home_line': game['line'],
                 'away_line': game['o:line'],
-                'home_quarter_scores': game['quarter scores'],
-                'away_quarter_scores': game['o:quarter scores'],
+                'home_quarter_scores': home_quarter_scores,
+                'away_quarter_scores': away_quarter_scores,
                 'home_halftime_points': sum(home_quarter_scores[:2]),
                 'away_halftime_points': sum(away_quarter_scores[:2])
             })

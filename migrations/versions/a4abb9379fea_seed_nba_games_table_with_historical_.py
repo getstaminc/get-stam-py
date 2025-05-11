@@ -76,7 +76,7 @@ def upgrade():
     # Fetch all teams and store them in a dictionary
     teams_dict = {
         team['team_name']: team['team_id']
-        for team in conn.execute(text("SELECT team_id, team_name FROM teams")).fetchall()
+        for team in conn.execute(text("SELECT team_id, team_name FROM teams")).mappings()
     }
 
     for team in teams_dict.keys():

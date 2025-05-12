@@ -9,6 +9,11 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.sql import text  # Add this import
+import requests
+import time
+from datetime import datetime
+import json
 
 
 # revision identifiers, used by Alembic.

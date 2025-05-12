@@ -22,6 +22,9 @@ down_revision: Union[str, None] = '83d0bed064ef'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+SDQL_USERNAME = 'TimRoss'
+SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
+
 def get_historical_games(team, retries=3, delay=1):
     sdql_url = f"https://s3.sportsdatabase.com/NBA/query"
     sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,_t@team='{team}' and site='home'and date>20150101"

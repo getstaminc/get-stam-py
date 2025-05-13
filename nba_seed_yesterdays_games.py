@@ -83,6 +83,12 @@ def seed_yesterdays_games():
         if game['points'] is None or game['o:points'] is None:
             print(f"Skipping game due to missing points: {game}")
             continue
+
+        # Handle missing fields with default values
+        game['money line'] = game.get('money line', 0)
+        game['o:money line'] = game.get('o:money line', 0)
+        game['playoffs'] = bool(game.get('playoffs', 0))
+
         print(f"Inserting game: {game['team']} vs {game['o:team']} on {game['date']}")
 
         # Deserialize quarter scores back to lists
@@ -101,19 +107,33 @@ def seed_yesterdays_games():
             print(f"Team not found: Home - {game['team']}, Away - {game['o:team']}")
             continue
 
+        # Calculate first half points
+        home_first_half_points = sum(home_quarter_scores[:2])
+        away_first_half_points = sum(away_quarter_scores[:2])
+
+        # Calculate second half points
+        home_second_half_points = sum(home_quarter_scores[2:4])
+        away_second_half_points = sum(away_quarter_scores[2:4])
+
+        # Calculate overtime points (if any)
+        home_overtime_points = home_quarter_scores[4] if len(home_quarter_scores) > 4 else None
+        away_overtime_points = away_quarter_scores[4] if len(away_quarter_scores) > 4 else None
+
         # Insert data into nba_games table
         result = conn.execute(text("""
             INSERT INTO nba_games (
                 game_date, game_site, home_team_id, away_team_id, home_points, away_points,
                 total_points, total_margin, home_line, away_line, home_quarter_scores,
-                away_quarter_scores, home_halftime_points, away_halftime_points,
+                away_quarter_scores, home_first_half_points, away_first_half_points,
+                home_second_half_points, away_second_half_points, home_overtime_points, away_overtime_points,
                 home_money_line, away_money_line, playoffs
             ) VALUES (
                 :game_date, :game_site, 
                 (SELECT team_id FROM teams WHERE team_name = :home_team),
                 (SELECT team_id FROM teams WHERE team_name = :away_team),
                 :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
-                :home_quarter_scores, :away_quarter_scores, :home_halftime_points, :away_halftime_points,
+                :home_quarter_scores, :away_quarter_scores, :home_first_half_points, :away_first_half_points,
+                :home_second_half_points, :away_second_half_points, :home_overtime_points, :away_overtime_points,
                 :home_money_line, :away_money_line, :playoffs
             )
         """), {
@@ -129,11 +149,15 @@ def seed_yesterdays_games():
             'away_line': game['o:line'],
             'home_quarter_scores': game['quarter scores'],
             'away_quarter_scores': game['o:quarter scores'],
-            'home_halftime_points': sum(home_quarter_scores[:2]),
-            'away_halftime_points': sum(away_quarter_scores[:2]),
-            'home_money_line': game.get('money line'),
-            'away_money_line': game.get('o:money line'),
-            'playoffs': bool(game.get('playoffs', 0))  # Cast to boolean
+            'home_first_half_points': home_first_half_points,
+            'away_first_half_points': away_first_half_points,
+            'home_second_half_points': home_second_half_points,
+            'away_second_half_points': away_second_half_points,
+            'home_overtime_points': home_overtime_points,
+            'away_overtime_points': away_overtime_points,
+            'home_money_line': game['money line'],
+            'away_money_line': game['o:money line'],
+            'playoffs': game['playoffs']
         })
 
         # Log the response from the database
@@ -143,6 +167,7 @@ def seed_yesterdays_games():
     conn.commit()
     print("Transaction committed successfully.")
     conn.close()
+    print("Seeding completed successfully.")
 
 if __name__ == "__main__":
     seed_yesterdays_games()

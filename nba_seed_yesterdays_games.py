@@ -122,7 +122,7 @@ def seed_yesterdays_games():
         # Insert data into nba_games table
         result = conn.execute(text("""
             INSERT INTO nba_games (
-                game_date, game_site, home_team_id, away_team_id, home_points, away_points,
+                game_date, game_site, home_team_id, away_team_id, home_team_name, away_team_name, home_points, away_points,
                 total_points, total_margin, home_line, away_line, home_quarter_scores,
                 away_quarter_scores, home_first_half_points, away_first_half_points,
                 home_second_half_points, away_second_half_points, home_overtime_points, away_overtime_points,
@@ -131,6 +131,7 @@ def seed_yesterdays_games():
                 :game_date, :game_site, 
                 (SELECT team_id FROM teams WHERE team_name = :home_team),
                 (SELECT team_id FROM teams WHERE team_name = :away_team),
+                :home_team_name, :away_team_name,  -- Add these
                 :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
                 :home_quarter_scores, :away_quarter_scores, :home_first_half_points, :away_first_half_points,
                 :home_second_half_points, :away_second_half_points, :home_overtime_points, :away_overtime_points,
@@ -141,6 +142,8 @@ def seed_yesterdays_games():
             'game_site': game['site'],
             'home_team': game['team'],
             'away_team': game['o:team'],
+            'home_team_name': game['team'],  # Add this
+            'away_team_name': game['o:team'],  # Add this
             'home_points': game['points'],
             'away_points': game['o:points'],
             'total_points': game['points'] + game['o:points'],

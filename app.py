@@ -21,8 +21,8 @@ import requests
 from urllib.parse import urlparse, parse_qs
 import ssl
 import json
-#from shared_utils import convert_roto_team_names
-#from mlb_pitchers import get_starting_pitchers
+from shared_utils import convert_roto_team_names
+from mlb_pitchers import get_starting_pitchers
 from scores_templates import (
     historical_template,
     default_template,
@@ -320,30 +320,45 @@ def get_sport_scores(sport_key):
             next_game_date = get_next_game_date_within_7_days(scores, selected_date_start)
 
         # ✅ Load pitcher data ONCE if sport is MLB
-        #pitchers_data = {}
-        #if sport_key == 'baseball_mlb':
-            #try:
-                # Only scrape if JSON doesn't exist or isn't from today
-                #json_path = "mlb_starting_pitchers.json"
-                #scrape_today = True
+        pitchers_data = {}
+        if sport_key == 'baseball_mlb':
+            try:
+                json_path = "mlb_starting_pitchers.json"
+                scrape_today = True
+                data = []
 
-                #if os.path.exists(json_path):
-                    #with open(json_path, "r") as f:
-                        #data = json.load(f)
-                        #if data and data[0].get("date") == datetime.today().strftime("%Y-%m-%d"):
-                            #scrape_today = False
+                # Check if file exists and is valid JSON with today’s data
+                if os.path.exists(json_path):
+                    try:
+                        with open(json_path, "r") as f:
+                            raw = f.read()
+                            if not raw.strip():
+                                raise ValueError("Empty file")
+                            data = json.loads(raw)
+                            if data and data[0].get("date") == datetime.today().strftime("%Y-%m-%d"):
+                                scrape_today = False
+                    except Exception as e:
+                        print("Pitcher data file invalid or empty, will attempt to re-scrape:", e)
 
-                #if scrape_today:
-                    #get_starting_pitchers()  # Will update JSON
+                # Scrape fresh data if needed
+                if scrape_today:
+                    get_starting_pitchers()  # Will overwrite the file with new data
 
-                # Load pitcher data from JSON
-               # with open(json_path, "r") as f:
-                    #for game in json.load(f):
-                       # key = f"{game['away_team']}@{game['home_team']}"
-                       # pitchers_data[key] = game
+                    # Reload the file after scraping
+                    with open(json_path, "r") as f:
+                        raw = f.read()
+                        if not raw.strip():
+                            raise ValueError("Scraped file is empty")
+                        data = json.loads(raw)
 
-            #except Exception as e:
-               # print("Error handling pitcher data:", e)
+                # Build pitchers_data from parsed JSON
+                for game in data:
+                    key = f"{game['away_team']}@{game['home_team']}"
+                    pitchers_data[key] = game
+
+            except Exception as e:
+                print("Error handling pitcher data:", e)
+
 
         formatted_scores = []
         for match in filtered_scores:
@@ -353,16 +368,16 @@ def get_sport_scores(sport_key):
             away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
 
             # 🔑 Only MLB: lookup pitcher info
-            #home_pitcher = away_pitcher = home_pitcher_stats = away_pitcher_stats = ''
-            #if sport_key == 'baseball_mlb':
-                #home_abbr = convert_roto_team_names(home_team)
-                #away_abbr = convert_roto_team_names(away_team)
-                #key = f"{away_abbr}@{home_abbr}"
-                #pitcher_info = pitchers_data.get(key, {})
-                #away_pitcher = pitcher_info.get('away_pitcher', '')
-                #away_pitcher_stats = pitcher_info.get('away_pitcher_stats', '')
-                #home_pitcher = pitcher_info.get('home_pitcher', '')
-                #home_pitcher_stats = pitcher_info.get('home_pitcher_stats', '')
+            home_pitcher = away_pitcher = home_pitcher_stats = away_pitcher_stats = ''
+            if sport_key == 'baseball_mlb':
+                home_abbr = convert_roto_team_names(home_team)
+                away_abbr = convert_roto_team_names(away_team)
+                key = f"{away_abbr}@{home_abbr}"
+                pitcher_info = pitchers_data.get(key, {})
+                away_pitcher = pitcher_info.get('away_pitcher', '')
+                away_pitcher_stats = pitcher_info.get('away_pitcher_stats', '')
+                home_pitcher = pitcher_info.get('home_pitcher', '')
+                home_pitcher_stats = pitcher_info.get('home_pitcher_stats', '')
 
             # Odds
             match_odds = next((o for o in odds if o['id'] == match['id']), None)
@@ -396,18 +411,30 @@ def get_sport_scores(sport_key):
                 'awayScore': home_score,
                 'odds': odds_data,
                 'game_id': match['id'],
-                #'homePitcher': home_pitcher,
-                #'homePitcherStats': home_pitcher_stats,
-                #'awayPitcher': away_pitcher,
-                #'awayPitcherStats': away_pitcher_stats,
+                'homePitcher': home_pitcher,
+                'homePitcherStats': home_pitcher_stats,
+                'awayPitcher': away_pitcher,
+                'awayPitcherStats': away_pitcher_stats,
             })
-            #if sport_key == 'baseball_mlb':
-                #print(f"{away_team} @ {home_team}")
-                #print(f"  Away Pitcher: {away_pitcher} ({away_pitcher_stats})")
-                #print(f"  Home Pitcher: {home_pitcher} ({home_pitcher_stats})")
+            if sport_key == 'baseball_mlb':
+                print(f"{away_team} @ {home_team}")
+                print(f"  Away Pitcher: {away_pitcher} ({away_pitcher_stats})")
+                print(f"  Home Pitcher: {home_pitcher} ({home_pitcher_stats})")
 
-        template = baseball_template if sport_key == 'baseball_mlb' else (
-            soccer_template if sport_key == 'soccer_epl' else default_template
+        soccer_keys = [
+            'soccer_epl',
+            'soccer_france_ligue_one',
+            'soccer_germany_bundesliga',
+            'soccer_italy_serie_a',
+            'soccer_spain_la_liga',
+            'soccer_uefa_champs_league',
+            'soccer_uefa_europa_league'
+        ]
+
+        template = (
+            baseball_template if sport_key == 'baseball_mlb'
+            else soccer_template if sport_key in soccer_keys
+            else default_template
         )
 
         return render_template_string(
@@ -547,23 +574,23 @@ def game_details(game_id):
             except TypeError:
                 return None, None
 
-        #pitchers_data = {}
-        #try:
-            #with open('mlb_starting_pitchers.json', 'r') as f:
-                #for game in json.load(f):
-                    #key = f"{game['away_team']}@{game['home_team']}"
-                    #pitchers_data[key] = game
-        #except Exception as e:
-            #print("Error loading pitcher data:", e)
+        pitchers_data = {}
+        try:
+            with open('mlb_starting_pitchers.json', 'r') as f:
+                for game in json.load(f):
+                    key = f"{game['away_team']}@{game['home_team']}"
+                    pitchers_data[key] = game
+        except Exception as e:
+            print("Error loading pitcher data:", e)
 
-        #away_abbr = convert_roto_team_names(game_details["awayTeam"])
-        #home_abbr = convert_roto_team_names(game_details["homeTeam"])
+        away_abbr = convert_roto_team_names(game_details["awayTeam"])
+        home_abbr = convert_roto_team_names(game_details["homeTeam"])
 
-        #matchup_key = f"{away_abbr}@{home_abbr}"
-        #pitchers = pitchers_data.get(matchup_key, {})
-        #print(f"{away_abbr} @ {home_abbr} → Pitchers: {pitchers}")
+        matchup_key = f"{away_abbr}@{home_abbr}"
+        pitchers = pitchers_data.get(matchup_key, {})
+        print(f"{away_abbr} @ {home_abbr} → Pitchers: {pitchers}")
 
-        #print(f"Redirecting to game_details for game_id: {game_id}")
+        print(f"Redirecting to game_details for game_id: {game_id}")
        
         if sport_key == 'baseball_mlb':
             return render_template_string(mlb_template,
@@ -573,11 +600,11 @@ def game_details(game_id):
                                         last_5_vs_opponent=last_5_vs_opponent,
                                         mlb_totals=mlb_totals,
                                         mlb_winner=mlb_winner,
-                                        calculate_line_result=calculate_line_result)
-                                        #home_pitcher=pitchers.get('home_pitcher'),
-                                        #home_stats=pitchers.get('home_pitcher_stats'),
-                                        #away_pitcher=pitchers.get('away_pitcher'),
-                                        #away_stats=pitchers.get('away_pitcher_stats'))
+                                        calculate_line_result=calculate_line_result,
+                                        home_pitcher=pitchers.get('home_pitcher'),
+                                        home_stats=pitchers.get('home_pitcher_stats'),
+                                        away_pitcher=pitchers.get('away_pitcher'),
+                                        away_stats=pitchers.get('away_pitcher_stats'))
         elif sport_key == 'icehockey_nhl':
             return render_template_string(nhl_template,
                                         game=game_details,

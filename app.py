@@ -421,8 +421,20 @@ def get_sport_scores(sport_key):
                 print(f"  Away Pitcher: {away_pitcher} ({away_pitcher_stats})")
                 print(f"  Home Pitcher: {home_pitcher} ({home_pitcher_stats})")
 
-        template = baseball_template if sport_key == 'baseball_mlb' else (
-            soccer_template if sport_key == 'soccer_epl' else default_template
+        soccer_keys = [
+            'soccer_epl',
+            'soccer_france_ligue_one',
+            'soccer_germany_bundesliga',
+            'soccer_italy_serie_a',
+            'soccer_spain_la_liga',
+            'soccer_uefa_champs_league',
+            'soccer_uefa_europa_league'
+        ]
+
+        template = (
+            baseball_template if sport_key == 'baseball_mlb'
+            else soccer_template if sport_key in soccer_keys
+            else default_template
         )
 
         return render_template_string(

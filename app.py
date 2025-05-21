@@ -319,17 +319,18 @@ def get_sport_scores(sport_key):
         if not filtered_scores:
             next_game_date = get_next_game_date_within_7_days(scores, selected_date_start)
 
-        # ✅ Load pitcher data ONCE if sport is MLB
+       # ✅ Load pitcher data ONCE if sport is MLB
         pitchers_data = {}
         if sport_key == 'baseball_mlb':
             try:
-                cache_key = f"pitchers:{current_date}"
+                target_date = selected_date_start.date()
+                cache_key = f"pitchers:{target_date}"
                 cached = redis_client.get(cache_key)
 
                 if cached:
                     data = json.loads(cached)
                 else:
-                    data = get_starting_pitchers_data()
+                    data = get_starting_pitchers_data(target_date=target_date)
                     redis_client.setex(cache_key, timedelta(hours=12), json.dumps(data))  # Cache for 12 hours
 
                 for game in data:
@@ -338,6 +339,7 @@ def get_sport_scores(sport_key):
 
             except Exception as e:
                 print("Error handling pitcher data:", e)
+
 
 
         formatted_scores = []

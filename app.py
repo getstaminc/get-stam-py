@@ -353,6 +353,10 @@ def get_sport_scores(sport_key):
 
                 # Build pitchers_data from parsed JSON
                 for game in data:
+                    game_date = game.get("date")
+                    if game_date != selected_date_start.strftime("%Y-%m-%d"):
+                        continue  # Skip games with mismatched date
+
                     key = f"{game['away_team']}@{game['home_team']}"
                     pitchers_data[key] = game
 
@@ -374,9 +378,9 @@ def get_sport_scores(sport_key):
                 away_abbr = convert_roto_team_names(away_team)
                 key = f"{away_abbr}@{home_abbr}"
                 pitcher_info = pitchers_data.get(key, {})
-                away_pitcher = pitcher_info.get('away_pitcher', '')
+                away_pitcher = pitcher_info.get('away_pitcher', 'No pitcher data')
                 away_pitcher_stats = pitcher_info.get('away_pitcher_stats', '')
-                home_pitcher = pitcher_info.get('home_pitcher', '')
+                home_pitcher = pitcher_info.get('home_pitcher', 'No pitcher data')
                 home_pitcher_stats = pitcher_info.get('home_pitcher_stats', '')
 
             # Odds

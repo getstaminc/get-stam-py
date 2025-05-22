@@ -28,7 +28,7 @@ def get_starting_pitchers():
 
         print(f"🏟️ Extracted Teams: {away_team} @ {home_team}")
 
-        # Get pitcher name divs
+        # Get pitchers name divs
         name_divs = game.find_all("div", class_="lineup__player-highlight-name")
         stats_divs = game.find_all("div", class_="lineup__player-highlight-stats")
 

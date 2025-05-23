@@ -261,9 +261,13 @@ baseball_template = """
                                                 </ul>
                                                 <h4>Pitchers:</h4>
                                                 <ul>
-                                                    {% if match.homePitcher and match.awayPitcher %}
-                                                        <li>{{ match.awayTeam }} - {{ match.awayPitcher }} ({{ match.awayPitcherStats }})</li>
-                                                        <li>{{ match.homeTeam }} - {{ match.homePitcher }} ({{ match.homePitcherStats }})</li>
+                                                    {% if match.isToday %}
+                                                        {% if match.homePitcher and match.awayPitcher %}
+                                                            <li>{{ match.awayTeam }} - {{ match.awayPitcher }} ({{ match.awayPitcherStats }})</li>
+                                                            <li>{{ match.homeTeam }} - {{ match.homePitcher }} ({{ match.homePitcherStats }})</li>
+                                                        {% else %}
+                                                            <li>No pitcher data available</li>
+                                                        {% endif %}
                                                     {% else %}
                                                         <li>No pitcher data available</li>
                                                     {% endif %}

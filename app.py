@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
-from datetime import datetime, timedelta  # Import timedelta here
+from datetime import datetime, timedelta, date  # Import timedelta here
 import pytz
 from dateutil import parser
 from odds_api import get_odds_data, get_sports
@@ -415,6 +415,7 @@ def get_sport_scores(sport_key):
                 'homePitcherStats': home_pitcher_stats,
                 'awayPitcher': away_pitcher,
                 'awayPitcherStats': away_pitcher_stats,
+                'isToday': selected_date_start.date() == date.today()
             })
             if sport_key == 'baseball_mlb':
                 print(f"{away_team} @ {home_team}")

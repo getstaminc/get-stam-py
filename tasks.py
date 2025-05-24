@@ -12,6 +12,7 @@ import ssl
 from urllib.parse import urlparse, parse_qs
 from retrying import retry
 from shared_utils import convert_roto_team_names
+from mlb_pitchers import get_starting_pitchers
 
 # Configure logging to write to a file
 if not os.path.exists('logs'):

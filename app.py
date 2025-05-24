@@ -638,6 +638,22 @@ def game_details(game_id):
 def home():
     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
+
+@app.route('/delete-cache/<cache_key>')
+def delete_cache_key(cache_key):
+    try:
+        # Attempt to delete the cache key
+        result = redis_client.delete(cache_key)
+        if result == 1:  # `1` means the key was deleted
+            logger.info(f"Cache key '{cache_key}' deleted successfully.")
+            return jsonify({'message': f"Cache key '{cache_key}' deleted successfully."}), 200
+        else:  # `0` means the key was not found
+            logger.warning(f"Cache key '{cache_key}' not found.")
+            return jsonify({'error': f"Cache key '{cache_key}' not found."}), 404
+    except Exception as e:
+        logger.error(f"Error deleting cache key '{cache_key}': {e}")
+        return jsonify({'error': 'Internal Server Error'}), 500
+    
 if __name__ == '__main__':
     # Start the Celery worker in a subprocess
     celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])

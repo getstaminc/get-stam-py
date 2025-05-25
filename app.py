@@ -367,7 +367,7 @@ def get_sport_scores(sport_key):
             home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
             away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
 
-            # 🔑 Only MLB: lookup pitcher info
+            #  Only MLB: lookup pitcher info
             home_pitcher = away_pitcher = home_pitcher_stats = away_pitcher_stats = ''
             if sport_key == 'baseball_mlb':
                 home_abbr = convert_roto_team_names(home_team)

@@ -11,6 +11,8 @@ import logging
 import ssl
 from urllib.parse import urlparse, parse_qs
 from retrying import retry
+from shared_utils import convert_roto_team_names
+from mlb_pitchers import get_starting_pitchers
 
 # Configure logging to write to a file
 if not os.path.exists('logs'):
@@ -95,6 +97,47 @@ def show_trends_task(sport_key, date):
         if commence_date_eastern.date() == selected_date_start.date():
             filtered_scores.append(score)
 
+    # Load pitcher data (similar to app.py)
+    pitchers_data = {}
+    if sport_key == 'baseball_mlb':
+        try:
+            json_path = "mlb_starting_pitchers.json"
+            scrape_today = True
+            data = []
+
+            # Check if file exists and is valid JSON with today’s data
+            if os.path.exists(json_path):
+                try:
+                    with open(json_path, "r") as f:
+                        raw = f.read()
+                        if not raw.strip():
+                            raise ValueError("Empty file")
+                        data = json.loads(raw)
+                        if data and data[0].get("date") == datetime.today().strftime("%Y-%m-%d"):
+                            scrape_today = False
+                except Exception as e:
+                    print("Pitcher data file invalid or empty, will attempt to re-scrape:", e)
+
+            # Scrape fresh data if needed
+            if scrape_today:
+                get_starting_pitchers()  # Will overwrite the file with new data
+
+                # Reload the file after scraping
+                with open(json_path, "r") as f:
+                    raw = f.read()
+                    if not raw.strip():
+                        raise ValueError("Scraped file is empty")
+                    data = json.loads(raw)
+
+            # Build pitchers_data from parsed JSON
+            for game in data:
+                key = f"{game['away_team']}@{game['home_team']}"
+                pitchers_data[key] = game
+
+        except Exception as e:
+            print("Error handling pitcher data:", e)
+
+    # Process scores and add pitcher data
     formatted_scores = []
     for match in filtered_scores:
         home_team = match.get('home_team', 'N/A')
@@ -102,7 +145,20 @@ def show_trends_task(sport_key, date):
         home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
         away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
 
-        match_odds = next((odds_match for odds_match in odds if odds_match['id'] == match['id']), None)
+        # 🔑 Only MLB: lookup pitcher info
+        home_pitcher = away_pitcher = home_pitcher_stats = away_pitcher_stats = ''
+        if sport_key == 'baseball_mlb':
+            home_abbr = convert_roto_team_names(home_team)
+            away_abbr = convert_roto_team_names(away_team)
+            key = f"{away_abbr}@{home_abbr}"
+            pitcher_info = pitchers_data.get(key, {})
+            away_pitcher = pitcher_info.get('away_pitcher', '')
+            away_pitcher_stats = pitcher_info.get('away_pitcher_stats', '')
+            home_pitcher = pitcher_info.get('home_pitcher', '')
+            home_pitcher_stats = pitcher_info.get('home_pitcher_stats', '')
+
+        # Add odds data (reuse existing logic)
+        match_odds = next((o for o in odds if o['id'] == match['id']), None)
         odds_data = {'h2h': [], 'spreads': [], 'totals': []}
 
         if match_odds:
@@ -111,22 +167,22 @@ def show_trends_task(sport_key, date):
                     market_key = market['key']
                     for outcome in market['outcomes']:
                         outcome_text = f"{outcome['name']}"
+                        price = outcome['price']
+                        if price > 0:
+                            outcome_text += f": +{price}"
+                        else:
+                            outcome_text += f": {price}"
                         if market_key in ['spreads', 'totals'] and 'point' in outcome:
                             outcome_text += f": {outcome['point']}"
-                        if market_key == 'h2h':
-                            price = outcome['price']
-                            if price > 0:
-                                outcome_text += f": +{price}"
-                            else:
-                                outcome_text += f": {price}"
+                        if sport_key == 'soccer_epl' and market_key == 'h2h':
+                            odds_data['h2h'].append(outcome_text)
+                        elif sport_key == 'baseball_mlb':
+                            if market_key in odds_data:
+                                odds_data[market_key].append(outcome_text)
                         else:
-                            price = outcome['price']
-                            if price > 0:
-                                outcome_text += f" +{price}"
-                            else:
-                                outcome_text += f" {price}"
-                        odds_data[market_key].append(outcome_text)
+                            odds_data[market_key].append(outcome_text)
 
+        # Append to formatted_scores with pitcher data
         formatted_scores.append({
             'homeTeam': home_team,
             'awayTeam': away_team,
@@ -134,6 +190,10 @@ def show_trends_task(sport_key, date):
             'awayScore': away_score,
             'odds': odds_data,
             'game_id': match['id'],
+            'homePitcher': home_pitcher,
+            'homePitcherStats': home_pitcher_stats,
+            'awayPitcher': away_pitcher,
+            'awayPitcherStats': away_pitcher_stats,
         })
 
     # Use the function to filter games with trends

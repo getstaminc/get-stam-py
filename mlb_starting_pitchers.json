@@ -1,0 +1,146 @@
+[
+    {
+        "date": "2025-05-24",
+        "away_team": "BAL",
+        "home_team": "BOS",
+        "away_pitcher": "Zach Eflin R",
+        "away_pitcher_stats": "3-2 5.08 ERA",
+        "home_pitcher": "Hunter Dobbins R",
+        "home_pitcher_stats": "2-1 3.62 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "KC",
+        "home_team": "MIN",
+        "away_pitcher": "Michael Wacha R",
+        "away_pitcher_stats": "3-4 2.86 ERA",
+        "home_pitcher": "Zebby Matthews R",
+        "home_pitcher_stats": "0-1 12.00 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "ARI",
+        "home_team": "STL",
+        "away_pitcher": "Merrill Kelly R",
+        "away_pitcher_stats": "5-2 3.26 ERA",
+        "home_pitcher": "M. Liberatore L",
+        "home_pitcher_stats": "3-3 2.92 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "SF",
+        "home_team": "WSH",
+        "away_pitcher": "Kyle Harrison L",
+        "away_pitcher_stats": "0-0 3.38 ERA",
+        "home_pitcher": "Jake Irvin R",
+        "home_pitcher_stats": "3-1 3.88 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "MIL",
+        "home_team": "PIT",
+        "away_pitcher": "Quinn Priester R",
+        "away_pitcher_stats": "1-2 4.66 ERA",
+        "home_pitcher": "Mitch Keller R",
+        "home_pitcher_stats": "1-6 3.88 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "TEX",
+        "home_team": "CWS",
+        "away_pitcher": "Jack Leiter R",
+        "away_pitcher_stats": "3-2 4.25 ERA",
+        "home_pitcher": "Jonathan Cannon R",
+        "home_pitcher_stats": "2-5 3.76 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "SD",
+        "home_team": "ATL",
+        "away_pitcher": "Michael King R",
+        "away_pitcher_stats": "4-2 2.59 ERA",
+        "home_pitcher": "Grant Holmes R",
+        "home_pitcher_stats": "2-3 4.01 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "CHC",
+        "home_team": "CIN",
+        "away_pitcher": "Colin Rea R",
+        "away_pitcher_stats": "3-0 2.38 ERA",
+        "home_pitcher": "Andrew Abbott L",
+        "home_pitcher_stats": "3-0 1.80 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "SEA",
+        "home_team": "HOU",
+        "away_pitcher": "Bryan Woo R",
+        "away_pitcher_stats": "5-1 2.65 ERA",
+        "home_pitcher": "Framber Valdez L",
+        "home_pitcher_stats": "3-4 3.57 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "NYY",
+        "home_team": "COL",
+        "away_pitcher": "Max Fried L",
+        "away_pitcher_stats": "6-0 1.29 ERA",
+        "home_pitcher": "Kyle Freeland L",
+        "home_pitcher_stats": "0-6 5.68 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "BAL",
+        "home_team": "BOS",
+        "away_pitcher": "Trevor Rogers L",
+        "away_pitcher_stats": "0-0 .00 ERA",
+        "home_pitcher": "Lucas Giolito R",
+        "home_pitcher_stats": "1-1 7.08 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "TOR",
+        "home_team": "TB",
+        "away_pitcher": "Jose Berrios R",
+        "away_pitcher_stats": "1-1 4.19 ERA",
+        "home_pitcher": "Shane Baz R",
+        "home_pitcher_stats": "3-3 5.33 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "CLE",
+        "home_team": "DET",
+        "away_pitcher": "Luis L. Ortiz R",
+        "away_pitcher_stats": "2-5 4.66 ERA",
+        "home_pitcher": "Casey Mize R",
+        "home_pitcher_stats": "6-1 2.53 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "LAD",
+        "home_team": "NYM",
+        "away_pitcher": "Tony Gonsolin R",
+        "away_pitcher_stats": "2-0 4.05 ERA",
+        "home_pitcher": "David Peterson L",
+        "home_pitcher_stats": "2-2 2.86 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "PHI",
+        "home_team": "ATH",
+        "away_pitcher": "C. Sanchez L",
+        "away_pitcher_stats": "4-1 3.10 ERA",
+        "home_pitcher": "Jeffrey Springs L",
+        "home_pitcher_stats": "5-3 3.91 ERA"
+    },
+    {
+        "date": "2025-05-24",
+        "away_team": "MIA",
+        "home_team": "LAA",
+        "away_pitcher": "Cal Quantrill R",
+        "away_pitcher_stats": "3-4 6.37 ERA",
+        "home_pitcher": "Jose Soriano R",
+        "home_pitcher_stats": "3-4 3.57 ERA"
+    }
+]

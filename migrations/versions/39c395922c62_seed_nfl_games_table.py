@@ -117,7 +117,8 @@ def upgrade():
                 
                 # Ensure quarter scores are valid lists
                 if not isinstance(home_quarter_scores, list) or not isinstance(away_quarter_scores, list):
-                    raise Exception(f"Invalid quarter scores detected! Raw game data: {game}")
+                    print(f"Skipping game due to invalid quarter scores: {game}")
+                    continue
 
             except (TypeError, json.JSONDecodeError) as e:
                 print(f"Invalid quarter scores detected! Raw game data: {game}")

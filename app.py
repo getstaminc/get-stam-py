@@ -22,7 +22,7 @@ from urllib.parse import urlparse, parse_qs
 import ssl
 import json
 from shared_utils import convert_roto_team_names
-from mlb_pitchers import get_starting_pitchers
+from mlb_pitchers import get_pitcher_data_for_dates
 from scores_templates import (
     historical_template,
     default_template,
@@ -286,6 +286,8 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
     
     return False
 
+pitcher_cache = {}
+
 # Route to fetch scores and odds for a specific sport and date
 @app.route('/sports/<sport_key>')
 def get_sport_scores(sport_key):
@@ -323,41 +325,18 @@ def get_sport_scores(sport_key):
         pitchers_data = {}
         if sport_key == 'baseball_mlb':
             try:
-                json_path = "mlb_starting_pitchers.json"
-                scrape_today = True
-                data = []
+                if not pitcher_cache:
+                    pitcher_cache.update(get_pitcher_data_for_dates())
 
-                # Check if file exists and is valid JSON with today’s data
-                if os.path.exists(json_path):
-                    try:
-                        with open(json_path, "r") as f:
-                            raw = f.read()
-                            if not raw.strip():
-                                raise ValueError("Empty file")
-                            data = json.loads(raw)
-                            if data and data[0].get("date") == datetime.today().strftime("%Y-%m-%d"):
-                                scrape_today = False
-                    except Exception as e:
-                        print("Pitcher data file invalid or empty, will attempt to re-scrape:", e)
+                target_date_str = selected_date_start.strftime("%Y-%m-%d")
+                pitcher_data_list = pitcher_cache.get(target_date_str, [])
 
-                # Scrape fresh data if needed
-                if scrape_today:
-                    get_starting_pitchers()  # Will overwrite the file with new data
-
-                    # Reload the file after scraping
-                    with open(json_path, "r") as f:
-                        raw = f.read()
-                        if not raw.strip():
-                            raise ValueError("Scraped file is empty")
-                        data = json.loads(raw)
-
-                # Build pitchers_data from parsed JSON
-                for game in data:
+                for game in pitcher_data_list:
                     key = f"{game['away_team']}@{game['home_team']}"
                     pitchers_data[key] = game
 
             except Exception as e:
-                print("Error handling pitcher data:", e)
+                print(f"⚠️ Error handling pitcher data for {selected_date_start.date()}: {e}")
 
 
         formatted_scores = []

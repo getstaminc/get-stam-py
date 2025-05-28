@@ -114,6 +114,11 @@ def upgrade():
                     away_quarter_scores = json.loads(away_quarter_scores_raw)
                 else:
                     away_quarter_scores = away_quarter_scores_raw
+                
+                # Ensure quarter scores are valid lists
+                if not isinstance(home_quarter_scores, list) or not isinstance(away_quarter_scores, list):
+                    raise Exception(f"Invalid quarter scores detected! Raw game data: {game}")
+
             except (TypeError, json.JSONDecodeError) as e:
                 print(f"Invalid quarter scores detected! Raw game data: {game}")
                 raise Exception("Invalid quarter scores format. Stopping migration.") from e

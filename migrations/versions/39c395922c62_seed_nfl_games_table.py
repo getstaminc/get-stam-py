@@ -122,6 +122,11 @@ def upgrade():
             except (TypeError, json.JSONDecodeError) as e:
                 print(f"Invalid quarter scores detected! Raw game data: {game}")
                 raise Exception("Invalid quarter scores format. Stopping migration.") from e
+            
+            # Skip records with missing required fields
+            if game['total'] is None or game['margin'] is None or game['line'] is None or game['o:line'] is None:
+                print(f"Skipping game due to missing required fields: {game}")
+                continue
 
             # Calculate first half points
             home_first_half_points = sum(home_quarter_scores[:2])

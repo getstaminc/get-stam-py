@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
-from datetime import datetime, timedelta  # Import timedelta here
+from datetime import datetime, timedelta, date  # Import timedelta here
 import pytz
 from dateutil import parser
 from odds_api import get_odds_data, get_sports
@@ -349,7 +349,7 @@ def get_sport_scores(sport_key):
             home_score = match['scores'][0]['score'] if match.get('scores') else 'N/A'
             away_score = match['scores'][1]['score'] if match.get('scores') else 'N/A'
 
-            # 🔑 Only MLB: lookup pitcher info
+            #  Only MLB: lookup pitcher info
             home_pitcher = away_pitcher = home_pitcher_stats = away_pitcher_stats = ''
             if sport_key == 'baseball_mlb':
                 home_abbr = convert_roto_team_names(home_team)
@@ -397,6 +397,7 @@ def get_sport_scores(sport_key):
                 'homePitcherStats': home_pitcher_stats,
                 'awayPitcher': away_pitcher,
                 'awayPitcherStats': away_pitcher_stats,
+                'isToday': selected_date_start.date() == date.today()
             })
             if sport_key == 'baseball_mlb':
                 print(f"{away_team} @ {home_team}")
@@ -619,6 +620,22 @@ def game_details(game_id):
 def home():
     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
+
+@app.route('/delete-cache/<cache_key>')
+def delete_cache_key(cache_key):
+    try:
+        # Attempt to delete the cache key
+        result = redis_client.delete(cache_key)
+        if result == 1:  # `1` means the key was deleted
+            logger.info(f"Cache key '{cache_key}' deleted successfully.")
+            return jsonify({'message': f"Cache key '{cache_key}' deleted successfully."}), 200
+        else:  # `0` means the key was not found
+            logger.warning(f"Cache key '{cache_key}' not found.")
+            return jsonify({'error': f"Cache key '{cache_key}' not found."}), 404
+    except Exception as e:
+        logger.error(f"Error deleting cache key '{cache_key}': {e}")
+        return jsonify({'error': 'Internal Server Error'}), 500
+    
 if __name__ == '__main__':
     # Start the Celery worker in a subprocess
     celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])

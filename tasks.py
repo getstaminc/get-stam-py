@@ -101,41 +101,19 @@ def show_trends_task(sport_key, date):
     pitchers_data = {}
     if sport_key == 'baseball_mlb':
         try:
-            json_path = "mlb_starting_pitchers.json"
-            scrape_today = True
-            data = []
+            all_pitchers = get_pitcher_data_for_dates()
+            date_key = selected_date_start.strftime("%Y-%m-%d")
+            games_for_date = all_pitchers.get(date_key, [])
 
-            # Check if file exists and is valid JSON with today’s data
-            if os.path.exists(json_path):
-                try:
-                    with open(json_path, "r") as f:
-                        raw = f.read()
-                        if not raw.strip():
-                            raise ValueError("Empty file")
-                        data = json.loads(raw)
-                        if data and data[0].get("date") == datetime.today().strftime("%Y-%m-%d"):
-                            scrape_today = False
-                except Exception as e:
-                    print("Pitcher data file invalid or empty, will attempt to re-scrape:", e)
+            # Build pitchers_data dict
+            pitchers_data = {
+                f"{g['away_team']}@{g['home_team']}": g for g in games_for_date
+            }
 
-            # Scrape fresh data if needed
-            if scrape_today:
-                get_starting_pitchers()  # Will overwrite the file with new data
-
-                # Reload the file after scraping
-                with open(json_path, "r") as f:
-                    raw = f.read()
-                    if not raw.strip():
-                        raise ValueError("Scraped file is empty")
-                    data = json.loads(raw)
-
-            # Build pitchers_data from parsed JSON
-            for game in data:
-                key = f"{game['away_team']}@{game['home_team']}"
-                pitchers_data[key] = game
+            logger.info(f"Loaded {len(pitchers_data)} pitcher matchups for {date_key}")
 
         except Exception as e:
-            print("Error handling pitcher data:", e)
+            logger.error(f"⚠️ Error loading pitcher data: {e}")
 
     # Process scores and add pitcher data
     formatted_scores = []

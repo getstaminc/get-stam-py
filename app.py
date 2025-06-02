@@ -21,8 +21,9 @@ import requests
 from urllib.parse import urlparse, parse_qs
 import ssl
 import json
+from bs4 import BeautifulSoup
 from shared_utils import convert_roto_team_names
-from mlb_pitchers import get_starting_pitchers
+from mlb_pitchers import get_pitcher_data_for_dates
 from scores_templates import (
     historical_template,
     default_template,
@@ -286,6 +287,57 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
     
     return False
 
+@cache.cached(timeout=3600, query_string=True)
+def get_pitcher_data_for_dates():
+    urls = {
+        "today": "https://www.rotowire.com/baseball/daily-lineups.php",
+        "tomorrow": "https://www.rotowire.com/baseball/daily-lineups.php?date=tomorrow"
+    }
+
+    results = {}
+
+    for label, url in urls.items():
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Get the actual date from the page
+        date_div = soup.find("div", class_="page-title__secondary")
+        if not date_div or "lineups for" not in date_div.text.lower():
+            continue
+        page_date_str = date_div.text.strip().split("for")[-1].strip()
+        page_date = datetime.strptime(page_date_str, "%B %d, %Y").strftime("%Y-%m-%d")
+
+        games = soup.find_all("div", class_="lineup")
+        data = []
+
+        for game in games:
+            teams = game.find_all("div", class_="lineup__abbr")
+            if len(teams) != 2:
+                continue
+
+            away_team = teams[0].text.strip()
+            home_team = teams[1].text.strip()
+
+            name_divs = game.find_all("div", class_="lineup__player-highlight-name")
+            stats_divs = game.find_all("div", class_="lineup__player-highlight-stats")
+
+            if len(name_divs) < 2 or len(stats_divs) < 2:
+                continue
+
+            data.append({
+                "away_team": away_team,
+                "home_team": home_team,
+                "away_pitcher": name_divs[0].get_text(strip=True, separator=" "),
+                "home_pitcher": name_divs[1].get_text(strip=True, separator=" "),
+                "away_pitcher_stats": stats_divs[0].text.strip().replace("\xa0", " "),
+                "home_pitcher_stats": stats_divs[1].text.strip().replace("\xa0", " "),
+            })
+
+        results[page_date] = data
+
+    return results
+
 # Route to fetch scores and odds for a specific sport and date
 @app.route('/sports/<sport_key>')
 def get_sport_scores(sport_key):
@@ -323,41 +375,15 @@ def get_sport_scores(sport_key):
         pitchers_data = {}
         if sport_key == 'baseball_mlb':
             try:
-                json_path = "mlb_starting_pitchers.json"
-                scrape_today = True
-                data = []
+                all_pitchers = get_pitcher_data_for_dates()  # This is now cached!
+                target_date_str = selected_date_start.strftime("%Y-%m-%d")
+                pitcher_data_list = all_pitchers.get(target_date_str, [])
 
-                # Check if file exists and is valid JSON with today’s data
-                if os.path.exists(json_path):
-                    try:
-                        with open(json_path, "r") as f:
-                            raw = f.read()
-                            if not raw.strip():
-                                raise ValueError("Empty file")
-                            data = json.loads(raw)
-                            if data and data[0].get("date") == datetime.today().strftime("%Y-%m-%d"):
-                                scrape_today = False
-                    except Exception as e:
-                        print("Pitcher data file invalid or empty, will attempt to re-scrape:", e)
-
-                # Scrape fresh data if needed
-                if scrape_today:
-                    get_starting_pitchers()  # Will overwrite the file with new data
-
-                    # Reload the file after scraping
-                    with open(json_path, "r") as f:
-                        raw = f.read()
-                        if not raw.strip():
-                            raise ValueError("Scraped file is empty")
-                        data = json.loads(raw)
-
-                # Build pitchers_data from parsed JSON
-                for game in data:
+                for game in pitcher_data_list:
                     key = f"{game['away_team']}@{game['home_team']}"
                     pitchers_data[key] = game
-
             except Exception as e:
-                print("Error handling pitcher data:", e)
+                print(f"⚠️ Error handling pitcher data for {selected_date_start.date()}: {e}")
 
 
         formatted_scores = []
@@ -575,23 +601,34 @@ def game_details(game_id):
             except TypeError:
                 return None, None
 
-        pitchers_data = {}
-        try:
-            with open('mlb_starting_pitchers.json', 'r') as f:
-                for game in json.load(f):
-                    key = f"{game['away_team']}@{game['home_team']}"
-                    pitchers_data[key] = game
-        except Exception as e:
-            print("Error loading pitcher data:", e)
+         # ✅ Use new cached pitcher data if MLB
+        home_pitcher = away_pitcher = home_stats = away_stats = ''
+        pitchers = {}
+        if sport_key == 'baseball_mlb':
+            try:
+                all_pitchers = get_pitcher_data_for_dates()
+                date_key = selected_date.strftime("%Y-%m-%d")
+                games_for_date = all_pitchers.get(date_key, [])
 
-        away_abbr = convert_roto_team_names(game_details["awayTeam"])
-        home_abbr = convert_roto_team_names(game_details["homeTeam"])
+                # Convert teams to abbreviations
+                away_abbr = convert_roto_team_names(game_details['awayTeam'])
+                home_abbr = convert_roto_team_names(game_details['homeTeam'])
+                matchup_key = f"{away_abbr}@{home_abbr}"
 
-        matchup_key = f"{away_abbr}@{home_abbr}"
-        pitchers = pitchers_data.get(matchup_key, {})
-        print(f"{away_abbr} @ {home_abbr} → Pitchers: {pitchers}")
+                # Create pitcher lookup table
+                pitchers_data = {
+                    f"{g['away_team']}@{g['home_team']}": g for g in games_for_date
+                }
 
-        print(f"Redirecting to game_details for game_id: {game_id}")
+                pitchers = pitchers_data.get(matchup_key, {})
+                away_pitcher = pitchers.get('away_pitcher', '')
+                home_pitcher = pitchers.get('home_pitcher', '')
+                away_stats = pitchers.get('away_pitcher_stats', '')
+                home_stats = pitchers.get('home_pitcher_stats', '')
+
+                print(f"{matchup_key} → Pitchers: {pitchers}")
+            except Exception as e:
+                print("⚠️ Error loading cached pitcher data:", e)
        
         if sport_key == 'baseball_mlb':
             return render_template_string(mlb_template,

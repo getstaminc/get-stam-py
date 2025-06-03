@@ -39,7 +39,7 @@ def convert_start_time_to_time(start_time: str) -> datetime.time:
 
 def get_historical_games(team, retries=3, delay=1):
     sdql_url = f"https://s3.sportsdatabase.com/NFL/query"
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t,@team='{team}' and site='home'and date>20090101"
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@team='{team}' and site='home'and date>20090101"
 
     headers = {
         'user': SDQL_USERNAME,

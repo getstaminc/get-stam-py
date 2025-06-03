@@ -54,7 +54,11 @@ def get_historical_games(team, retries=3, delay=1):
         try:
             response = requests.get(sdql_url, headers=headers, params=data)
             response.raise_for_status()
-            result = response.json()
+            try:
+                result = response.json()
+            except requests.exceptions.JSONDecodeError as e:
+                print(f"Failed to decode JSON response: {response.text}")
+                raise
 
             if result.get('headers') and result.get('groups'):
                 headers = result['headers']

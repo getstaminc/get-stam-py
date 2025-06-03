@@ -26,6 +26,17 @@ depends_on: Union[str, Sequence[str], None] = None
 SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
+
+def convert_start_time_to_time(start_time: str) -> datetime.time:
+    """
+    Convert military time (e.g., '1838') to a datetime.time object.
+    """
+    try:
+        return datetime.strptime(start_time, "%H%M").time()
+    except ValueError as e:
+        raise ValueError(f"Invalid start time format: {start_time}. Error: {e}")
+
+
 def get_historical_games(team, retries=3, delay=1):
     sdql_url = f"https://s3.sportsdatabase.com/NFL/query"
     sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t,@team='{team}' and site='home'and date>20090101"
@@ -94,6 +105,9 @@ def upgrade():
                 print(f"Skipping game due to missing team ID: {game}")
                 continue
 
+            # Convert start_time to a datetime.time object
+            start_time = convert_start_time_to_time(game['start time'])
+
             # Deserialize quarter scores back to lists
             try:
                 home_quarter_scores_raw = game['quarter scores']
@@ -153,13 +167,13 @@ def upgrade():
                     total_points, total_margin, home_line, away_line, home_quarter_scores,
                     away_quarter_scores, home_first_half_points, away_first_half_points,
                     home_second_half_points, away_second_half_points, home_overtime_points, away_overtime_points,
-                    home_money_line, away_money_line, playoffs
+                    home_money_line, away_money_line, playoffs, start_time
                 ) VALUES (
                     :game_date, :game_site, :home_team_id, :away_team_id, :home_team_name, :away_team_name,
                     :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
                     :home_quarter_scores, :away_quarter_scores, :home_first_half_points, :away_first_half_points,
                     :home_second_half_points, :away_second_half_points, :home_overtime_points, :away_overtime_points,
-                    :home_money_line, :away_money_line, :playoffs
+                    :home_money_line, :away_money_line, :playoffs, :start_time
                 )
             """), {
                 'game_date': game['date'],
@@ -184,7 +198,8 @@ def upgrade():
                 'away_overtime_points': away_overtime_points,
                 'home_money_line': game.get('money line'),
                 'away_money_line': game.get('o:money line'),
-                'playoffs': bool(game.get('playoffs', 0))  # Cast to boolean
+                'playoffs': bool(game.get('playoffs', 0)),  # Cast to boolean
+                'start_time': start_time
             })
 
 

@@ -101,6 +101,11 @@ def upgrade():
                 print(f"Skipping game due to missing points: {game}")
                 continue
 
+            # Skip games with a team of "Bulls"
+            if game['team'] == "Bulls" or game['o:team'] == "Bulls":
+                print(f"Skipping non-NFL game: {game}")
+                continue
+
             # Use the dictionary for lookups
             home_team_id = teams_dict.get(game['team'])
             away_team_id = teams_dict.get(game['o:team'])

@@ -109,6 +109,11 @@ def upgrade():
                 print(f"Skipping game due to missing team ID: {game}")
                 continue
 
+            # Check if start time is None
+            if game['start time'] is None:
+                print(f"Game with missing start time: {game}")
+                raise Exception("Encountered a game with missing start time. Stopping migration.")
+
             # Convert start_time to a datetime.time object
             start_time = convert_start_time_to_time(game['start time'])
 

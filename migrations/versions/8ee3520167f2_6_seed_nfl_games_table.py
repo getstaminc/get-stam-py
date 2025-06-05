@@ -32,11 +32,13 @@ def convert_start_time_to_time(start_time: str) -> datetime.time:
     Convert military time (e.g., '1838') to a datetime.time object.
     """
     try:
-        # Handle specific invalid cases
-        if start_time == "2435":
+        # Handle specific invalid cases where start_time starts with "243"
+        if start_time.startswith("243"):
             print(f"Correcting invalid start time: {start_time} to 1230")
             start_time = "1230"
-        elif start_time == "2456":
+
+        # Handle specific invalid cases where start_time starts with "245"
+        elif start_time.startswith("245"):
             print(f"Correcting invalid start time: {start_time} to 1300")
             start_time = "1300"
         return datetime.strptime(start_time, "%H%M").time()

@@ -38,7 +38,7 @@ def convert_start_time_to_time(start_time: str) -> datetime.time:
             start_time = "1230"
 
         # Handle specific invalid cases where start_time starts with "245"
-        elif start_time.startswith("245"):
+        elif start_time.startswith("245") or start_time.startswith("244"):
             print(f"Correcting invalid start time: {start_time} to 1300")
             start_time = "1300"
         return datetime.strptime(start_time, "%H%M").time()

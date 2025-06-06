@@ -115,6 +115,11 @@ def upgrade():
                 print(f"Skipping non-NFL game: {game}")
                 continue
 
+            # Skip games on the date '2021-03-01'
+            if game['date'] == "2021-03-01":
+                print(f"Skipping game on date 2021-03-01: {game}")
+                continue
+
             # Use the dictionary for lookups
             home_team_id = teams_dict.get(game['team'])
             away_team_id = teams_dict.get(game['o:team'])

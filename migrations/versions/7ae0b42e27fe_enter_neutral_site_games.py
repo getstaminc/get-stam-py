@@ -27,20 +27,25 @@ SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 
-def convert_start_time_to_time(start_time: str) -> datetime.time:
+def convert_start_time_to_time(start_time: Union[str, int]) -> datetime.time:
     """
     Convert military time (e.g., '1838') to a datetime.time object.
     """
     try:
+        # Ensure start_time is a string
+        start_time = str(start_time)
+
         # Handle specific invalid cases where start_time starts with "243"
         if start_time.startswith("243"):
             print(f"Correcting invalid start time: {start_time} to 1230")
             start_time = "1230"
 
-        # Handle specific invalid cases where start_time starts with "245"
+        # Handle specific invalid cases where start_time starts with "245" or "244"
         elif start_time.startswith("245") or start_time.startswith("244"):
             print(f"Correcting invalid start time: {start_time} to 1300")
             start_time = "1300"
+
+        # Convert to datetime.time
         return datetime.strptime(start_time, "%H%M").time()
     except ValueError as e:
         raise ValueError(f"Invalid start time format: {start_time}. Error: {e}")

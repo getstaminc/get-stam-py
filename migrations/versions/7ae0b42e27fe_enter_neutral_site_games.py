@@ -134,11 +134,12 @@ def upgrade():
 
             # Check if start time is None or not a string
             if game['start time'] is None:
-                print(f"Game with missing start time: {game}")
-                raise Exception("Encountered a game with missing start time. Stopping migration.")
-            elif not isinstance(game['start time'], str):
-                print(f"Game with start time format int: {game}")
-                game['start time'] = str(game['start time'])  # Convert to string
+                if game['team'] == "Fortyniners" and game['o:team'] == "Jaguars":
+                    print(f"Assigning start time 1307 (1:07 PM ET) for game: {game}")
+                    game['start time'] = "1307"
+                else:
+                    print(f"Game with missing start time: {game}")
+                    raise Exception("Encountered a game with missing start time. Stopping migration.")
 
             # Convert start_time to a datetime.time object
             start_time = convert_start_time_to_time(game['start time'])

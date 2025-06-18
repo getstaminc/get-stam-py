@@ -99,9 +99,6 @@ def upgrade():
     # Manually specify the teams to query
     teams = ["ABCH", "AIR"]
 
-    # Manually specify the teams to query
-    teams = ["ABCH", "AIR"]
-
     # Fetch only the specified teams and store them in a dictionary
     teams_dict = {
         team['team_name']: team['team_id']
@@ -190,9 +187,9 @@ def upgrade():
             home_quarter_scores_json = json.dumps(home_quarter_scores)
             away_quarter_scores_json = json.dumps(away_quarter_scores)
 
-            # Insert data into nfl_games table
+            # Insert data into ncaaf_games table
             conn.execute(text("""
-                INSERT INTO nfl_games (
+                INSERT INTO ncaaf_games (
                     game_date, game_site, home_team_id, away_team_id, home_team_name, away_team_name, home_points, away_points,
                     total_points, total_margin, home_line, away_line, home_quarter_scores,
                     away_quarter_scores, home_first_half_points, away_first_half_points,

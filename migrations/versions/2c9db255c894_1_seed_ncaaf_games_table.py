@@ -99,10 +99,16 @@ def upgrade():
     # Manually specify the teams to query
     teams = ["ABCH", "AIR"]
 
-    # Fetch all teams and store them in a dictionary
+    # Manually specify the teams to query
+    teams = ["ABCH", "AIR"]
+
+    # Fetch only the specified teams and store them in a dictionary
     teams_dict = {
         team['team_name']: team['team_id']
-        for team in conn.execute(text("SELECT team_id, team_name FROM teams")).mappings()
+        for team in conn.execute(
+            text("SELECT team_id, team_name FROM teams WHERE team_name IN :teams"),
+            {"teams": tuple(teams)}
+        ).mappings()
     }
 
     for team in teams_dict.keys():

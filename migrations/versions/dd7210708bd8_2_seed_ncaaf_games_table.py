@@ -125,13 +125,14 @@ def upgrade():
             # Check if start time is None or not a string
             if game['start time'] is None:
                 print(f"Game with missing start time: {game}")
-                raise Exception("Encountered a game with missing start time. Stopping migration.")
-            elif not isinstance(game['start time'], str):
-                print(f"Game with start time format int: {game}")
-                game['start time'] = str(game['start time'])  # Convert to string
+                start_time = None  # Insert None for missing start time
+            else:
+                if not isinstance(game['start time'], str):
+                    print(f"Game with start time format int: {game}")
+                    game['start time'] = str(game['start time'])  # Convert to string
 
-            # Convert start_time to a datetime.time object
-            start_time = convert_start_time_to_time(game['start time'])
+                # Convert start_time to a datetime.time object
+                start_time = convert_start_time_to_time(game['start time'])
 
             # Insert data into ncaaf_games table
             conn.execute(text("""
@@ -169,8 +170,8 @@ def upgrade():
                 'away_second_half_points': sum(json.loads(game['o:quarter scores'])[2:4]),
                 'home_overtime_points': json.loads(game['quarter scores'])[4] if len(json.loads(game['quarter scores'])) > 4 else None,
                 'away_overtime_points': json.loads(game['o:quarter scores'])[4] if len(json.loads(game['o:quarter scores'])) > 4 else None,
-                'home_money_line': game.get('money line'),
-                'away_money_line': game.get('o:money line'),
+                'home_money_line': -999999 if game.get('money line') == 'NL' else game.get('money line'),
+                'away_money_line': -999999 if game.get('o:money line') == 'NL' else game.get('o:money line'),
                 'playoffs': bool(game.get('playoffs', 0)),  # Cast to boolean
                 'start_time': start_time
             })

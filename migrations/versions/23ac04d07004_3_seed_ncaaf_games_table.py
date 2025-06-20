@@ -127,7 +127,7 @@ def upgrade():
                 continue
 
             # Check if start time is None or not a string
-            if game['start time'] is None:
+            if game['start time'] is None or game['start time'] == 0:
                 print(f"Game with missing start time: {game}")
                 start_time = None  # Insert None for missing start time
             else:

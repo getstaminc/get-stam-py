@@ -174,8 +174,8 @@ def upgrade():
                 'away_second_half_points': sum(json.loads(game['o:quarter scores'])[2:4]),
                 'home_overtime_points': json.loads(game['quarter scores'])[4] if len(json.loads(game['quarter scores'])) > 4 else None,
                 'away_overtime_points': json.loads(game['o:quarter scores'])[4] if len(json.loads(game['o:quarter scores'])) > 4 else None,
-                'home_money_line': -999999 if game.get('money line') == 'NL' else game.get('money line'),
-                'away_money_line': -999999 if game.get('o:money line') == 'NL' else game.get('o:money line'),
+                'home_money_line': -999999 if game.get('money line') == 'NL' else game.get('money line') if isinstance(game.get('money line'), int) else None,
+                'away_money_line': -999999 if game.get('o:money line') == 'NL' else game.get('o:money line') if isinstance(game.get('o:money line'), int) else None,
                 'playoffs': bool(game.get('playoffs', 0)),  # Cast to boolean
                 'start_time': start_time
             })

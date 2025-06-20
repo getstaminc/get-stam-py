@@ -29,9 +29,9 @@ SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 
-def convert_start_time_to_time(start_time: str) -> datetime.time:
+def convert_start_time_to_time(start_time: str) -> str:
     """
-    Convert military time (e.g., '1838') to a datetime.time object.
+    Convert military time (e.g., '1838') to a string in 'HH:MM:SS' format.
     """
     try:
         # Handle specific invalid cases where start_time starts with "243"
@@ -43,7 +43,9 @@ def convert_start_time_to_time(start_time: str) -> datetime.time:
         elif start_time.startswith("245") or start_time.startswith("244"):
             print(f"Correcting invalid start time: {start_time} to 1300")
             start_time = "1300"
-        return datetime.strptime(start_time, "%H%M").time()
+
+        # Convert to 'HH:MM:SS' format
+        return datetime.strptime(start_time, "%H%M").strftime("%H:%M:%S")
     except ValueError as e:
         raise ValueError(f"Invalid start time format: {start_time}. Error: {e}")
 
@@ -128,14 +130,14 @@ def upgrade():
 
             # Check if start time is None or not a string
             if game['start time'] is None or game['start time'] == 0:
-                print(f"Game with missing start time: {game}")
+                print(f"Game with missing or invalid start time: {game}")
                 start_time = None  # Insert None for missing start time
             else:
                 if not isinstance(game['start time'], str):
                     print(f"Game with start time format int: {game}")
                     game['start time'] = str(game['start time'])  # Convert to string
 
-                # Convert start_time to a datetime.time object
+                # Convert start_time to a string in 'HH:MM:SS' format
                 start_time = convert_start_time_to_time(game['start time'])
 
             # Insert data into ncaaf_games table

@@ -74,7 +74,6 @@ def downgrade():
         'Arsenal',
         'Aston Villa',
         'Birmingham City',
-        'Hull City',
         'Blackpool',
         'Bolton',
         'Bournemouth',

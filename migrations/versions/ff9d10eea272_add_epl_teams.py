@@ -25,7 +25,7 @@ def upgrade():
         'Aston Villa',
         'Birmingham City',
         'Hull City',
-        'Blackpool',
+        'Blackburn',
         'Bolton',
         'Bournemouth',
         'Brentford',

@@ -25,6 +25,7 @@ def upgrade():
         'Aston Villa',
         'Birmingham City',
         'Blackburn',
+        'Blackpool',
         'Bolton',
         'Bournemouth',
         'Brentford',
@@ -73,6 +74,7 @@ def downgrade():
         'Arsenal',
         'Aston Villa',
         'Birmingham City',
+
         'Blackpool',
         'Bolton',
         'Bournemouth',

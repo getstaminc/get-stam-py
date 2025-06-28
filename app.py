@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
+from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for, send_from_directory
 from datetime import datetime, timedelta, date  # Import timedelta here
 import pytz
 from dateutil import parser
@@ -34,7 +34,7 @@ from game_details_templates import mlb_template, nhl_template, others_template
 
 load_dotenv()  # Load environment variables from .env file
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='getstam-react/build', static_url_path='/app')
 port = 5000
 
 # Configure logging to write to a file
@@ -675,6 +675,10 @@ def game_details(game_id):
 def home():
     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
+@app.route('/app')
+@app.route('/app/<path:path>')
+def serve_react_app(path='index.html'):
+    return send_from_directory(app.static_folder, path)
 
 @app.route('/delete-cache/<cache_key>')
 def delete_cache_key(cache_key):

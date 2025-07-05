@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for, send_from_directory
+from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for, send_from_directory, current_app
 from datetime import datetime, timedelta, date  # Import timedelta here
 import pytz
 from dateutil import parser
@@ -34,7 +34,7 @@ from game_details_templates import mlb_template, nhl_template, others_template
 
 load_dotenv()  # Load environment variables from .env file
 
-app = Flask(__name__, static_folder='getstam-react/build', static_url_path='/app')
+app = Flask(__name__, static_folder='getstam-react/build/static', static_url_path='/static')
 port = 5000
 
 # Configure logging to write to a file
@@ -109,9 +109,9 @@ def get_cache_value(cache_key):
         return jsonify({'error': 'Internal Server Error'}), 500 
 
 # app.py
-from betting_guide import betting_guide  # Add this line
+# from betting_guide import betting_guide  # Add this line
 
-app.register_blueprint(betting_guide)  # Register the blueprint
+# app.register_blueprint(betting_guide)  # Register the blueprint
 
 def filter_scores_by_date(scores, selected_date_start):
     filtered_scores = []
@@ -669,16 +669,13 @@ def game_details(game_id):
         print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
 
-# Route for the home page
-@app.route('/')
-@cache.cached(timeout=3600, query_string=True)
-def home():
-    return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
+# # Route for the home page
+# @app.route('/')
+# @cache.cached(timeout=3600, query_string=True)
+# def home():
+#     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
-@app.route('/app')
-@app.route('/app/<path:path>')
-def serve_react_app(path='index.html'):
-    return send_from_directory(app.static_folder, path)
+
 
 @app.route('/delete-cache/<cache_key>')
 def delete_cache_key(cache_key):
@@ -694,8 +691,29 @@ def delete_cache_key(cache_key):
     except Exception as e:
         logger.error(f"Error deleting cache key '{cache_key}': {e}")
         return jsonify({'error': 'Internal Server Error'}), 500
-    
+
+print("STATIC FOLDER:", app.static_folder)
+print("JS EXISTS:", os.path.exists(os.path.join(app.static_folder, "static/js/main.64786247.js")))
+print("CSS EXISTS:", os.path.exists(os.path.join(app.static_folder, "static/css/main.465f6870.css")))
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    # Try to serve static files from the static folder
+    static_file_path = os.path.join(app.static_folder, path)
+    if os.path.exists(static_file_path) and os.path.isfile(static_file_path):
+        return send_from_directory(app.static_folder, path)
+    # Serve index.html from the build root (not static)
+    return send_from_directory('getstam-react/build', 'index.html')
+
+# Add this at the bottom of your app.py, just before if __name__ == '__main__':
+
+with app.test_client() as client:
+    resp = client.get('/static/js/main.64786247.js')
+    print("STATIC TEST STATUS:", resp.status_code)
+    print("STATIC TEST LENGTH:", len(resp.data))
+
 if __name__ == '__main__':
+    print('url map:', app.url_map)
     # Start the Celery worker in a subprocess
     celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])
 

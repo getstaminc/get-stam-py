@@ -13,6 +13,10 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
+import Link from "@mui/material/Link";
+import InstagramIcon from "@mui/icons-material/Instagram";
+import FacebookIcon from "@mui/icons-material/Facebook";
+import MusicNoteIcon from "@mui/icons-material/MusicNote"; // Used as TikTok icon
 import styles from "./css/Navigation.module.css";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -63,98 +67,141 @@ const TabsNavigation: React.FC = () => {
   };
 
   return (
-    <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "transparent" }}>
-      {isMobile ? (
-        <>
-          <IconButton
-            edge="start"
+    <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "transparent", display: "flex", alignItems: "center" }}>
+      <Box sx={{ flex: 1 }}>
+        {isMobile ? (
+          <>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              onClick={toggleDrawer(true)}
+              sx={{ ml: 1, mt: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
+              <Box sx={{ width: 220 }} role="presentation" onClick={toggleDrawer(false)}>
+                <List>
+                  {inSeasonSports.map((sport) => (
+                    <ListItem key={sport.name} disablePadding>
+                      <ListItemButton onClick={() => handleDrawerItemClick(sport.path)}>
+                        <ListItemText primary={sport.name} />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+                <Divider />
+                <List>
+                  {offSeasonSports.map((sport) => (
+                    <ListItem key={sport.name} disablePadding>
+                      <ListItemButton onClick={() => handleDrawerItemClick(sport.path)}>
+                        <ListItemText primary={sport.name} />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+                <Divider />
+                <List>
+                  <ListItem disablePadding>
+                    <ListItemButton component="a" href="/feature-request">
+                      <ListItemText primary="Feature Request" />
+                    </ListItemButton>
+                  </ListItem>
+                </List>
+                <Divider />
+              </Box>
+            </Drawer>
+          </>
+        ) : (
+          <>
+            <Tabs
+              value={currentTab === -1 ? false : currentTab}
+              onChange={handleTabChange}
+              textColor="primary"
+              indicatorColor="primary"
+              sx={{
+                minHeight: 48,
+                "& .MuiTab-root": {
+                  minHeight: 48,
+                  textTransform: "none",
+                  fontWeight: 500,
+                  color: "#333",
+                  bgcolor: "transparent",
+                  fontSize: "1rem",
+                  "&:hover": {
+                    borderBottom: "2px solid #1976d2",
+                    bgcolor: "transparent",
+                  },
+                },
+                "& .Mui-selected": {
+                  color: "#1976d2",
+                  fontWeight: 700,
+                },
+                bgcolor: "transparent",
+              }}
+            >
+              {inSeasonSports.map((sport) => (
+                <Tab key={sport.name} label={sport.name} />
+              ))}
+              {offSeasonSports.length > 0 && (
+                <Button
+                  color="inherit"
+                  disableRipple
+                  className={styles.moreButton}
+                  onClick={handleMoreClick}
+                >
+                  More
+                </Button>
+              )}
+            </Tabs>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+            >
+              {offSeasonSports.map((sport) => (
+                <MenuItem
+                  key={sport.name}
+                  onClick={() => handleMenuItemClick(sport.path)}
+                >
+                  {sport.name}
+                </MenuItem>
+              ))}
+            </Menu>
+          </>
+        )}
+      </Box>
+      {/* Info and social links on the right */}
+      {!isMobile && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, ml: 2 }}>
+          <Button
             color="inherit"
-            aria-label="menu"
-            onClick={toggleDrawer(true)}
-            sx={{ ml: 1, mt: 1 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-            <Box sx={{ width: 220 }} role="presentation" onClick={toggleDrawer(false)}>
-              <List>
-                {inSeasonSports.map((sport) => (
-                  <ListItem key={sport.name} disablePadding>
-                    <ListItemButton onClick={() => handleDrawerItemClick(sport.path)}>
-                      <ListItemText primary={sport.name} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-              <Divider />
-              <List>
-                {offSeasonSports.map((sport) => (
-                  <ListItem key={sport.name} disablePadding>
-                    <ListItemButton onClick={() => handleDrawerItemClick(sport.path)}>
-                      <ListItemText primary={sport.name} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          </Drawer>
-        </>
-      ) : (
-        <>
-          <Tabs
-            value={currentTab === -1 ? false : currentTab}
-            onChange={handleTabChange}
-            textColor="primary"
-            indicatorColor="primary"
+            disableRipple
             sx={{
               minHeight: 48,
-              "& .MuiTab-root": {
-                minHeight: 48,
-                textTransform: "none",
-                fontWeight: 500,
-                color: "black",
-                bgcolor: "transparent",
-                "&:hover": {
-                  borderBottom: "2px solid #1976d2",
-                  bgcolor: "transparent",
-                },
-              },
-              "& .Mui-selected": {
-                color: "#1976d2",
-                fontWeight: 700,
-              },
+              textTransform: "none",
+              fontWeight: 500,
+              color: "#333",
               bgcolor: "transparent",
+              borderRadius: 0,
+              fontSize: "1rem",
+              "&:hover": {
+                borderBottom: "2px solid #1976d2",
+                bgcolor: "transparent",
+              },
+              "&:active": {
+                bgcolor: "transparent",
+              },
+              "&:focus": {
+                bgcolor: "transparent",
+              },
             }}
+            onClick={() => navigate("/feature-requests")}
           >
-            {inSeasonSports.map((sport) => (
-              <Tab key={sport.name} label={sport.name} />
-            ))}
-            {offSeasonSports.length > 0 && (
-            <Button
-              color="inherit"
-              disableRipple
-              className={styles.moreButton}
-              onClick={handleMoreClick}
-            >
-              More
-            </Button>
-            )}
-          </Tabs>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-          >
-            {offSeasonSports.map((sport) => (
-              <MenuItem
-                key={sport.name}
-                onClick={() => handleMenuItemClick(sport.path)}
-              >
-                {sport.name}
-              </MenuItem>
-            ))}
-          </Menu>
-        </>
+            Feature Requests
+          </Button>
+        </Box>
       )}
     </Box>
   );

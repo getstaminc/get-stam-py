@@ -10,6 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.sql import func
+from soccer_utils import translate_soccer_team_name  # Assuming this function exists in soccer_utils.py
 
 
 # revision identifiers, used by Alembic.

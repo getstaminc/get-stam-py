@@ -1416,6 +1416,65 @@ others_template = """
             </tr>
         </table>
 
+        {% if home_offense and home_defense and away_offense and away_defense %}
+            {% set stat_map = {
+                'Total': 'Total (Yds/G)',
+                'Passing': 'Passing (Yds/G)',
+                'Rushing': 'Rushing (Yds/G)',
+                'Scoring': 'Scoring (Pts/G)'
+            } %}
+
+            <h3>{{ game.homeTeam }} Rankings</h3>
+            <table border="1">
+                <tr>
+                    <th>Category</th><th>Offense</th><th>Defense</th>
+                </tr>
+                {% for label, key in stat_map.items() %}
+                <tr>
+                    <td>{{ label }}</td>
+                    <td>
+                        {{ home_offense.get(key + ' Rank', '–') }}
+                        <span style="font-size: 0.8em; color: #555;">
+                            ({{ home_offense.get(key, '–') }})
+                        </span>
+                    </td>
+                    <td>
+                        {{ home_defense.get(key + ' Rank', '–') }}
+                        <span style="font-size: 0.8em; color: #555;">
+                            ({{ home_defense.get(key, '–') }})
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <h3>{{ game.awayTeam }} Rankings</h3>
+            <table border="1">
+                <tr>
+                    <th>Category</th><th>Defense</th><th>Offense</th>
+                </tr>
+                {% for label, key in stat_map.items() %}
+                <tr>
+                    <td>{{ label }}</td>
+                    <td>
+                        {{ away_defense.get(key + ' Rank', '–') }}
+                        <span style="font-size: 0.8em; color: #555;">
+                            ({{ away_defense.get(key, '–') }})
+                        </span>
+                    </td>
+                    <td>
+                        {{ away_offense.get(key + ' Rank', '–') }}
+                        <span style="font-size: 0.8em; color: #555;">
+                            ({{ away_offense.get(key, '–') }})
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+
+
+
         <h2>Last 5 Games - {{ game.homeTeam }}</h2>
         {% if home_team_last_5 %}
             <table>

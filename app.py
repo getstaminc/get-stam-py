@@ -31,6 +31,7 @@ from scores_templates import (
     soccer_template
 )
 from game_details_templates import mlb_template, nhl_template, others_template
+from nfl_rankings import fetch_nfl_rankings
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -629,6 +630,34 @@ def game_details(game_id):
                 print(f"{matchup_key} → Pitchers: {pitchers}")
             except Exception as e:
                 print("⚠️ Error loading cached pitcher data:", e)
+
+        def get_nfl_rankings():
+            return fetch_nfl_rankings()
+
+        nfl_offense = nfl_defense = {}
+        if sport_key == 'americanfootball_nfl':
+            try:
+                rankings = get_nfl_rankings()
+                offense = rankings.get("offense", {})
+                defense = rankings.get("defense", {})
+
+                home_team = game_details['homeTeam']
+                away_team = game_details['awayTeam']
+
+                home_offense = offense.get(home_team, {})
+                home_defense = defense.get(home_team, {})
+                away_offense = offense.get(away_team, {})
+                away_defense = defense.get(away_team, {})
+
+                print("Home Offense:", home_offense)
+                print("Home Defense:", home_defense)
+                print("Away Offense:", away_offense)
+                print("Away Defense:", away_defense)
+            except Exception as e:
+                print(f"⚠️ Failed to load NFL rankings: {e}")
+                home_offense = home_defense = away_offense = away_defense = {}
+
+
        
         if sport_key == 'baseball_mlb':
             return render_template_string(mlb_template,
@@ -652,7 +681,20 @@ def game_details(game_id):
                                         nhl_totals=nhl_totals,
                                         nhl_winner=nhl_winner,
                                         calculate_line_result=calculate_line_result)
-        elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', 'basketball_nba', 'basketball_ncaab']:
+        elif sport_key == 'americanfootball_nfl':
+            return render_template_string(others_template,
+                                        game=game_details,
+                                        home_team_last_5=home_team_last_5,
+                                        away_team_last_5=away_team_last_5,
+                                        last_5_vs_opponent=last_5_vs_opponent,
+                                        other_totals=other_totals,
+                                        other_winner=other_winner,
+                                        calculate_line_result=calculate_line_result,
+                                        home_offense=home_offense,
+                                        home_defense=home_defense,
+                                        away_offense=away_offense,
+                                        away_defense=away_defense)
+        elif sport_key in ['americanfootball_ncaaf', 'basketball_nba', 'basketball_ncaab']:
             return render_template_string(others_template,
                                         game=game_details,
                                         home_team_last_5=home_team_last_5,

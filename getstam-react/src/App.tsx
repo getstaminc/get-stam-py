@@ -37,6 +37,7 @@ function AppContent() {
         <Routes>
           {/* <Route path="/nba" element={<NBA />} /> */}
           <Route path="/" element={<NFLPage />} />
+          <Route path="/nfl" element={<NFLPage />} />
           <Route path="/feature-requests" element={<FeatureRequestsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />

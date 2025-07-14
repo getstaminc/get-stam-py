@@ -30,19 +30,52 @@ const dummyData = [
 
 const NFLPage = () => (
   <Box sx={{ display: "flex", justifyContent: "center", px: 2, py: 4 }}>
-    {/* Increased maxWidth to 900 */}
     <Box sx={{ width: "100%", maxWidth: 900 }}>
       <Typography
         variant="h4"
         align="center"
         sx={{
           fontWeight: 700,
-          mb: 4,
+          mb: 2,
           color: "#1976d2",
         }}
       >
         NFL Matchups
       </Typography>
+      <Box sx={{ textAlign: "center", mb: 4, display: "flex", justifyContent: "center", gap: 2 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          href="/nfl/all"
+          size="large"
+          sx={{
+            px: 3,
+            py: 1,
+            fontWeight: 600,
+            fontSize: "1rem",
+            textTransform: "none",
+            borderRadius: 2,
+          }}
+        >
+          View All Games
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          href="/nfl/trends"
+          size="large"
+          sx={{
+            px: 3,
+            py: 1,
+            fontWeight: 600,
+            fontSize: "1rem",
+            textTransform: "none",
+            borderRadius: 2,
+          }}
+        >
+          View Games with Trends
+        </Button>
+      </Box>
 
       {dummyData.map((match) => {
         const hasScore =

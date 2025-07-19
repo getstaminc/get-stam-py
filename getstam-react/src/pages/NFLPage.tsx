@@ -2,32 +2,32 @@ import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, Button, Divider, TextField } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const dummyData = [
-  {
-    game_id: 1,
-    homeTeam: "Patriots",
-    awayTeam: "Jets",
-    homeScore: null,
-    awayScore: null,
-    odds: {
-      h2h: ["Patriots -150", "Jets +130"],
-      spreads: ["Patriots -3.5 (-110)", "Jets +3.5 (-110)"],
-      totals: ["Over 42.5 (-110)", "Under 42.5 (-110)"],
-    },
-  },
-  {
-    game_id: 2,
-    homeTeam: "Cowboys",
-    awayTeam: "Giants",
-    homeScore: null,
-    awayScore: null,
-    odds: {
-      h2h: ["Cowboys -120", "Giants +100"],
-      spreads: ["Cowboys -2.5 (-105)", "Giants +2.5 (-115)"],
-      totals: ["Over 48.5 (-110)", "Under 48.5 (-110)"],
-    },
-  },
-];
+// Odds API key from .env (ODDS_API_KEY)
+const ODDS_API_KEY = process.env.REACT_APP_ODDS_API_KEY;
+
+// Map URL sport (e.g. "nfl") to Odds API sport key
+const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
+  nfl: "americanfootball_nfl",
+  mlb: "baseball_mlb",
+  nba: "basketball_nba",
+  nhl: "icehockey_nhl",
+  ncaafb: "americanfootball_ncaaf",
+  ncaabb: "basketball_ncaab",
+  epl: "soccer_epl",
+  nfl_preseason: "americanfootball_nfl_preseason",
+};
+
+// Map Odds API sport key to display name
+const SPORT_API_KEY_TO_DISPLAY: { [key: string]: string } = {
+  baseball_mlb: "MLB",
+  basketball_nba: "NBA",
+  americanfootball_nfl: "NFL",
+  americanfootball_nfl_preseason: "NFL",
+  icehockey_nhl: "NHL",
+  americanfootball_ncaaf: "NCAAFB",
+  basketball_ncaab: "NCAABB",
+  soccer_epl: "EPL",
+};
 
 // Helper to format date as YYYY-MM-DD for input[type="date"]
 const formatDate = (date: Date) => date.toISOString().slice(0, 10);
@@ -39,9 +39,45 @@ const getToday = (): Date => {
   return now;
 };
 
+// Helper to extract sport from URL path (e.g. "/nfl" → "nfl")
+function getSportFromPath(pathname: string): string {
+  const match = pathname.match(/^\/([^/]+)/);
+  return match ? match[1] : "nfl";
+}
+
+// Fetch odds and scores from Odds API
+async function fetchOddsData(sportKey: string, date: Date) {
+  if (!ODDS_API_KEY) {
+    console.error("ODDS_API_KEY is not set in environment variables.");
+    return { scores: [], odds: [] };
+  }
+  const dateStr = formatDate(date);
+  const scoresUrl = `https://api.the-odds-api.com/v4/sports/${sportKey}/scores/?apiKey=${ODDS_API_KEY}&date=${dateStr}&dateFormat=iso`;
+  const oddsUrl = `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${ODDS_API_KEY}&bookmakers=draftkings&markets=h2h,spreads,totals&oddsFormat=american`;
+
+  try {
+    const [scoresRes, oddsRes] = await Promise.all([
+      fetch(scoresUrl),
+      fetch(oddsUrl),
+    ]);
+    if (!scoresRes.ok || !oddsRes.ok) throw new Error("API error");
+    const scores = await scoresRes.json();
+    const odds = await oddsRes.json();
+    return { scores, odds };
+  } catch (e) {
+    console.error("Error fetching odds data:", e);
+    return { scores: [], odds: [] };
+  }
+}
+
 const NFLPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Get sport from URL path (e.g. "/nfl")
+  const urlSport = getSportFromPath(location.pathname);
+  const sportKey = SPORT_URL_TO_API_KEY[urlSport] || "americanfootball_nfl";
+  const displaySport = SPORT_API_KEY_TO_DISPLAY[sportKey] || "NFL";
 
   // Get date from URL query param if present
   const params = new URLSearchParams(location.search);
@@ -57,17 +93,58 @@ const NFLPage = () => {
 
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [activeView, setActiveView] = useState<"all" | "trends">(isTrends ? "trends" : "all");
+  const [games, setGames] = useState<any[]>([]);
+
+  // Fetch data when sport or date changes
+  useEffect(() => {
+    fetchOddsData(sportKey, selectedDate).then(({ scores, odds }) => {
+      console.log(scores, odds);
+      // Combine scores and odds as needed for your UI
+      // For now, just use dummyData if API fails
+      if (scores && odds && odds.length > 0 && false) {
+        // Example: merge odds and scores by game_id or similar
+        setGames(odds);
+      } else {
+        setGames([
+          {
+            game_id: 1,
+            homeTeam: "Patriots",
+            awayTeam: "Jets",
+            homeScore: null,
+            awayScore: null,
+            odds: {
+              h2h: ["Patriots -150", "Jets +130"],
+              spreads: ["Patriots -3.5 (-110)", "Jets +3.5 (-110)"],
+              totals: ["Over 42.5 (-110)", "Under 42.5 (-110)"],
+            },
+          },
+          {
+            game_id: 2,
+            homeTeam: "Cowboys",
+            awayTeam: "Giants",
+            homeScore: null,
+            awayScore: null,
+            odds: {
+              h2h: ["Cowboys -120", "Giants +100"],
+              spreads: ["Cowboys -2.5 (-105)", "Giants +2.5 (-115)"],
+              totals: ["Over 48.5 (-110)", "Under 48.5 (-110)"],
+            },
+          },
+        ]);
+      }
+    });
+  }, [sportKey, selectedDate, activeView]);
 
   // Update URL when date or view changes
   useEffect(() => {
     const urlDateStr = formatDateForUrl(selectedDate);
     if (activeView === "all") {
-      navigate(`/nfl?date=${urlDateStr}`, { replace: true });
+      navigate(`/${urlSport}?date=${urlDateStr}`, { replace: true });
     } else {
-      navigate(`/nfl/trends?date=${urlDateStr}`, { replace: true });
+      navigate(`/${urlSport}/trends?date=${urlDateStr}`, { replace: true });
     }
     // eslint-disable-next-line
-  }, [selectedDate, activeView]);
+  }, [selectedDate, activeView, urlSport]);
 
   // Sync activeView with URL if user navigates directly
   useEffect(() => {
@@ -87,7 +164,7 @@ const NFLPage = () => {
             color: "#1976d2",
           }}
         >
-          NFL Matchups
+          {displaySport} Matchups
         </Typography>
         <Box
           sx={{
@@ -144,7 +221,7 @@ const NFLPage = () => {
           </Box>
         </Box>
 
-        {dummyData.map((match) => {
+        {games.map((match) => {
           const hasScore =
             match.homeScore !== null && match.awayScore !== null;
           const scoreDisplay = hasScore
@@ -240,7 +317,7 @@ const NFLPage = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  href={`/game/${match.game_id}?sport_key=americanfootball_nfl`}
+                  href={`/game/${match.game_id}?sport_key=${sportKey}`}
                   size="medium"
                   sx={{
                     px: 3,

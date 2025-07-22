@@ -31,6 +31,7 @@ from scores_templates import (
     soccer_template
 )
 from game_details_templates import mlb_template, nhl_template, others_template
+from api.routes.games import games_bp
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -123,6 +124,8 @@ def filter_scores_by_date(scores, selected_date_start):
         if commence_date_eastern.date() == selected_date_start.date():
             filtered_scores.append(score)
     return filtered_scores
+
+app.register_blueprint(games_bp)
 
 @app.route('/trends')
 def show_trends():

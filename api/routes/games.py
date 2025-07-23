@@ -1,11 +1,25 @@
-from flask import Blueprint, request, jsonify
+import os
+from flask import Blueprint, request, jsonify, abort
 from datetime import datetime, timedelta, date
 import pytz
 from dateutil import parser
 from ..external_requests.odds_api import get_odds_data
+from dotenv import load_dotenv
+
+load_dotenv()
+API_KEY = os.getenv("API_KEY")
 
 games_bp = Blueprint('games', __name__)
 eastern_tz = pytz.timezone('US/Eastern')
+
+@games_bp.before_request
+def check_api_key():
+    # Allow preflight OPTIONS requests for CORS
+    if request.method == "OPTIONS":
+        return
+    key = request.headers.get("X-API-KEY")
+    if key != API_KEY:
+        abort(401)
 
 def convert_to_eastern(dt):
     return dt.astimezone(eastern_tz)
@@ -26,7 +40,7 @@ def get_sport_games(sport_key):
     current_date = request.args.get('date', None)
     selected_date_start = None
     if current_date:
-        selected_date_start = datetime.strptime(current_date, '%Y-%m-%d').replace(tzinfo=eastern_tz)
+        selected_date_start = eastern_tz.localize(datetime.strptime(current_date, '%Y-%m-%d'))
 
     scores, odds = get_odds_data(sport_key, selected_date_start)
     if scores is None or odds is None:

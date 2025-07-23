@@ -438,7 +438,8 @@ def convert_sport_key(sport_key):
         'americanfootball_nfl_preseason': 'NFL',
         'icehockey_nhl': 'NHL',
         'americanfootball_ncaaf': 'NCAAFB',
-        'basketball_ncaab': 'NCAABB'
+        'basketball_ncaab': 'NCAABB',
+        'soccer_epl': 'EPL'
         # Add other mappings as needed
     }
     return sport_mapping.get(sport_key, sport_key)

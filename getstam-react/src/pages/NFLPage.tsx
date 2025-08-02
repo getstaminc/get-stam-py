@@ -45,28 +45,22 @@ function getSportFromPath(pathname: string): string {
   return match ? match[1] : "nfl";
 }
 
-// Fetch odds and scores from Odds API
-async function fetchOddsData(sportKey: string, date: Date) {
-  if (!ODDS_API_KEY) {
-    console.error("ODDS_API_KEY is not set in environment variables.");
-    return { scores: [], odds: [] };
-  }
+// Fetch games from your backend API
+async function fetchGamesData(sportKey: string, date: Date) {
   const dateStr = formatDate(date);
-  const scoresUrl = `https://api.the-odds-api.com/v4/sports/${sportKey}/scores/?apiKey=${ODDS_API_KEY}&date=${dateStr}&dateFormat=iso`;
-  const oddsUrl = `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${ODDS_API_KEY}&bookmakers=draftkings&markets=h2h,spreads,totals&oddsFormat=american`;
-
+  const url = `https://www.getstam.com/api/games/${sportKey}?date=${dateStr}`;
   try {
-    const [scoresRes, oddsRes] = await Promise.all([
-      fetch(scoresUrl),
-      fetch(oddsUrl),
-    ]);
-    if (!scoresRes.ok || !oddsRes.ok) throw new Error("API error");
-    const scores = await scoresRes.json();
-    const odds = await oddsRes.json();
-    return { scores, odds };
+    const res = await fetch(url, {
+      headers: {
+        // Uncomment if your backend requires an API key header:
+        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+      },
+    });
+    if (!res.ok) throw new Error("API error");
+    return await res.json();
   } catch (e) {
-    console.error("Error fetching odds data:", e);
-    return { scores: [], odds: [] };
+    console.error("Error fetching games data:", e);
+    return { games: [], nextGameDate: null };
   }
 }
 
@@ -76,7 +70,7 @@ const NFLPage = () => {
 
   // Get sport from URL path (e.g. "/nfl")
   const urlSport = getSportFromPath(location.pathname);
-  const sportKey = SPORT_URL_TO_API_KEY[urlSport] || "americanfootball_nfl";
+  const sportKey = SPORT_URL_TO_API_KEY[urlSport] || "nfl";
   const displaySport = SPORT_API_KEY_TO_DISPLAY[sportKey] || "NFL";
 
   // Get date from URL query param if present
@@ -86,52 +80,19 @@ const NFLPage = () => {
 
   // Parse date from URL or default to today
   const initialDate: Date = urlDate
-    ? new Date(
-        `${urlDate.slice(0, 4)}-${urlDate.slice(4, 6)}-${urlDate.slice(6, 8)}`
-      )
+    ? new Date(urlDate)
     : getToday();
 
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [activeView, setActiveView] = useState<"all" | "trends">(isTrends ? "trends" : "all");
   const [games, setGames] = useState<any[]>([]);
+  const [nextGameDate, setNextGameDate] = useState<string | null>(null);
 
   // Fetch data when sport or date changes
   useEffect(() => {
-    fetchOddsData(sportKey, selectedDate).then(({ scores, odds }) => {
-      console.log(scores, odds);
-      // Combine scores and odds as needed for your UI
-      // For now, just use dummyData if API fails
-      if (scores && odds && odds.length > 0 && false) {
-        // Example: merge odds and scores by game_id or similar
-        setGames(odds);
-      } else {
-        setGames([
-          {
-            game_id: 1,
-            homeTeam: "Patriots",
-            awayTeam: "Jets",
-            homeScore: null,
-            awayScore: null,
-            odds: {
-              h2h: ["Patriots -150", "Jets +130"],
-              spreads: ["Patriots -3.5 (-110)", "Jets +3.5 (-110)"],
-              totals: ["Over 42.5 (-110)", "Under 42.5 (-110)"],
-            },
-          },
-          {
-            game_id: 2,
-            homeTeam: "Cowboys",
-            awayTeam: "Giants",
-            homeScore: null,
-            awayScore: null,
-            odds: {
-              h2h: ["Cowboys -120", "Giants +100"],
-              spreads: ["Cowboys -2.5 (-105)", "Giants +2.5 (-115)"],
-              totals: ["Over 48.5 (-110)", "Under 48.5 (-110)"],
-            },
-          },
-        ]);
-      }
+    fetchGamesData(sportKey, selectedDate).then((data) => {
+      setGames(data.games || []);
+      setNextGameDate(data.nextGameDate || null);
     });
   }, [sportKey, selectedDate, activeView]);
 
@@ -221,11 +182,36 @@ const NFLPage = () => {
           </Box>
         </Box>
 
+        {games.length === 0 && (
+          <Typography align="center" sx={{ mt: 4, mb: 2 }}>
+            No games found for this date.
+            {nextGameDate && (
+              <span>
+                {" "}
+                Next games are on{" "}
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setSelectedDate(new Date(nextGameDate))}
+                  sx={{ ml: 1 }}
+                >
+                  {nextGameDate}
+                </Button>
+              </span>
+            )}
+          </Typography>
+        )}
+
         {games.map((match) => {
+          const home = match.home || {};
+          const away = match.away || {};
+          const totals = match.totals || {};
+
           const hasScore =
-            match.homeScore !== null && match.awayScore !== null;
+            home.score !== null && home.score !== undefined &&
+            away.score !== null && away.score !== undefined;
           const scoreDisplay = hasScore
-            ? `${match.homeScore} - ${match.awayScore}`
+            ? `${home.score} - ${away.score}`
             : "— —";
 
           return (
@@ -250,7 +236,7 @@ const NFLPage = () => {
               >
                 <Box sx={{ flex: 1, textAlign: "right" }}>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {match.homeTeam}
+                    {home.team}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Home
@@ -268,7 +254,7 @@ const NFLPage = () => {
 
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {match.awayTeam}
+                    {away.team}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Away
@@ -292,7 +278,9 @@ const NFLPage = () => {
                     H2H
                   </Typography>
                   <Typography variant="body1">
-                    {match.odds.h2h.join(" | ")}
+                    {home.odds?.h2h !== undefined && away.odds?.h2h !== undefined
+                      ? `${home.team}: ${home.odds.h2h} | ${away.team}: ${away.odds.h2h}`
+                      : "N/A"}
                   </Typography>
                 </Box>
                 <Box sx={{ flex: 1 }}>
@@ -300,7 +288,9 @@ const NFLPage = () => {
                     Spreads
                   </Typography>
                   <Typography variant="body1">
-                    {match.odds.spreads.join(" | ")}
+                    {home.odds?.spread_point !== undefined && away.odds?.spread_point !== undefined
+                      ? `${home.team}: ${home.odds.spread_point} (${home.odds.spread_price}) | ${away.team}: ${away.odds.spread_point} (${away.odds.spread_price})`
+                      : "N/A"}
                   </Typography>
                 </Box>
                 <Box sx={{ flex: 1 }}>
@@ -308,7 +298,9 @@ const NFLPage = () => {
                     Totals
                   </Typography>
                   <Typography variant="body1">
-                    {match.odds.totals.join(" | ")}
+                    {totals.over_point !== undefined && totals.under_point !== undefined
+                      ? `Over: ${totals.over_point} (${totals.over_price}) | Under: ${totals.under_point} (${totals.under_price})`
+                      : "N/A"}
                   </Typography>
                 </Box>
               </Box>

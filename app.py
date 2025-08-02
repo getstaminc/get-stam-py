@@ -32,11 +32,19 @@ from scores_templates import (
 )
 from game_details_templates import mlb_template, nhl_template, others_template
 from api.routes.games import games_bp
+from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
 port = 5000
+
+# Specify allowed origins
+CORS(app, origins=[
+    "http://localhost:3000",
+    "http://127.0.0.1:5000",
+    "https://www.getstam.com"
+])
 
 # Configure logging to write to a file
 if not os.path.exists('logs'):

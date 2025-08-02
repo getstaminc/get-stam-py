@@ -29,10 +29,14 @@ const SPORT_API_KEY_TO_DISPLAY: { [key: string]: string } = {
   soccer_epl: "EPL",
 };
 
-// Helper to format date as YYYY-MM-DD for input[type="date"]
-const formatDate = (date: Date) => date.toISOString().slice(0, 10);
-// Helper to format date as YYYYMMDD for URL
-const formatDateForUrl = (date: Date) => date.toISOString().slice(0, 10).replace(/-/g, "");
+const formatDate = (date: Date) => {
+  if (!date || isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+};
+const formatDateForUrl = (date: Date) => {
+  if (!date || isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10).replace(/-/g, "");
+};
 const getToday = (): Date => {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -78,9 +82,8 @@ const NFLPage = () => {
   const urlDate = params.get("date");
   const isTrends = location.pathname.includes("/trends");
 
-  // Parse date from URL or default to today
   const initialDate: Date = urlDate
-    ? new Date(urlDate)
+    ? new Date(`${urlDate.slice(0,4)}-${urlDate.slice(4,6)}-${urlDate.slice(6,8)}`)
     : getToday();
 
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);

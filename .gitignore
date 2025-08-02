@@ -14,3 +14,7 @@ app.log
 
 # Ignore the mlb_starting_pitchers.json file
 mlb_starting_pitchers.json
+
+# Ignore Node.js files (not relevant for Python project)
+package-lock.json
+node_modules/

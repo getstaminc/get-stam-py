@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, Button, Divider, TextField } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
+import GameOdds from "../components/GameOdds"; 
 
 // Odds API key from .env (ODDS_API_KEY)
 const ODDS_API_KEY = process.env.REACT_APP_ODDS_API_KEY;
@@ -68,7 +69,7 @@ async function fetchGamesData(sportKey: string, date: Date) {
   }
 }
 
-const NFLPage = () => {
+const GamesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -205,133 +206,38 @@ const NFLPage = () => {
           </Typography>
         )}
 
-        {games.map((match) => {
-          const home = match.home || {};
-          const away = match.away || {};
-          const totals = match.totals || {};
-
-          const hasScore =
-            home.score !== null && home.score !== undefined &&
-            away.score !== null && away.score !== undefined;
-          const scoreDisplay = hasScore
-            ? `${home.score} - ${away.score}`
-            : "— —";
-
-          return (
-            <Paper
-              key={match.game_id}
-              elevation={3}
-              sx={{
-                mb: 3,
-                p: 2,
-                borderRadius: 2,
-                backgroundColor: "#f9f9f9",
+        {games.map((match) => (
+          <Paper key={match.game_id} elevation={3} sx={{ mb: 3, p: 2, borderRadius: 2,  backgroundColor: "#f9f9f9" }}>
+            <GameOdds
+              game={{
+                home: match.home,
+                away: match.away,
+                totals: match.totals,
               }}
-            >
-              <Box
+            />
+            <Box sx={{ mt: 3, textAlign: "center" }}>
+              <Button
+                variant="contained"
+                color="primary"
+                href={`/game/${match.game_id}?sport_key=${sportKey}`}
+                size="medium"
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: 2,
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  textTransform: "none",
+                  borderRadius: 2,
                 }}
               >
-                <Box sx={{ flex: 1, textAlign: "right" }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {home.team}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Home
-                  </Typography>
-                </Box>
-
-                <Box sx={{ flex: "none", textAlign: "center", px: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {scoreDisplay}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {hasScore ? "Final Score" : "Scheduled"}
-                  </Typography>
-                </Box>
-
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {away.team}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Away
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  textAlign: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    H2H
-                  </Typography>
-                  <Typography variant="body1">
-                    {home.odds?.h2h !== undefined && away.odds?.h2h !== undefined
-                      ? `${home.team}: ${home.odds.h2h} | ${away.team}: ${away.odds.h2h}`
-                      : "N/A"}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    Spreads
-                  </Typography>
-                  <Typography variant="body1">
-                    {home.odds?.spread_point !== undefined && away.odds?.spread_point !== undefined
-                      ? `${home.team}: ${home.odds.spread_point} (${home.odds.spread_price}) | ${away.team}: ${away.odds.spread_point} (${away.odds.spread_price})`
-                      : "N/A"}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    Totals
-                  </Typography>
-                  <Typography variant="body1">
-                    {totals.over_point !== undefined && totals.under_point !== undefined
-                      ? `Over: ${totals.over_point} (${totals.over_price}) | Under: ${totals.under_point} (${totals.under_price})`
-                      : "N/A"}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ mt: 3, textAlign: "center" }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  href={`/game/${match.game_id}?sport_key=${sportKey}`}
-                  size="medium"
-                  sx={{
-                    px: 3,
-                    py: 1,
-                    fontWeight: 600,
-                    fontSize: "1rem",
-                    textTransform: "none",
-                    borderRadius: 2,
-                  }}
-                >
-                  View Details
-                </Button>
-              </Box>
-            </Paper>
-          );
-        })}
+                View Details
+              </Button>
+            </Box>
+          </Paper>
+        ))}
       </Box>
     </Box>
   );
 };
 
-export default NFLPage;
+export default GamesPage;

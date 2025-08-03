@@ -15,7 +15,8 @@ import { usePageView } from "./hooks/usePageView";
 import FeatureRequestsPage from "./pages/FeatureRequestsPage";
 import ContactUsPage from "./pages/ContactUsPage";
 import BettingGuidePage from "./pages/BettingGuidePage";
-import NFLPage from "./pages/NFLPage"; // Assuming you have a separate NFL page
+import GamesPage from "./pages/GamesPage";
+import GameDetailsPage from "./pages/GameDetailsPage";
 
 function AppContent() {
   usePageView();
@@ -36,11 +37,12 @@ function AppContent() {
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Routes>
           {/* <Route path="/nba" element={<NBA />} /> */}
-          <Route path="/" element={<NFLPage />} />
-          <Route path="/nfl" element={<NFLPage />} />
+          <Route path="/" element={<GamesPage />} />
+          <Route path="/nfl" element={<GamesPage />} />
           <Route path="/feature-requests" element={<FeatureRequestsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />
+          <Route path="/nfl/game/:gameId" element={<GameDetailsPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Box>

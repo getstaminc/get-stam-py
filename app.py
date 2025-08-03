@@ -642,6 +642,7 @@ def game_details(game_id):
             except Exception as e:
                 print("⚠️ Error loading cached pitcher data:", e)
 
+        @cache.cached(timeout=86400, query_string=True)
         def get_nfl_rankings():
             return fetch_nfl_rankings()
 

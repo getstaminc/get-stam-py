@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface GameData {
   game_id: string;
+  commence_time: string;
   away: {
     odds: {
       h2h: number | null;

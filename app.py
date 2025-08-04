@@ -642,7 +642,6 @@ def game_details(game_id):
             except Exception as e:
                 print("⚠️ Error loading cached pitcher data:", e)
 
-        @cache.cached(timeout=86400, query_string=True)
         def get_nfl_rankings():
             return fetch_nfl_rankings()
 
@@ -691,16 +690,7 @@ def game_details(game_id):
                                         nhl_totals=nhl_totals,
                                         nhl_winner=nhl_winner,
                                         calculate_line_result=calculate_line_result)
-        elif sport_key in ['americanfootball_ncaaf', 'basketball_nba', 'basketball_ncaab']:
-            return render_template_string(others_template,
-                                        game=game_details,
-                                        home_team_last_5=home_team_last_5,
-                                        away_team_last_5=away_team_last_5,
-                                        last_5_vs_opponent=last_5_vs_opponent,
-                                        other_totals=other_totals,
-                                        other_winner=other_winner,
-                                        calculate_line_result=calculate_line_result)
-        elif sport_key in ['americanfootball_nfl']:
+        elif sport_key == 'americanfootball_nfl':
             return render_template_string(others_template,
                                         game=game_details,
                                         home_team_last_5=home_team_last_5,
@@ -712,7 +702,16 @@ def game_details(game_id):
                                         home_offense=home_offense,
                                         home_defense=home_defense,
                                         away_offense=away_offense,
-                                        away_defense=away_defense)
+                                        away_defense=away_defense)                                
+        elif sport_key in ['americanfootball_ncaaf', 'basketball_nba', 'basketball_ncaab']:
+            return render_template_string(others_template,
+                                        game=game_details,
+                                        home_team_last_5=home_team_last_5,
+                                        away_team_last_5=away_team_last_5,
+                                        last_5_vs_opponent=last_5_vs_opponent,
+                                        other_totals=other_totals,
+                                        other_winner=other_winner,
+                                        calculate_line_result=calculate_line_result)
         else:
             raise ValueError(f"Unsupported league: {sport_key}")
 

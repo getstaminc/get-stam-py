@@ -1,40 +1,114 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
+import { useGame } from "../contexts/GameContext";
 
-const dummyData = {
-  away: {
-    odds: {
-      h2h: -245,
-      spread_point: -5.5,
-      spread_price: -110,
-    },
-    score: null,
-    team: "Arizona Cardinals",
-  },
-  commence_time: "2025-09-07T17:00:00+00:00",
-  game_id: "557d13ef8f4c1d21044f3a478cda6d0b",
-  home: {
-    odds: {
-      h2h: 200,
-      spread_point: 5.5,
-      spread_price: -110,
-    },
-    score: null,
-    team: "New Orleans Saints",
-  },
-  isToday: false,
-  totals: {
-    over_point: 42.5,
-    over_price: -110,
-    under_point: 42.5,
-    under_price: -110,
-  },
+// Map URL sport (e.g. "nfl") to Odds API sport key
+const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
+  nfl: "americanfootball_nfl",
+  mlb: "baseball_mlb",
+  nba: "basketball_nba",
+  nhl: "icehockey_nhl",
+  ncaafb: "americanfootball_ncaaf",
+  ncaabb: "basketball_ncaab",
+  epl: "soccer_epl",
+  nfl_preseason: "americanfootball_nfl_preseason",
 };
 
+// Fetch single game data from backend API
+async function fetchSingleGameData(sport: string, gameId: string) {
+  const url = `https://www.getstam.com/api/game/${sport}/${gameId}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+      },
+    });
+    if (!res.ok) throw new Error("API error");
+    const data = await res.json();
+    // The backend returns { game: gameData }, so we need to extract the game object
+    return data.game || data;
+  } catch (e) {
+    console.error("Error fetching single game data:", e);
+    return null;
+  }
+}
+
 const GameDetailsPage: React.FC = () => {
+  const { sport } = useParams<{ sport: string }>();
+  const [searchParams] = useSearchParams();
+  const gameId = searchParams.get('game_id');
+  const { currentGame } = useGame();
+  const [gameData, setGameData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Convert URL sport to API sport key
+  const sportKey = sport ? SPORT_URL_TO_API_KEY[sport] || sport : null;
+
+  useEffect(() => {
+    // If we have game data from context and the game_id matches, use it
+    if (currentGame && currentGame.game_id === gameId) {
+      setGameData(currentGame);
+      return;
+    }
+
+    // Otherwise, fetch from API if we have sport and gameId
+    if (sportKey && gameId) {
+      setLoading(true);
+      setError(null);
+      
+      fetchSingleGameData(sportKey, gameId)
+        .then((data) => {
+          if (data) {
+            setGameData(data);
+          } else {
+            setError("Failed to load game data");
+          }
+        })
+        .catch(() => {
+          setError("Failed to load game data");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setError("Missing sport or game ID");
+    }
+  }, [sportKey, gameId, currentGame]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!gameData) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <Typography variant="h6">
+          No game data available
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <div>
-      <GameDetails game={dummyData} />
+      <GameDetails game={gameData} />
     </div>
   );
 };

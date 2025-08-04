@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, Button, Divider, TextField } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
-import GameOdds from "../components/GameOdds"; 
+import GameOdds from "../components/GameOdds";
+import { useGame } from "../contexts/GameContext"; 
 
 // Odds API key from .env (ODDS_API_KEY)
 const ODDS_API_KEY = process.env.REACT_APP_ODDS_API_KEY;
@@ -72,6 +73,7 @@ async function fetchGamesData(sportKey: string, date: Date) {
 const GamesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setCurrentGame } = useGame();
 
   // Get sport from URL path (e.g. "/nfl")
   const urlSport = getSportFromPath(location.pathname);
@@ -99,6 +101,14 @@ const GamesPage = () => {
       setNextGameDate(data.nextGameDate || null);
     });
   }, [sportKey, selectedDate, activeView]);
+
+  // Handle View Details button click
+  const handleViewDetails = (game: any) => {
+    // Save game data to context
+    setCurrentGame(game);
+    // Navigate to game details page
+    navigate(`/game-details/${urlSport}?game_id=${game.game_id}`);
+  };
 
   // Update URL when date or view changes
   useEffect(() => {
@@ -219,7 +229,7 @@ const GamesPage = () => {
               <Button
                 variant="contained"
                 color="primary"
-                href={`/game/${match.game_id}?sport_key=${sportKey}`}
+                onClick={() => handleViewDetails(match)}
                 size="medium"
                 sx={{
                   px: 3,

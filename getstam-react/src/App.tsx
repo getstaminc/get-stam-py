@@ -8,6 +8,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './css/theme';
 import { usePageView } from "./hooks/usePageView";
+import { GameProvider } from "./contexts/GameContext";
 
 // Import your sport and other pages
 // import NBA from "./pages/NBA";
@@ -36,13 +37,25 @@ function AppContent() {
       <TabsNavigation />
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Routes>
-          {/* <Route path="/nba" element={<NBA />} /> */}
           <Route path="/" element={<GamesPage />} />
           <Route path="/nfl" element={<GamesPage />} />
+          <Route path="/nfl/trends" element={<GamesPage />} />
+          <Route path="/mlb" element={<GamesPage />} />
+          <Route path="/mlb/trends" element={<GamesPage />} />
+          <Route path="/nba" element={<GamesPage />} />
+          <Route path="/nba/trends" element={<GamesPage />} />
+          <Route path="/nhl" element={<GamesPage />} />
+          <Route path="/nhl/trends" element={<GamesPage />} />
+          <Route path="/ncaafb" element={<GamesPage />} />
+          <Route path="/ncaafb/trends" element={<GamesPage />} />
+          <Route path="/ncaabb" element={<GamesPage />} />
+          <Route path="/ncaabb/trends" element={<GamesPage />} />
+          <Route path="/epl" element={<GamesPage />} />
+          <Route path="/epl/trends" element={<GamesPage />} />
+          <Route path="/game-details/:sport" element={<GameDetailsPage />} />
           <Route path="/feature-requests" element={<FeatureRequestsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />
-          <Route path="/nfl/game/:gameId" element={<GameDetailsPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Box>
@@ -55,17 +68,19 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Router>
-          <AppContent />
-        </Router>
-      </Box>
+      <GameProvider>
+        <Box
+          sx={{
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Router>
+            <AppContent />
+          </Router>
+        </Box>
+      </GameProvider>
     </ThemeProvider>
   );
 }

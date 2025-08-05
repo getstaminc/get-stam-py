@@ -1384,6 +1384,71 @@ others_template = """
                         font-size: 18px;
                     }
                 }
+                .ranking-section {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 2rem;
+                    margin-top: 2rem;
+                }
+
+                .ranking-card {
+                    width: 100%;
+                    max-width: 350px;
+                    flex: 1 1 300px;
+                    background-color: #fff;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+                    overflow: hidden;
+                }
+
+                .ranking-title {
+                    text-align: center;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    padding: 1rem 0;
+                    background-color: #f4f6f8;
+                    color: #222;
+                    border-bottom: 1px solid #e0e0e0;
+                }
+
+                .ranking-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-family: 'Segoe UI', sans-serif;
+                }
+
+                .ranking-table th,
+                .ranking-table td {
+                    padding: 10px 8px;
+                    font-size: 0.85rem;
+                    text-align: left;
+                    border-bottom: 1px solid #f1f1f1;
+                }
+
+                .ranking-table th {
+                    background-color: #fafafa;
+                    color: #333;
+                    font-weight: 600;
+                }
+
+                .ranking-subtext {
+                    display: block;
+                    font-size: 0.7rem;
+                    color: #888;
+                    margin-top: 2px;
+                }
+
+                @media (max-width: 768px) {
+                    .ranking-section {
+                        flex-direction: column;
+                        gap: 1.5rem;
+                    }
+
+                    .ranking-card {
+                        max-width: 100%;
+                    }
+                }
             </style>
     </head>
     <body>
@@ -1415,6 +1480,65 @@ others_template = """
                 <td>{{ game.oddsText.replace('\n', '<br>')|safe }}</td>
             </tr>
         </table>
+
+        {% if home_offense and home_defense and away_offense and away_defense %}
+            {% set stat_map = {
+                'Total': 'Total (Yds/G)',
+                'Passing': 'Passing (Yds/G)',
+                'Rushing': 'Rushing (Yds/G)',
+                'Scoring': 'Scoring (Pts/G)'
+            } %}
+
+            <div class="ranking-section">
+                <!-- Home Team -->
+                <div class="ranking-card">
+                    <div class="ranking-title">{{ game.homeTeam }} Rankings</div>
+                    <table class="ranking-table">
+                        <tr>
+                            <th>Category</th><th>Offense</th><th>Defense</th>
+                        </tr>
+                        {% for label, key in stat_map.items() %}
+                        <tr>
+                            <td>{{ label }}</td>
+                            <td>
+                                {{ home_offense.get(key + ' Rank', '–') }}
+                                <span class="ranking-subtext">{{ home_offense.get(key, '–') }}</span>
+                            </td>
+                            <td>
+                                {{ home_defense.get(key + ' Rank', '–') }}
+                                <span class="ranking-subtext">{{ home_defense.get(key, '–') }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
+                <!-- Away Team -->
+                <div class="ranking-card">
+                    <div class="ranking-title">{{ game.awayTeam }} Rankings</div>
+                    <table class="ranking-table">
+                        <tr>
+                            <th>Category</th><th>Offense</th><th>Defense</th>
+                        </tr>
+                        {% for label, key in stat_map.items() %}
+                        <tr>
+                            <td>{{ label }}</td>
+                            <td>
+                                {{ away_offense.get(key + ' Rank', '–') }}
+                                <span class="ranking-subtext">{{ away_offense.get(key, '–') }}</span>
+                            </td>
+                            <td>
+                                {{ away_defense.get(key + ' Rank', '–') }}
+                                <span class="ranking-subtext">{{ away_defense.get(key, '–') }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+
 
         <h2>Last 5 Games - {{ game.homeTeam }}</h2>
         {% if home_team_last_5 %}

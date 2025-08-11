@@ -65,7 +65,9 @@ class DatabaseService:
             game_id,
             game_date,
             home_team_name,
+            home_team_id,
             away_team_name,
+            away_team_id,
             home_points,
             away_points,
             total_points,
@@ -108,7 +110,9 @@ class DatabaseService:
             game_id,
             game_date,
             home_team_name,
+            home_team_id,
             away_team_name,
+            away_team_id,
             home_points,
             away_points,
             total_points,
@@ -186,5 +190,67 @@ class DatabaseService:
                 
         except Exception as e:
             return None, f"Database query error: {str(e)}"
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_team_games_by_name(sport_key: str, team_name: str, limit: int = 10) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """Get historical games for a specific team by team name"""
+        from shared_utils import convert_team_name
+        
+        # Convert odds API team name to database team name
+        db_team_name = convert_team_name(team_name)
+        
+        # First get the team_id
+        team_id = DatabaseService._get_team_id_by_name(db_team_name, sport_key)
+        if not team_id:
+            return None, f"Team '{team_name}' not found in database"
+        
+        # Use existing method with team_id
+        return DatabaseService.get_team_games(sport_key, team_id, limit)
+    
+    @staticmethod
+    def get_head_to_head_games_by_name(sport_key: str, home_team: str, away_team: str, limit: int = 5) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """Get head-to-head games between two teams by team names"""
+        from shared_utils import convert_team_name
+        
+        # Convert odds API team names to database team names
+        db_home_team = convert_team_name(home_team)
+        db_away_team = convert_team_name(away_team)
+        
+        # Get team IDs
+        home_team_id = DatabaseService._get_team_id_by_name(db_home_team, sport_key)
+        away_team_id = DatabaseService._get_team_id_by_name(db_away_team, sport_key)
+        
+        if not home_team_id:
+            return None, f"Home team '{home_team}' not found in database"
+        if not away_team_id:
+            return None, f"Away team '{away_team}' not found in database"
+        
+        # Use existing method with team_ids
+        return DatabaseService.get_head_to_head_games(sport_key, home_team_id, away_team_id, limit)
+    
+    @staticmethod
+    def _get_team_id_by_name(team_name: str, sport_key: str) -> Optional[int]:
+        """Helper method to get team_id by team_name"""
+        query = """
+        SELECT team_id 
+        FROM teams 
+        WHERE team_name = %s AND sport = %s
+        """
+        
+        conn = DatabaseService._get_connection()
+        if not conn:
+            return None
+        
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, (team_name, sport_key.upper()))
+                result = cursor.fetchone()
+                return result[0] if result else None
+                
+        except Exception as e:
+            print(f"Error getting team_id: {e}")
+            return None
         finally:
             conn.close()

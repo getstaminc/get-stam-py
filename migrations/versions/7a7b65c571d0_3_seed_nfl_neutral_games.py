@@ -156,13 +156,13 @@ def upgrade():
                     total_points, total_margin, home_line, away_line, home_quarter_scores,
                     away_quarter_scores, home_first_half_points, away_first_half_points,
                     home_second_half_points, away_second_half_points, home_overtime_points, away_overtime_points,
-                    home_money_line, away_money_line, playoffs, start_time
+                    home_money_line, away_money_line, playoffs, start_time, total
                 ) VALUES (
                     :game_date, :game_site, :home_team_id, :away_team_id, :home_team_name, :away_team_name,
                     :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
                     :home_quarter_scores, :away_quarter_scores, :home_first_half_points, :away_first_half_points,
                     :home_second_half_points, :away_second_half_points, :home_overtime_points, :away_overtime_points,
-                    :home_money_line, :away_money_line, :playoffs, :start_time
+                    :home_money_line, :away_money_line, :playoffs, :start_time, :total
                 )
             """), {
                 'game_date': game['date'],
@@ -188,7 +188,8 @@ def upgrade():
                 'home_money_line': game.get('money line'),
                 'away_money_line': game.get('o:money line'),
                 'playoffs': bool(game.get('playoffs', 0)),  # Cast to boolean
-                'start_time': start_time
+                'start_time': start_time,
+                'total': game['total']  # Added this line
             })
 
 

@@ -92,8 +92,7 @@ def upgrade():
                 away_overtime_points = home_overtime_points,
                 home_money_line = away_money_line,
                 away_money_line = home_money_line
-            WHERE game_id = :game_id
-              AND game_date = :game_date
+            WHERE game_date = :game_date
               AND home_team_id = :home_team_id
               AND away_team_id = :away_team_id
         """), record)

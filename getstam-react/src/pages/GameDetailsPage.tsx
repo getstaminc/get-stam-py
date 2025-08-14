@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
 import { useGame } from "../contexts/GameContext";
+import { convertTeamName, convertSportKeyForDatabase } from "../utils/teamNameConverter";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -16,9 +17,21 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   nfl_preseason: "americanfootball_nfl_preseason",
 };
 
+// Map API sport key to database sport key
+const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
+  americanfootball_nfl: "nfl",
+  baseball_mlb: "mlb", 
+  basketball_nba: "nba",
+  icehockey_nhl: "nhl",
+  americanfootball_ncaaf: "ncaafb",
+  basketball_ncaab: "ncaabb",
+  soccer_epl: "epl",
+  americanfootball_nfl_preseason: "nfl",
+};
+
 // Fetch single game data from backend API
 async function fetchSingleGameData(sport: string, gameId: string) {
-  const url = `https://www.getstam.com/api/game/${sport}/${gameId}`;
+  const url = `https://www.getstam.com/api/odds/${sport}/${gameId}`;
   try {
     const res = await fetch(url, {
       headers: {
@@ -41,16 +54,64 @@ const GameDetailsPage: React.FC = () => {
   const gameId = searchParams.get('game_id');
   const { currentGame } = useGame();
   const [gameData, setGameData] = useState<any>(null);
+  const [homeTeamHistory, setHomeTeamHistory] = useState<any>(null);
+  const [awayTeamHistory, setAwayTeamHistory] = useState<any>(null);
+  const [headToHeadHistory, setHeadToHeadHistory] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Convert URL sport to API sport key
   const sportKey = sport ? SPORT_URL_TO_API_KEY[sport] || sport : null;
 
+  // Fetch team history
+  const fetchTeamHistory = async (sportKey: string, teamName: string) => {
+    const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+    const convertedTeamName = convertTeamName(teamName);
+    const response = await fetch(`https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedTeamName)}`, {
+      headers: {
+        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+      },
+    });
+    if (!response.ok) throw new Error("Failed to fetch team history");
+    return response.json();
+  };
+
+  // Fetch head-to-head history
+  const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string) => {
+    const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+    const convertedHomeTeam = convertTeamName(homeTeam);
+    const convertedAwayTeam = convertTeamName(awayTeam);
+    const response = await fetch(
+      `https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}`,
+      {
+        headers: {
+          "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+        },
+      }
+    );
+    if (!response.ok) throw new Error("Failed to fetch head-to-head history");
+    return response.json();
+  };
+
   useEffect(() => {
     // If we have game data from context and the game_id matches, use it
     if (currentGame && currentGame.game_id === gameId) {
       setGameData(currentGame);
+      
+      // Also fetch historical data for context game
+      if (sportKey && currentGame.home?.team && currentGame.away?.team) {
+        Promise.all([
+          fetchTeamHistory(sportKey, currentGame.home.team),
+          fetchTeamHistory(sportKey, currentGame.away.team),
+          fetchHeadToHead(sportKey, currentGame.home.team, currentGame.away.team)
+        ]).then(([homeHistory, awayHistory, h2hHistory]) => {
+          setHomeTeamHistory(homeHistory);
+          setAwayTeamHistory(awayHistory);
+          setHeadToHeadHistory(h2hHistory);
+        }).catch((error) => {
+          console.error("Error fetching historical data:", error);
+        });
+      }
       return;
     }
 
@@ -63,6 +124,25 @@ const GameDetailsPage: React.FC = () => {
         .then((data) => {
           if (data) {
             setGameData(data);
+            
+            // After getting game data, fetch historical data
+            // Check if data has team names (could be from odds API or database)
+            const homeTeam = data.home?.team || data.home_team_name;
+            const awayTeam = data.away?.team || data.away_team_name;
+            
+            if (homeTeam && awayTeam) {
+              Promise.all([
+                fetchTeamHistory(sportKey, homeTeam),
+                fetchTeamHistory(sportKey, awayTeam),
+                fetchHeadToHead(sportKey, homeTeam, awayTeam)
+              ]).then(([homeHistory, awayHistory, h2hHistory]) => {
+                setHomeTeamHistory(homeHistory);
+                setAwayTeamHistory(awayHistory);
+                setHeadToHeadHistory(h2hHistory);
+              }).catch((error) => {
+                console.error("Error fetching historical data:", error);
+              });
+            }
           } else {
             setError("Failed to load game data");
           }
@@ -108,7 +188,12 @@ const GameDetailsPage: React.FC = () => {
 
   return (
     <div>
-      <GameDetails game={gameData} />
+      <GameDetails 
+        game={gameData} 
+        homeTeamHistory={homeTeamHistory}
+        awayTeamHistory={awayTeamHistory}
+        headToHeadHistory={headToHeadHistory}
+      />
     </div>
   );
 };

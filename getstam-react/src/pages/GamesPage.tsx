@@ -54,7 +54,7 @@ function getSportFromPath(pathname: string): string {
 // Fetch games from your backend API
 async function fetchGamesData(sportKey: string, date: Date) {
   const dateStr = formatDate(date);
-  const url = `https://www.getstam.com/api/games/${sportKey}?date=${dateStr}`;
+  const url = `https://www.getstam.com/api/odds/${sportKey}?date=${dateStr}`;
   try {
     const res = await fetch(url, {
       headers: {

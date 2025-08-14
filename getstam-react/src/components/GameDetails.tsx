@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, Typography, Paper } from "@mui/material";
+import React, { useState } from "react";
+import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import GameOdds from "./GameOdds";
 import HistoricalGames from "./HistoricalGames";
 import { convertTeamName } from "../utils/teamNameConverter";
@@ -46,15 +46,27 @@ type GameDetailsProps = {
   homeTeamHistory?: HistoricalData | null;
   awayTeamHistory?: HistoricalData | null;
   headToHeadHistory?: HistoricalData | null;
+  onLimitChange?: (limit: number) => void;
+  currentLimit?: number;
 };
 
 const GameDetails: React.FC<GameDetailsProps> = ({ 
   game, 
   homeTeamHistory, 
   awayTeamHistory, 
-  headToHeadHistory 
+  headToHeadHistory,
+  onLimitChange,
+  currentLimit = 5
 }) => {
   const { home, away } = game;
+  const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
+
+  const handleLimitChange = (newLimit: number) => {
+    setGamesLimit(newLimit);
+    if (onLimitChange) {
+      onLimitChange(newLimit);
+    }
+  };
 
   const hasScore =
     home.score !== null &&
@@ -78,21 +90,40 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
       {/* Historical Games Section */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3 }}>
-        <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-          Recent Performance
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
+            Recent Performance
+          </Typography>
+          
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel id="games-limit-label">Show Games</InputLabel>
+            <Select
+              labelId="games-limit-label"
+              id="games-limit-select"
+              value={gamesLimit}
+              label="Show Games"
+              onChange={(e) => handleLimitChange(e.target.value as number)}
+            >
+              <MenuItem value={3}>Last 3</MenuItem>
+              <MenuItem value={5}>Last 5</MenuItem>
+              <MenuItem value={10}>Last 10</MenuItem>
+              <MenuItem value={15}>Last 15</MenuItem>
+              <MenuItem value={20}>Last 20</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
         
-        {/* Home Team Last 5 Games */}
+        {/* Home Team Last N Games */}
         <HistoricalGames
-          title={`${homeTeamName} - Last 5 Games`}
+          title={`${homeTeamName} - Last ${gamesLimit} Games`}
           games={homeTeamHistory?.games || []}
           loading={homeTeamHistory === null}
           teamName={convertTeamName(homeTeamName)}
         />
 
-        {/* Away Team Last 5 Games */}
+        {/* Away Team Last N Games */}
         <HistoricalGames
-          title={`${awayTeamName} - Last 5 Games`}
+          title={`${awayTeamName} - Last ${gamesLimit} Games`}
           games={awayTeamHistory?.games || []}
           loading={awayTeamHistory === null}
           teamName={convertTeamName(awayTeamName)}
@@ -100,7 +131,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
         {/* Head to Head */}
         <HistoricalGames
-          title={`${awayTeamName} vs ${homeTeamName} - Last 5 H2H`}
+          title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
           games={headToHeadHistory?.games || []}
           loading={headToHeadHistory === null}
           isHeadToHead={true}

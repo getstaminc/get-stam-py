@@ -59,15 +59,16 @@ const GameDetailsPage: React.FC = () => {
   const [headToHeadHistory, setHeadToHeadHistory] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gamesLimit, setGamesLimit] = useState<number>(5);
 
   // Convert URL sport to API sport key
   const sportKey = sport ? SPORT_URL_TO_API_KEY[sport] || sport : null;
 
   // Fetch team history
-  const fetchTeamHistory = async (sportKey: string, teamName: string) => {
+  const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5) => {
     const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
     const convertedTeamName = convertTeamName(teamName);
-    const response = await fetch(`https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedTeamName)}`, {
+    const response = await fetch(`https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedTeamName)}?limit=${limit}`, {
       headers: {
         "X-API-KEY": process.env.REACT_APP_API_KEY || "",
       },
@@ -77,12 +78,12 @@ const GameDetailsPage: React.FC = () => {
   };
 
   // Fetch head-to-head history
-  const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string) => {
+  const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
     const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
     const convertedHomeTeam = convertTeamName(homeTeam);
     const convertedAwayTeam = convertTeamName(awayTeam);
     const response = await fetch(
-      `https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}`,
+      `https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`,
       {
         headers: {
           "X-API-KEY": process.env.REACT_APP_API_KEY || "",
@@ -93,6 +94,37 @@ const GameDetailsPage: React.FC = () => {
     return response.json();
   };
 
+  // Function to fetch all historical data
+  const fetchAllHistoricalData = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
+    try {
+      const [homeHistory, awayHistory, h2hHistory] = await Promise.all([
+        fetchTeamHistory(sportKey, homeTeam, limit),
+        fetchTeamHistory(sportKey, awayTeam, limit),
+        fetchHeadToHead(sportKey, homeTeam, awayTeam, limit)
+      ]);
+      
+      setHomeTeamHistory(homeHistory);
+      setAwayTeamHistory(awayHistory);
+      setHeadToHeadHistory(h2hHistory);
+    } catch (error) {
+      console.error("Error fetching historical data:", error);
+    }
+  };
+
+  // Handle limit change from dropdown
+  const handleLimitChange = async (newLimit: number) => {
+    setGamesLimit(newLimit);
+    
+    if (gameData && sportKey) {
+      const homeTeam = gameData.home?.team || gameData.home_team_name;
+      const awayTeam = gameData.away?.team || gameData.away_team_name;
+      
+      if (homeTeam && awayTeam) {
+        await fetchAllHistoricalData(sportKey, homeTeam, awayTeam, newLimit);
+      }
+    }
+  };
+
   useEffect(() => {
     // If we have game data from context and the game_id matches, use it
     if (currentGame && currentGame.game_id === gameId) {
@@ -100,17 +132,7 @@ const GameDetailsPage: React.FC = () => {
       
       // Also fetch historical data for context game
       if (sportKey && currentGame.home?.team && currentGame.away?.team) {
-        Promise.all([
-          fetchTeamHistory(sportKey, currentGame.home.team),
-          fetchTeamHistory(sportKey, currentGame.away.team),
-          fetchHeadToHead(sportKey, currentGame.home.team, currentGame.away.team)
-        ]).then(([homeHistory, awayHistory, h2hHistory]) => {
-          setHomeTeamHistory(homeHistory);
-          setAwayTeamHistory(awayHistory);
-          setHeadToHeadHistory(h2hHistory);
-        }).catch((error) => {
-          console.error("Error fetching historical data:", error);
-        });
+        fetchAllHistoricalData(sportKey, currentGame.home.team, currentGame.away.team, gamesLimit);
       }
       return;
     }
@@ -131,17 +153,7 @@ const GameDetailsPage: React.FC = () => {
             const awayTeam = data.away?.team || data.away_team_name;
             
             if (homeTeam && awayTeam) {
-              Promise.all([
-                fetchTeamHistory(sportKey, homeTeam),
-                fetchTeamHistory(sportKey, awayTeam),
-                fetchHeadToHead(sportKey, homeTeam, awayTeam)
-              ]).then(([homeHistory, awayHistory, h2hHistory]) => {
-                setHomeTeamHistory(homeHistory);
-                setAwayTeamHistory(awayHistory);
-                setHeadToHeadHistory(h2hHistory);
-              }).catch((error) => {
-                console.error("Error fetching historical data:", error);
-              });
+              fetchAllHistoricalData(sportKey, homeTeam, awayTeam, gamesLimit);
             }
           } else {
             setError("Failed to load game data");
@@ -156,7 +168,7 @@ const GameDetailsPage: React.FC = () => {
     } else {
       setError("Missing sport or game ID");
     }
-  }, [sportKey, gameId, currentGame]);
+  }, [sportKey, gameId, currentGame, gamesLimit]);
 
   if (loading) {
     return (
@@ -193,6 +205,8 @@ const GameDetailsPage: React.FC = () => {
         homeTeamHistory={homeTeamHistory}
         awayTeamHistory={awayTeamHistory}
         headToHeadHistory={headToHeadHistory}
+        onLimitChange={handleLimitChange}
+        currentLimit={gamesLimit}
       />
     </div>
   );

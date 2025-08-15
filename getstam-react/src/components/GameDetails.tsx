@@ -134,6 +134,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
           games={headToHeadHistory?.games || []}
           loading={headToHeadHistory === null}
+          teamName={convertTeamName(homeTeamName)}
           isHeadToHead={true}
         />
       </Box>

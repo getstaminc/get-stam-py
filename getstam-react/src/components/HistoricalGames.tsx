@@ -33,6 +33,33 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   teamName = "",
   isHeadToHead = false 
 }) => {
+  // Helper function to format date from YYYY-MM-DD to MM/DD/YYYY
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    
+    try {
+      // Handle PostgreSQL date type (YYYY-MM-DD format)
+      // Split by '-' and ensure we have exactly 3 parts
+      const dateParts = dateString.split('-');
+      if (dateParts.length === 3) {
+        const [year, month, day] = dateParts;
+        // Remove any leading zeros and ensure valid date parts
+        const monthNum = parseInt(month, 10);
+        const dayNum = parseInt(day, 10);
+        const yearNum = parseInt(year, 10);
+        
+        if (monthNum > 0 && monthNum <= 12 && dayNum > 0 && dayNum <= 31 && yearNum > 1900) {
+          return `${monthNum}/${dayNum}/${yearNum}`;
+        }
+      }
+      
+      // If it's not in expected format, return as is
+      return dateString;
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   // Helper function to safely calculate line results
   const calculateLineResult = (points: number | null, line: number | null, opponentPoints: number | null) => {
     try {
@@ -42,9 +69,9 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
       
       const lineResult = (points + line) > opponentPoints;
       if (lineResult) {
-        return { result: true, bgColor: '#c8e6c9' }; // Light green
+        return { result: true, bgColor: '#a5d6a7' }; // Medium green
       } else if ((points + line) < opponentPoints) {
-        return { result: false, bgColor: '#ffcdd2' }; // Light red
+        return { result: false, bgColor: '#ef9a9a' }; // Medium red
       } else {
         return { result: false, bgColor: '#e0e0e0' }; // Grey for push
       }
@@ -60,9 +87,9 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     }
     
     if (teamPoints > opponentPoints) {
-      return '#c8e6c9'; // Light green
+      return '#a5d6a7'; // Medium green
     } else if (teamPoints < opponentPoints) {
-      return '#ffcdd2'; // Light red
+      return '#ef9a9a'; // Medium red
     } else {
       return '#e0e0e0'; // Grey for tie
     }
@@ -75,9 +102,9 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     }
     
     if (actualTotal > bettingTotal) {
-      return '#c8e6c9'; // Light green (over hit)
+      return '#a5d6a7'; // Medium green (over hit)
     } else if (actualTotal < bettingTotal) {
-      return '#ffcdd2'; // Light red (under hit)
+      return '#ef9a9a'; // Medium red (under hit)
     } else {
       return '#e0e0e0'; // Grey for exact total
     }
@@ -88,6 +115,30 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     const isTeamHome = game.home_team_name === teamName;
     const isTeamAway = game.away_team_name === teamName;
     
+    // For head-to-head tables, always show from the perspective of the teamName
+    if (isHeadToHead && teamName) {
+      if (isTeamHome) {
+        return {
+          site: 'home',
+          teamPoints: game.home_points,
+          teamLine: game.home_line,
+          opponentName: game.away_team_name,
+          opponentPoints: game.away_points,
+          opponentLine: game.away_line
+        };
+      } else if (isTeamAway) {
+        return {
+          site: 'away',
+          teamPoints: game.away_points,
+          teamLine: game.away_line,
+          opponentName: game.home_team_name,
+          opponentPoints: game.home_points,
+          opponentLine: game.home_line
+        };
+      }
+    }
+    
+    // For individual team tables or when not head-to-head
     if (isTeamHome) {
       return {
         site: 'home',
@@ -157,7 +208,6 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
               <TableCell><strong>Spread</strong></TableCell>
               <TableCell><strong>Opponent</strong></TableCell>
               <TableCell><strong>Opponent Points</strong></TableCell>
-              {isHeadToHead && <TableCell><strong>Opponent Spread</strong></TableCell>}
               <TableCell><strong>Total</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -171,7 +221,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
               return (
                 <TableRow key={game.game_id || index}>
                   <TableCell>
-                    {new Date(game.game_date).toLocaleDateString()}
+                    {formatDate(game.game_date)}
                   </TableCell>
                   <TableCell>
                     {teamData.site}
@@ -206,23 +256,13 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                   <TableCell>
                     {teamData.opponentPoints ?? 'None'}
                   </TableCell>
-                  {isHeadToHead && (
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: opponentLineResult.bgColor,
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {teamData.opponentLine !== null ? teamData.opponentLine : 'None'}
-                    </TableCell>
-                  )}
                   <TableCell 
                     sx={{ 
                       backgroundColor: totalColor,
                       fontWeight: 'bold'
                     }}
                   >
-                    {game.total_points ?? 'None'}
+                    {game.total ?? 'None'}
                   </TableCell>
                 </TableRow>
               );

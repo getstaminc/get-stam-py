@@ -12,6 +12,7 @@ from flask_caching import Cache
 import logging
 import os
 from nfl_rankings import fetch_nfl_rankings  # Import NFL rankings module
+from ncaaf_rankings import fetch_ncaaf_rankings
 from dotenv import load_dotenv
 from constants import EXCLUDED_SPORTS
 from celery_config import celery
@@ -667,6 +668,25 @@ def game_details(game_id):
             except Exception as e:
                 print(f"⚠️ Failed to load NFL rankings: {e}")
                 home_offense = home_defense = away_offense = away_defense = {}
+
+        ncaaf_offense = ncaaf_defense = {}
+        if sport_key == 'americanfootball_ncaaf':
+            try:
+                rankings = fetch_ncaaf_rankings()
+                offense = rankings.get("offense", {})
+                defense = rankings.get("defense", {})
+
+                home_team = game_details['homeTeam']
+                away_team = game_details['awayTeam']
+
+                home_offense = offense.get(home_team, {})
+                home_defense = defense.get(home_team, {})
+                away_offense = offense.get(away_team, {})
+                away_defense = defense.get(away_team, {})
+            except Exception as e:
+                print(f"⚠️ Failed to load NCAAF rankings: {e}")
+                home_offense = home_defense = away_offense = away_defense = {}
+
        
         if sport_key == 'baseball_mlb':
             return render_template_string(mlb_template,
@@ -690,7 +710,7 @@ def game_details(game_id):
                                         nhl_totals=nhl_totals,
                                         nhl_winner=nhl_winner,
                                         calculate_line_result=calculate_line_result)
-        elif sport_key == 'americanfootball_nfl':
+        elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', ]:
             return render_template_string(others_template,
                                         game=game_details,
                                         home_team_last_5=home_team_last_5,
@@ -703,7 +723,7 @@ def game_details(game_id):
                                         home_defense=home_defense,
                                         away_offense=away_offense,
                                         away_defense=away_defense)                                
-        elif sport_key in ['americanfootball_ncaaf', 'basketball_nba', 'basketball_ncaab']:
+        elif sport_key in ['basketball_nba', 'basketball_ncaab']:
             return render_template_string(others_template,
                                         game=game_details,
                                         home_team_last_5=home_team_last_5,

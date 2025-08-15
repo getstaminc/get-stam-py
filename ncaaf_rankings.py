@@ -3,7 +3,7 @@
 import requests
 import pandas as pd
 
-def fetch_nfl_rankings():
+def fetch_ncaaf_rankings():
     offense_url = "https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/statistics/byteam"
     defense_url = "https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/statistics/byteam"
 

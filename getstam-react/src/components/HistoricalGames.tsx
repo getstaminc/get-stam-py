@@ -1,5 +1,5 @@
-import React from "react";
-import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Box } from "@mui/material";
+import React, { useState } from "react";
+import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Box, ClickAwayListener } from "@mui/material";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 type HistoricalGame = {
@@ -34,6 +34,22 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   teamName = "",
   isHeadToHead = false 
 }) => {
+  const [openTooltip, setOpenTooltip] = useState<string | null>(null);
+
+  // Helper function to detect if device is mobile
+  const isMobile = () => {
+    return window.innerWidth <= 768 || 'ontouchstart' in window;
+  };
+
+  const handleTooltipClick = (tooltipId: string) => {
+    if (isMobile()) {
+      setOpenTooltip(openTooltip === tooltipId ? null : tooltipId);
+    }
+  };
+
+  const handleClickAway = () => {
+    setOpenTooltip(null);
+  };
   // Color legend tooltip content for Team/Points columns
   const WinLossLegend = () => (
     <Box sx={{ p: 1 }}>
@@ -103,16 +119,30 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     </Box>
   );
 
+  // Generate unique tooltip IDs for this component instance
+  const tooltipPrefix = `${title.replace(/\s+/g, '-').toLowerCase()}`;
+  
   // Simple header components with info icons
   const HeaderWithWinLossInfo = ({ children }: { children: React.ReactNode }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <strong>{children}</strong>
-      <Tooltip title={<WinLossLegend />} arrow placement="top">
-        <InfoOutlinedIcon sx={{ 
-          fontSize: 16, 
-          color: '#666', 
-          cursor: 'help'
-        }} />
+      <Tooltip 
+        title={<WinLossLegend />} 
+        arrow 
+        placement="top"
+        open={isMobile() ? openTooltip === `${tooltipPrefix}-winloss` : undefined}
+        disableHoverListener={isMobile()}
+        disableFocusListener={isMobile()}
+        disableTouchListener={!isMobile()}
+      >
+        <InfoOutlinedIcon 
+          sx={{ 
+            fontSize: 16, 
+            color: '#666', 
+            cursor: 'help'
+          }}
+          onClick={() => handleTooltipClick(`${tooltipPrefix}-winloss`)}
+        />
       </Tooltip>
     </Box>
   );
@@ -120,12 +150,23 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   const HeaderWithSpreadInfo = ({ children }: { children: React.ReactNode }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <strong>{children}</strong>
-      <Tooltip title={<SpreadLegend />} arrow placement="top">
-        <InfoOutlinedIcon sx={{ 
-          fontSize: 16, 
-          color: '#666', 
-          cursor: 'help'
-        }} />
+      <Tooltip 
+        title={<SpreadLegend />} 
+        arrow 
+        placement="top"
+        open={isMobile() ? openTooltip === `${tooltipPrefix}-spread` : undefined}
+        disableHoverListener={isMobile()}
+        disableFocusListener={isMobile()}
+        disableTouchListener={!isMobile()}
+      >
+        <InfoOutlinedIcon 
+          sx={{ 
+            fontSize: 16, 
+            color: '#666', 
+            cursor: 'help'
+          }}
+          onClick={() => handleTooltipClick(`${tooltipPrefix}-spread`)}
+        />
       </Tooltip>
     </Box>
   );
@@ -133,12 +174,23 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   const HeaderWithTotalInfo = ({ children }: { children: React.ReactNode }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <strong>{children}</strong>
-      <Tooltip title={<TotalLegend />} arrow placement="top">
-        <InfoOutlinedIcon sx={{ 
-          fontSize: 16, 
-          color: '#666', 
-          cursor: 'help'
-        }} />
+      <Tooltip 
+        title={<TotalLegend />} 
+        arrow 
+        placement="top"
+        open={isMobile() ? openTooltip === `${tooltipPrefix}-total` : undefined}
+        disableHoverListener={isMobile()}
+        disableFocusListener={isMobile()}
+        disableTouchListener={!isMobile()}
+      >
+        <InfoOutlinedIcon 
+          sx={{ 
+            fontSize: 16, 
+            color: '#666', 
+            cursor: 'help'
+          }}
+          onClick={() => handleTooltipClick(`${tooltipPrefix}-total`)}
+        />
       </Tooltip>
     </Box>
   );
@@ -302,84 +354,86 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   }
 
   return (
-    <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        {title}
-      </Typography>
-      <TableContainer>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Date</strong></TableCell>
-              <TableCell><strong>Site</strong></TableCell>
-              <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
-              <TableCell><HeaderWithWinLossInfo>Points</HeaderWithWinLossInfo></TableCell>
-              <TableCell><HeaderWithSpreadInfo>Spread</HeaderWithSpreadInfo></TableCell>
-              <TableCell><strong>Opponent</strong></TableCell>
-              <TableCell><strong>Opponent Points</strong></TableCell>
-              <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {games.map((game, index) => {
-              const teamData = getTeamData(game);
-              const teamLineResult = calculateLineResult(teamData.teamPoints, teamData.teamLine, teamData.opponentPoints);
-              const opponentLineResult = calculateLineResult(teamData.opponentPoints, teamData.opponentLine, teamData.teamPoints);
-              const totalColor = getTotalColor(game.total_points, game.total ?? null);
-              
-              return (
-                <TableRow key={game.game_id || index}>
-                  <TableCell>
-                    {formatDate(game.game_date)}
-                  </TableCell>
-                  <TableCell>
-                    {teamData.site}
-                  </TableCell>
-                  <TableCell 
-                    sx={{ 
-                      backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {teamName || (teamData.site === 'home' ? game.home_team_name : game.away_team_name)}
-                  </TableCell>
-                  <TableCell 
-                    sx={{ 
-                      backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {teamData.teamPoints ?? 'None'}
-                  </TableCell>
-                  <TableCell 
-                    sx={{ 
-                      backgroundColor: teamLineResult.bgColor,
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {teamData.teamLine !== null ? teamData.teamLine : 'None'}
-                  </TableCell>
-                  <TableCell>
-                    {teamData.opponentName}
-                  </TableCell>
-                  <TableCell>
-                    {teamData.opponentPoints ?? 'None'}
-                  </TableCell>
-                  <TableCell 
-                    sx={{ 
-                      backgroundColor: totalColor,
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {game.total ?? 'None'}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Paper>
+    <ClickAwayListener onClickAway={handleClickAway}>
+      <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          {title}
+        </Typography>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell><strong>Date</strong></TableCell>
+                <TableCell><strong>Site</strong></TableCell>
+                <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
+                <TableCell><HeaderWithWinLossInfo>Points</HeaderWithWinLossInfo></TableCell>
+                <TableCell><HeaderWithSpreadInfo>Spread</HeaderWithSpreadInfo></TableCell>
+                <TableCell><strong>Opponent</strong></TableCell>
+                <TableCell><strong>Opponent Points</strong></TableCell>
+                <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {games.map((game, index) => {
+                const teamData = getTeamData(game);
+                const teamLineResult = calculateLineResult(teamData.teamPoints, teamData.teamLine, teamData.opponentPoints);
+                const opponentLineResult = calculateLineResult(teamData.opponentPoints, teamData.opponentLine, teamData.teamPoints);
+                const totalColor = getTotalColor(game.total_points, game.total ?? null);
+                
+                return (
+                  <TableRow key={game.game_id || index}>
+                    <TableCell>
+                      {formatDate(game.game_date)}
+                    </TableCell>
+                    <TableCell>
+                      {teamData.site}
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {teamName || (teamData.site === 'home' ? game.home_team_name : game.away_team_name)}
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {teamData.teamPoints ?? 'None'}
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: teamLineResult.bgColor,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {teamData.teamLine !== null ? teamData.teamLine : 'None'}
+                    </TableCell>
+                    <TableCell>
+                      {teamData.opponentName}
+                    </TableCell>
+                    <TableCell>
+                      {teamData.opponentPoints ?? 'None'}
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: totalColor,
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {game.total ?? 'None'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </ClickAwayListener>
   );
 };
 

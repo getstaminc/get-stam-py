@@ -643,49 +643,47 @@ def game_details(game_id):
             except Exception as e:
                 print("⚠️ Error loading cached pitcher data:", e)
 
-        def get_nfl_rankings():
-            return fetch_nfl_rankings()
+       
 
-        nfl_offense = nfl_defense = {}
-        if sport_key == 'americanfootball_nfl':
+        # Shared helper to fetch and assign rankings
+        def get_football_rankings(sport_key, home_team, away_team):
             try:
-                rankings = get_nfl_rankings()
+                if sport_key == 'americanfootball_nfl':
+                    rankings = fetch_nfl_rankings()
+                elif sport_key == 'americanfootball_ncaaf':
+                    rankings = fetch_ncaaf_rankings()
+                else:
+                    return {}, {}, {}, {}
+
                 offense = rankings.get("offense", {})
                 defense = rankings.get("defense", {})
-
-                home_team = game_details['homeTeam']
-                away_team = game_details['awayTeam']
 
                 home_offense = offense.get(home_team, {})
                 home_defense = defense.get(home_team, {})
                 away_offense = offense.get(away_team, {})
                 away_defense = defense.get(away_team, {})
+                print("Looking for team name:", away_team)
+                print("Available team names:", list(offense.keys()))
 
-                print("Home Offense:", home_offense)
-                print("Home Defense:", home_defense)
-                print("Away Offense:", away_offense)
-                print("Away Defense:", away_defense)
+                return home_offense, home_defense, away_offense, away_defense
+
             except Exception as e:
-                print(f"⚠️ Failed to load NFL rankings: {e}")
-                home_offense = home_defense = away_offense = away_defense = {}
+                print(f"⚠️ Failed to load rankings for {sport_key}: {e}")
+                return {}, {}, {}, {}
 
-        ncaaf_offense = ncaaf_defense = {}
-        if sport_key == 'americanfootball_ncaaf':
-            try:
-                rankings = fetch_ncaaf_rankings()
-                offense = rankings.get("offense", {})
-                defense = rankings.get("defense", {})
+        home_offense, home_defense, away_offense, away_defense = {}, {}, {}, {}
 
-                home_team = game_details['homeTeam']
-                away_team = game_details['awayTeam']
+        if sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf']:
+            home_team = game_details['homeTeam']
+            away_team = game_details['awayTeam']
+            home_offense, home_defense, away_offense, away_defense = get_football_rankings(
+                sport_key, home_team, away_team
+            )
+            print("Home Offense:", home_offense)
+            print("Home Defense:", home_defense)
+            print("Away Offense:", away_offense)
+            print("Away Defense:", away_defense)
 
-                home_offense = offense.get(home_team, {})
-                home_defense = defense.get(home_team, {})
-                away_offense = offense.get(away_team, {})
-                away_defense = defense.get(away_team, {})
-            except Exception as e:
-                print(f"⚠️ Failed to load NCAAF rankings: {e}")
-                home_offense = home_defense = away_offense = away_defense = {}
 
        
         if sport_key == 'baseball_mlb':

@@ -9,12 +9,12 @@ def fetch_ncaaf_rankings():
 
     offense_params = {
         "region": "us", "lang": "en", "contentorigin": "espn",
-        "sort": "team.passing.netYardsPerGame:desc", "limit": 32
+        "sort": "team.passing.netYardsPerGame:desc", "limit": 200
     }
 
     defense_params = {
         "region": "us", "lang": "en", "contentorigin": "espn",
-        "sort": "opponent.passing.netYardsPerGame:asc", "limit": 32
+        "sort": "opponent.passing.netYardsPerGame:asc", "limit": 200
     }
 
     # Offense stat config
@@ -37,7 +37,6 @@ def fetch_ncaaf_rankings():
         team_stats = {}
         for team in data.get("teams", []):
             name = team["team"]["displayName"]
-            abbr = team["team"]["abbreviation"]
             row = {}
             categories = {
                 c["name"]: c
@@ -50,16 +49,18 @@ def fetch_ncaaf_rankings():
                     row[label] = cat.get("totals", [None]*20)[cfg["total_index"]]
                     row[f"{label} Rank"] = cat.get("ranks", [None]*20)[cfg["rank_index"]]
             team_stats[name] = row
-            team_stats[abbr] = row
         return team_stats
 
     def parse_defense(data):
         team_stats = {}
         for team in data.get("teams", []):
             name = team["team"]["displayName"]
-            abbr = team["team"]["abbreviation"]
             row = {}
-            categories = {c["name"]: c for c in team.get("categories", [])}
+            categories = {
+                c["name"]: c
+                for c in team.get("categories", [])
+                if c.get("splitId") == "900"
+            }
             for label, cfg in DEFENSE_CONFIG.items():
                 section = categories.get(cfg["section"])
                 if section:
@@ -68,8 +69,8 @@ def fetch_ncaaf_rankings():
                     row[label] = totals[cfg["total_index"]] if len(totals) > cfg["total_index"] else None
                     row[f"{label} Rank"] = ranks[cfg["rank_index"]] if len(ranks) > cfg["rank_index"] else None
             team_stats[name] = row
-            team_stats[abbr] = row
         return team_stats
+
 
     # Fetch both datasets
     offense_data = requests.get(offense_url, params=offense_params).json()

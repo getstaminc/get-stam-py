@@ -1,5 +1,6 @@
 import React from "react";
-import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Box } from "@mui/material";
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 type HistoricalGame = {
   game_id: number;
@@ -33,6 +34,114 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   teamName = "",
   isHeadToHead = false 
 }) => {
+  // Color legend tooltip content for Team/Points columns
+  const WinLossLegend = () => (
+    <Box sx={{ p: 1 }}>
+      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+        Color Meanings:
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#c8e6c9', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Win</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#ffcdd2', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Loss</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Tie</Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  // Color legend tooltip content for Spread column
+  const SpreadLegend = () => (
+    <Box sx={{ p: 1 }}>
+      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+        Color Meanings:
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#c8e6c9', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Cover</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#ffcdd2', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Not Cover</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Push</Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  // Color legend tooltip content for Total column
+  const TotalLegend = () => (
+    <Box sx={{ p: 1 }}>
+      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+        Color Meanings:
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#c8e6c9', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Over</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#ffcdd2', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Under</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />
+          <Typography variant="body2">Push</Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  // Simple header components with info icons
+  const HeaderWithWinLossInfo = ({ children }: { children: React.ReactNode }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <strong>{children}</strong>
+      <Tooltip title={<WinLossLegend />} arrow placement="top">
+        <InfoOutlinedIcon sx={{ 
+          fontSize: 16, 
+          color: '#666', 
+          cursor: 'help'
+        }} />
+      </Tooltip>
+    </Box>
+  );
+
+  const HeaderWithSpreadInfo = ({ children }: { children: React.ReactNode }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <strong>{children}</strong>
+      <Tooltip title={<SpreadLegend />} arrow placement="top">
+        <InfoOutlinedIcon sx={{ 
+          fontSize: 16, 
+          color: '#666', 
+          cursor: 'help'
+        }} />
+      </Tooltip>
+    </Box>
+  );
+
+  const HeaderWithTotalInfo = ({ children }: { children: React.ReactNode }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <strong>{children}</strong>
+      <Tooltip title={<TotalLegend />} arrow placement="top">
+        <InfoOutlinedIcon sx={{ 
+          fontSize: 16, 
+          color: '#666', 
+          cursor: 'help'
+        }} />
+      </Tooltip>
+    </Box>
+  );
   // Helper function to format date from YYYY-MM-DD to MM/DD/YYYY
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -69,9 +178,9 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
       
       const lineResult = (points + line) > opponentPoints;
       if (lineResult) {
-        return { result: true, bgColor: '#a5d6a7' }; // Medium green
+        return { result: true, bgColor: '#c8e6c9' }; // Light green
       } else if ((points + line) < opponentPoints) {
-        return { result: false, bgColor: '#ef9a9a' }; // Medium red
+        return { result: false, bgColor: '#ffcdd2' }; // Light red
       } else {
         return { result: false, bgColor: '#e0e0e0' }; // Grey for push
       }
@@ -87,9 +196,9 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     }
     
     if (teamPoints > opponentPoints) {
-      return '#a5d6a7'; // Medium green
+      return '#c8e6c9'; // Light green
     } else if (teamPoints < opponentPoints) {
-      return '#ef9a9a'; // Medium red
+      return '#ffcdd2'; // Light red
     } else {
       return '#e0e0e0'; // Grey for tie
     }
@@ -102,9 +211,9 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     }
     
     if (actualTotal > bettingTotal) {
-      return '#a5d6a7'; // Medium green (over hit)
+      return '#c8e6c9'; // Light green (over hit)
     } else if (actualTotal < bettingTotal) {
-      return '#ef9a9a'; // Medium red (under hit)
+      return '#ffcdd2'; // Light red (under hit)
     } else {
       return '#e0e0e0'; // Grey for exact total
     }
@@ -203,12 +312,12 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
             <TableRow>
               <TableCell><strong>Date</strong></TableCell>
               <TableCell><strong>Site</strong></TableCell>
-              <TableCell><strong>Team</strong></TableCell>
-              <TableCell><strong>Points</strong></TableCell>
-              <TableCell><strong>Spread</strong></TableCell>
+              <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
+              <TableCell><HeaderWithWinLossInfo>Points</HeaderWithWinLossInfo></TableCell>
+              <TableCell><HeaderWithSpreadInfo>Spread</HeaderWithSpreadInfo></TableCell>
               <TableCell><strong>Opponent</strong></TableCell>
               <TableCell><strong>Opponent Points</strong></TableCell>
-              <TableCell><strong>Total</strong></TableCell>
+              <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

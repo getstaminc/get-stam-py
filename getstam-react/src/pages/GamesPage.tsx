@@ -111,7 +111,7 @@ const GamesPage = () => {
   useEffect(() => {
     if (activeView === "trends" && games.length > 0) {
       setTrendsLoading(true);
-      analyzeMultipleGamesTrends(games, sportKey, 5, minTrendLength)
+      analyzeMultipleGamesTrends(games, sportKey, minTrendLength, minTrendLength)
         .then((trendsData) => {
           setGamesWithTrends(trendsData);
         })

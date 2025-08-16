@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, Button, Divider, TextField } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import GameOdds from "../components/GameOdds";
+import GamesWithTrends from "../components/GamesWithTrends";
 import { useGame } from "../contexts/GameContext"; 
+import { analyzeMultipleGamesTrends, GameWithTrends } from "../utils/trendAnalysis"; 
 
 // Odds API key from .env (ODDS_API_KEY)
 const ODDS_API_KEY = process.env.REACT_APP_ODDS_API_KEY;
@@ -92,6 +94,9 @@ const GamesPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [activeView, setActiveView] = useState<"all" | "trends">(isTrends ? "trends" : "all");
   const [games, setGames] = useState<any[]>([]);
+  const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [minTrendLength, setMinTrendLength] = useState<number>(3);
   const [nextGameDate, setNextGameDate] = useState<string | null>(null);
 
   // Fetch data when sport or date changes
@@ -100,7 +105,30 @@ const GamesPage = () => {
       setGames(data.games || []);
       setNextGameDate(data.nextGameDate || null);
     });
-  }, [sportKey, selectedDate, activeView]);
+  }, [sportKey, selectedDate]);
+
+  // Analyze trends when switching to trends view or when minTrendLength changes
+  useEffect(() => {
+    if (activeView === "trends" && games.length > 0) {
+      setTrendsLoading(true);
+      analyzeMultipleGamesTrends(games, sportKey, 5, minTrendLength)
+        .then((trendsData) => {
+          setGamesWithTrends(trendsData);
+        })
+        .catch((error) => {
+          console.error("Error analyzing trends:", error);
+          setGamesWithTrends([]);
+        })
+        .finally(() => {
+          setTrendsLoading(false);
+        });
+    }
+  }, [activeView, games, sportKey, minTrendLength]);
+
+  // Handle minimum trend length change
+  const handleMinTrendLengthChange = (newMinLength: number) => {
+    setMinTrendLength(newMinLength);
+  };
 
   // Handle View Details button click
   const handleViewDetails = (game: any) => {
@@ -177,7 +205,7 @@ const GamesPage = () => {
             </Button>
             <Button
               variant={activeView === "trends" ? "contained" : "outlined"}
-              color={activeView === "trends" ? "secondary" : "inherit"}
+              color={activeView === "trends" ? "primary" : "inherit"}
               onClick={() => setActiveView("trends")}
               sx={{
                 px: 3,
@@ -196,7 +224,7 @@ const GamesPage = () => {
           </Box>
         </Box>
 
-        {games.length === 0 && (
+        {activeView === "all" && games.length === 0 && (
           <Typography align="center" sx={{ mt: 4, mb: 2 }}>
             No games found for this date.
             {nextGameDate && (
@@ -216,7 +244,7 @@ const GamesPage = () => {
           </Typography>
         )}
 
-        {games.map((match) => (
+        {activeView === "all" && games.map((match) => (
           <Paper key={match.game_id} elevation={3} sx={{ mb: 3, p: 2, borderRadius: 2,  backgroundColor: "#f9f9f9" }}>
             <GameOdds
               game={{
@@ -245,6 +273,16 @@ const GamesPage = () => {
             </Box>
           </Paper>
         ))}
+
+        {activeView === "trends" && (
+          <GamesWithTrends 
+            gamesWithTrends={gamesWithTrends}
+            loading={trendsLoading}
+            onViewDetails={handleViewDetails}
+            minTrendLength={minTrendLength}
+            onMinTrendLengthChange={handleMinTrendLengthChange}
+          />
+        )}
       </Box>
     </Box>
   );

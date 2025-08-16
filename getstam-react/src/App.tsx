@@ -46,10 +46,10 @@ function AppContent() {
           <Route path="/nba/trends" element={<GamesPage />} />
           <Route path="/nhl" element={<GamesPage />} />
           <Route path="/nhl/trends" element={<GamesPage />} />
-          <Route path="/ncaafb" element={<GamesPage />} />
-          <Route path="/ncaafb/trends" element={<GamesPage />} />
-          <Route path="/ncaabb" element={<GamesPage />} />
-          <Route path="/ncaabb/trends" element={<GamesPage />} />
+          <Route path="/ncaaf" element={<GamesPage />} />
+          <Route path="/ncaaf/trends" element={<GamesPage />} />
+          <Route path="/ncaab" element={<GamesPage />} />
+          <Route path="/ncaab/trends" element={<GamesPage />} />
           <Route path="/epl" element={<GamesPage />} />
           <Route path="/epl/trends" element={<GamesPage />} />
           <Route path="/game-details/:sport" element={<GameDetailsPage />} />

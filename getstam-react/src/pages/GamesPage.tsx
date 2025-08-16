@@ -15,8 +15,8 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   mlb: "baseball_mlb",
   nba: "basketball_nba",
   nhl: "icehockey_nhl",
-  ncaafb: "americanfootball_ncaaf",
-  ncaabb: "basketball_ncaab",
+  ncaaf: "americanfootball_ncaaf",
+  ncaab: "basketball_ncaab",
   epl: "soccer_epl",
   nfl_preseason: "americanfootball_nfl_preseason",
 };
@@ -28,8 +28,8 @@ const SPORT_API_KEY_TO_DISPLAY: { [key: string]: string } = {
   americanfootball_nfl: "NFL",
   americanfootball_nfl_preseason: "NFL",
   icehockey_nhl: "NHL",
-  americanfootball_ncaaf: "NCAAFB",
-  basketball_ncaab: "NCAABB",
+  americanfootball_ncaaf: "NCAAF",
+  basketball_ncaab: "NCAAB",
   soccer_epl: "EPL",
 };
 

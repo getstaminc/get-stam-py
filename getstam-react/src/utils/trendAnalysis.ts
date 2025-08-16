@@ -61,8 +61,21 @@ const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: str
 
 // Helper function to get team-specific data from a game
 const getTeamData = (game: any, teamName: string) => {
-  const isTeamHome = game.home_team_name === teamName;
-  const isTeamAway = game.away_team_name === teamName;
+  // Convert the search team name to the short form for comparison
+  const convertedTeamName = convertTeamName(teamName);
+  
+  const isTeamHome = game.home_team_name === teamName || game.home_team_name === convertedTeamName;
+  const isTeamAway = game.away_team_name === teamName || game.away_team_name === convertedTeamName;
+  
+  console.log(`getTeamData debug:`, {
+    searchingFor: teamName,
+    convertedTeamName: convertedTeamName,
+    homeTeamName: game.home_team_name,
+    awayTeamName: game.away_team_name,
+    isTeamHome,
+    isTeamAway,
+    teamSide: game.team_side
+  });
   
   if (isTeamHome) {
     return {
@@ -80,6 +93,7 @@ const getTeamData = (game: any, teamName: string) => {
     };
   } else {
     // Fallback using team_side
+    console.log(`Using fallback team_side logic for ${teamName}`);
     return {
       teamPoints: game.team_side === 'home' ? game.home_points : game.away_points,
       teamLine: game.team_side === 'home' ? game.home_line : game.away_line,
@@ -98,61 +112,99 @@ const analyzeTeamTrends = (games: any[], teamName: string, minTrendLength: numbe
   // Sort games by date (most recent first)
   const sortedGames = games.sort((a, b) => new Date(b.game_date).getTime() - new Date(a.game_date).getTime());
   
-  // Check for win/loss streaks
-  let currentWinStreak = 0;
-  let currentLossStreak = 0;
-  let currentCoverStreak = 0;
-  let currentNoCoverStreak = 0;
-  let currentOverStreak = 0;
-  let currentUnderStreak = 0;
+  // Calculate streaks from most recent game backwards
+  const calculateCurrentStreak = (results: boolean[]): number => {
+    let streak = 0;
+    for (const result of results) {
+      if (result) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+  
+  // Collect all results (most recent first)
+  const winResults: boolean[] = [];
+  const lossResults: boolean[] = [];
+  const coverResults: boolean[] = [];
+  const noCoverResults: boolean[] = [];
+  const overResults: boolean[] = [];
+  const underResults: boolean[] = [];
   
   for (const game of sortedGames) {
     const teamData = getTeamData(game, teamName);
     
+    // Debug logging
+    console.log(`Game ${game.game_date}: ${teamName}`, {
+      teamPoints: teamData.teamPoints,
+      teamLine: teamData.teamLine,
+      opponentPoints: teamData.opponentPoints,
+      lineResult: teamData.teamLine !== null ? (teamData.teamPoints + teamData.teamLine) > teamData.opponentPoints : null
+    });
+    
     // Win/Loss analysis
     if (teamData.teamPoints > teamData.opponentPoints) {
-      currentWinStreak++;
-      currentLossStreak = 0;
+      winResults.push(true);
+      lossResults.push(false);
     } else if (teamData.teamPoints < teamData.opponentPoints) {
-      currentLossStreak++;
-      currentWinStreak = 0;
+      winResults.push(false);
+      lossResults.push(true);
     } else {
       // Tie breaks both streaks
-      currentWinStreak = 0;
-      currentLossStreak = 0;
+      winResults.push(false);
+      lossResults.push(false);
     }
     
     // Spread analysis
     if (teamData.teamLine !== null && teamData.teamPoints !== null && teamData.opponentPoints !== null) {
       const lineResult = (teamData.teamPoints + teamData.teamLine) > teamData.opponentPoints;
       if (lineResult) {
-        currentCoverStreak++;
-        currentNoCoverStreak = 0;
+        coverResults.push(true);
+        noCoverResults.push(false);
       } else if ((teamData.teamPoints + teamData.teamLine) < teamData.opponentPoints) {
-        currentNoCoverStreak++;
-        currentCoverStreak = 0;
+        coverResults.push(false);
+        noCoverResults.push(true);
       } else {
         // Push breaks both streaks
-        currentCoverStreak = 0;
-        currentNoCoverStreak = 0;
+        coverResults.push(false);
+        noCoverResults.push(false);
       }
     }
     
     // Total analysis
     if (game.total_points !== null && game.total !== null) {
       if (game.total_points > game.total) {
-        currentOverStreak++;
-        currentUnderStreak = 0;
+        overResults.push(true);
+        underResults.push(false);
       } else if (game.total_points < game.total) {
-        currentUnderStreak++;
-        currentOverStreak = 0;
+        overResults.push(false);
+        underResults.push(true);
       } else {
         // Push breaks both streaks
-        currentOverStreak = 0;
-        currentUnderStreak = 0;
+        overResults.push(false);
+        underResults.push(false);
       }
     }
   }
+  
+  // Calculate current streaks
+  const currentWinStreak = calculateCurrentStreak(winResults);
+  const currentLossStreak = calculateCurrentStreak(lossResults);
+  const currentCoverStreak = calculateCurrentStreak(coverResults);
+  const currentNoCoverStreak = calculateCurrentStreak(noCoverResults);
+  const currentOverStreak = calculateCurrentStreak(overResults);
+  const currentUnderStreak = calculateCurrentStreak(underResults);
+  
+  console.log(`Final streaks for ${teamName}:`, {
+    wins: currentWinStreak,
+    losses: currentLossStreak,
+    covers: currentCoverStreak,
+    noCovers: currentNoCoverStreak,
+    overs: currentOverStreak,
+    unders: currentUnderStreak
+  });
   
   // Add trends that meet minimum length
   if (currentWinStreak >= minTrendLength) {
@@ -237,6 +289,11 @@ export const analyzeGameTrends = async (
     // Analyze trends
     const homeTeamTrends = analyzeTeamTrends(homeHistory.games || [], homeTeam, minTrendLength);
     const awayTeamTrends = analyzeTeamTrends(awayHistory.games || [], awayTeam, minTrendLength);
+    
+    // Debug head-to-head data
+    console.log('H2H History games:', h2hHistory.games);
+    console.log('Analyzing H2H for homeTeam:', homeTeam);
+    
     const headToHeadTrends = analyzeTeamTrends(h2hHistory.games || [], homeTeam, minTrendLength);
     
     const hasTrends = homeTeamTrends.length > 0 || awayTeamTrends.length > 0 || headToHeadTrends.length > 0;

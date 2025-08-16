@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, Button, Divider, TextField } from "@mui/material";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import GameOdds from "../components/GameOdds";
 import GamesWithTrends from "../components/GamesWithTrends";
 import { useGame } from "../contexts/GameContext"; 
@@ -199,6 +199,14 @@ const GamesPage = () => {
                 borderRight: "1px solid #ccc",
                 boxShadow: "none",
                 ...(activeView === "all" && { zIndex: 1 }),
+                ...(activeView !== "all" && {
+                  borderColor: '#e0e0e0',
+                  color: '#666',
+                  '&:hover': {
+                    borderColor: '#bdbdbd',
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  }
+                })
               }}
             >
               All Games
@@ -215,8 +223,15 @@ const GamesPage = () => {
                 borderRadius: "0 8px 8px 0",
                 boxShadow: "none",
                 borderLeft: "none",
-                ...(activeView !== "trends" && { color: "text.primary" }),
                 ...(activeView === "trends" && { zIndex: 1 }),
+                ...(activeView !== "trends" && {
+                  borderColor: '#e0e0e0',
+                  color: '#666',
+                  '&:hover': {
+                    borderColor: '#bdbdbd',
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  }
+                })
               }}
             >
               Games with Trends
@@ -255,6 +270,8 @@ const GamesPage = () => {
             />
             <Box sx={{ mt: 3, textAlign: "center" }}>
               <Button
+                component={Link}
+                to={`/game-details/${urlSport}?game_id=${match.game_id}`}
                 variant="contained"
                 color="primary"
                 onClick={() => handleViewDetails(match)}
@@ -266,6 +283,7 @@ const GamesPage = () => {
                   fontSize: "1rem",
                   textTransform: "none",
                   borderRadius: 2,
+                  textDecoration: "none"
                 }}
               >
                 View Details

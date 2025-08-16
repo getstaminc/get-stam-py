@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Typography, Paper, Button, Chip, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Link, useLocation } from "react-router-dom";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 import GameOdds from "./GameOdds";
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -81,6 +82,15 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
   minTrendLength,
   onMinTrendLengthChange
 }) => {
+  const location = useLocation();
+  
+  // Helper function to extract sport from URL path (e.g. "/nfl" → "nfl")
+  const getSportFromPath = (pathname: string): string => {
+    const match = pathname.match(/^\/([^/]+)/);
+    return match ? match[1] : "nfl";
+  };
+  
+  const urlSport = getSportFromPath(location.pathname);
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -229,6 +239,8 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
             
             <Box sx={{ mt: 3, textAlign: "center" }}>
               <Button
+                component={Link}
+                to={`/game-details/${urlSport}?game_id=${game.game_id}`}
                 variant="contained"
                 color="primary"
                 onClick={() => onViewDetails(game)}
@@ -240,6 +252,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
                   fontSize: "1rem",
                   textTransform: "none",
                   borderRadius: 2,
+                  textDecoration: "none"
                 }}
               >
                 View Details

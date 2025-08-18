@@ -433,14 +433,11 @@ def get_sport_scores(sport_key):
                                 outcome_text += f": +{price}"
                             else:
                                 outcome_text += f": {price}"
+
                             if market_key in ['spreads', 'totals'] and 'point' in outcome:
-                                outcome_text += f": {outcome['point']}"
-                            if sport_key == 'soccer_epl' and market_key == 'h2h':
-                                odds_data['h2h'].append(outcome_text)
-                            elif sport_key == 'baseball_mlb':
-                                if market_key in odds_data:
-                                    odds_data[market_key].append(outcome_text)
-                            else:
+                                outcome_text += f" ({outcome['point']})"
+
+                            if market_key in odds_data:
                                 odds_data[market_key].append(outcome_text)
 
             formatted_scores.append({

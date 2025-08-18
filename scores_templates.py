@@ -363,18 +363,32 @@ soccer_template = """
                                         <td>{{ match.homeScore }}</td>
                                         <td>
                                             <div class="odds-category">
-                                                <h4>H2H:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.h2h %}
-                                                        <li>{{ odd }}</li>
+                                                {% if match.odds.h2h %}
+                                                    <h4>H2H:</h4>
+                                                    <ul>
+                                                    {% for h2h in match.odds.h2h %}
+                                                        <li>{{ h2h }}</li>
                                                     {% endfor %}
-                                                </ul>
-                                                <h4>Totals:</h4>
-                                                <ul>
-                                                    {% for odd in match.odds.totals %}
-                                                        <li>{{ odd }}</li>
+                                                    </ul>
+                                                {% endif %}
+
+                                                {% if match.odds.totals %}
+                                                    <h4>Totals:</h4>
+                                                    <ul>
+                                                    {% for total in match.odds.totals %}
+                                                        <li>{{ total }}</li>
                                                     {% endfor %}
-                                                </ul>
+                                                    </ul>
+                                                {% endif %}
+
+                                                {% if match.odds.spreads %}
+                                                    <h4>Spreads:</h4>
+                                                    <ul>
+                                                    {% for spread in match.odds.spreads %}
+                                                        <li>{{ spread }}</li>
+                                                    {% endfor %}
+                                                    </ul>
+                                                {% endif %}
                                             </div>
                                         </td>
                                         {% if sport_key not in excluded_sports %}

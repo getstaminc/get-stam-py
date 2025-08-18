@@ -694,7 +694,13 @@ def convert_sport_key(sport_key):
         'icehockey_nhl': 'NHL',
         'americanfootball_ncaaf': 'NCAAFB',
         'basketball_ncaab': 'NCAABB',
-        'soccer_epl': 'EPL'
+        'soccer_epl': 'EPL',
+        'soccer_france_ligue_one': 'Ligue_1',
+        'soccer_germany_bundesliga': 'Bundesliga',
+        'soccer_italy_serie_a': 'Serie_A',
+        'soccer_spain_la_liga': 'La_Liga',
+        'soccer_uefa_champs_league': 'Champions_League',
+        'soccer_uefa_europa_league': 'Europa_League',
         # Add other mappings as needed
     }
     return sport_mapping.get(sport_key, sport_key)

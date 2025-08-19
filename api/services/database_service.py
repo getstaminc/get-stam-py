@@ -76,7 +76,7 @@ class DatabaseService:
             home_money_line,
             away_money_line,
             start_time,
-            total,
+            total
         FROM {table_name}
         ORDER BY game_date DESC
         LIMIT %s
@@ -170,7 +170,7 @@ class DatabaseService:
             home_money_line,
             away_money_line,
             start_time,
-            total,
+            total
         FROM {table_name}
         WHERE (home_team_id = %s AND away_team_id = %s) 
            OR (home_team_id = %s AND away_team_id = %s)

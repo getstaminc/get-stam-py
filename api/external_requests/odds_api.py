@@ -12,8 +12,8 @@ SPORT_URL_TO_API_KEY = {
     "mlb": "baseball_mlb",
     "nba": "basketball_nba",
     "nhl": "icehockey_nhl",
-    "ncaafb": "americanfootball_ncaaf",
-    "ncaabb": "basketball_ncaab",
+    "ncaaf": "americanfootball_ncaaf",
+    "ncaab": "basketball_ncaab",
     "epl": "soccer_epl",
     "nfl_preseason": "americanfootball_nfl_preseason",
 }

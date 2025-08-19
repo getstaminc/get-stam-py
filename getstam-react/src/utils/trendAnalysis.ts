@@ -1,4 +1,4 @@
-import { convertTeamName } from './teamNameConverter';
+import { convertTeamNameBySport } from './teamNameConverter';
 
 // Types for trend analysis
 export type TrendType = 'win_streak' | 'loss_streak' | 'cover_streak' | 'no_cover_streak' | 'over_streak' | 'under_streak';
@@ -23,8 +23,8 @@ const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
   baseball_mlb: "mlb", 
   basketball_nba: "nba",
   icehockey_nhl: "nhl",
-  americanfootball_ncaaf: "ncaafb",
-  basketball_ncaab: "ncaabb",
+  americanfootball_ncaaf: "ncaaf",
+  basketball_ncaab: "ncaab",
   soccer_epl: "epl",
   americanfootball_nfl_preseason: "nfl",
 };
@@ -32,7 +32,7 @@ const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
 // Fetch team history
 const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5) => {
   const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
-  const convertedTeamName = convertTeamName(teamName);
+  const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
   const response = await fetch(`https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedTeamName)}?limit=${limit}`, {
     headers: {
       "X-API-KEY": process.env.REACT_APP_API_KEY || "",
@@ -45,8 +45,8 @@ const fetchTeamHistory = async (sportKey: string, teamName: string, limit: numbe
 // Fetch head-to-head history
 const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
   const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
-  const convertedHomeTeam = convertTeamName(homeTeam);
-  const convertedAwayTeam = convertTeamName(awayTeam);
+  const convertedHomeTeam = convertTeamNameBySport(sportKey, homeTeam);
+  const convertedAwayTeam = convertTeamNameBySport(sportKey, awayTeam);
   const response = await fetch(
     `https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`,
     {
@@ -60,9 +60,9 @@ const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: str
 };
 
 // Helper function to get team-specific data from a game
-const getTeamData = (game: any, teamName: string) => {
+const getTeamData = (game: any, teamName: string, sportKey: string) => {
   // Convert the search team name to the short form for comparison
-  const convertedTeamName = convertTeamName(teamName);
+  const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
   
   const isTeamHome = game.home_team_name === teamName || game.home_team_name === convertedTeamName;
   const isTeamAway = game.away_team_name === teamName || game.away_team_name === convertedTeamName;
@@ -104,7 +104,7 @@ const getTeamData = (game: any, teamName: string) => {
 };
 
 // Analyze team trends from historical games
-const analyzeTeamTrends = (games: any[], teamName: string, minTrendLength: number = 3): TrendResult[] => {
+const analyzeTeamTrends = (games: any[], teamName: string, sportKey: string, minTrendLength: number = 3): TrendResult[] => {
   if (!games || games.length < minTrendLength) return [];
   
   const trends: TrendResult[] = [];
@@ -134,7 +134,7 @@ const analyzeTeamTrends = (games: any[], teamName: string, minTrendLength: numbe
   const underResults: boolean[] = [];
   
   for (const game of sortedGames) {
-    const teamData = getTeamData(game, teamName);
+    const teamData = getTeamData(game, teamName, sportKey);
     
     // Debug logging
     console.log(`Game ${game.game_date}: ${teamName}`, {
@@ -287,14 +287,14 @@ export const analyzeGameTrends = async (
     ]);
     
     // Analyze trends
-    const homeTeamTrends = analyzeTeamTrends(homeHistory.games || [], homeTeam, minTrendLength);
-    const awayTeamTrends = analyzeTeamTrends(awayHistory.games || [], awayTeam, minTrendLength);
+    const homeTeamTrends = analyzeTeamTrends(homeHistory.games || [], homeTeam, sportKey, minTrendLength);
+    const awayTeamTrends = analyzeTeamTrends(awayHistory.games || [], awayTeam, sportKey, minTrendLength);
     
     // Debug head-to-head data
     console.log('H2H History games:', h2hHistory.games);
     console.log('Analyzing H2H for homeTeam:', homeTeam);
     
-    const headToHeadTrends = analyzeTeamTrends(h2hHistory.games || [], homeTeam, minTrendLength);
+    const headToHeadTrends = analyzeTeamTrends(h2hHistory.games || [], homeTeam, sportKey, minTrendLength);
     
     const hasTrends = homeTeamTrends.length > 0 || awayTeamTrends.length > 0 || headToHeadTrends.length > 0;
     

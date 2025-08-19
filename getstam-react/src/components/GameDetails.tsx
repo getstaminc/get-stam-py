@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import GameOdds from "./GameOdds";
 import HistoricalGames from "./HistoricalGames";
-import { convertTeamName } from "../utils/teamNameConverter";
+import { convertTeamNameBySport } from "../utils/teamNameConverter";
 
 type TeamOdds = {
   h2h: number | null;
@@ -48,6 +48,7 @@ type GameDetailsProps = {
   headToHeadHistory?: HistoricalData | null;
   onLimitChange?: (limit: number) => void;
   currentLimit?: number;
+  sportKey?: string; // Add sport key to determine which converter to use
 };
 
 const GameDetails: React.FC<GameDetailsProps> = ({ 
@@ -56,7 +57,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   awayTeamHistory, 
   headToHeadHistory,
   onLimitChange,
-  currentLimit = 5
+  currentLimit = 5,
+  sportKey = "americanfootball_nfl" // Default to NFL if not provided
 }) => {
   const { home, away } = game;
   const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
@@ -118,7 +120,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           title={`${homeTeamName} - Last ${gamesLimit} Games`}
           games={homeTeamHistory?.games || []}
           loading={homeTeamHistory === null}
-          teamName={convertTeamName(homeTeamName)}
+          teamName={convertTeamNameBySport(sportKey, homeTeamName)}
         />
 
         {/* Away Team Last N Games */}
@@ -126,7 +128,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           title={`${awayTeamName} - Last ${gamesLimit} Games`}
           games={awayTeamHistory?.games || []}
           loading={awayTeamHistory === null}
-          teamName={convertTeamName(awayTeamName)}
+          teamName={convertTeamNameBySport(sportKey, awayTeamName)}
         />
 
         {/* Head to Head */}
@@ -134,7 +136,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
           games={headToHeadHistory?.games || []}
           loading={headToHeadHistory === null}
-          teamName={convertTeamName(homeTeamName)}
+          teamName={convertTeamNameBySport(sportKey, homeTeamName)}
           isHeadToHead={true}
         />
       </Box>

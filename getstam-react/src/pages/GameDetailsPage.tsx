@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
 import { useGame } from "../contexts/GameContext";
-import { convertTeamName, convertSportKeyForDatabase } from "../utils/teamNameConverter";
+import { convertTeamNameBySport, convertSportKeyForDatabase } from "../utils/teamNameConverter";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -11,8 +11,8 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   mlb: "baseball_mlb",
   nba: "basketball_nba",
   nhl: "icehockey_nhl",
-  ncaafb: "americanfootball_ncaaf",
-  ncaabb: "basketball_ncaab",
+  ncaaf: "americanfootball_ncaaf",
+  ncaab: "basketball_ncaab",
   epl: "soccer_epl",
   nfl_preseason: "americanfootball_nfl_preseason",
 };
@@ -23,8 +23,8 @@ const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
   baseball_mlb: "mlb", 
   basketball_nba: "nba",
   icehockey_nhl: "nhl",
-  americanfootball_ncaaf: "ncaafb",
-  basketball_ncaab: "ncaabb",
+  americanfootball_ncaaf: "ncaaf",
+  basketball_ncaab: "ncaab",
   soccer_epl: "epl",
   americanfootball_nfl_preseason: "nfl",
 };
@@ -67,7 +67,7 @@ const GameDetailsPage: React.FC = () => {
   // Fetch team history
   const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5) => {
     const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
-    const convertedTeamName = convertTeamName(teamName);
+    const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
     const response = await fetch(`https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedTeamName)}?limit=${limit}`, {
       headers: {
         "X-API-KEY": process.env.REACT_APP_API_KEY || "",
@@ -80,8 +80,8 @@ const GameDetailsPage: React.FC = () => {
   // Fetch head-to-head history
   const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
     const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
-    const convertedHomeTeam = convertTeamName(homeTeam);
-    const convertedAwayTeam = convertTeamName(awayTeam);
+    const convertedHomeTeam = convertTeamNameBySport(sportKey, homeTeam);
+    const convertedAwayTeam = convertTeamNameBySport(sportKey, awayTeam);
     const response = await fetch(
       `https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`,
       {
@@ -207,6 +207,7 @@ const GameDetailsPage: React.FC = () => {
         headToHeadHistory={headToHeadHistory}
         onLimitChange={handleLimitChange}
         currentLimit={gamesLimit}
+        sportKey={sportKey || "americanfootball_nfl"}
       />
     </div>
   );

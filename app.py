@@ -12,6 +12,7 @@ from flask_caching import Cache
 import logging
 import os
 from nfl_rankings import fetch_nfl_rankings  # Import NFL rankings module
+from ncaaf_rankings import fetch_ncaaf_rankings
 from dotenv import load_dotenv
 from constants import EXCLUDED_SPORTS
 from celery_config import celery
@@ -432,14 +433,11 @@ def get_sport_scores(sport_key):
                                 outcome_text += f": +{price}"
                             else:
                                 outcome_text += f": {price}"
+
                             if market_key in ['spreads', 'totals'] and 'point' in outcome:
-                                outcome_text += f": {outcome['point']}"
-                            if sport_key == 'soccer_epl' and market_key == 'h2h':
-                                odds_data['h2h'].append(outcome_text)
-                            elif sport_key == 'baseball_mlb':
-                                if market_key in odds_data:
-                                    odds_data[market_key].append(outcome_text)
-                            else:
+                                outcome_text += f" ({outcome['point']})"
+
+                            if market_key in odds_data:
                                 odds_data[market_key].append(outcome_text)
 
             formatted_scores.append({
@@ -642,31 +640,48 @@ def game_details(game_id):
             except Exception as e:
                 print("⚠️ Error loading cached pitcher data:", e)
 
-        def get_nfl_rankings():
-            return fetch_nfl_rankings()
+       
 
-        nfl_offense = nfl_defense = {}
-        if sport_key == 'americanfootball_nfl':
+        # Shared helper to fetch and assign rankings
+        def get_football_rankings(sport_key, home_team, away_team):
             try:
-                rankings = get_nfl_rankings()
+                if sport_key == 'americanfootball_nfl':
+                    rankings = fetch_nfl_rankings()
+                elif sport_key == 'americanfootball_ncaaf':
+                    rankings = fetch_ncaaf_rankings()
+                else:
+                    return {}, {}, {}, {}
+
                 offense = rankings.get("offense", {})
                 defense = rankings.get("defense", {})
-
-                home_team = game_details['homeTeam']
-                away_team = game_details['awayTeam']
 
                 home_offense = offense.get(home_team, {})
                 home_defense = defense.get(home_team, {})
                 away_offense = offense.get(away_team, {})
                 away_defense = defense.get(away_team, {})
+                print("Looking for team name:", away_team)
+                print("Available team names:", list(offense.keys()))
 
-                print("Home Offense:", home_offense)
-                print("Home Defense:", home_defense)
-                print("Away Offense:", away_offense)
-                print("Away Defense:", away_defense)
+                return home_offense, home_defense, away_offense, away_defense
+
             except Exception as e:
-                print(f"⚠️ Failed to load NFL rankings: {e}")
-                home_offense = home_defense = away_offense = away_defense = {}
+                print(f"⚠️ Failed to load rankings for {sport_key}: {e}")
+                return {}, {}, {}, {}
+
+        home_offense, home_defense, away_offense, away_defense = {}, {}, {}, {}
+
+        if sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf']:
+            home_team = game_details['homeTeam']
+            away_team = game_details['awayTeam']
+            home_offense, home_defense, away_offense, away_defense = get_football_rankings(
+                sport_key, home_team, away_team
+            )
+            print("Home Offense:", home_offense)
+            print("Home Defense:", home_defense)
+            print("Away Offense:", away_offense)
+            print("Away Defense:", away_defense)
+
+
        
         if sport_key == 'baseball_mlb':
             return render_template_string(mlb_template,
@@ -690,7 +705,7 @@ def game_details(game_id):
                                         nhl_totals=nhl_totals,
                                         nhl_winner=nhl_winner,
                                         calculate_line_result=calculate_line_result)
-        elif sport_key == 'americanfootball_nfl':
+        elif sport_key in ['americanfootball_nfl', 'americanfootball_ncaaf', ]:
             return render_template_string(others_template,
                                         game=game_details,
                                         home_team_last_5=home_team_last_5,
@@ -703,7 +718,7 @@ def game_details(game_id):
                                         home_defense=home_defense,
                                         away_offense=away_offense,
                                         away_defense=away_defense)                                
-        elif sport_key in ['americanfootball_ncaaf', 'basketball_nba', 'basketball_ncaab']:
+        elif sport_key in ['basketball_nba', 'basketball_ncaab']:
             return render_template_string(others_template,
                                         game=game_details,
                                         home_team_last_5=home_team_last_5,

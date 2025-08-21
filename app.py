@@ -34,6 +34,8 @@ from scores_templates import (
 )
 from game_details_templates import mlb_template, nhl_template, others_template
 from api.routes.games import games_bp
+from api.routes.odds import odds_bp
+from api.routes.rankings import rankings_bp
 from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
@@ -136,6 +138,8 @@ def filter_scores_by_date(scores, selected_date_start):
     return filtered_scores
 
 app.register_blueprint(games_bp)
+app.register_blueprint(odds_bp)
+app.register_blueprint(rankings_bp)
 
 @app.route('/trends')
 def show_trends():

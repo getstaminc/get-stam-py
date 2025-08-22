@@ -57,6 +57,9 @@ const GameDetailsPage: React.FC = () => {
   const [homeTeamHistory, setHomeTeamHistory] = useState<any>(null);
   const [awayTeamHistory, setAwayTeamHistory] = useState<any>(null);
   const [headToHeadHistory, setHeadToHeadHistory] = useState<any>(null);
+  const [homeRankings, setHomeRankings] = useState<any>(null);
+  const [awayRankings, setAwayRankings] = useState<any>(null);
+  const [rankingsLoading, setRankingsLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gamesLimit, setGamesLimit] = useState<number>(5);
@@ -94,14 +97,55 @@ const GameDetailsPage: React.FC = () => {
     return response.json();
   };
 
+  // Fetch team rankings for NFL
+  const fetchRankings = async (sportKey: string, homeTeam: string, awayTeam: string) => {
+    if (sportKey !== 'americanfootball_nfl') return null;
+    
+    try {
+      setRankingsLoading(true);
+      const response = await fetch(
+        `https://www.getstam.com/api/rankings/nfl`,
+        {
+          headers: {
+            "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+          },
+        }
+      );
+      if (!response.ok) throw new Error("Failed to fetch rankings");
+      const data = await response.json();
+      
+      // Extract rankings for both teams
+      const homeTeamRankings = data.rankings[homeTeam] || null;
+      const awayTeamRankings = data.rankings[awayTeam] || null;
+      
+      setHomeRankings(homeTeamRankings);
+      setAwayRankings(awayTeamRankings);
+      setRankingsLoading(false);
+      
+      return { homeTeamRankings, awayTeamRankings };
+    } catch (error) {
+      console.error("Error fetching rankings:", error);
+      setRankingsLoading(false);
+      return null;
+    }
+  };
+
   // Function to fetch all historical data
   const fetchAllHistoricalData = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
     try {
-      const [homeHistory, awayHistory, h2hHistory] = await Promise.all([
+      const promises = [
         fetchTeamHistory(sportKey, homeTeam, limit),
         fetchTeamHistory(sportKey, awayTeam, limit),
         fetchHeadToHead(sportKey, homeTeam, awayTeam, limit)
-      ]);
+      ];
+      
+      // Add rankings fetch for NFL games
+      if (sportKey === 'americanfootball_nfl') {
+        promises.push(fetchRankings(sportKey, homeTeam, awayTeam));
+      }
+      
+      const results = await Promise.all(promises);
+      const [homeHistory, awayHistory, h2hHistory] = results;
       
       setHomeTeamHistory(homeHistory);
       setAwayTeamHistory(awayHistory);
@@ -208,6 +252,9 @@ const GameDetailsPage: React.FC = () => {
         onLimitChange={handleLimitChange}
         currentLimit={gamesLimit}
         sportKey={sportKey || "americanfootball_nfl"}
+        homeRankings={homeRankings}
+        awayRankings={awayRankings}
+        rankingsLoading={rankingsLoading}
       />
     </div>
   );

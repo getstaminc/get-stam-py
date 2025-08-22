@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import GameOdds from "./GameOdds";
 import HistoricalGames from "./HistoricalGames";
+import TeamRankings from "./TeamRankings";
 import { convertTeamNameBySport } from "../utils/teamNameConverter";
 
 type TeamOdds = {
@@ -41,6 +42,29 @@ type HistoricalData = {
   limit: number;
 };
 
+type RankingsData = {
+  offense: {
+    Total: string;
+    "Total Rank": string;
+    Passing: string;
+    "Passing Rank": string;
+    Rushing: string;
+    "Rushing Rank": string;
+    Scoring: string;
+    "Scoring Rank": string;
+  };
+  defense: {
+    Total: string;
+    "Total Rank": string;
+    Passing: string;
+    "Passing Rank": string;
+    Rushing: string;
+    "Rushing Rank": string;
+    Scoring: string;
+    "Scoring Rank": string;
+  };
+};
+
 type GameDetailsProps = {
   game: Game;
   homeTeamHistory?: HistoricalData | null;
@@ -49,6 +73,9 @@ type GameDetailsProps = {
   onLimitChange?: (limit: number) => void;
   currentLimit?: number;
   sportKey?: string; // Add sport key to determine which converter to use
+  homeRankings?: RankingsData | null;
+  awayRankings?: RankingsData | null;
+  rankingsLoading?: boolean;
 };
 
 const GameDetails: React.FC<GameDetailsProps> = ({ 
@@ -58,7 +85,10 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   headToHeadHistory,
   onLimitChange,
   currentLimit = 5,
-  sportKey = "americanfootball_nfl" // Default to NFL if not provided
+  sportKey = "americanfootball_nfl", // Default to NFL if not provided
+  homeRankings,
+  awayRankings,
+  rankingsLoading = false
 }) => {
   const { home, away } = game;
   const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
@@ -139,6 +169,17 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           teamName={convertTeamNameBySport(sportKey, homeTeamName)}
           isHeadToHead={true}
         />
+
+        {/* Team Rankings for NFL */}
+        {sportKey === 'americanfootball_nfl' && (
+          <TeamRankings 
+            homeTeam={homeTeamName}
+            awayTeam={awayTeamName}
+            homeRankings={homeRankings || null}
+            awayRankings={awayRankings || null}
+            loading={rankingsLoading}
+          />
+        )}
       </Box>
     </Box>
   );

@@ -301,7 +301,7 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
     
     return False
 
-@cache.cached(timeout=3600, query_string=True)
+@cache.cached(timeout=3600)
 def get_pitcher_data_for_dates():
     urls = {
         "today": "https://www.rotowire.com/baseball/daily-lineups.php",

@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, abort
 from dotenv import load_dotenv
 
 from ..external_requests.espn import get_nfl_rankings
+from cache import cache
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
@@ -23,6 +24,7 @@ def check_api_key():
 # =============================================================================
 
 @rankings_bp.route('/api/rankings/nfl', methods=['GET'])
+@cache.cached(timeout=14400)  # Cache for 4 hours (14400 seconds)
 def get_nfl_rankings_endpoint():
     """Get NFL team rankings for offense and defense"""
     return get_nfl_rankings()

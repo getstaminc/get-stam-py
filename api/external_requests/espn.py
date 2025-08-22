@@ -7,6 +7,7 @@ def get_nfl_rankings():
     """Get NFL team rankings for offense and defense"""
     try:
         rankings_data = fetch_nfl_rankings()
+        print("Rankings data fetched successfully11111")
         
         # Clean up the field names for better formatting
         def clean_stats(stats):

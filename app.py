@@ -9,6 +9,7 @@ from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
 from utils import convert_sport_key, mlb_totals, other_totals, convert_to_eastern, check_for_trends, convert_team_name
 from betting_guide import betting_guide
 from flask_caching import Cache
+from cache import cache, init_cache
 import logging
 import os
 from nfl_rankings import fetch_nfl_rankings  # Import NFL rankings module
@@ -74,11 +75,7 @@ logger.addHandler(console_handler)
 eastern_tz = pytz.timezone('US/Eastern')
 
 # Determine if caching should be enabled based on the environment
-if os.getenv('FLASK_ENV') == 'development':
-    cache = Cache(config={'CACHE_TYPE': 'null'})  # Disable caching in development
-else:
-    cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300})  # Enable caching with 5-minute timeout
-cache.init_app(app)
+cache = init_cache(app)
 
 
 # Configure Redis using the Redis URL from environment variables

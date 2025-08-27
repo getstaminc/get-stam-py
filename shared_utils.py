@@ -340,7 +340,7 @@ def convert_team_name(full_team_name):
         'Utah Utes': 'UTAH',
         'Utah Tech Trailblazers': 'UTAHTCH',
         'UTEP Miners': 'UTEP',
-        'UT San Antonio Roadrunners': 'UTSA',
+        'UTSA Roadrunners': 'UTSA',
         'Utah State Aggies': 'UTST',
         'Valparaiso Beacons': 'VAL',
         'Vanderbilt Commodores': 'VAN',

@@ -140,6 +140,22 @@ def seed_yesterdays_games():
 
         print(f"Inserting game: {game['team']} vs {game['o:team']} on {game['date']}")
 
+        # Check if this game already exists (either team can only play once per day)
+        existing_game = conn.execute(text("""
+            SELECT 1 FROM ncaaf_games
+            WHERE game_date = :game_date
+            AND (home_team_name = :home_team OR away_team_name = :home_team 
+                 OR home_team_name = :away_team OR away_team_name = :away_team)
+        """), {
+            'game_date': game['date'],
+            'home_team': game['team'],
+            'away_team': game['o:team']
+        }).fetchone()
+
+        if existing_game:
+            print(f"Skipping duplicate game: {game}")
+            continue
+
         # Deserialize quarter scores back to lists
         home_quarter_scores = json.loads(game['quarter scores'])
         away_quarter_scores = json.loads(game['o:quarter scores'])

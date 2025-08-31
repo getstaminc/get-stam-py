@@ -4,14 +4,24 @@ import os
 import sys
 import json
 import time
+import requests
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Load the DATABASE_URL from environment variables
+DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
+
+# SDQL credentials
+SDQL_USERNAME = 'TimRoss'
+SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 # Add the parent directory to the path so we can import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from api.services.database_service import engine
-from sqlalchemy import text
-from sdql_queries import execute_sdql_query
+from sqlalchemy import create_engine, text
 
 
 def convert_start_time_to_time(start_time):
@@ -38,7 +48,7 @@ def convert_start_time_to_time(start_time):
         return None
 
 
-def get_recent_mlb_games(days_back=3):
+def get_recent_mlb_games(retries=3, delay=1):
     """Fetch MLB games from yesterday"""
     print(f"Fetching MLB games from yesterday...")
     
@@ -48,20 +58,61 @@ def get_recent_mlb_games(days_back=3):
     print(f"Date: {yesterday}")
     
     # SDQL query for MLB games with all required fields (matching migration field names)
-    query = f"""
-    date, site, team, o:team, runs, o:runs, total, margin, line, o:line, playoffs, start time, _t, 
-    starter, o:starter, line F5, o:line F5, total F5, total over F5 odds, inning runs, o:inning runs
-    @(site='home' or site='neutral') and date={yesterday}
-    """
+    sdql_url = f"https://s3.sportsdatabase.com/MLB/query"
+    sdql_query = f"date,site,team,o:team,runs,o:runs,total,margin,line,o:line,playoffs,start time,_t,starter,o:starter,line F5,o:line F5,total F5,total over F5 odds,inning runs,o:inning runs@(site='home' or site='neutral') and date={yesterday}"
+
+    headers = {
+        'user': SDQL_USERNAME,
+        'token': SDQL_TOKEN
+    }
+
+    data = {
+        'sdql': sdql_query
+    }
     
-    return execute_sdql_query("mlb", query)
+    for i in range(retries):
+        try:
+            response = requests.get(sdql_url, headers=headers, params=data)
+            response.raise_for_status()
+            try:
+                result = response.json()
+            except requests.exceptions.JSONDecodeError as e:
+                print(f"Failed to decode JSON response: {response.text}")
+                raise
+
+            if result.get('headers') and result.get('groups'):
+                headers = result['headers']
+                rows = result['groups'][0]['columns']
+                formatted_result = [dict(zip(headers, row)) for row in zip(*rows)]
+
+                # Convert game_date to YYYY-MM-DD format and cast inning runs to JSON
+                for game in formatted_result:
+                    game['date'] = datetime.strptime(str(game['date']), '%Y%m%d').strftime('%Y-%m-%d')
+                    game['inning runs'] = json.dumps(game['inning runs'])  # Cast to JSON
+                    game['o:inning runs'] = json.dumps(game['o:inning runs'])  # Cast to JSON
+
+                print(f"Successfully fetched {len(formatted_result)} games for {yesterday}.")
+                return formatted_result
+            else:
+                print("No games found for yesterday.")
+                return []
+        except requests.exceptions.RequestException as e:
+            print(f"SDQL request failed: {e}")
+            if i < retries - 1:
+                time.sleep(delay)
+            else:
+                raise
+        except ValueError as e:
+            print(f"Error parsing SDQL response JSON: {e}")
+            return []
 
 
 def seed_recent_games():
-    """Main function to seed recent MLB games and update F5 data"""
+    """Main function to seed recent MLB games"""
     print("Starting MLB recent games seeding...")
     
     # Create database connection
+    engine = create_engine(DATABASE_URL)
     conn = engine.connect()
 
     # Fetch recent games
@@ -88,7 +139,8 @@ def seed_recent_games():
         away_team_id = teams_dict.get(game['o:team'])
 
         if home_team_id is None or away_team_id is None:
-            print(f"Skipping game due to missing team ID: {game}")
+            print(f"Skipping game due to missing team ID - Home: '{game['team']}' (ID: {home_team_id}), Away: '{game['o:team']}' (ID: {away_team_id})")
+            print(f"Available teams in database: {list(teams_dict.keys())}")
             continue
 
         # Handle start time conversion

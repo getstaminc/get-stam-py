@@ -46,8 +46,8 @@ def get_yesterdays_games(retries=3, delay=1):
     # Calculate yesterday's date in the required format (YYYYMMDD)
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
     
-    # SDQL query to fetch all games for yesterday
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@site='home' and date={yesterday}"
+    # SDQL query to fetch all games for yesterday (including neutral games to avoid duplicates)
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@(site='home' or site='neutral') and date={yesterday}"
 
     headers = {
         'user': SDQL_USERNAME,
@@ -147,20 +147,20 @@ def seed_yesterdays_games():
 
         print(f"Inserting game: {game['team']} vs {game['o:team']} on {game['date']}")
 
-        # Check if this game already exists (either team can only play once per day)
+        # Check if either team has already played on this date (handles duplicates from neutral games)
         existing_game = conn.execute(text("""
             SELECT 1 FROM nfl_games
             WHERE game_date = :game_date
-            AND (home_team_name = :home_team OR away_team_name = :home_team 
-                 OR home_team_name = :away_team OR away_team_name = :away_team)
+            AND (home_team_name = :team1 OR away_team_name = :team1 
+                 OR home_team_name = :team2 OR away_team_name = :team2)
         """), {
             'game_date': game['date'],
-            'home_team': game['team'],
-            'away_team': game['o:team']
+            'team1': game['team'],
+            'team2': game['o:team']
         }).fetchone()
 
         if existing_game:
-            print(f"Skipping duplicate game: {game}")
+            print(f"Skipping duplicate - one of these teams already played on {game['date']}: {game['team']} vs {game['o:team']}")
             continue
 
         # Deserialize quarter scores back to lists with NFL-specific handling

@@ -49,8 +49,8 @@ def convert_start_time_to_time(start_time: str) -> datetime.time:
 
 def get_historical_games(team, retries=3, delay=1):
     sdql_url = f"https://s3.sportsdatabase.com/MLB/query"
-    # Split historical data into chunks - this migration covers 2015-2020
-    sdql_query = f"date,site,team,o:team,runs,o:runs,total,margin,line,o:line,playoffs,start time,_t,starter,o:starter,line F5,o:line F5,total F5,total over F5 odds,inning runs,o:inning runs@team='{team}' and site='home' and date>20200101 and date<20250830"
+    # Updated to cover 2025 season through August 30
+    sdql_query = f"date,site,team,o:team,runs,o:runs,total,margin,line,o:line,playoffs,start time,_t,starter,o:starter,line F5,o:line F5,total F5,total over F5 odds,inning runs,o:inning runs@team='{team}' and site='home' and date>=20250101 and date<=20250830"
 
     headers = {
         'user': SDQL_USERNAME,

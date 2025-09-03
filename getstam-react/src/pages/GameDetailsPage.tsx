@@ -97,14 +97,18 @@ const GameDetailsPage: React.FC = () => {
     return response.json();
   };
 
-  // Fetch team rankings for NFL
+  // Fetch team rankings for NFL and NCAAF
   const fetchRankings = async (sportKey: string, homeTeam: string, awayTeam: string) => {
-    if (sportKey !== 'americanfootball_nfl') return null;
+    if (sportKey !== 'americanfootball_nfl' && sportKey !== 'americanfootball_ncaaf') return null;
     
     try {
       setRankingsLoading(true);
+      
+      // Determine which API endpoint to use
+      const apiSport = sportKey === 'americanfootball_nfl' ? 'nfl' : 'ncaaf';
+      
       const response = await fetch(
-        `https://www.getstam.com/api/rankings/nfl`,
+        `https://www.getstam.com/api/rankings/${apiSport}`,
         {
           headers: {
             "X-API-KEY": process.env.REACT_APP_API_KEY || "",
@@ -139,8 +143,8 @@ const GameDetailsPage: React.FC = () => {
         fetchHeadToHead(sportKey, homeTeam, awayTeam, limit)
       ];
       
-      // Add rankings fetch for NFL games
-      if (sportKey === 'americanfootball_nfl') {
+      // Add rankings fetch for NFL and NCAAF games
+      if (sportKey === 'americanfootball_nfl' || sportKey === 'americanfootball_ncaaf') {
         promises.push(fetchRankings(sportKey, homeTeam, awayTeam));
       }
       

@@ -170,8 +170,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           isHeadToHead={true}
         />
 
-        {/* Team Rankings for NFL */}
-        {sportKey === 'americanfootball_nfl' && (
+        {/* Team Rankings for NFL and NCAAF */}
+        {(sportKey === 'americanfootball_nfl' || sportKey === 'americanfootball_ncaaf') && (
           <TeamRankings 
             homeTeam={homeTeamName}
             awayTeam={awayTeamName}

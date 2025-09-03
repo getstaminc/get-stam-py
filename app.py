@@ -9,6 +9,7 @@ from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
 from utils import convert_sport_key, mlb_totals, other_totals, convert_to_eastern, check_for_trends, convert_team_name
 from betting_guide import betting_guide
 from flask_caching import Cache
+from cache import cache, init_cache
 import logging
 import os
 from nfl_rankings import fetch_nfl_rankings  # Import NFL rankings module
@@ -34,6 +35,13 @@ from scores_templates import (
 )
 from game_details_templates import mlb_template, nhl_template, others_template
 from api.routes.games import games_bp
+from api.routes.odds import odds_bp
+from api.routes.rankings import rankings_bp
+# Historical data routes
+from api.routes.historical.mlb_games import mlb_historical_bp
+from api.routes.historical.soccer_games import soccer_historical_bp
+from api.routes.historical.nfl_games import nfl_historical_bp
+from api.routes.historical.ncaaf_games import ncaaf_historical_bp
 from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
@@ -72,11 +80,7 @@ logger.addHandler(console_handler)
 eastern_tz = pytz.timezone('US/Eastern')
 
 # Determine if caching should be enabled based on the environment
-if os.getenv('FLASK_ENV') == 'development':
-    cache = Cache(config={'CACHE_TYPE': 'null'})  # Disable caching in development
-else:
-    cache = Cache(config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300})  # Enable caching with 5-minute timeout
-cache.init_app(app)
+cache = init_cache(app)
 
 
 # Configure Redis using the Redis URL from environment variables
@@ -136,6 +140,13 @@ def filter_scores_by_date(scores, selected_date_start):
     return filtered_scores
 
 app.register_blueprint(games_bp)
+app.register_blueprint(odds_bp)
+app.register_blueprint(rankings_bp)
+# Register historical data blueprints
+app.register_blueprint(mlb_historical_bp)
+app.register_blueprint(soccer_historical_bp)
+app.register_blueprint(nfl_historical_bp)
+app.register_blueprint(ncaaf_historical_bp)
 
 @app.route('/trends')
 def show_trends():
@@ -300,8 +311,9 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
     
     return False
 
-@cache.cached(timeout=3600, query_string=True)
+@cache.cached(timeout=3600)
 def get_pitcher_data_for_dates():
+    print("🚨 CACHE MISS: Fetching pitcher data from rotowire.com")
     urls = {
         "today": "https://www.rotowire.com/baseball/daily-lineups.php",
         "tomorrow": "https://www.rotowire.com/baseball/daily-lineups.php?date=tomorrow"

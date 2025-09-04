@@ -9,6 +9,6 @@ export const sports: Sport[] = [
   { name: "NBA", path: "/nba", inSeason: false },
   { name: "NHL", path: "/nhl", inSeason: false },
   { name: "NFL", path: "/nfl", inSeason: true },
-  { name: "NCAAF", path: "/ncaaf", inSeason: false },
+  { name: "NCAAF", path: "/ncaaf", inSeason: true },
   { name: "EPL", path: "/epl", inSeason: true },
 ];

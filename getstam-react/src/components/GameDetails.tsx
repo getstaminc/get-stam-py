@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import GameOdds from "./GameOdds";
-import HistoricalGames from "./HistoricalGames";
+import HistoricalGames, { getSportType } from "./HistoricalGames";
 import TeamRankings from "./TeamRankings";
 import { convertTeamNameBySport } from "../utils/teamNameConverter";
 
@@ -151,6 +151,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           games={homeTeamHistory?.games || []}
           loading={homeTeamHistory === null}
           teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+          sportType={getSportType(sportKey)}
         />
 
         {/* Away Team Last N Games */}
@@ -159,6 +160,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           games={awayTeamHistory?.games || []}
           loading={awayTeamHistory === null}
           teamName={convertTeamNameBySport(sportKey, awayTeamName)}
+          sportType={getSportType(sportKey)}
         />
 
         {/* Head to Head */}
@@ -168,6 +170,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           loading={headToHeadHistory === null}
           teamName={convertTeamNameBySport(sportKey, homeTeamName)}
           isHeadToHead={true}
+          sportType={getSportType(sportKey)}
         />
 
         {/* Team Rankings for NFL and NCAAF */}

@@ -29,6 +29,20 @@ const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
   americanfootball_nfl_preseason: "nfl",
 };
 
+// Helper function to get soccer league from sport key
+const getSoccerLeague = (sportKey: string): string => {
+  if (sportKey === 'soccer_epl' || sportKey === 'epl') return 'epl';
+  // Future leagues can be added here:
+  // if (sportKey === 'soccer_champions_league') return 'champions_league';
+  // if (sportKey === 'soccer_fa_cup') return 'fa_cup';
+  return 'epl'; // Default to EPL for now
+};
+
+// Helper function to check if sport is soccer
+const isSoccerSport = (sportKey: string): boolean => {
+  return sportKey.startsWith('soccer_') || sportKey === 'epl';
+};
+
 // Fetch single game data from backend API
 async function fetchSingleGameData(sport: string, gameId: string) {
   const url = `https://www.getstam.com/api/odds/${sport}/${gameId}`;
@@ -69,9 +83,21 @@ const GameDetailsPage: React.FC = () => {
 
   // Fetch team history
   const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5) => {
-    const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
     const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
-    const response = await fetch(`https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedTeamName)}?limit=${limit}`, {
+    
+    let url: string;
+    
+    // Soccer uses a different endpoint structure with league parameter
+    if (isSoccerSport(sportKey)) {
+      const league = getSoccerLeague(sportKey);
+      url = `https://www.getstam.com/api/historical/soccer/teams/${encodeURIComponent(convertedTeamName)}/games?league=${league}&limit=${limit}`;
+    } else {
+      // All other sports use the team-based endpoint
+      const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+      url = `https://www.getstam.com/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedTeamName)}/games?limit=${limit}`;
+    }
+    
+    const response = await fetch(url, {
       headers: {
         "X-API-KEY": process.env.REACT_APP_API_KEY || "",
       },
@@ -82,17 +108,26 @@ const GameDetailsPage: React.FC = () => {
 
   // Fetch head-to-head history
   const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
-    const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
     const convertedHomeTeam = convertTeamNameBySport(sportKey, homeTeam);
     const convertedAwayTeam = convertTeamNameBySport(sportKey, awayTeam);
-    const response = await fetch(
-      `https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`,
-      {
-        headers: {
-          "X-API-KEY": process.env.REACT_APP_API_KEY || "",
-        },
-      }
-    );
+    
+    let url: string;
+    
+    // Soccer uses a different endpoint structure with league parameter
+    if (isSoccerSport(sportKey)) {
+      const league = getSoccerLeague(sportKey);
+      url = `https://www.getstam.com/api/historical/soccer/teams/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?league=${league}&limit=${limit}`;
+    } else {
+      // All other sports use the team vs team endpoint
+      const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+      url = `https://www.getstam.com/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`;
+    }
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+      },
+    });
     if (!response.ok) throw new Error("Failed to fetch head-to-head history");
     return response.json();
   };

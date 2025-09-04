@@ -2,9 +2,16 @@ import React, { useState } from "react";
 import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Box, ClickAwayListener } from "@mui/material";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-type HistoricalGame = {
+// Base game interface
+interface BaseGame {
   game_id: number;
   game_date: string;
+  start_time: string;
+  team_side?: string;
+}
+
+// NFL/NCAAF game structure
+interface NFLGame extends BaseGame {
   home_team_name: string;
   away_team_name: string;
   home_points: number;
@@ -14,17 +21,81 @@ type HistoricalGame = {
   away_line: number;
   home_money_line: number;
   away_money_line: number;
-  start_time: string;
-  team_side?: string; // Only present for team-specific games
-  total?: number; // The betting total/over-under line
-};
+  total?: number;
+}
+
+// MLB game structure
+interface MLBGame extends BaseGame {
+  home_team: string;
+  away_team: string;
+  home_runs: number;
+  away_runs: number;
+  home_line: number;
+  away_line: number;
+  total: number;
+  home_starting_pitcher?: string;
+  away_starting_pitcher?: string;
+  playoffs: boolean;
+}
+
+// Soccer game structure
+interface SoccerGame extends BaseGame {
+  home_team_name: string;
+  away_team_name: string;
+  home_goals: number;
+  away_goals: number;
+  total_goals: number;
+  home_spread: number;
+  away_spread: number;
+  home_money_line: number;
+  away_money_line: number;
+  draw_money_line: number;
+  total_over_point: number;
+  total_under_point: number;
+  total_over_price: number;
+  total_under_price: number;
+  league: string;
+  home_first_half_goals?: number;
+  away_first_half_goals?: number;
+  home_second_half_goals?: number;
+  away_second_half_goals?: number;
+}
+
+// Union type for all game types
+type HistoricalGame = NFLGame | MLBGame | SoccerGame;
+
+type SportType = 'nfl' | 'ncaaf' | 'mlb' | 'soccer' | 'nba' | 'nhl';
 
 type HistoricalGamesProps = {
   title: string;
   games: HistoricalGame[];
   loading?: boolean;
-  teamName?: string; // The team we're showing data for
-  isHeadToHead?: boolean; // Whether this is a head-to-head table
+  teamName?: string;
+  isHeadToHead?: boolean;
+  sportType: SportType;
+};
+
+// Helper function to convert API sport key to our SportType
+const getSportType = (sportKey: string): SportType => {
+  const sportMap: { [key: string]: SportType } = {
+    'americanfootball_nfl': 'nfl',
+    'americanfootball_nfl_preseason': 'nfl',
+    'americanfootball_ncaaf': 'ncaaf',
+    'basketball_nba': 'nba',
+    'baseball_mlb': 'mlb',
+    'icehockey_nhl': 'nhl',
+    'soccer_epl': 'soccer',
+    // Also support short forms
+    'nfl': 'nfl',
+    'ncaaf': 'ncaaf',
+    'nba': 'nba',
+    'mlb': 'mlb',
+    'nhl': 'nhl',
+    'soccer': 'soccer',
+    'epl': 'soccer'
+  };
+  
+  return sportMap[sportKey] || 'nfl'; // Default to NFL
 };
 
 const HistoricalGames: React.FC<HistoricalGamesProps> = ({ 
@@ -32,7 +103,8 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   games, 
   loading = false, 
   teamName = "",
-  isHeadToHead = false 
+  isHeadToHead = false,
+  sportType 
 }) => {
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
@@ -50,6 +122,78 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   const handleClickAway = () => {
     setOpenTooltip(null);
   };
+
+  // Sport-specific data extractors
+  const getGameData = (game: HistoricalGame) => {
+    switch (sportType) {
+      case 'nfl':
+      case 'ncaaf':
+      case 'nba': // Assume NBA has similar structure to NFL
+        const nflGame = game as NFLGame;
+        return {
+          homeTeam: nflGame.home_team_name,
+          awayTeam: nflGame.away_team_name,
+          homeScore: nflGame.home_points,
+          awayScore: nflGame.away_points,
+          homeLine: nflGame.home_line,
+          awayLine: nflGame.away_line,
+          totalScore: nflGame.total_points,
+          totalLine: nflGame.total || null,
+          homeMoneyLine: nflGame.home_money_line,
+          awayMoneyLine: nflGame.away_money_line
+        };
+      
+      case 'mlb':
+        const mlbGame = game as MLBGame;
+        return {
+          homeTeam: mlbGame.home_team,
+          awayTeam: mlbGame.away_team,
+          homeScore: mlbGame.home_runs,
+          awayScore: mlbGame.away_runs,
+          homeLine: mlbGame.home_line,
+          awayLine: mlbGame.away_line,
+          totalScore: mlbGame.home_runs + mlbGame.away_runs,
+          totalLine: mlbGame.total,
+          homeMoneyLine: null,
+          awayMoneyLine: null,
+          homeStartingPitcher: mlbGame.home_starting_pitcher,
+          awayStartingPitcher: mlbGame.away_starting_pitcher
+        };
+      
+      case 'soccer':
+        const soccerGame = game as SoccerGame;
+        return {
+          homeTeam: soccerGame.home_team_name,
+          awayTeam: soccerGame.away_team_name,
+          homeScore: soccerGame.home_goals,
+          awayScore: soccerGame.away_goals,
+          homeLine: soccerGame.home_spread,
+          awayLine: soccerGame.away_spread,
+          totalScore: soccerGame.total_goals,
+          totalLine: soccerGame.total_over_point,
+          homeMoneyLine: soccerGame.home_money_line,
+          awayMoneyLine: soccerGame.away_money_line,
+          drawMoneyLine: soccerGame.draw_money_line
+        };
+      
+      default:
+        // Fallback for NHL - assume similar structure to NFL
+        const defaultGame = game as NFLGame;
+        return {
+          homeTeam: defaultGame.home_team_name,
+          awayTeam: defaultGame.away_team_name,
+          homeScore: defaultGame.home_points,
+          awayScore: defaultGame.away_points,
+          homeLine: defaultGame.home_line,
+          awayLine: defaultGame.away_line,
+          totalScore: defaultGame.total_points,
+          totalLine: defaultGame.total || null,
+          homeMoneyLine: defaultGame.home_money_line,
+          awayMoneyLine: defaultGame.away_money_line
+        };
+    }
+  };
+
   // Color legend tooltip content for Team/Points columns
   const WinLossLegend = () => (
     <Box sx={{ p: 1 }}>
@@ -194,17 +338,15 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
       </Tooltip>
     </Box>
   );
+
   // Helper function to format date from YYYY-MM-DD to MM/DD/YYYY
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     
     try {
-      // Handle PostgreSQL date type (YYYY-MM-DD format)
-      // Split by '-' and ensure we have exactly 3 parts
       const dateParts = dateString.split('-');
       if (dateParts.length === 3) {
         const [year, month, day] = dateParts;
-        // Remove any leading zeros and ensure valid date parts
         const monthNum = parseInt(month, 10);
         const dayNum = parseInt(day, 10);
         const yearNum = parseInt(year, 10);
@@ -214,7 +356,6 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
         }
       }
       
-      // If it's not in expected format, return as is
       return dateString;
     } catch (error) {
       return dateString;
@@ -273,28 +414,29 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
 
   // Helper function to get team-specific data
   const getTeamData = (game: HistoricalGame) => {
-    const isTeamHome = game.home_team_name === teamName;
-    const isTeamAway = game.away_team_name === teamName;
+    const gameData = getGameData(game);
+    const isTeamHome = gameData.homeTeam === teamName;
+    const isTeamAway = gameData.awayTeam === teamName;
     
     // For head-to-head tables, always show from the perspective of the teamName
     if (isHeadToHead && teamName) {
       if (isTeamHome) {
         return {
           site: 'home',
-          teamPoints: game.home_points,
-          teamLine: game.home_line,
-          opponentName: game.away_team_name,
-          opponentPoints: game.away_points,
-          opponentLine: game.away_line
+          teamPoints: gameData.homeScore,
+          teamLine: gameData.homeLine,
+          opponentName: gameData.awayTeam,
+          opponentPoints: gameData.awayScore,
+          opponentLine: gameData.awayLine
         };
       } else if (isTeamAway) {
         return {
           site: 'away',
-          teamPoints: game.away_points,
-          teamLine: game.away_line,
-          opponentName: game.home_team_name,
-          opponentPoints: game.home_points,
-          opponentLine: game.home_line
+          teamPoints: gameData.awayScore,
+          teamLine: gameData.awayLine,
+          opponentName: gameData.homeTeam,
+          opponentPoints: gameData.homeScore,
+          opponentLine: gameData.homeLine
         };
       }
     }
@@ -303,31 +445,57 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     if (isTeamHome) {
       return {
         site: 'home',
-        teamPoints: game.home_points,
-        teamLine: game.home_line,
-        opponentName: game.away_team_name,
-        opponentPoints: game.away_points,
-        opponentLine: game.away_line
+        teamPoints: gameData.homeScore,
+        teamLine: gameData.homeLine,
+        opponentName: gameData.awayTeam,
+        opponentPoints: gameData.awayScore,
+        opponentLine: gameData.awayLine
       };
     } else if (isTeamAway) {
       return {
         site: 'away',
-        teamPoints: game.away_points,
-        teamLine: game.away_line,
-        opponentName: game.home_team_name,
-        opponentPoints: game.home_points,
-        opponentLine: game.home_line
+        teamPoints: gameData.awayScore,
+        teamLine: gameData.awayLine,
+        opponentName: gameData.homeTeam,
+        opponentPoints: gameData.homeScore,
+        opponentLine: gameData.homeLine
       };
     } else {
       // Fallback for when team name doesn't match
       return {
         site: game.team_side || 'unknown',
-        teamPoints: game.team_side === 'home' ? game.home_points : game.away_points,
-        teamLine: game.team_side === 'home' ? game.home_line : game.away_line,
-        opponentName: game.team_side === 'home' ? game.away_team_name : game.home_team_name,
-        opponentPoints: game.team_side === 'home' ? game.away_points : game.home_points,
-        opponentLine: game.team_side === 'home' ? game.away_line : game.home_line
+        teamPoints: game.team_side === 'home' ? gameData.homeScore : gameData.awayScore,
+        teamLine: game.team_side === 'home' ? gameData.homeLine : gameData.awayLine,
+        opponentName: game.team_side === 'home' ? gameData.awayTeam : gameData.homeTeam,
+        opponentPoints: game.team_side === 'home' ? gameData.awayScore : gameData.homeScore,
+        opponentLine: game.team_side === 'home' ? gameData.awayLine : gameData.homeLine
       };
+    }
+  };
+
+  // Sport-specific score label
+  const getScoreLabel = () => {
+    switch (sportType) {
+      case 'mlb':
+        return 'Runs';
+      case 'soccer':
+        return 'Goals';
+      case 'nhl':
+        return 'Goals';
+      default:
+        return 'Points';
+    }
+  };
+
+  // Sport-specific spread label
+  const getSpreadLabel = () => {
+    switch (sportType) {
+      case 'soccer':
+        return 'Spread';
+      case 'mlb':
+        return 'Line';
+      default:
+        return 'Spread';
     }
   };
 
@@ -366,19 +534,19 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                 <TableCell><strong>Date</strong></TableCell>
                 <TableCell><strong>Site</strong></TableCell>
                 <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
-                <TableCell><HeaderWithWinLossInfo>Points</HeaderWithWinLossInfo></TableCell>
-                <TableCell><HeaderWithSpreadInfo>Spread</HeaderWithSpreadInfo></TableCell>
+                <TableCell><HeaderWithWinLossInfo>{getScoreLabel()}</HeaderWithWinLossInfo></TableCell>
+                <TableCell><HeaderWithSpreadInfo>{getSpreadLabel()}</HeaderWithSpreadInfo></TableCell>
                 <TableCell><strong>Opponent</strong></TableCell>
-                <TableCell><strong>Opponent Points</strong></TableCell>
+                <TableCell><strong>Opponent {getScoreLabel()}</strong></TableCell>
                 <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {games.map((game, index) => {
+                const gameData = getGameData(game);
                 const teamData = getTeamData(game);
                 const teamLineResult = calculateLineResult(teamData.teamPoints, teamData.teamLine, teamData.opponentPoints);
-                const opponentLineResult = calculateLineResult(teamData.opponentPoints, teamData.opponentLine, teamData.teamPoints);
-                const totalColor = getTotalColor(game.total_points, game.total ?? null);
+                const totalColor = getTotalColor(gameData.totalScore, gameData.totalLine);
                 
                 return (
                   <TableRow key={game.game_id || index}>
@@ -394,7 +562,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                         fontWeight: 'bold'
                       }}
                     >
-                      {teamName || (teamData.site === 'home' ? game.home_team_name : game.away_team_name)}
+                      {teamName || (teamData.site === 'home' ? gameData.homeTeam : gameData.awayTeam)}
                     </TableCell>
                     <TableCell 
                       sx={{ 
@@ -424,7 +592,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                         fontWeight: 'bold'
                       }}
                     >
-                      {game.total ?? 'None'}
+                      {gameData.totalLine ?? 'None'}
                     </TableCell>
                   </TableRow>
                 );
@@ -437,4 +605,5 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   );
 };
 
+export { getSportType };
 export default HistoricalGames;

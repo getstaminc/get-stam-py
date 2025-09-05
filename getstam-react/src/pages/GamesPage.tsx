@@ -3,6 +3,7 @@ import { Box, Typography, Paper, Button, Divider, TextField } from "@mui/materia
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import GameOdds from "../components/GameOdds";
 import GamesWithTrends from "../components/GamesWithTrends";
+import PastGamesDisplay from "../components/PastGamesDisplay";
 import { useGame } from "../contexts/GameContext"; 
 import { analyzeMultipleGamesTrends, GameWithTrends } from "../utils/trendAnalysis"; 
 
@@ -19,6 +20,15 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   ncaab: "basketball_ncaab",
   epl: "soccer_epl",
   nfl_preseason: "americanfootball_nfl_preseason",
+};
+
+// Map URL sport to historical API sport type
+const SPORT_URL_TO_HISTORICAL: { [key: string]: 'mlb' | 'nfl' | 'ncaaf' | 'soccer' } = {
+  nfl: "nfl",
+  mlb: "mlb", 
+  ncaaf: "ncaaf",
+  epl: "soccer",
+  nfl_preseason: "nfl", // Map preseason to nfl
 };
 
 // Map Odds API sport key to display name
@@ -45,6 +55,12 @@ const getToday = (): Date => {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   return now;
+};
+
+// Helper to check if a date is in the past
+const isPastDate = (date: Date): boolean => {
+  const today = getToday();
+  return date < today;
 };
 
 // Helper to extract sport from URL path (e.g. "/nfl" → "nfl")
@@ -80,6 +96,7 @@ const GamesPage = () => {
   // Get sport from URL path (e.g. "/nfl")
   const urlSport = getSportFromPath(location.pathname);
   const sportKey = SPORT_URL_TO_API_KEY[urlSport] || "nfl";
+  const historicalSportType = SPORT_URL_TO_HISTORICAL[urlSport];
   const displaySport = SPORT_API_KEY_TO_DISPLAY[sportKey] || "NFL";
 
   // Get date from URL query param if present
@@ -98,14 +115,23 @@ const GamesPage = () => {
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [minTrendLength, setMinTrendLength] = useState<number>(3);
   const [nextGameDate, setNextGameDate] = useState<string | null>(null);
+  
+  // Check if selected date is in the past
+  const isHistoricalDate = isPastDate(selectedDate);
 
-  // Fetch data when sport or date changes
+  // Fetch data when sport or date changes (only for current/future dates)
   useEffect(() => {
-    fetchGamesData(sportKey, selectedDate).then((data) => {
-      setGames(data.games || []);
-      setNextGameDate(data.nextGameDate || null);
-    });
-  }, [sportKey, selectedDate]);
+    if (!isHistoricalDate) {
+      fetchGamesData(sportKey, selectedDate).then((data) => {
+        setGames(data.games || []);
+        setNextGameDate(data.nextGameDate || null);
+      });
+    } else {
+      // Clear games data for historical dates since we'll show PastGamesDisplay
+      setGames([]);
+      setNextGameDate(null);
+    }
+  }, [sportKey, selectedDate, isHistoricalDate]);
 
   // Analyze trends when switching to trends view or when minTrendLength changes
   useEffect(() => {
@@ -185,61 +211,80 @@ const GamesPage = () => {
             InputLabelProps={{ shrink: true }}
             sx={{ minWidth: 160 }}
           />
-          <Box sx={{ display: "flex", gap: 0 }}>
-            <Button
-              variant={activeView === "all" ? "contained" : "outlined"}
-              color={activeView === "all" ? "primary" : "inherit"}
-              onClick={() => setActiveView("all")}
-              sx={{
-                px: 3,
-                py: 1,
-                fontSize: "1rem",
-                textTransform: "none",
-                borderRadius: "8px 0 0 8px",
-                borderRight: "1px solid #ccc",
-                boxShadow: "none",
-                ...(activeView === "all" && { zIndex: 1 }),
-                ...(activeView !== "all" && {
-                  borderColor: '#e0e0e0',
-                  color: '#666',
-                  '&:hover': {
-                    borderColor: '#bdbdbd',
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                  }
-                })
-              }}
-            >
-              All Games
-            </Button>
-            <Button
-              variant={activeView === "trends" ? "contained" : "outlined"}
-              color={activeView === "trends" ? "primary" : "inherit"}
-              onClick={() => setActiveView("trends")}
-              sx={{
-                px: 3,
-                py: 1,
-                fontSize: "1rem",
-                textTransform: "none",
-                borderRadius: "0 8px 8px 0",
-                boxShadow: "none",
-                borderLeft: "none",
-                ...(activeView === "trends" && { zIndex: 1 }),
-                ...(activeView !== "trends" && {
-                  borderColor: '#e0e0e0',
-                  color: '#666',
-                  '&:hover': {
-                    borderColor: '#bdbdbd',
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                  }
-                })
-              }}
-            >
-              Games with Trends
-            </Button>
-          </Box>
+          {/* Only show buttons for current/future dates */}
+          {!isHistoricalDate && (
+            <Box sx={{ display: "flex", gap: 0 }}>
+              <Button
+                variant={activeView === "all" ? "contained" : "outlined"}
+                color={activeView === "all" ? "primary" : "inherit"}
+                onClick={() => setActiveView("all")}
+                sx={{
+                  px: 3,
+                  py: 1,
+                  fontSize: "1rem",
+                  textTransform: "none",
+                  borderRadius: "8px 0 0 8px",
+                  borderRight: "1px solid #ccc",
+                  boxShadow: "none",
+                  ...(activeView === "all" && { zIndex: 1 }),
+                  ...(activeView !== "all" && {
+                    borderColor: '#e0e0e0',
+                    color: '#666',
+                    '&:hover': {
+                      borderColor: '#bdbdbd',
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
+                  })
+                }}
+              >
+                All Games
+              </Button>
+              <Button
+                variant={activeView === "trends" ? "contained" : "outlined"}
+                color={activeView === "trends" ? "primary" : "inherit"}
+                onClick={() => setActiveView("trends")}
+                sx={{
+                  px: 3,
+                  py: 1,
+                  fontSize: "1rem",
+                  textTransform: "none",
+                  borderRadius: "0 8px 8px 0",
+                  boxShadow: "none",
+                  borderLeft: "none",
+                  ...(activeView === "trends" && { zIndex: 1 }),
+                  ...(activeView !== "trends" && {
+                    borderColor: '#e0e0e0',
+                    color: '#666',
+                    '&:hover': {
+                      borderColor: '#bdbdbd',
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
+                  })
+                }}
+              >
+                Games with Trends
+              </Button>
+            </Box>
+          )}
         </Box>
 
-        {activeView === "all" && games.length === 0 && (
+        {/* Show historical games for past dates */}
+        {isHistoricalDate && historicalSportType && (
+          <PastGamesDisplay
+            selectedDate={formatDate(selectedDate)}
+            sportType={historicalSportType}
+          />
+        )}
+
+        {/* Show message if historical sport not supported */}
+        {isHistoricalDate && !historicalSportType && (
+          <Typography align="center" sx={{ mt: 4, mb: 2 }}>
+            Historical data is not available for {displaySport} yet.
+          </Typography>
+        )}
+
+        {/* Show current/future games */}
+        {!isHistoricalDate && activeView === "all" && games.length === 0 && (
           <Typography align="center" sx={{ mt: 4, mb: 2 }}>
             No games found for this date.
             {nextGameDate && (
@@ -259,7 +304,7 @@ const GamesPage = () => {
           </Typography>
         )}
 
-        {activeView === "all" && games.map((match) => (
+        {!isHistoricalDate && activeView === "all" && games.map((match) => (
           <Paper key={match.game_id} elevation={3} sx={{ mb: 3, p: 2, borderRadius: 2,  backgroundColor: "#f9f9f9" }}>
             <GameOdds
               game={{
@@ -292,7 +337,7 @@ const GamesPage = () => {
           </Paper>
         ))}
 
-        {activeView === "trends" && (
+        {!isHistoricalDate && activeView === "trends" && (
           <GamesWithTrends 
             gamesWithTrends={gamesWithTrends}
             loading={trendsLoading}
@@ -300,6 +345,13 @@ const GamesPage = () => {
             minTrendLength={minTrendLength}
             onMinTrendLengthChange={handleMinTrendLengthChange}
           />
+        )}
+
+        {/* Hide trends button for historical dates */}
+        {isHistoricalDate && activeView === "trends" && (
+          <Typography align="center" sx={{ mt: 4, mb: 2 }}>
+            Trends analysis is only available for current and future games.
+          </Typography>
         )}
       </Box>
     </Box>

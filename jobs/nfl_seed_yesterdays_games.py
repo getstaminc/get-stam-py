@@ -18,36 +18,36 @@ DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
-def convert_start_time_to_time(start_time: str) -> str:
+def convert_start_time_to_time(start_time):
     """
     Convert military time (e.g., '1838') to a string in 'HH:MM:SS' format.
     """
     try:
         # Handle specific invalid cases where start_time starts with "243"
         if start_time.startswith("243"):
-            print(f"Correcting invalid start time: {start_time} to 1230")
+            print("Correcting invalid start time: {} to 1230".format(start_time))
             start_time = "1230"
 
         # Handle specific invalid cases where start_time starts with "245"
         elif start_time.startswith("245") or start_time.startswith("244"):
-            print(f"Correcting invalid start time: {start_time} to 1300")
+            print("Correcting invalid start time: {} to 1300".format(start_time))
             start_time = "1300"
 
         # Convert to 'HH:MM:SS' format
         return datetime.strptime(start_time, "%H%M").strftime("%H:%M:%S")
     except ValueError as e:
-        raise ValueError(f"Invalid start time format: {start_time}. Error: {e}")
+        raise ValueError("Invalid start time format: {}. Error: {}".format(start_time, e))
 
 def get_yesterdays_games(retries=3, delay=1):
     """Fetch all of yesterday's NFL games from the SDQL API."""
-    sdql_url = f"https://s3.sportsdatabase.com/NFL/query"
-    print(f"Connecting to database: {DATABASE_URL}")
+    sdql_url = "https://s3.sportsdatabase.com/NFL/query"
+    print("Connecting to database: {}".format(DATABASE_URL))
     
     # Calculate yesterday's date in the required format (YYYYMMDD)
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
     
     # SDQL query to fetch all games for yesterday (including neutral games to avoid duplicates)
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@(site='home' or site='neutral') and date={yesterday}"
+    sdql_query = "date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@(site='home' or site='neutral') and date={}".format(yesterday)
 
     headers = {
         'user': SDQL_USERNAME,
@@ -65,7 +65,7 @@ def get_yesterdays_games(retries=3, delay=1):
             try:
                 result = response.json()
             except requests.exceptions.JSONDecodeError as e:
-                print(f"Failed to decode JSON response: {response.text}")
+                print("Failed to decode JSON response: {}".format(response.text))
                 raise
 
             if result.get('headers') and result.get('groups'):
@@ -79,19 +79,19 @@ def get_yesterdays_games(retries=3, delay=1):
                     game['quarter scores'] = json.dumps(game['quarter scores'])  # Cast to JSON
                     game['o:quarter scores'] = json.dumps(game['o:quarter scores'])  # Cast to JSON
 
-                print(f"Successfully fetched {len(formatted_result)} games for {yesterday}.")
+                print("Successfully fetched {} games for {}.".format(len(formatted_result), yesterday))
                 return formatted_result
             else:
                 print("No games found for yesterday.")
                 return []
         except requests.exceptions.RequestException as e:
-            print(f"SDQL request failed: {e}")
+            print("SDQL request failed: {}".format(e))
             if i < retries - 1:
                 time.sleep(delay)
             else:
                 raise
         except ValueError as e:
-            print(f"Error parsing SDQL response JSON: {e}")
+            print("Error parsing SDQL response JSON: {}".format(e))
             return []
 
 def seed_yesterdays_games():
@@ -101,7 +101,7 @@ def seed_yesterdays_games():
 
     # Fetch all games for yesterday
     games = get_yesterdays_games()
-    print(f"Processing {len(games)} games.")
+    print("Processing {} games.".format(len(games)))
 
     # Fetch all NFL teams from the database and store them in a dictionary
     teams_dict = {
@@ -112,12 +112,12 @@ def seed_yesterdays_games():
     for game in games:
         # Skip games with missing points
         if game['points'] is None or game['o:points'] is None:
-            print(f"Skipping game due to missing points: {game}")
+            print("Skipping game due to missing points: {}".format(game))
             continue
 
         # Skip games with a team of "Bulls" (from migration logic)
         if game['team'] == "Bulls" or game['o:team'] == "Bulls":
-            print(f"Skipping non-NFL game: {game}")
+            print("Skipping non-NFL game: {}".format(game))
             continue
 
         # Use the dictionary for lookups
@@ -125,16 +125,16 @@ def seed_yesterdays_games():
         away_team_id = teams_dict.get(game['o:team'])
 
         if home_team_id is None or away_team_id is None:
-            print(f"Skipping game due to missing team ID: {game}")
+            print("Skipping game due to missing team ID: {}".format(game))
             continue
 
         # Check if start time is None or not a string
         if game['start time'] is None:
-            print(f"Game with missing start time: {game}")
+            print("Game with missing start time: {}".format(game))
             start_time = None  # Insert None for missing start time
         else:
             if not isinstance(game['start time'], str):
-                print(f"Game with start time format int: {game}")
+                print("Game with start time format int: {}".format(game))
                 game['start time'] = str(game['start time'])  # Convert to string
 
             # Convert start_time to a string in 'HH:MM:SS' format
@@ -142,10 +142,10 @@ def seed_yesterdays_games():
 
         # Skip records with missing required fields (from migration logic)
         if game['total'] is None or game['margin'] is None or game['line'] is None or game['o:line'] is None:
-            print(f"Skipping game due to missing required fields: {game}")
+            print("Skipping game due to missing required fields: {}".format(game))
             continue
 
-        print(f"Inserting game: {game['team']} vs {game['o:team']} on {game['date']}")
+        print("Inserting game: {} vs {} on {}".format(game['team'], game['o:team'], game['date']))
 
         # Check if either team has already played on this date (handles duplicates from neutral games)
         existing_game = conn.execute(text("""
@@ -160,7 +160,7 @@ def seed_yesterdays_games():
         }).fetchone()
 
         if existing_game:
-            print(f"Skipping duplicate - one of these teams already played on {game['date']}: {game['team']} vs {game['o:team']}")
+            print("Skipping duplicate - one of these teams already played on {}: {} vs {}".format(game['date'], game['team'], game['o:team']))
             continue
 
         # Deserialize quarter scores back to lists with NFL-specific handling
@@ -187,12 +187,12 @@ def seed_yesterdays_games():
             
             # Ensure quarter scores are valid lists
             if not isinstance(home_quarter_scores, list) or not isinstance(away_quarter_scores, list):
-                print(f"Skipping game due to invalid quarter scores: {game}")
+                print("Skipping game due to invalid quarter scores: {}".format(game))
                 continue
 
         except (TypeError, json.JSONDecodeError) as e:
-            print(f"Invalid quarter scores detected! Raw game data: {game}")
-            print(f"Skipping game due to quarter score error: {e}")
+            print("Invalid quarter scores detected! Raw game data: {}".format(game))
+            print("Skipping game due to quarter score error: {}".format(e))
             continue
 
         # Calculate first half points
@@ -253,15 +253,15 @@ def seed_yesterdays_games():
                 })
                 
                 # Log the response from the database
-                print(f"Rows affected: {result.rowcount}")
+                print("Rows affected: {}".format(result.rowcount))
                 break  # Success, exit retry loop
                 
             except Exception as e:
                 if retry < 2:  # If not last retry
-                    print(f"Database insert failed (attempt {retry + 1}), retrying: {e}")
+                    print("Database insert failed (attempt {}), retrying: {}".format(retry + 1, e))
                     time.sleep(5)  # Wait before retry
                 else:
-                    print(f"Database insert failed after 3 attempts, skipping game: {e}")
+                    print("Database insert failed after 3 attempts, skipping game: {}".format(e))
                     continue  # Skip this game and continue with next
 
     # Commit the transaction

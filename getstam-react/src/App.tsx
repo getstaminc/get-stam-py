@@ -16,6 +16,7 @@ import { GameProvider } from "./contexts/GameContext";
 import FeatureRequestsPage from "./pages/FeatureRequestsPage";
 import ContactUsPage from "./pages/ContactUsPage";
 import BettingGuidePage from "./pages/BettingGuidePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import GamesPage from "./pages/GamesPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
 
@@ -56,6 +57,7 @@ function AppContent() {
           <Route path="/feature-requests" element={<FeatureRequestsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Box>

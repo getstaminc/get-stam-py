@@ -7,15 +7,48 @@ import {
   Button,
   Alert,
   Stack,
+  CircularProgress,
 } from "@mui/material";
 
 const FeatureRequestsPage: React.FC = () => {
+  const [feature, setFeature] = useState("");
+  const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  // Reset form after submit
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 5000);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(false);
+
+    const formData = new FormData();
+    formData.append('feature', feature);
+    formData.append('email', email);
+
+    try {
+      const response = await fetch('https://formspree.io/f/xpwrnrjp', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        },
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+        setFeature("");
+        setEmail("");
+        // Hide success message after 5 seconds
+        setTimeout(() => setSubmitted(false), 5000);
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,18 +62,20 @@ const FeatureRequestsPage: React.FC = () => {
         </Typography>
         {submitted && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            Thank you for your suggestion!
+            Thank you for your suggestion! We appreciate your feedback.
           </Alert>
         )}
-        <form
-          action="https://formspree.io/f/xpwrnrjp"
-          method="POST"
-          onSubmit={handleSubmit}
-        >
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Sorry, there was an error submitting your request. Please try again.
+          </Alert>
+        )}
+        <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField
               label="Feature Request"
-              name="feature"
+              value={feature}
+              onChange={(e) => setFeature(e.target.value)}
               required
               multiline
               minRows={3}
@@ -49,7 +84,8 @@ const FeatureRequestsPage: React.FC = () => {
             />
             <TextField
               label="Your Email (optional)"
-              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               type="email"
               fullWidth
             />
@@ -57,8 +93,10 @@ const FeatureRequestsPage: React.FC = () => {
               type="submit"
               variant="contained"
               color="primary"
+              disabled={!feature.trim() || loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
             >
-              Submit
+              {loading ? 'Submitting...' : 'Submit'}
             </Button>
           </Stack>
         </form>

@@ -51,6 +51,21 @@ const SiteFooter: React.FC = () => (
         >
           Betting Guide
         </Link>
+        <Link
+          href="/privacy-policy"
+          underline="none"
+          color="inherit"
+          sx={{
+            mx: 1,
+            transition: "color 0.2s",
+            "&:hover": {
+              color: "#007bff",
+              textDecoration: "none",
+            },
+          }}
+        >
+          Privacy Policy
+        </Link>
     </Box>
     <Box sx={{ mb: 1 }}>
       <Link href="https://instagram.com/yourhandle" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5 }}>

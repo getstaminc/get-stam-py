@@ -129,6 +129,7 @@ const GamesPage = () => {
     } else {
       // Clear games data for historical dates since we'll show PastGamesDisplay
       setGames([]);
+      setGamesWithTrends([]);
       setNextGameDate(null);
     }
   }, [sportKey, selectedDate, isHistoricalDate]);
@@ -148,6 +149,9 @@ const GamesPage = () => {
         .finally(() => {
           setTrendsLoading(false);
         });
+    } else {
+      // Clear trends when not in trends view or no games available
+      setGamesWithTrends([]);
     }
   }, [activeView, games, sportKey, minTrendLength]);
 
@@ -189,11 +193,22 @@ const GamesPage = () => {
           align="center"
           sx={{
             fontWeight: 700,
-            mb: 2,
+            mb: 1,
             color: "#1976d2",
           }}
         >
           {displaySport} Matchups
+        </Typography>
+        <Typography
+          variant="body2"
+          align="center"
+          sx={{
+            mb: 3,
+            color: "#757575",
+            fontStyle: "italic",
+          }}
+        >
+          * Only games with betting odds data will display
         </Typography>
         <Box
           sx={{
@@ -337,7 +352,27 @@ const GamesPage = () => {
           </Paper>
         ))}
 
-        {!isHistoricalDate && activeView === "trends" && (
+        {!isHistoricalDate && activeView === "trends" && games.length === 0 && (
+          <Typography align="center" sx={{ mt: 4, mb: 2 }}>
+            No games found for this date.
+            {nextGameDate && (
+              <span>
+                {" "}
+                Next games are on{" "}
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setSelectedDate(new Date(nextGameDate))}
+                  sx={{ ml: 1 }}
+                >
+                  {nextGameDate}
+                </Button>
+              </span>
+            )}
+          </Typography>
+        )}
+
+        {!isHistoricalDate && activeView === "trends" && games.length > 0 && (
           <GamesWithTrends 
             gamesWithTrends={gamesWithTrends}
             loading={trendsLoading}

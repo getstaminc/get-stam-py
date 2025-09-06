@@ -7,6 +7,7 @@ import {
   Button,
   Alert,
   Stack,
+  CircularProgress,
 } from "@mui/material";
 
 const ContactUsPage: React.FC = () => {
@@ -14,14 +15,43 @@ const ContactUsPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Replace with your API call or email integration
-    setSubmitted(true);
-    setName("");
-    setEmail("");
-    setMessage("");
+    setLoading(true);
+    setError(false);
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('message', message);
+
+    try {
+      const response = await fetch('https://formspree.io/f/xkgvkonz', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        },
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+        setName("");
+        setEmail("");
+        setMessage("");
+        // Hide success message after 5 seconds
+        setTimeout(() => setSubmitted(false), 5000);
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,6 +66,11 @@ const ContactUsPage: React.FC = () => {
         {submitted && (
           <Alert severity="success" sx={{ mb: 2 }}>
             Thank you for reaching out! We'll be in touch soon.
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Sorry, there was an error sending your message. Please try again.
           </Alert>
         )}
         <form onSubmit={handleSubmit}>
@@ -68,9 +103,10 @@ const ContactUsPage: React.FC = () => {
               type="submit"
               variant="contained"
               color="primary"
-              disabled={!name.trim() || !email.trim() || !message.trim()}
+              disabled={!name.trim() || !email.trim() || !message.trim() || loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
             >
-              Send Message
+              {loading ? 'Sending...' : 'Send Message'}
             </Button>
           </Stack>
         </form>

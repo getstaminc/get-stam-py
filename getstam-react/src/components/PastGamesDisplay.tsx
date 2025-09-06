@@ -13,35 +13,11 @@ import {
   useTheme,
   alpha
 } from "@mui/material";
-
-// Types based on your historical API responses
-interface GameData {
-  game_id: number;
-  date: string;
-  home_team: string;
-  away_team: string;
-  home_runs?: number;
-  away_runs?: number;
-  home_points?: number;
-  away_points?: number;
-  home_goals?: number;
-  away_goals?: number;
-  total: number;
-  home_line: number;
-  away_line: number;
-  start_time?: string;
-  playoffs?: boolean;
-  home_starting_pitcher?: string;
-  away_starting_pitcher?: string;
-  // Soccer specific
-  league?: string;
-  home_spread?: number;
-  away_spread?: number;
-}
+import { GameData, SportType } from "../types/gameTypes";
 
 interface PastGamesDisplayProps {
   selectedDate: string; // Format: YYYY-MM-DD
-  sportType: 'mlb' | 'nfl' | 'ncaaf' | 'soccer';
+  sportType: SportType;
 }
 
 const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({

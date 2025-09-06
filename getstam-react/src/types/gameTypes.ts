@@ -133,3 +133,33 @@ export const getSportType = (sportKey: string): SportType => {
   
   return sportMap[sportKey] || 'nfl'; // Default to NFL
 };
+
+// Common odds-related types
+export interface TeamOdds {
+  h2h: number | null;
+  spread_point: number | null;
+  spread_price: number | null;
+}
+
+export interface TotalsData {
+  over_point: number | null;
+  over_price: number | null;
+  under_point: number | null;
+  under_price: number | null;
+}
+
+export interface TeamData {
+  team: string;
+  score: number | null;
+  odds: TeamOdds;
+}
+
+// Live game data structure (for GameContext and similar)
+export interface LiveGameData {
+  game_id: string;
+  commence_time: string;
+  home: TeamData;
+  away: TeamData;
+  totals: TotalsData;
+  isToday: boolean;
+}

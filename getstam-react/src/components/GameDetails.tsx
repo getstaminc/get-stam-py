@@ -1,28 +1,11 @@
 import React, { useState } from "react";
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import GameOdds from "./GameOdds";
-import HistoricalGames, { getSportType } from "./HistoricalGames";
+import HistoricalGames from "./HistoricalGames";
+import { getSportType } from "../types/gameTypes";
 import TeamRankings from "./TeamRankings";
 import { convertTeamNameBySport } from "../utils/teamNameConverter";
-
-type TeamOdds = {
-  h2h: number | null;
-  spread_point: number | null;
-  spread_price: number | null;
-};
-
-type TeamData = {
-  team: string;
-  score: number | null;
-  odds: TeamOdds;
-};
-
-type TotalsData = {
-  over_point: number | null;
-  over_price: number | null;
-  under_point: number | null;
-  under_price: number | null;
-};
+import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 
 type Game = {
   home: TeamData;

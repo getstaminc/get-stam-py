@@ -1,24 +1,6 @@
 import React from "react";
 import { Box, Typography, Divider } from "@mui/material";
-
-type TeamOdds = {
-  h2h: number | null;
-  spread_point: number | null;
-  spread_price: number | null;
-};
-
-type TeamData = {
-  team: string;
-  score: number | null;
-  odds: TeamOdds;
-};
-
-type TotalsData = {
-  over_point: number | null;
-  over_price: number | null;
-  under_point: number | null;
-  under_price: number | null;
-};
+import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 
 type Game = {
   home: TeamData;

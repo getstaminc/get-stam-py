@@ -17,23 +17,45 @@ export interface GameWithTrends {
   hasTrends: boolean;
 }
 
-// Map URL sport to database sport
-const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
-  americanfootball_nfl: "nfl",
-  baseball_mlb: "mlb", 
-  basketball_nba: "nba",
-  icehockey_nhl: "nhl",
-  americanfootball_ncaaf: "ncaaf",
-  basketball_ncaab: "ncaab",
-  soccer_epl: "epl",
-  americanfootball_nfl_preseason: "nfl",
+// Map URL sport to database sport and API paths
+const SPORT_CONFIG: { [key: string]: { dbSport: string, apiPath: string, isSoccer?: boolean } } = {
+  americanfootball_nfl: { dbSport: "nfl", apiPath: "nfl" },
+  baseball_mlb: { dbSport: "mlb", apiPath: "mlb" }, 
+  basketball_nba: { dbSport: "nba", apiPath: "nba" },
+  icehockey_nhl: { dbSport: "nhl", apiPath: "nhl" },
+  americanfootball_ncaaf: { dbSport: "ncaaf", apiPath: "ncaaf" },
+  basketball_ncaab: { dbSport: "ncaab", apiPath: "ncaab" },
+  soccer_epl: { dbSport: "epl", apiPath: "soccer", isSoccer: true },
+  americanfootball_nfl_preseason: { dbSport: "nfl", apiPath: "nfl" },
 };
 
-// Fetch team history
+// Helper function to check if sport is soccer
+const isSoccerSport = (sportKey: string): boolean => {
+  return SPORT_CONFIG[sportKey]?.isSoccer || false;
+};
+
+// Helper function to get soccer league from sport key
+const getSoccerLeague = (sportKey: string): string => {
+  if (sportKey === 'soccer_epl' || sportKey === 'epl') return 'epl';
+  return 'epl'; // Default to EPL for now
+};
+
+// Fetch team history using new historical endpoints
 const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5) => {
-  const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+  const config = SPORT_CONFIG[sportKey];
+  if (!config) throw new Error(`Unsupported sport: ${sportKey}`);
+  
   const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
-  const response = await fetch(`https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedTeamName)}?limit=${limit}`, {
+  
+  let url: string;
+  if (isSoccerSport(sportKey)) {
+    const league = getSoccerLeague(sportKey);
+    url = `https://www.getstam.com/api/historical/soccer/teams/${encodeURIComponent(convertedTeamName)}/games?league=${league}&limit=${limit}`;
+  } else {
+    url = `https://www.getstam.com/api/historical/${config.apiPath}/teams/${encodeURIComponent(convertedTeamName)}/games?limit=${limit}`;
+  }
+  
+  const response = await fetch(url, {
     headers: {
       "X-API-KEY": process.env.REACT_APP_API_KEY || "",
     },
@@ -42,62 +64,87 @@ const fetchTeamHistory = async (sportKey: string, teamName: string, limit: numbe
   return response.json();
 };
 
-// Fetch head-to-head history
+// Fetch head-to-head history using new historical endpoints
 const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
-  const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+  const config = SPORT_CONFIG[sportKey];
+  if (!config) throw new Error(`Unsupported sport: ${sportKey}`);
+  
   const convertedHomeTeam = convertTeamNameBySport(sportKey, homeTeam);
   const convertedAwayTeam = convertTeamNameBySport(sportKey, awayTeam);
-  const response = await fetch(
-    `https://www.getstam.com/api/games/${dbSportKey}/team/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`,
-    {
-      headers: {
-        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
-      },
-    }
-  );
+  
+  let url: string;
+  if (isSoccerSport(sportKey)) {
+    const league = getSoccerLeague(sportKey);
+    url = `https://www.getstam.com/api/historical/soccer/teams/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?league=${league}&limit=${limit}`;
+  } else {
+    url = `https://www.getstam.com/api/historical/${config.apiPath}/teams/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`;
+  }
+  
+  const response = await fetch(url, {
+    headers: {
+      "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+    },
+  });
   if (!response.ok) throw new Error("Failed to fetch head-to-head history");
   return response.json();
 };
 
-// Helper function to get team-specific data from a game
+// Helper function to get team-specific data from a game based on sport
 const getTeamData = (game: any, teamName: string, sportKey: string) => {
   // Convert the search team name to the short form for comparison
   const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
   
-  const isTeamHome = game.home_team_name === teamName || game.home_team_name === convertedTeamName;
-  const isTeamAway = game.away_team_name === teamName || game.away_team_name === convertedTeamName;
+  // Determine field names based on sport
+  let homeTeamField, awayTeamField, homeScoreField, awayScoreField;
   
-  console.log(`getTeamData debug:`, {
-    searchingFor: teamName,
-    convertedTeamName: convertedTeamName,
-    homeTeamName: game.home_team_name,
-    awayTeamName: game.away_team_name,
-    isTeamHome,
-    isTeamAway,
-    teamSide: game.team_side
-  });
+  if (sportKey.includes('mlb') || sportKey === 'baseball_mlb') {
+    // MLB uses different field names
+    homeTeamField = 'home_team_name';
+    awayTeamField = 'away_team_name'; 
+    homeScoreField = 'home_runs';
+    awayScoreField = 'away_runs';
+  } else if (isSoccerSport(sportKey)) {
+    // Soccer uses different field names
+    homeTeamField = 'home_team_name';
+    awayTeamField = 'away_team_name';
+    homeScoreField = 'home_goals';
+    awayScoreField = 'away_goals';
+  } else {
+    // NFL, NCAAF, NBA, NHL use points
+    homeTeamField = 'home_team_name';
+    awayTeamField = 'away_team_name';
+    homeScoreField = 'home_points';
+    awayScoreField = 'away_points';
+  }
+  
+  const homeTeam = game[homeTeamField] || game.home_team;
+  const awayTeam = game[awayTeamField] || game.away_team;
+  const homeScore = game[homeScoreField];
+  const awayScore = game[awayScoreField];
+  
+  const isTeamHome = homeTeam === teamName || homeTeam === convertedTeamName;
+  const isTeamAway = awayTeam === teamName || awayTeam === convertedTeamName;
   
   if (isTeamHome) {
     return {
-      teamPoints: game.home_points,
+      teamPoints: homeScore,
       teamLine: game.home_line,
-      opponentPoints: game.away_points,
+      opponentPoints: awayScore,
       opponentLine: game.away_line
     };
   } else if (isTeamAway) {
     return {
-      teamPoints: game.away_points,
+      teamPoints: awayScore,
       teamLine: game.away_line,
-      opponentPoints: game.home_points,
+      opponentPoints: homeScore,
       opponentLine: game.home_line
     };
   } else {
-    // Fallback using team_side
-    console.log(`Using fallback team_side logic for ${teamName}`);
+    // Team not found in this game, return nulls
     return {
-      teamPoints: game.team_side === 'home' ? game.home_points : game.away_points,
+      teamPoints: game.team_side === 'home' ? homeScore : awayScore,
       teamLine: game.team_side === 'home' ? game.home_line : game.away_line,
-      opponentPoints: game.team_side === 'home' ? game.away_points : game.home_points,
+      opponentPoints: game.team_side === 'home' ? awayScore : homeScore,
       opponentLine: game.team_side === 'home' ? game.away_line : game.home_line
     };
   }
@@ -173,12 +220,28 @@ const analyzeTeamTrends = (games: any[], teamName: string, sportKey: string, min
       }
     }
     
-    // Total analysis
-    if (game.total_points !== null && game.total !== null) {
-      if (game.total_points > game.total) {
+    // Total analysis - handle different field names for each sport
+    let actualTotal, totalLine;
+    
+    if (sportKey.includes('mlb') || sportKey === 'baseball_mlb') {
+      // MLB: actual total is home_runs + away_runs
+      actualTotal = (game.home_runs || 0) + (game.away_runs || 0);
+      totalLine = game.total;
+    } else if (isSoccerSport(sportKey)) {
+      // Soccer: actual total is home_goals + away_goals
+      actualTotal = (game.home_goals || 0) + (game.away_goals || 0);
+      totalLine = game.total_goals || game.total;
+    } else {
+      // NFL, NCAAF, NBA, NHL: actual total is home_points + away_points
+      actualTotal = (game.home_points || 0) + (game.away_points || 0);
+      totalLine = game.total_points || game.total;
+    }
+    
+    if (actualTotal !== null && totalLine !== null) {
+      if (actualTotal > totalLine) {
         overResults.push(true);
         underResults.push(false);
-      } else if (game.total_points < game.total) {
+      } else if (actualTotal < totalLine) {
         overResults.push(false);
         underResults.push(true);
       } else {

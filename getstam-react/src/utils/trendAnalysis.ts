@@ -182,14 +182,7 @@ const analyzeTeamTrends = (games: any[], teamName: string, sportKey: string, min
   
   for (const game of sortedGames) {
     const teamData = getTeamData(game, teamName, sportKey);
-    
-    // Debug logging
-    console.log(`Game ${game.game_date}: ${teamName}`, {
-      teamPoints: teamData.teamPoints,
-      teamLine: teamData.teamLine,
-      opponentPoints: teamData.opponentPoints,
-      lineResult: teamData.teamLine !== null ? (teamData.teamPoints + teamData.teamLine) > teamData.opponentPoints : null
-    });
+  
     
     // Win/Loss analysis
     if (teamData.teamPoints > teamData.opponentPoints) {
@@ -259,15 +252,6 @@ const analyzeTeamTrends = (games: any[], teamName: string, sportKey: string, min
   const currentNoCoverStreak = calculateCurrentStreak(noCoverResults);
   const currentOverStreak = calculateCurrentStreak(overResults);
   const currentUnderStreak = calculateCurrentStreak(underResults);
-  
-  console.log(`Final streaks for ${teamName}:`, {
-    wins: currentWinStreak,
-    losses: currentLossStreak,
-    covers: currentCoverStreak,
-    noCovers: currentNoCoverStreak,
-    overs: currentOverStreak,
-    unders: currentUnderStreak
-  });
   
   // Add trends that meet minimum length
   if (currentWinStreak >= minTrendLength) {
@@ -352,10 +336,6 @@ export const analyzeGameTrends = async (
     // Analyze trends
     const homeTeamTrends = analyzeTeamTrends(homeHistory.games || [], homeTeam, sportKey, minTrendLength);
     const awayTeamTrends = analyzeTeamTrends(awayHistory.games || [], awayTeam, sportKey, minTrendLength);
-    
-    // Debug head-to-head data
-    console.log('H2H History games:', h2hHistory.games);
-    console.log('Analyzing H2H for homeTeam:', homeTeam);
     
     const headToHeadTrends = analyzeTeamTrends(h2hHistory.games || [], homeTeam, sportKey, minTrendLength);
     

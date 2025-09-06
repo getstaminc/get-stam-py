@@ -315,7 +315,7 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
 
 @cache.cached(timeout=3600)
 def get_pitcher_data_for_dates():
-    print("🚨 CACHE MISS: Fetching pitcher data from rotowire.com")
+    logger.info("Cache miss: Fetching pitcher data from rotowire.com")
     urls = {
         "today": "https://www.rotowire.com/baseball/daily-lineups.php",
         "tomorrow": "https://www.rotowire.com/baseball/daily-lineups.php?date=tomorrow"
@@ -410,7 +410,7 @@ def get_sport_scores(sport_key):
                     key = f"{game['away_team']}@{game['home_team']}"
                     pitchers_data[key] = game
             except Exception as e:
-                print(f"⚠️ Error handling pitcher data for {selected_date_start.date()}: {e}")
+                logger.error(f"Error handling pitcher data for {selected_date_start.date()}: {e}")
 
 
         formatted_scores = []
@@ -467,10 +467,6 @@ def get_sport_scores(sport_key):
                 'awayPitcherStats': away_pitcher_stats,
                 'isToday': selected_date_start.date() == date.today()
             })
-            if sport_key == 'baseball_mlb':
-                print(f"{away_team} @ {home_team}")
-                print(f"  Away Pitcher: {away_pitcher} ({away_pitcher_stats})")
-                print(f"  Home Pitcher: {home_pitcher} ({home_pitcher_stats})")
 
         soccer_keys = [
             'soccer_epl',
@@ -498,10 +494,10 @@ def get_sport_scores(sport_key):
         )
 
     except requests.exceptions.RequestException as e:
-        print('Request error:', e)
+        logger.error(f'Request error: {e}')
         return jsonify({'error': 'Request Error'}), 500
     except Exception as e:
-        print('Error fetching scores:', e)
+        logger.error(f'Error fetching scores: {e}')
         return jsonify({'error': 'Internal Server Error'}), 500
 
 
@@ -535,7 +531,7 @@ def game_details(game_id):
                 sport_key=sport_key
             ) or []
         except Exception as e:
-            print('Error fetching last 5 games:', str(e))
+            logger.error(f'Error fetching last 5 games: {e}')
             home_team_last_5 = []
             away_team_last_5 = []
             last_5_vs_opponent = []
@@ -650,9 +646,8 @@ def game_details(game_id):
                 away_stats = pitchers.get('away_pitcher_stats', '')
                 home_stats = pitchers.get('home_pitcher_stats', '')
 
-                print(f"{matchup_key} → Pitchers: {pitchers}")
             except Exception as e:
-                print("⚠️ Error loading cached pitcher data:", e)
+                logger.error(f"Error loading cached pitcher data: {e}")
 
        
 
@@ -673,13 +668,11 @@ def game_details(game_id):
                 home_defense = defense.get(home_team, {})
                 away_offense = offense.get(away_team, {})
                 away_defense = defense.get(away_team, {})
-                print("Looking for team name:", away_team)
-                print("Available team names:", list(offense.keys()))
 
                 return home_offense, home_defense, away_offense, away_defense
 
             except Exception as e:
-                print(f"⚠️ Failed to load rankings for {sport_key}: {e}")
+                logger.error(f"Failed to load rankings for {sport_key}: {e}")
                 return {}, {}, {}, {}
 
         home_offense, home_defense, away_offense, away_defense = {}, {}, {}, {}
@@ -690,10 +683,6 @@ def game_details(game_id):
             home_offense, home_defense, away_offense, away_defense = get_football_rankings(
                 sport_key, home_team, away_team
             )
-            print("Home Offense:", home_offense)
-            print("Home Defense:", home_defense)
-            print("Away Offense:", away_offense)
-            print("Away Defense:", away_defense)
 
 
        
@@ -746,7 +735,7 @@ def game_details(game_id):
 
 
     except Exception as e:
-        print('Error fetching game details:', str(e))
+        logger.error(f'Error fetching game details: {e}')
         return jsonify({'error': 'Internal Server Error'}), 500
 
 # # Route for the home page

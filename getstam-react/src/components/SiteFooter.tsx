@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import MusicNoteIcon from "@mui/icons-material/MusicNote"; // TikTok substitute
+import AlternateEmailIcon from "@mui/icons-material/AlternateEmail"; // Threads substitute
 import { Link as RouterLink } from "react-router-dom";
 
 
@@ -21,6 +22,21 @@ const SiteFooter: React.FC = () => (
     }}
   >
     <Box sx={{ mb: 1 }}>
+      <Link
+        href="/about-us"
+        underline="none"
+        color="inherit"
+        sx={{
+          mx: 1,
+          transition: "color 0.2s",
+          "&:hover": {
+            color: "#007bff",
+            textDecoration: "none",
+          },
+        }}
+      >
+        About Us
+      </Link>
       <Link
         href="/contact-us"
         underline="none"
@@ -68,14 +84,17 @@ const SiteFooter: React.FC = () => (
         </Link>
     </Box>
     <Box sx={{ mb: 1 }}>
-      <Link href="https://instagram.com/yourhandle" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5 }}>
+      <Link href="https://www.instagram.com/getstam/" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5, transition: "color 0.2s", "&:hover": { color: "#E4405F" } }}>
         <InstagramIcon fontSize="medium" />
       </Link>
-      <Link href="https://facebook.com/yourhandle" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5 }}>
+      <Link href="https://www.facebook.com/p/GetStam-61574920076042/" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5, transition: "color 0.2s", "&:hover": { color: "#1877F2" } }}>
         <FacebookIcon fontSize="medium" />
       </Link>
-      <Link href="https://tiktok.com/@yourhandle" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5 }}>
+      <Link href="https://www.tiktok.com/@getstam" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5, transition: "color 0.2s", "&:hover": { color: "#ff0050" } }}>
         <MusicNoteIcon fontSize="medium" />
+      </Link>
+      <Link href="https://www.threads.com/@getstam?igshid=NTc4MTIwNjQ2YQ==" target="_blank" rel="noopener" color="inherit" sx={{ mx: 0.5, transition: "color 0.2s", "&:hover": { color: "#1d1d1d" } }}>
+        <AlternateEmailIcon fontSize="medium" />
       </Link>
     </Box>
     <Typography

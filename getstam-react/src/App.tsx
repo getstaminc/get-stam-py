@@ -15,6 +15,7 @@ import { GameProvider } from "./contexts/GameContext";
 // import NFL from "./pages/NFL";
 import FeatureRequestsPage from "./pages/FeatureRequestsPage";
 import ContactUsPage from "./pages/ContactUsPage";
+import AboutUsPage from "./pages/AboutUsPage";
 import BettingGuidePage from "./pages/BettingGuidePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import GamesPage from "./pages/GamesPage";
@@ -54,6 +55,7 @@ function AppContent() {
           <Route path="/epl" element={<GamesPage />} />
           <Route path="/epl/trends" element={<GamesPage />} />
           <Route path="/game-details/:sport" element={<GameDetailsPage />} />
+          <Route path="/about-us" element={<AboutUsPage />} />
           <Route path="/feature-requests" element={<FeatureRequestsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />

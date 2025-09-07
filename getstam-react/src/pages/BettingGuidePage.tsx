@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, Button, Paper, TextField, Link } from "@mui/material";
+import { Box, Typography, Button, Paper, TextField, Link, Container } from "@mui/material";
 
 const BettingGuidePage: React.FC = () => {
   const [bankroll, setBankroll] = useState<string>("");
@@ -19,12 +19,14 @@ const BettingGuidePage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ background: "#f9f9f9", minHeight: "100vh", fontFamily: "'Poppins', sans-serif", p: { xs: 2, sm: 4 } }}>
-      <Paper elevation={3} sx={{ maxWidth: 800, mx: "auto", p: { xs: 2, sm: 4 }, mt: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Paper elevation={2} sx={{ p: 4 }}>
         <main>
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: 700 }}>Exponential Betting Guide</Typography>
-          <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>What is exponential betting?</Typography>
-          <Typography paragraph>
+          <Typography variant="h3" component="h1" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+            Exponential Betting Guide
+          </Typography>
+          <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>What is exponential betting?</Typography>
+          <Typography variant="body1" paragraph>
             Exponential betting is all about bankroll management, and ensuring that a bettor has a game plan for their bets. In the long run, this strategy helps you make more as you win. First, when we say ‘bankroll,’ we’re referring to how much money we are dedicating to sports betting. It could be twenty dollars, or it could be twenty thousand – we all start somewhere. The important part is to set a boundary on what we’re starting with and not to assume that we can keep adding to it if needed. That’s where you can get into trouble.
           </Typography>
           <Typography paragraph>
@@ -37,7 +39,7 @@ const BettingGuidePage: React.FC = () => {
             The benefit of this strategy is twofold: it helps grow your account when things are going well, and it also helps manage losses more effectively. When I’m winning, I’ll update my spreadsheet daily. This way, my 3% bet today is bigger than it was yesterday, meaning I win more. Conversely, when I’m hitting a skid and missing a lot of games, I make sure to update my numbers so I’m risking less. <strong>Do not chase losing bets.</strong> Don’t lose a 3% bet and then place a 6% bet thinking you’ll make it all back – you won’t. Stay disciplined and stick to this strategy to grow your bankroll steadily.
           </Typography>
 
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Bankroll Calculator</Typography>
+          <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>Bankroll Calculator</Typography>
           <form onSubmit={handleCalculate}>
             <label htmlFor="numberInput" style={{ fontWeight: "bold" }}>Enter your Bankroll:</label>
             <TextField
@@ -61,7 +63,7 @@ const BettingGuidePage: React.FC = () => {
           )}
         </main>
       </Paper>
-    </Box>
+    </Container>
   );
 };
 

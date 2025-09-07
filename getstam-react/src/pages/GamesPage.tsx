@@ -81,7 +81,8 @@ async function fetchGamesData(sportKey: string, date: Date) {
       },
     });
     if (!res.ok) throw new Error("API error");
-    return await res.json();
+    const data = await res.json();
+    return data;
   } catch (e) {
     console.error("Error fetching games data:", e);
     return { games: [], nextGameDate: null };
@@ -119,8 +120,24 @@ const GamesPage = () => {
   // Check if selected date is in the past
   const isHistoricalDate = isPastDate(selectedDate);
 
+  // CRITICAL: Sync activeView with URL IMMEDIATELY - this must run before trend analysis
+  useEffect(() => {
+    const newActiveView = isTrends ? "trends" : "all";
+    setActiveView(newActiveView);
+    // When switching away from trends, clear trends data immediately  
+    if (newActiveView === "all") {
+      setGamesWithTrends([]);
+      setTrendsLoading(false);
+    }
+  }, [isTrends, location.pathname]);
+
   // Fetch data when sport or date changes (only for current/future dates)
   useEffect(() => {
+    // Clear previous data immediately when sport changes
+    setGames([]);
+    setGamesWithTrends([]);
+    setTrendsLoading(false);
+    
     if (!isHistoricalDate) {
       fetchGamesData(sportKey, selectedDate).then((data) => {
         setGames(data.games || []);
@@ -128,16 +145,16 @@ const GamesPage = () => {
       });
     } else {
       // Clear games data for historical dates since we'll show PastGamesDisplay
-      setGames([]);
-      setGamesWithTrends([]);
       setNextGameDate(null);
     }
-  }, [sportKey, selectedDate, isHistoricalDate]);
+  }, [sportKey, selectedDate, isHistoricalDate, activeView]);
 
   // Analyze trends when switching to trends view or when minTrendLength changes
   useEffect(() => {
-    if (activeView === "trends" && games.length > 0) {
+    // Use isTrends directly instead of activeView to avoid race condition
+    if (isTrends && games.length > 0) {
       setTrendsLoading(true);
+      
       analyzeMultipleGamesTrends(games, sportKey, minTrendLength, minTrendLength)
         .then((trendsData) => {
           setGamesWithTrends(trendsData);
@@ -150,10 +167,9 @@ const GamesPage = () => {
           setTrendsLoading(false);
         });
     } else {
-      // Clear trends when not in trends view or no games available
       setGamesWithTrends([]);
     }
-  }, [activeView, games, sportKey, minTrendLength]);
+  }, [isTrends, games, sportKey, minTrendLength]); // Changed dependency from activeView to isTrends
 
   // Handle minimum trend length change
   const handleMinTrendLengthChange = (newMinLength: number) => {
@@ -178,12 +194,6 @@ const GamesPage = () => {
     }
     // eslint-disable-next-line
   }, [selectedDate, activeView, urlSport]);
-
-  // Sync activeView with URL if user navigates directly
-  useEffect(() => {
-    setActiveView(isTrends ? "trends" : "all");
-    // eslint-disable-next-line
-  }, [isTrends]);
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", px: 2, py: 4 }}>

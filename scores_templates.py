@@ -14,7 +14,8 @@ historical_template = """
                     <script 
                         async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
                         crossorigin="anonymous">
-                    </script>                     
+                    </script> 
+                    <script src="https://richinfo.co/richpartners/in-page/js/richads-ob.js?pubid=984750&siteid=370728" async></script>                     
                     <title>Game Info</title>
                     <style>
                         table {
@@ -75,6 +76,7 @@ default_template = """
                         async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
                         crossorigin="anonymous">
                     </script>
+                    <script src="https://richinfo.co/richpartners/in-page/js/richads-ob.js?pubid=984750&siteid=370728" async></script> 
                     <style>
                         table {
                             width: 80%;
@@ -184,6 +186,7 @@ baseball_template = """
                         async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
                         crossorigin="anonymous">
                     </script>
+                    <script src="https://richinfo.co/richpartners/in-page/js/richads-ob.js?pubid=984750&siteid=370728" async></script> 
                     <style>
                         table {
                             width: 80%;
@@ -300,6 +303,7 @@ soccer_template = """
                         async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546677374101814"
                         crossorigin="anonymous">
                     </script>
+                    <script src="https://richinfo.co/richpartners/in-page/js/richads-ob.js?pubid=984750&siteid=370728" async></script> 
                     <style>
                         table {
                             width: 80%;

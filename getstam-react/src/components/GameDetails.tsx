@@ -88,9 +88,11 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     home.score !== undefined &&
     away.score !== null &&
     away.score !== undefined;
+  
+  console.log("GameDetails Rendered with game:", game);
 
-  const scoreDisplay = hasScore ? `${home.score} - ${away.score}` : "— —";
-  const gameStatus = hasScore ? "Final Score" : "Scheduled";
+  const scoreDisplay = hasScore ? `${away.score} - ${home.score}` : "— —";
+  const gameStatus = hasScore ? "" : "Scheduled";
 
   // Get team names for historical data titles
   const homeTeamName = home.team || game.home_team_name || "Home Team";

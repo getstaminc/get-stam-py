@@ -3,6 +3,7 @@
 import os
 from flask import Blueprint, request, jsonify, abort
 from dotenv import load_dotenv
+from cache import cache
 
 from ...services.historical.nfl_trends_service import NFLTrendsService
 
@@ -20,11 +21,30 @@ def check_api_key():
     if key != API_KEY:
         abort(401)
 
+
+def make_nfl_trends_cache_key(*args, **kwargs):
+    """Create a custom cache key based on game IDs only."""
+    data = request.get_json() or {}
+    games = data.get('games', [])
+    
+    # Extract and sort game IDs for consistent cache key
+    game_ids = [game.get('game_id') for game in games if game.get('game_id')]
+    game_ids.sort()  # Sort to ensure consistent key regardless of game order
+    
+    # Create a shorter hash of the game IDs to keep cache key manageable
+    import hashlib
+    game_ids_str = '|'.join(game_ids)
+    game_ids_hash = hashlib.md5(game_ids_str.encode()).hexdigest()[:8]  # First 8 chars
+    
+    return f"nfl_trends:{game_ids_hash}"
+
+
 # =============================================================================
 # NFL TRENDS ENDPOINTS
 # =============================================================================
 
 @nfl_trends_bp.route('/api/historical/trends/nfl', methods=['POST'])
+@cache.cached(timeout=3600, make_cache_key=make_nfl_trends_cache_key)
 def analyze_nfl_games_trends():
     """
     Analyze trends for multiple NFL games based on historical data.

@@ -5,7 +5,7 @@ import GameOdds from "../components/GameOdds";
 import GamesWithTrends from "../components/GamesWithTrends";
 import PastGamesDisplay from "../components/PastGamesDisplay";
 import { useGame } from "../contexts/GameContext"; 
-import { analyzeMultipleGamesTrends, GameWithTrends } from "../utils/trendAnalysis"; 
+import { GameWithTrends } from "../utils/trendAnalysis"; 
 
 // Odds API key from .env (ODDS_API_KEY)
 const ODDS_API_KEY = process.env.REACT_APP_ODDS_API_KEY;
@@ -89,6 +89,53 @@ async function fetchGamesData(sportKey: string, date: Date) {
   }
 }
 
+// Fetch trends from your new API endpoint
+async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: number) {
+  // Map sportKey to the appropriate endpoint
+  const sportEndpointMap: { [key: string]: string } = {
+    'americanfootball_nfl': 'nfl',
+    'americanfootball_nfl_preseason': 'nfl',
+    'americanfootball_ncaaf': 'ncaaf',
+    'baseball_mlb': 'mlb',
+    'soccer_epl': 'soccer',
+    'soccer_uefa_champs_league': 'soccer',
+    'soccer_uefa_europa_league': 'soccer',
+    'soccer_fifa_world_cup': 'soccer',
+    'soccer_uefa_nations_league': 'soccer',
+    // Add other sports as endpoints become available
+  };
+  
+  const sportEndpoint = sportEndpointMap[sportKey];
+  if (!sportEndpoint) {
+    throw new Error(`Trends analysis not available for sport: ${sportKey}`);
+  }
+  
+  const url = `https://www.getstam.com/api/historical/trends/${sportEndpoint}`;
+  const requestBody = {
+    games: games,
+    sportKey: sportKey,
+    minTrendLength: minTrendLength
+  };
+  
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    if (!res.ok) throw new Error(`Trends API error: ${res.status}`);
+    const trendsData = await res.json();
+    return trendsData;
+  } catch (e) {
+    console.error("Error fetching trends data:", e);
+    throw e;
+  }
+}
+
 const GamesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -155,12 +202,14 @@ const GamesPage = () => {
     if (isTrends && games.length > 0) {
       setTrendsLoading(true);
       
-      analyzeMultipleGamesTrends(games, sportKey, minTrendLength, minTrendLength)
-        .then((trendsData) => {
+      fetchTrendsData(games, sportKey, minTrendLength)
+        .then((trendsResponse) => {
+          // Extract the data array from the API response
+          const trendsData = trendsResponse?.data || [];
           setGamesWithTrends(trendsData);
         })
         .catch((error) => {
-          console.error("Error analyzing trends:", error);
+          console.error("Error fetching trends:", error);
           setGamesWithTrends([]);
         })
         .finally(() => {

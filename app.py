@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
+from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for, send_from_directory, current_app
 from datetime import datetime, timedelta, date  # Import timedelta here
 import pytz
 from dateutil import parser
@@ -50,12 +50,14 @@ from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='getstam-react/build/static', static_url_path='/static')
 port = 5000
 
 # Specify allowed origins
 CORS(app, origins=[
     "http://localhost:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:3000",
     "http://127.0.0.1:5000",
     "https://www.getstam.com"
 ])
@@ -128,9 +130,9 @@ def get_cache_value(cache_key):
         return jsonify({'error': 'Internal Server Error'}), 500 
 
 # app.py
-from betting_guide import betting_guide  # Add this line
+# from betting_guide import betting_guide  # Add this line
 
-app.register_blueprint(betting_guide)  # Register the blueprint
+# app.register_blueprint(betting_guide)  # Register the blueprint
 
 def filter_scores_by_date(scores, selected_date_start):
     filtered_scores = []
@@ -321,7 +323,7 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
 
 @cache.cached(timeout=3600)
 def get_pitcher_data_for_dates():
-    print("🚨 CACHE MISS: Fetching pitcher data from rotowire.com")
+    logger.info("Cache miss: Fetching pitcher data from rotowire.com")
     urls = {
         "today": "https://www.rotowire.com/baseball/daily-lineups.php",
         "tomorrow": "https://www.rotowire.com/baseball/daily-lineups.php?date=tomorrow"
@@ -416,7 +418,7 @@ def get_sport_scores(sport_key):
                     key = f"{game['away_team']}@{game['home_team']}"
                     pitchers_data[key] = game
             except Exception as e:
-                print(f"⚠️ Error handling pitcher data for {selected_date_start.date()}: {e}")
+                logger.error(f"Error handling pitcher data for {selected_date_start.date()}: {e}")
 
 
         formatted_scores = []
@@ -473,10 +475,6 @@ def get_sport_scores(sport_key):
                 'awayPitcherStats': away_pitcher_stats,
                 'isToday': selected_date_start.date() == date.today()
             })
-            if sport_key == 'baseball_mlb':
-                print(f"{away_team} @ {home_team}")
-                print(f"  Away Pitcher: {away_pitcher} ({away_pitcher_stats})")
-                print(f"  Home Pitcher: {home_pitcher} ({home_pitcher_stats})")
 
         soccer_keys = [
             'soccer_epl',
@@ -504,10 +502,10 @@ def get_sport_scores(sport_key):
         )
 
     except requests.exceptions.RequestException as e:
-        print('Request error:', e)
+        logger.error(f'Request error: {e}')
         return jsonify({'error': 'Request Error'}), 500
     except Exception as e:
-        print('Error fetching scores:', e)
+        logger.error(f'Error fetching scores: {e}')
         return jsonify({'error': 'Internal Server Error'}), 500
 
 
@@ -541,7 +539,7 @@ def game_details(game_id):
                 sport_key=sport_key
             ) or []
         except Exception as e:
-            print('Error fetching last 5 games:', str(e))
+            logger.error(f'Error fetching last 5 games: {e}')
             home_team_last_5 = []
             away_team_last_5 = []
             last_5_vs_opponent = []
@@ -656,9 +654,8 @@ def game_details(game_id):
                 away_stats = pitchers.get('away_pitcher_stats', '')
                 home_stats = pitchers.get('home_pitcher_stats', '')
 
-                print(f"{matchup_key} → Pitchers: {pitchers}")
             except Exception as e:
-                print("⚠️ Error loading cached pitcher data:", e)
+                logger.error(f"Error loading cached pitcher data: {e}")
 
        
 
@@ -679,13 +676,11 @@ def game_details(game_id):
                 home_defense = defense.get(home_team, {})
                 away_offense = offense.get(away_team, {})
                 away_defense = defense.get(away_team, {})
-                print("Looking for team name:", away_team)
-                print("Available team names:", list(offense.keys()))
 
                 return home_offense, home_defense, away_offense, away_defense
 
             except Exception as e:
-                print(f"⚠️ Failed to load rankings for {sport_key}: {e}")
+                logger.error(f"Failed to load rankings for {sport_key}: {e}")
                 return {}, {}, {}, {}
 
         home_offense, home_defense, away_offense, away_defense = {}, {}, {}, {}
@@ -696,10 +691,6 @@ def game_details(game_id):
             home_offense, home_defense, away_offense, away_defense = get_football_rankings(
                 sport_key, home_team, away_team
             )
-            print("Home Offense:", home_offense)
-            print("Home Defense:", home_defense)
-            print("Away Offense:", away_offense)
-            print("Away Defense:", away_defense)
 
 
        
@@ -752,14 +743,15 @@ def game_details(game_id):
 
 
     except Exception as e:
-        print('Error fetching game details:', str(e))
+        logger.error(f'Error fetching game details: {e}')
         return jsonify({'error': 'Internal Server Error'}), 500
 
-# Route for the home page
-@app.route('/')
-@cache.cached(timeout=3600, query_string=True)
-def home():
-    return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
+# # Route for the home page
+# @app.route('/')
+# @cache.cached(timeout=3600, query_string=True)
+# def home():
+#     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
+
 
 
 @app.route('/delete-cache/<cache_key>')
@@ -776,8 +768,29 @@ def delete_cache_key(cache_key):
     except Exception as e:
         logger.error(f"Error deleting cache key '{cache_key}': {e}")
         return jsonify({'error': 'Internal Server Error'}), 500
-    
+
+print("STATIC FOLDER:", app.static_folder)
+print("JS EXISTS:", os.path.exists(os.path.join(app.static_folder, "static/js/main.64786247.js")))
+print("CSS EXISTS:", os.path.exists(os.path.join(app.static_folder, "static/css/main.465f6870.css")))
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    # Try to serve static files from the static folder
+    static_file_path = os.path.join(app.static_folder, path)
+    if os.path.exists(static_file_path) and os.path.isfile(static_file_path):
+        return send_from_directory(app.static_folder, path)
+    # Serve index.html from the build root (not static)
+    return send_from_directory('getstam-react/build', 'index.html')
+
+# Add this at the bottom of your app.py, just before if __name__ == '__main__':
+
+with app.test_client() as client:
+    resp = client.get('/static/js/main.64786247.js')
+    print("STATIC TEST STATUS:", resp.status_code)
+    print("STATIC TEST LENGTH:", len(resp.data))
+
 if __name__ == '__main__':
+    print('url map:', app.url_map)
     # Start the Celery worker in a subprocess
     celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])
 

@@ -1,14 +1,14 @@
-"""NFL trends API endpoints."""
+"""Soccer trends API endpoints."""
 
 from flask import Blueprint, request, jsonify
 from cache import cache
-from ...services.historical.nfl_trends_service import NFLTrendsService
+from ...services.historical.soccer_trends_service import SoccerTrendsService
 
 
-nfl_trends_bp = Blueprint('nfl_trends', __name__)
+soccer_trends_bp = Blueprint('soccer_trends', __name__)
 
 
-def make_nfl_trends_cache_key(*args, **kwargs):
+def make_soccer_trends_cache_key(*args, **kwargs):
     """Create a custom cache key based on game IDs only."""
     data = request.get_json() or {}
     games = data.get('games', [])
@@ -22,13 +22,13 @@ def make_nfl_trends_cache_key(*args, **kwargs):
     game_ids_str = '|'.join(game_ids)
     game_ids_hash = hashlib.md5(game_ids_str.encode()).hexdigest()[:8]  # First 8 chars
     
-    return f"nfl_trends:{game_ids_hash}"
+    return f"soccer_trends:{game_ids_hash}"
 
 
-@nfl_trends_bp.route('/api/historical/trends/nfl', methods=['POST'])
-@cache.cached(timeout=3600, make_cache_key=make_nfl_trends_cache_key)
-def analyze_nfl_trends():
-    """Analyze NFL trends for the given games."""
+@soccer_trends_bp.route('/api/historical/trends/soccer', methods=['POST'])
+@cache.cached(timeout=3600, make_cache_key=make_soccer_trends_cache_key)
+def analyze_soccer_trends():
+    """Analyze soccer trends for the given games."""
     try:
         data = request.get_json()
         if not data or 'games' not in data:
@@ -39,7 +39,7 @@ def analyze_nfl_trends():
         min_trend_length = data.get('min_trend_length', 3)
         
         # Analyze trends for all games
-        results, error = NFLTrendsService.analyze_multiple_games_trends(
+        results, error = SoccerTrendsService.analyze_multiple_games_trends(
             games, limit, min_trend_length
         )
         
@@ -57,5 +57,5 @@ def analyze_nfl_trends():
         })
         
     except Exception as e:
-        print(f"Error in analyze_nfl_trends: {str(e)}")
+        print(f"Error in analyze_soccer_trends: {str(e)}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500

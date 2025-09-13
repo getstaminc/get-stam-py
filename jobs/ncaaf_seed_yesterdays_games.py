@@ -19,24 +19,27 @@ SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 def convert_start_time_to_time(start_time):
-    """
-    Convert military time (e.g., '1838') to a string in 'HH:MM:SS' format.
-    """
+    """Convert SDQL start_time to SQL TIME format"""
     try:
-        # Handle specific invalid cases where start_time starts with "243"
-        if start_time.startswith("243"):
-            print("Correcting invalid start time: {} to 1230".format(start_time))
-            start_time = "1230"
-
-        # Handle specific invalid cases where start_time starts with "245"
-        elif start_time.startswith("245") or start_time.startswith("244"):
-            print("Correcting invalid start time: {} to 1300".format(start_time))
-            start_time = "1300"
-
-        # Convert to 'HH:MM:SS' format
-        return datetime.strptime(start_time, "%H%M").strftime("%H:%M:%S")
-    except ValueError as e:
-        raise ValueError("Invalid start time format: {}. Error: {}".format(start_time, e))
+        # Handle None case
+        if start_time is None:
+            return None
+            
+        # Convert to string if it's not already
+        start_time_str = str(start_time)
+        
+        # SDQL returns times like '1530' (3:30 PM) or '730' (7:30 PM)
+        if len(start_time_str) == 3:
+            start_time_str = '0' + start_time_str  # Pad to 4 digits
+        
+        if len(start_time_str) == 4:
+            hour = int(start_time_str[:2])
+            minute = int(start_time_str[2:])
+            return f"{hour:02d}:{minute:02d}:00"
+        
+        return None
+    except (ValueError, TypeError):
+        return None
 
 def get_yesterdays_games(retries=3, delay=1):
     """Fetch all of yesterday's NCAAF games from the SDQL API."""

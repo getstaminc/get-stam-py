@@ -42,6 +42,10 @@ from api.routes.historical.mlb_games import mlb_historical_bp
 from api.routes.historical.soccer_games import soccer_historical_bp
 from api.routes.historical.nfl_games import nfl_historical_bp
 from api.routes.historical.ncaaf_games import ncaaf_historical_bp
+from api.routes.historical.nfl_trends import nfl_trends_bp
+from api.routes.historical.mlb_trends import mlb_trends_bp
+from api.routes.historical.ncaaf_trends import ncaaf_trends_bp
+from api.routes.historical.soccer_trends import soccer_trends_bp
 from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
@@ -149,6 +153,10 @@ app.register_blueprint(mlb_historical_bp)
 app.register_blueprint(soccer_historical_bp)
 app.register_blueprint(nfl_historical_bp)
 app.register_blueprint(ncaaf_historical_bp)
+app.register_blueprint(nfl_trends_bp)
+app.register_blueprint(mlb_trends_bp)
+app.register_blueprint(ncaaf_trends_bp)
+app.register_blueprint(soccer_trends_bp)
 
 @app.route('/trends')
 def show_trends():

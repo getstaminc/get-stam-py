@@ -654,6 +654,8 @@ def game_details(game_id):
                 away_stats = pitchers.get('away_pitcher_stats', '')
                 home_stats = pitchers.get('home_pitcher_stats', '')
 
+                print(f"{matchup_key} → Pitchers: {pitchers}")
+
             except Exception as e:
                 print("⚠️ Error loading cached pitcher data:", e)
 

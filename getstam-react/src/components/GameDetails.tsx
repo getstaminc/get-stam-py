@@ -89,8 +89,6 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     away.score !== null &&
     away.score !== undefined;
   
-  console.log("GameDetails Rendered with game:", game);
-
   const scoreDisplay = hasScore ? `${away.score} - ${home.score}` : "— —";
   const gameStatus = hasScore ? "" : "Scheduled";
 

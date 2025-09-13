@@ -473,10 +473,6 @@ def get_sport_scores(sport_key):
                 'awayPitcherStats': away_pitcher_stats,
                 'isToday': selected_date_start.date() == date.today()
             })
-            if sport_key == 'baseball_mlb':
-                print(f"{away_team} @ {home_team}")
-                print(f"  Away Pitcher: {away_pitcher} ({away_pitcher_stats})")
-                print(f"  Home Pitcher: {home_pitcher} ({home_pitcher_stats})")
 
         soccer_keys = [
             'soccer_epl',
@@ -696,10 +692,6 @@ def game_details(game_id):
             home_offense, home_defense, away_offense, away_defense = get_football_rankings(
                 sport_key, home_team, away_team
             )
-            print("Home Offense:", home_offense)
-            print("Home Defense:", home_defense)
-            print("Away Offense:", away_offense)
-            print("Away Defense:", away_defense)
 
 
        

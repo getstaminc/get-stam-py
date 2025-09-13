@@ -531,7 +531,7 @@ def game_details(game_id):
                 sport_key=sport_key
             ) or []
         except Exception as e:
-            logger.error(f'Error fetching last 5 games: {e}')
+            print('Error fetching last 5 games:', str(e))
             home_team_last_5 = []
             away_team_last_5 = []
             last_5_vs_opponent = []
@@ -647,7 +647,7 @@ def game_details(game_id):
                 home_stats = pitchers.get('home_pitcher_stats', '')
 
             except Exception as e:
-                print(f"{matchup_key} → Pitchers: {pitchers}")
+                print("⚠️ Error loading cached pitcher data:", e)
 
        
 

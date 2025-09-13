@@ -50,7 +50,7 @@ def get_yesterdays_games(retries=3, delay=1):
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
     
     # SDQL query to fetch all games for yesterday (including neutral games to avoid duplicates)
-    sdql_query = "date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@(site='home' or site='neutral') and date=20250911"
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@(site='home' or site='neutral') and date={yesterday}"
 
     headers = {
         'user': SDQL_USERNAME,

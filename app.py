@@ -315,7 +315,7 @@ def get_next_game_date_within_7_days(scores, selected_date_start):
 
 @cache.cached(timeout=3600)
 def get_pitcher_data_for_dates():
-    logger.info("Cache miss: Fetching pitcher data from rotowire.com")
+    print("🚨 CACHE MISS: Fetching pitcher data from rotowire.com")
     urls = {
         "today": "https://www.rotowire.com/baseball/daily-lineups.php",
         "tomorrow": "https://www.rotowire.com/baseball/daily-lineups.php?date=tomorrow"
@@ -410,7 +410,7 @@ def get_sport_scores(sport_key):
                     key = f"{game['away_team']}@{game['home_team']}"
                     pitchers_data[key] = game
             except Exception as e:
-                logger.error(f"Error handling pitcher data for {selected_date_start.date()}: {e}")
+                print(f"⚠️ Error handling pitcher data for {selected_date_start.date()}: {e}")
 
 
         formatted_scores = []
@@ -494,10 +494,10 @@ def get_sport_scores(sport_key):
         )
 
     except requests.exceptions.RequestException as e:
-        logger.error(f'Request error: {e}')
+        print('Request error:', e)
         return jsonify({'error': 'Request Error'}), 500
     except Exception as e:
-        logger.error(f'Error fetching scores: {e}')
+        print('Error fetching scores:', e)
         return jsonify({'error': 'Internal Server Error'}), 500
 
 
@@ -647,7 +647,7 @@ def game_details(game_id):
                 home_stats = pitchers.get('home_pitcher_stats', '')
 
             except Exception as e:
-                logger.error(f"Error loading cached pitcher data: {e}")
+                print(f"{matchup_key} → Pitchers: {pitchers}")
 
        
 
@@ -672,7 +672,7 @@ def game_details(game_id):
                 return home_offense, home_defense, away_offense, away_defense
 
             except Exception as e:
-                logger.error(f"Failed to load rankings for {sport_key}: {e}")
+                print(f"⚠️ Failed to load rankings for {sport_key}: {e}")
                 return {}, {}, {}, {}
 
         home_offense, home_defense, away_offense, away_defense = {}, {}, {}, {}

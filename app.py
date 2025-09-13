@@ -126,9 +126,9 @@ def get_cache_value(cache_key):
         return jsonify({'error': 'Internal Server Error'}), 500 
 
 # app.py
-# from betting_guide import betting_guide  # Add this line
+from betting_guide import betting_guide  # Add this line
 
-# app.register_blueprint(betting_guide)  # Register the blueprint
+app.register_blueprint(betting_guide)  # Register the blueprint
 
 def filter_scores_by_date(scores, selected_date_start):
     filtered_scores = []

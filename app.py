@@ -655,7 +655,6 @@ def game_details(game_id):
                 home_stats = pitchers.get('home_pitcher_stats', '')
 
                 print(f"{matchup_key} → Pitchers: {pitchers}")
-
             except Exception as e:
                 print("⚠️ Error loading cached pitcher data:", e)
 
@@ -678,6 +677,8 @@ def game_details(game_id):
                 home_defense = defense.get(home_team, {})
                 away_offense = offense.get(away_team, {})
                 away_defense = defense.get(away_team, {})
+                print("Looking for team name:", away_team)
+                print("Available team names:", list(offense.keys()))
 
                 return home_offense, home_defense, away_offense, away_defense
 
@@ -745,7 +746,7 @@ def game_details(game_id):
 
 
     except Exception as e:
-        logger.error(f'Error fetching game details: {e}')
+        print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
 
 # # Route for the home page

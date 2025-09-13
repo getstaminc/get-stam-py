@@ -793,7 +793,6 @@ with app.test_client() as client:
     print("STATIC TEST LENGTH:", len(resp.data))
 
 if __name__ == '__main__':
-    print('url map:', app.url_map)
     # Start the Celery worker in a subprocess
     celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])
 

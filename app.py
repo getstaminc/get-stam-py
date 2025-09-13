@@ -772,9 +772,6 @@ def delete_cache_key(cache_key):
         logger.error(f"Error deleting cache key '{cache_key}': {e}")
         return jsonify({'error': 'Internal Server Error'}), 500
 
-print("STATIC FOLDER:", app.static_folder)
-print("JS EXISTS:", os.path.exists(os.path.join(app.static_folder, "static/js/main.64786247.js")))
-print("CSS EXISTS:", os.path.exists(os.path.join(app.static_folder, "static/css/main.465f6870.css")))
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):

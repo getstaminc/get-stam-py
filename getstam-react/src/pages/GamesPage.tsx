@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { Box, Typography, Paper, Button, Divider, TextField } from "@mui/material";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Button,
+  Paper,
+  TextField,
+} from "@mui/material";
+import { useGame } from "../contexts/GameContext";
 import GameOdds from "../components/GameOdds";
 import GamesWithTrends from "../components/GamesWithTrends";
 import PastGamesDisplay from "../components/PastGamesDisplay";
-import { useGame } from "../contexts/GameContext"; 
-import { GameWithTrends } from "../utils/trendAnalysis"; 
+import { GameWithTrends } from "../utils/trendAnalysis";
+import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils"; 
 
 // Odds API key from .env (ODDS_API_KEY)
 const ODDS_API_KEY = process.env.REACT_APP_ODDS_API_KEY;
@@ -162,10 +169,28 @@ const GamesPage = () => {
   const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [minTrendLength, setMinTrendLength] = useState<number>(3);
+  const [pitcherData, setPitcherData] = useState<any>({});
+
+  // Get pitcher data for a specific game using shared utility
+  const getGamePitcherData = (game: any) => {
+    return getPitcherDataForGame(game, pitcherData, selectedDate, sportKey);
+  };
+
   const [nextGameDate, setNextGameDate] = useState<string | null>(null);
   
   // Check if selected date is in the past
   const isHistoricalDate = isPastDate(selectedDate);
+
+  // Fetch pitcher data when sport is MLB
+  useEffect(() => {
+    if (sportKey === "baseball_mlb") {
+      fetchPitcherData().then((data) => {
+        setPitcherData(data);
+      });
+    } else {
+      setPitcherData({});
+    }
+  }, [sportKey]);
 
   // CRITICAL: Sync activeView with URL IMMEDIATELY - this must run before trend analysis
   useEffect(() => {
@@ -386,6 +411,7 @@ const GamesPage = () => {
                 away: match.away,
                 totals: match.totals,
               }}
+              pitcherData={getGamePitcherData(match)}
             />
             <Box sx={{ mt: 3, textAlign: "center" }}>
               <Button
@@ -438,6 +464,7 @@ const GamesPage = () => {
             onViewDetails={handleViewDetails}
             minTrendLength={minTrendLength}
             onMinTrendLengthChange={handleMinTrendLengthChange}
+            getPitcherDataForGame={getGamePitcherData}
           />
         )}
 

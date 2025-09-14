@@ -12,6 +12,12 @@ interface GamesWithTrendsProps {
   onViewDetails: (game: any) => void;
   minTrendLength: number;
   onMinTrendLengthChange: (length: number) => void;
+  getPitcherDataForGame?: (game: any) => { 
+    home_pitcher?: string; 
+    away_pitcher?: string;
+    home_pitcher_stats?: string;
+    away_pitcher_stats?: string;
+  } | undefined;
 }
 
 const getTrendColor = (trendType: string): 'success' | 'error' | 'warning' | 'info' => {
@@ -80,7 +86,8 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
   loading, 
   onViewDetails,
   minTrendLength,
-  onMinTrendLengthChange
+  onMinTrendLengthChange,
+  getPitcherDataForGame
 }) => {
   const location = useLocation();
   
@@ -212,6 +219,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
                 away: game.away,
                 totals: game.totals,
               }}
+              pitcherData={getPitcherDataForGame?.(game)}
             />
             
             {/* Trends Display */}

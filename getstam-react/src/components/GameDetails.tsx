@@ -59,6 +59,12 @@ type GameDetailsProps = {
   homeRankings?: RankingsData | null;
   awayRankings?: RankingsData | null;
   rankingsLoading?: boolean;
+  pitcherData?: {
+    home_pitcher?: string;
+    away_pitcher?: string;
+    home_pitcher_stats?: string;
+    away_pitcher_stats?: string;
+  };
 };
 
 const GameDetails: React.FC<GameDetailsProps> = ({ 
@@ -71,7 +77,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   sportKey = "americanfootball_nfl", // Default to NFL if not provided
   homeRankings,
   awayRankings,
-  rankingsLoading = false
+  rankingsLoading = false,
+  pitcherData
 }) => {
   const { home, away } = game;
   const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
@@ -100,7 +107,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     <Box>
       <Paper elevation={3} sx={{ p: 3, mt: 4, maxWidth: 900, mx: "auto", backgroundColor: "#f9f9f9" }}>
         {/* Odds section */}
-        <GameOdds game={game} />
+        <GameOdds game={game} pitcherData={pitcherData} />
       </Paper>
 
       {/* Historical Games Section */}

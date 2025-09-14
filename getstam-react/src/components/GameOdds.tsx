@@ -10,9 +10,15 @@ type Game = {
 
 type GameOddsProps = {
   game: Game;
+  pitcherData?: {
+    home_pitcher?: string;
+    away_pitcher?: string;
+    home_pitcher_stats?: string;
+    away_pitcher_stats?: string;
+  };
 };
 
-const GameOdds: React.FC<GameOddsProps> = ({ game }) => {
+const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
   const { home, away, totals } = game;
 
   const hasScore =
@@ -48,6 +54,14 @@ const GameOdds: React.FC<GameOddsProps> = ({ game }) => {
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {home.team}
           </Typography>
+          {pitcherData?.home_pitcher && (
+            <Typography variant="body2" color="primary" sx={{ fontStyle: "italic" }}>
+              Pitcher: {pitcherData.home_pitcher_stats 
+                ? `${pitcherData.home_pitcher} (${pitcherData.home_pitcher_stats})`
+                : pitcherData.home_pitcher
+              }
+            </Typography>
+          )}
           <Typography variant="body2" color="text.secondary">
             Home
           </Typography>
@@ -66,6 +80,14 @@ const GameOdds: React.FC<GameOddsProps> = ({ game }) => {
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {away.team}
           </Typography>
+          {pitcherData?.away_pitcher && (
+            <Typography variant="body2" color="primary" sx={{ fontStyle: "italic" }}>
+              Pitcher: {pitcherData.away_pitcher_stats 
+                ? `${pitcherData.away_pitcher} (${pitcherData.away_pitcher_stats})`
+                : pitcherData.away_pitcher
+              }
+            </Typography>
+          )}
           <Typography variant="body2" color="text.secondary">
             Away
           </Typography>

@@ -4,6 +4,7 @@ import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
 import { useGame } from "../contexts/GameContext";
 import { convertTeamNameBySport, convertSportKeyForDatabase } from "../utils/teamNameConverter";
+import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -77,9 +78,17 @@ const GameDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gamesLimit, setGamesLimit] = useState<number>(5);
+  const [pitcherData, setPitcherData] = useState<any>({});
 
   // Convert URL sport to API sport key
   const sportKey = sport ? SPORT_URL_TO_API_KEY[sport] || sport : null;
+
+  // Get pitcher data for a specific game using shared utility
+  const getGamePitcherData = (game: any) => {
+    // Use current date for game details page
+    const currentDate = new Date();
+    return getPitcherDataForGame(game, pitcherData, currentDate, sportKey || "");
+  };
 
   // Fetch team history
   const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5) => {
@@ -209,6 +218,13 @@ const GameDetailsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // Fetch pitcher data for MLB games
+    if (sportKey === "baseball_mlb") {
+      fetchPitcherData().then((data) => {
+        setPitcherData(data);
+      });
+    }
+
     // If we have game data from context and the game_id matches, use it
     if (currentGame && currentGame.game_id === gameId) {
       setGameData(currentGame);
@@ -294,6 +310,7 @@ const GameDetailsPage: React.FC = () => {
         homeRankings={homeRankings}
         awayRankings={awayRankings}
         rankingsLoading={rankingsLoading}
+        pitcherData={getGamePitcherData(gameData)}
       />
     </div>
   );

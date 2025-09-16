@@ -173,15 +173,21 @@ def seed_yesterdays_epl_games():
         yesterday = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
         
         # Get historical odds for yesterday
-        odds_data = get_historical_odds_for_date(yesterday)
+        odds_data = get_historical_odds_for_date(yesterday_for_odds)
         
-        # Create a lookup dictionary for odds by game ID
-        odds_lookup = {game['id']: game for game in odds_data}
+        # Create a lookup dictionary for odds by team matchup instead of game ID
+        odds_lookup = {}
+        for game in odds_data:
+            # Create a key using both possible team combinations (home vs away)
+            home_vs_away = f"{game['home_team']}_{game['away_team']}"
+            away_vs_home = f"{game['away_team']}_{game['home_team']}"
+            odds_lookup[home_vs_away] = game
+            odds_lookup[away_vs_home] = game
         
         # Fetch all soccer teams from the database
         teams_dict = {
             team['team_name']: team['team_id']
-            for team in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'Soccer'")).mappings()
+            for team in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'EPL'")).mappings()
         }
         
         print(f"Found {len(teams_dict)} soccer teams in database")
@@ -199,9 +205,20 @@ def seed_yesterdays_epl_games():
                 print(f"Skipping game - missing team IDs. Home: {game['home_team']} (ID: {home_team_id}), Away: {game['away_team']} (ID: {away_team_id})")
                 continue
             
-            # Extract scores (first team in scores array is always home team)
-            home_goals = int(game['scores'][0]['score'])
-            away_goals = int(game['scores'][1]['score'])
+            # Extract scores by matching team names
+            home_goals = None
+            away_goals = None
+            
+            for score in game['scores']:
+                if score['name'] == game['home_team']:
+                    home_goals = int(score['score'])
+                elif score['name'] == game['away_team']:
+                    away_goals = int(score['score'])
+            
+            if home_goals is None or away_goals is None:
+                print(f"Skipping game - could not find scores for both teams")
+                continue
+                
             total_goals = home_goals + away_goals
             
             # Extract game date and time
@@ -225,13 +242,14 @@ def seed_yesterdays_epl_games():
                 print(f"Game already exists, skipping...")
                 continue
             
-            # Get odds data for this game
+            # Get odds data for this game by matching team names
+            team_matchup = f"{game['home_team']}_{game['away_team']}"
             odds_info = {}
-            if game['id'] in odds_lookup:
-                odds_info = parse_odds_data(odds_lookup[game['id']])
-                print(f"Found odds data for game")
+            if team_matchup in odds_lookup:
+                odds_info = parse_odds_data(odds_lookup[team_matchup])
+                print(f"Found odds data for game by team matchup")
             else:
-                print(f"No odds data found for game ID: {game['id']}")
+                print(f"No odds data found for matchup: {game['home_team']} vs {game['away_team']}")
                 # Initialize with None values
                 odds_info = {
                     'home_money_line': None, 'draw_money_line': None, 'away_money_line': None,

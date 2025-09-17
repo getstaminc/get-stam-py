@@ -24,10 +24,10 @@ from sqlalchemy import create_engine, text
 
 
 def get_yesterdays_epl_scores(retries=3, delay=1):
-    """Fetch EPL scores from the last 3 days to get yesterday's completed games"""
-    print("Fetching EPL scores from Odds API...")
+    """Fetch UCL scores from the last 3 days to get yesterday's completed games"""
+    print("Fetching UCL scores from Odds API...")
     
-    url = f"https://api.the-odds-api.com/v4/sports/soccer_epl/scores/?daysFrom=3&apiKey={ODDS_API_KEY}"
+    url = f"https://api.the-odds-api.com/v4/sports/soccer_uefa_champs_league/scores/?daysFrom=3&apiKey={ODDS_API_KEY}"
     
     for i in range(retries):
         try:
@@ -46,7 +46,7 @@ def get_yesterdays_epl_scores(retries=3, delay=1):
                     if game_date == yesterday:
                         yesterday_games.append(game)
             
-            print(f"Found {len(yesterday_games)} completed EPL games from yesterday ({yesterday})")
+            print(f"Found {len(yesterday_games)} completed UCL games from yesterday ({yesterday})")
             return yesterday_games
             
         except requests.exceptions.RequestException as e:
@@ -64,7 +64,7 @@ def get_historical_odds_for_date(date_str, retries=3, delay=1):
     print(f"Fetching historical odds for {date_str}...")
     
     # Format date for API (needs to be in ISO format with time)
-    url = f"https://api.the-odds-api.com/v4/historical/sports/soccer_epl/odds?apiKey={ODDS_API_KEY}&regions=us,uk,eu&bookmakers=bovada&markets=h2h,spreads,totals&oddsFormat=american&date={date_str}T00:00:00Z"
+    url = f"https://api.the-odds-api.com/v4/historical/sports/soccer_uefa_champs_league/odds?apiKey={ODDS_API_KEY}&regions=us,uk,eu&bookmakers=bovada&markets=h2h,spreads,totals&oddsFormat=american&date={date_str}T00:00:00Z"
     
     for i in range(retries):
         try:
@@ -154,8 +154,8 @@ def parse_odds_data(odds_game):
 
 
 def seed_yesterdays_epl_games():
-    """Main function to seed yesterday's EPL games"""
-    print("Starting EPL game seeding...")
+    """Main function to seed yesterday's UCL games"""
+    print("Starting UCL game seeding...")
     
     # Create database connection
     engine = create_engine(DATABASE_URL)
@@ -166,12 +166,12 @@ def seed_yesterdays_epl_games():
         games = get_yesterdays_epl_scores()
         
         if not games:
-            print("No completed EPL games found for yesterday")
+            print("No completed UCL games found for yesterday")
             return
         
         # Get yesterday's date for odds lookup
         yesterday = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
-
+        
         # Get historical odds for yesterday
         odds_data = get_historical_odds_for_date(yesterday)
         
@@ -187,7 +187,7 @@ def seed_yesterdays_epl_games():
         # Fetch all soccer teams from the database
         teams_dict = {
             team['team_name']: team['team_id']
-            for team in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'EPL'")).mappings()
+            for team in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'SOCCER'")).mappings()
         }
         
         print(f"Found {len(teams_dict)} soccer teams in database")
@@ -278,7 +278,7 @@ def seed_yesterdays_epl_games():
                     )
                 """), {
                     'odds_id': game['id'],
-                    'league': 'EPL',
+                    'league': 'UCL',
                     'game_date': game_date,
                     'home_team_id': home_team_id,
                     'away_team_id': away_team_id,
@@ -308,7 +308,7 @@ def seed_yesterdays_epl_games():
         
         # Commit the transaction
         conn.commit()
-        print(f"\nSuccessfully seeded {new_games_count} EPL games from yesterday")
+        print(f"\nSuccessfully seeded {new_games_count} UCL games from yesterday")
         
     except Exception as e:
         print(f"Error during seeding: {e}")

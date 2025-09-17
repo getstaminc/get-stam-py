@@ -782,13 +782,6 @@ def serve(path):
     # Serve index.html from the build root (not static)
     return send_from_directory('getstam-react/build', 'index.html')
 
-# Add this at the bottom of your app.py, just before if __name__ == '__main__':
-
-with app.test_client() as client:
-    resp = client.get('/static/js/main.64786247.js')
-    print("STATIC TEST STATUS:", resp.status_code)
-    print("STATIC TEST LENGTH:", len(resp.data))
-
 if __name__ == '__main__':
     # Start the Celery worker in a subprocess
     celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])

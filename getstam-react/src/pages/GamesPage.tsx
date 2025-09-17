@@ -6,6 +6,7 @@ import {
   Button,
   Paper,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import { useGame } from "../contexts/GameContext";
 import GameOdds from "../components/GameOdds";
@@ -168,6 +169,7 @@ const GamesPage = () => {
   const [games, setGames] = useState<any[]>([]);
   const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
+  const [gamesLoading, setGamesLoading] = useState(false);
   const [minTrendLength, setMinTrendLength] = useState<number>(3);
   const [pitcherData, setPitcherData] = useState<any>({});
 
@@ -211,13 +213,17 @@ const GamesPage = () => {
     setTrendsLoading(false);
     
     if (!isHistoricalDate) {
+      setGamesLoading(true);
       fetchGamesData(sportKey, selectedDate).then((data) => {
         setGames(data.games || []);
         setNextGameDate(data.nextGameDate || null);
+      }).finally(() => {
+        setGamesLoading(false);
       });
     } else {
       // Clear games data for historical dates since we'll show PastGamesDisplay
       setNextGameDate(null);
+      setGamesLoading(false);
     }
   }, [sportKey, selectedDate, isHistoricalDate, activeView]);
 
@@ -383,7 +389,13 @@ const GamesPage = () => {
         )}
 
         {/* Show current/future games */}
-        {!isHistoricalDate && activeView === "all" && games.length === 0 && (
+        {!isHistoricalDate && activeView === "all" && gamesLoading && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 2 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {!isHistoricalDate && activeView === "all" && !gamesLoading && games.length === 0 && (
           <Typography align="center" sx={{ mt: 4, mb: 2 }}>
             No games found for this date.
             {nextGameDate && (
@@ -437,7 +449,13 @@ const GamesPage = () => {
           </Paper>
         ))}
 
-        {!isHistoricalDate && activeView === "trends" && games.length === 0 && (
+        {!isHistoricalDate && activeView === "trends" && gamesLoading && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 2 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {!isHistoricalDate && activeView === "trends" && !gamesLoading && games.length === 0 && (
           <Typography align="center" sx={{ mt: 4, mb: 2 }}>
             No games found for this date.
             {nextGameDate && (

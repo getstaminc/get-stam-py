@@ -1,0 +1,19 @@
+.moreButton {
+  margin-left: 16px;
+  text-transform: none;
+  font-weight: 500;
+  color: black;
+  background-color: transparent;
+  border-radius: 0;
+  min-height: 48px;
+  min-width: 64px;
+  box-shadow: none;
+}
+.moreButton:hover,
+.moreButton:active,
+.moreButton:focus {
+  border-bottom: 2px solid #1976d2;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for, send_from_directory, current_app
+from flask import Flask, render_template, jsonify, request, render_template_string, Blueprint, redirect, url_for
 from datetime import datetime, timedelta, date  # Import timedelta here
 import pytz
 from dateutil import parser
@@ -51,7 +51,7 @@ from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
 
-app = Flask(__name__, static_folder='getstam-react/build/static', static_url_path='/static')
+app = Flask(__name__)
 port = 5000
 
 # Specify allowed origins
@@ -749,12 +749,11 @@ def game_details(game_id):
         print('Error fetching game details:', str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
 
-# # Route for the home page
-# @app.route('/')
-# @cache.cached(timeout=3600, query_string=True)
-# def home():
-#     return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
-
+# Route for the home page
+@app.route('/')
+@cache.cached(timeout=3600, query_string=True)
+def home():
+    return render_template('index.html', excluded_sports=EXCLUDED_SPORTS)
 
 
 @app.route('/delete-cache/<cache_key>')
@@ -771,17 +770,7 @@ def delete_cache_key(cache_key):
     except Exception as e:
         logger.error(f"Error deleting cache key '{cache_key}': {e}")
         return jsonify({'error': 'Internal Server Error'}), 500
-
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    # Try to serve static files from the static folder
-    static_file_path = os.path.join(app.static_folder, path)
-    if os.path.exists(static_file_path) and os.path.isfile(static_file_path):
-        return send_from_directory(app.static_folder, path)
-    # Serve index.html from the build root (not static)
-    return send_from_directory('getstam-react/build', 'index.html')
-
+    
 if __name__ == '__main__':
     # Start the Celery worker in a subprocess
     celery_process = subprocess.Popen(["celery", "-A", "celery_config", "worker", "--loglevel=info"])

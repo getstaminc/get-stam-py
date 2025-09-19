@@ -15,9 +15,6 @@ import PastGamesDisplay from "../components/PastGamesDisplay";
 import { GameWithTrends } from "../utils/trendAnalysis";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils"; 
 
-// Odds API key from .env (ODDS_API_KEY)
-const ODDS_API_KEY = process.env.REACT_APP_ODDS_API_KEY;
-
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   nfl: "americanfootball_nfl",

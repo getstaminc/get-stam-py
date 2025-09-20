@@ -28,17 +28,21 @@ def check_api_key():
 def get_ncaaf_games():
     """Get NCAAF historical games from database."""
     limit = request.args.get('limit', 50, type=int)
-    
-    games, error = NCAAFService.get_games(limit)
-    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    games, error = NCAAFService.get_games(limit, start_date, end_date)
+
     if error:
         return jsonify({'error': error}), 500
-    
+
     return jsonify({
         'games': games,
         'count': len(games) if games else 0,
         'sport': 'NCAAF',
-        'limit': limit
+        'limit': limit,
+        'start_date': start_date,
+        'end_date': end_date
     })
 
 

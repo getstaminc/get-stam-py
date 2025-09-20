@@ -353,6 +353,8 @@ class MLBService(BaseHistoricalService):
                 'game_date': game_date,
                 'away_team': game.get('away_team_name'),
                 'home_team': game.get('home_team_name'),
+                'away_team_name': game.get('away_team_name'),
+                'home_team_name': game.get('home_team_name'),
                 'away_runs': game.get('away_runs'),
                 'home_runs': game.get('home_runs'),
                 'home_line': game.get('home_line'),

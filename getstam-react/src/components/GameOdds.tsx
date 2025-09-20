@@ -28,7 +28,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
     away.score !== undefined;
 
   const scoreDisplay = hasScore ? `${home.score} - ${away.score}` : "— —";
-  const gameStatus = hasScore ? "Final Score" : "Scheduled";
+  const gameStatus = hasScore ? "" : "Scheduled";
 
   const formatOdds = (point: number | null, price: number | null) => {
     if (point === null && price === null) return "N/A";

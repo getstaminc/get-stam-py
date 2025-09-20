@@ -80,8 +80,8 @@ export type HistoricalGame = NFLGame | MLBGame | SoccerGame;
 export interface GameData {
   game_id: number;
   date: string;
-  home_team: string;
-  away_team: string;
+  home_team_name: string;
+  away_team_name: string;
   home_runs?: number;
   away_runs?: number;
   home_points?: number;

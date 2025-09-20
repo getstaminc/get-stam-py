@@ -68,7 +68,7 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
       case 'nfl':
         return `${baseUrl}/nfl/games?start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
       case 'ncaaf':
-        return `${baseUrl}/ncaaf/games?limit=100`; // Adjust based on your NCAAF API structure
+        return `${baseUrl}/ncaaf/games?start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
       case 'soccer':
         return `${baseUrl}/soccer/games?league=epl&start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
       default:
@@ -258,7 +258,7 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
                   >
                     <Box display="flex" alignItems="center" gap={1}>
                       <Typography variant="h6" component="div">
-                        {game.home_team || 'Home Team'}
+                        {game.home_team_name}
                       </Typography>
                       <Chip label="Home" size="small" sx={{ fontSize: '0.6rem', height: '18px' }} />
                     </Box>
@@ -279,7 +279,7 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
                     }}
                   >
                     <Typography variant="h6" component="div">
-                      {game.away_team || 'Away Team'}
+                      {game.away_team_name}
                     </Typography>
                     <Typography variant="h5" component="div" fontWeight="bold">
                       {awayScore}
@@ -323,7 +323,7 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
                           fontWeight: 'bold'
                         }}
                       >
-                        {game.home_team?.slice(0, 8) || 'Home'}: {game.home_line > 0 ? '+' : ''}{game.home_line}
+                        {game.home_team_name.slice(0, 8)}: {game.home_line > 0 ? '+' : ''}{game.home_line}
                       </Typography>
                       <Typography 
                         variant="body2"
@@ -332,7 +332,7 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
                           fontWeight: 'bold'
                         }}
                       >
-                        {game.away_team?.slice(0, 8) || 'Away'}: {game.away_line > 0 ? '+' : ''}{game.away_line}
+                        {game.away_team_name.slice(0, 8)}: {game.away_line > 0 ? '+' : ''}{game.away_line}
                       </Typography>
                     </Box>
                   </Box>
@@ -346,12 +346,12 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
                       <Box>
                         {game.away_starting_pitcher && (
                           <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                            {game.away_team?.slice(0, 8) || 'Away'}: {game.away_starting_pitcher}
+                            {game.away_team_name.slice(0, 8)}: {game.away_starting_pitcher}
                           </Typography>
                         )}
                         {game.home_starting_pitcher && (
                           <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                            {game.home_team?.slice(0, 8) || 'Home'}: {game.home_starting_pitcher}
+                            {game.home_team_name.slice(0, 8)}: {game.home_starting_pitcher}
                           </Typography>
                         )}
                       </Box>

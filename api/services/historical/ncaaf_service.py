@@ -8,31 +8,41 @@ class NCAAFService(BaseHistoricalService):
     """Service for handling NCAAF historical data operations"""
     
     @staticmethod
-    def get_games(limit: int = 50) -> Tuple[Optional[List[Dict]], Optional[str]]:
-        """Get NCAAF historical games from database."""
+    def get_games(limit: int = 50, start_date: str = None, end_date: str = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """Get NCAAF historical games from database, optionally filtered by date."""
         try:
             conn = NCAAFService._get_connection()
             if not conn:
                 return None, "Database connection failed"
-            
+
             query = """
                 SELECT 
                     game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
                     home_points, away_points, total_points, home_line, away_line,
                     home_money_line, away_money_line, start_time, total
                 FROM ncaaf_games
-                ORDER BY game_date DESC
-                LIMIT %s
             """
-            
+            params = []
+            where_clauses = []
+            if start_date:
+                where_clauses.append("game_date >= %s")
+                params.append(start_date)
+            if end_date:
+                where_clauses.append("game_date <= %s")
+                params.append(end_date)
+            if where_clauses:
+                query += " WHERE " + " AND ".join(where_clauses)
+            query += " ORDER BY game_date DESC LIMIT %s"
+            params.append(limit)
+
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (limit,))
+                cursor.execute(query, tuple(params))
                 games = cursor.fetchall()
-                
+
                 games_list = [dict(game) for game in games]
                 processed_games = NCAAFService._process_games_list(games_list)
                 return processed_games, None
-                
+
         except Exception as e:
             return None, f"Error fetching NCAAF games: {str(e)}"
         finally:

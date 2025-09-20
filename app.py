@@ -510,7 +510,7 @@ def get_sport_scores(sport_key):
         )
 
     except requests.exceptions.RequestException as e:
-        print('Request error:', e)
+        print('Request error: ', e)
         return jsonify({'error': 'Request Error'}), 500
     except Exception as e:
         print('Error fetching scores:', e)

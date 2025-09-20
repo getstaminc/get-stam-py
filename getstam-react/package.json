@@ -48,6 +48,6 @@
   },
   "devDependencies": {
     "@types/react-router-dom": "^5.3.3",
-    "dotenv-cli": "^7.4.2"
+    "dotenv-cli": "^7.4.4"
   }
 }

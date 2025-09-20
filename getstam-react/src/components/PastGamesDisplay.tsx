@@ -140,11 +140,18 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
   const formatDate = (dateString: string) => {
     try {
       // Handle both YYYY-MM-DD and YYYYMMDD formats
-      const cleanDate = dateString.includes('-') 
-        ? dateString 
-        : `${dateString.slice(0,4)}-${dateString.slice(4,6)}-${dateString.slice(6,8)}`;
+      let year, month, day;
       
-      const date = new Date(cleanDate);
+      if (dateString.includes('-')) {
+        [year, month, day] = dateString.split('-').map(num => parseInt(num));
+      } else {
+        year = parseInt(dateString.slice(0,4));
+        month = parseInt(dateString.slice(4,6));
+        day = parseInt(dateString.slice(6,8));
+      }
+      
+      // Create date in local timezone to avoid UTC conversion issues
+      const date = new Date(year, month - 1, day); // month is 0-indexed
       return date.toLocaleDateString('en-US', { 
         weekday: 'long', 
         year: 'numeric', 

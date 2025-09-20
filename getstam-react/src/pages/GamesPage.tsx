@@ -158,7 +158,11 @@ const GamesPage = () => {
   const isTrends = location.pathname.includes("/trends");
 
   const initialDate: Date = urlDate
-    ? new Date(`${urlDate.slice(0,4)}-${urlDate.slice(4,6)}-${urlDate.slice(6,8)}`)
+    ? new Date(
+        parseInt(urlDate.slice(0,4)), // year
+        parseInt(urlDate.slice(4,6)) - 1, // month (0-indexed)
+        parseInt(urlDate.slice(6,8)) // day
+      )
     : getToday();
 
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
@@ -194,13 +198,20 @@ const GamesPage = () => {
   // CRITICAL: Sync activeView with URL IMMEDIATELY - this must run before trend analysis
   useEffect(() => {
     const newActiveView = isTrends ? "trends" : "all";
-    setActiveView(newActiveView);
+    
+    // If date is historical and user is trying to view trends, force to "all" view
+    if (isHistoricalDate && newActiveView === "trends") {
+      setActiveView("all");
+    } else {
+      setActiveView(newActiveView);
+    }
+    
     // When switching away from trends, clear trends data immediately  
-    if (newActiveView === "all") {
+    if (newActiveView === "all" || isHistoricalDate) {
       setGamesWithTrends([]);
       setTrendsLoading(false);
     }
-  }, [isTrends, location.pathname]);
+  }, [isTrends, location.pathname, isHistoricalDate]);
 
   // Fetch data when sport or date changes (only for current/future dates)
   useEffect(() => {
@@ -264,13 +275,17 @@ const GamesPage = () => {
   // Update URL when date or view changes
   useEffect(() => {
     const urlDateStr = formatDateForUrl(selectedDate);
-    if (activeView === "all") {
+    
+    // If date is in the past and user is trying to view trends, redirect to all games
+    if (isHistoricalDate && activeView === "trends") {
+      navigate(`/${urlSport}?date=${urlDateStr}`, { replace: true });
+    } else if (activeView === "all") {
       navigate(`/${urlSport}?date=${urlDateStr}`, { replace: true });
     } else {
       navigate(`/${urlSport}/trends?date=${urlDateStr}`, { replace: true });
     }
     // eslint-disable-next-line
-  }, [selectedDate, activeView, urlSport]);
+  }, [selectedDate, activeView, urlSport, isHistoricalDate]);
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", px: 2, py: 4 }}>

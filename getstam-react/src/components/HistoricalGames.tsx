@@ -480,7 +480,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                     </TableCell>
                     <TableCell 
                       sx={{ 
-                        backgroundColor: teamLineResult.bgColor,
+                        backgroundColor: sportType === 'mlb' ? 'transparent' : teamLineResult.bgColor,
                         fontWeight: 'bold'
                       }}
                     >

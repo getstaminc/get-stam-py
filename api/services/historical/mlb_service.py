@@ -350,7 +350,7 @@ class MLBService(BaseHistoricalService):
             
             processed_game = {
                 'game_id': game.get('game_id'),
-                'date': game_date,
+                'game_date': game_date,
                 'away_team': game.get('away_team_name'),
                 'home_team': game.get('home_team_name'),
                 'away_runs': game.get('away_runs'),

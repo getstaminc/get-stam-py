@@ -184,6 +184,30 @@ const GamesPage = () => {
   // Check if selected date is in the past
   const isHistoricalDate = isPastDate(selectedDate);
 
+  // Helper to update date only
+  // Always update selectedDate as a new Date object to force effect
+  const updateDate = (date: Date) => {
+    setSelectedDate(new Date(date));
+  };
+
+  // Sync selectedDate with URL changes (so isHistoricalDate is always recalculated)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlDate = params.get("date");
+    let newDate: Date;
+    if (urlDate) {
+      newDate = new Date(
+        parseInt(urlDate.slice(0,4)),
+        parseInt(urlDate.slice(4,6)) - 1,
+        parseInt(urlDate.slice(6,8))
+      );
+    } else {
+      newDate = getToday();
+    }
+  setSelectedDate(new Date(newDate));
+    // eslint-disable-next-line
+  }, [location.search]);
+
   // Fetch pitcher data when sport is MLB
   useEffect(() => {
     if (sportKey === "baseball_mlb") {
@@ -214,12 +238,13 @@ const GamesPage = () => {
   }, [isTrends, location.pathname, isHistoricalDate]);
 
   // Fetch data when sport or date changes (only for current/future dates)
+
+
+  // Fetch games when selectedDate, sportKey, or isHistoricalDate changes
   useEffect(() => {
-    // Clear previous data immediately when sport changes
     setGames([]);
     setGamesWithTrends([]);
     setTrendsLoading(false);
-    
     if (!isHistoricalDate) {
       setGamesLoading(true);
       fetchGamesData(sportKey, selectedDate).then((data) => {
@@ -229,11 +254,11 @@ const GamesPage = () => {
         setGamesLoading(false);
       });
     } else {
-      // Clear games data for historical dates since we'll show PastGamesDisplay
       setNextGameDate(null);
       setGamesLoading(false);
     }
-  }, [sportKey, selectedDate, isHistoricalDate, activeView]);
+    // eslint-disable-next-line
+  }, [selectedDate, sportKey, isHistoricalDate]);
 
   // Analyze trends when switching to trends view or when minTrendLength changes
   useEffect(() => {
@@ -324,12 +349,12 @@ const GamesPage = () => {
             label="Select Date"
             type="date"
             value={formatDate(selectedDate)}
-            onChange={(e) => setSelectedDate(new Date(e.target.value))}
+            onChange={(e) => updateDate(new Date(e.target.value))}
             InputLabelProps={{ shrink: true }}
             sx={{ minWidth: 160 }}
           />
           {/* Only show buttons for current/future dates */}
-          {!isHistoricalDate && (
+          {!isHistoricalDate && ( 
             <Box sx={{ display: "flex", gap: 0 }}>
               <Button
                 variant={activeView === "all" ? "contained" : "outlined"}
@@ -417,7 +442,7 @@ const GamesPage = () => {
                 <Button
                   variant="outlined"
                   size="small"
-                  onClick={() => setSelectedDate(new Date(nextGameDate))}
+                  onClick={() => updateDate(new Date(nextGameDate))}
                   sx={{ ml: 1 }}
                 >
                   {nextGameDate}

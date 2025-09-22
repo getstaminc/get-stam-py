@@ -149,11 +149,6 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
               <MenuItem value={3}>3+ Games</MenuItem>
               <MenuItem value={4}>4+ Games</MenuItem>
               <MenuItem value={5}>5+ Games</MenuItem>
-              <MenuItem value={6}>6+ Games</MenuItem>
-              <MenuItem value={7}>7+ Games</MenuItem>
-              <MenuItem value={8}>8+ Games</MenuItem>
-              <MenuItem value={9}>9+ Games</MenuItem>
-              <MenuItem value={10}>10+ Games</MenuItem>
             </Select>
           </FormControl>
         </Box>

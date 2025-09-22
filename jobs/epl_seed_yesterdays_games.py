@@ -187,7 +187,7 @@ def seed_yesterdays_epl_games():
         # Fetch all soccer teams from the database
         teams_dict = {
             team['team_name']: team['team_id']
-            for team in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'EPL'")).mappings()
+            for team in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'SOCCER'")).mappings()
         }
         
         print(f"Found {len(teams_dict)} soccer teams in database")

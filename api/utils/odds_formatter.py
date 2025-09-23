@@ -6,17 +6,20 @@ def extract_scores(match):
     """Extract home and away scores from match data"""
     home_score = None
     away_score = None
-    
+    home_team = match.get('home_team')
+    away_team = match.get('away_team')
     if match.get('scores'):
-        try:
-            home_score = int(match['scores'][0]['score'])
-        except (KeyError, ValueError, TypeError):
-            home_score = None
-        try:
-            away_score = int(match['scores'][1]['score'])
-        except (KeyError, ValueError, TypeError):
-            away_score = None
-    
+        for s in match['scores']:
+            if s.get('name') == home_team:
+                try:
+                    home_score = int(s['score'])
+                except (KeyError, ValueError, TypeError):
+                    home_score = None
+            elif s.get('name') == away_team:
+                try:
+                    away_score = int(s['score'])
+                except (KeyError, ValueError, TypeError):
+                    away_score = None
     return home_score, away_score
 
 def initialize_odds_structure():

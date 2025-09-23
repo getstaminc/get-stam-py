@@ -329,7 +329,7 @@ class MLBTrendsService(BaseHistoricalService):
                     # Tie breaks both streaks (rare in MLB)
                     win_results.append(False)
                     loss_results.append(False)
-                    
+
             # Total analysis - MLB uses runs
             actual_total = (game.get('home_runs') or 0) + (game.get('away_runs') or 0)
             total_line = game.get('total') or game.get('total_runs')
@@ -349,7 +349,6 @@ class MLBTrendsService(BaseHistoricalService):
         # Calculate current streaks
         current_win_streak = calculate_current_streak(win_results)
         current_loss_streak = calculate_current_streak(loss_results)
-        current_no_cover_streak = calculate_current_streak(no_cover_results)
         current_over_streak = calculate_current_streak(over_results)
         current_under_streak = calculate_current_streak(under_results)
         

@@ -340,9 +340,11 @@ const GamesPage = () => {
         <Box
           sx={{
             mb: 4,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 2
           }}
         >
           <TextField
@@ -351,11 +353,20 @@ const GamesPage = () => {
             value={formatDate(selectedDate)}
             onChange={(e) => updateDate(new Date(e.target.value))}
             InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: 160, mb: { xs: 2, sm: 0 } }}
           />
           {/* Only show buttons for current/future dates */}
           {!isHistoricalDate && ( 
-            <Box sx={{ display: "flex", gap: 0 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: { xs: 'center', md: 'flex-end' },
+                alignItems: 'center',
+                width: '100%',
+                gap: 0
+              }}
+            >
               <Button
                 variant={activeView === "all" ? "contained" : "outlined"}
                 color={activeView === "all" ? "primary" : "inherit"}
@@ -365,7 +376,7 @@ const GamesPage = () => {
                   py: 1,
                   fontSize: "1rem",
                   textTransform: "none",
-                  borderRadius: "8px 0 0 8px",
+                  borderRadius: '8px 0 0 8px',
                   borderRight: "1px solid #ccc",
                   boxShadow: "none",
                   ...(activeView === "all" && { zIndex: 1 }),
@@ -390,7 +401,7 @@ const GamesPage = () => {
                   py: 1,
                   fontSize: "1rem",
                   textTransform: "none",
-                  borderRadius: "0 8px 8px 0",
+                  borderRadius: '0 8px 8px 0',
                   boxShadow: "none",
                   borderLeft: "none",
                   ...(activeView === "trends" && { zIndex: 1 }),

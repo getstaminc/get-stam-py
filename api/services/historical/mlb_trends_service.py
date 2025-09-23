@@ -329,24 +329,7 @@ class MLBTrendsService(BaseHistoricalService):
                     # Tie breaks both streaks (rare in MLB)
                     win_results.append(False)
                     loss_results.append(False)
-            
-            # # Spread analysis
-            # if (team_data['team_line'] is not None and 
-            #     team_data['team_runs'] is not None and 
-            #     team_data['opponent_runs'] is not None):
-                
-            #     line_result = (team_data['team_runs'] + team_data['team_line']) > team_data['opponent_runs']
-            #     if line_result:
-            #         cover_results.append(True)
-            #         no_cover_results.append(False)
-            #     elif (team_data['team_runs'] + team_data['team_line']) < team_data['opponent_runs']:
-            #         cover_results.append(False)
-            #         no_cover_results.append(True)
-            #     else:
-            #         # Push breaks both streaks
-            #         cover_results.append(False)
-            #         no_cover_results.append(False)
-            
+                    
             # Total analysis - MLB uses runs
             actual_total = (game.get('home_runs') or 0) + (game.get('away_runs') or 0)
             total_line = game.get('total') or game.get('total_runs')
@@ -366,7 +349,6 @@ class MLBTrendsService(BaseHistoricalService):
         # Calculate current streaks
         current_win_streak = calculate_current_streak(win_results)
         current_loss_streak = calculate_current_streak(loss_results)
-        # current_cover_streak = calculate_current_streak(cover_results)
         current_no_cover_streak = calculate_current_streak(no_cover_results)
         current_over_streak = calculate_current_streak(over_results)
         current_under_streak = calculate_current_streak(under_results)
@@ -385,20 +367,6 @@ class MLBTrendsService(BaseHistoricalService):
                 'count': current_loss_streak,
                 'description': f'Lost {current_loss_streak} straight games'
             })
-        
-        # if current_cover_streak >= min_trend_length:
-        #     trends.append({
-        #         'type': 'cover_streak',
-        #         'count': current_cover_streak,
-        #         'description': f'Covered {current_cover_streak} straight spreads'
-        #     })
-        
-        # if current_no_cover_streak >= min_trend_length:
-        #     trends.append({
-        #         'type': 'no_cover_streak',
-        #         'count': current_no_cover_streak,
-        #         'description': f'Failed to cover {current_no_cover_streak} straight spreads'
-        #     })
         
         if current_over_streak >= min_trend_length:
             trends.append({

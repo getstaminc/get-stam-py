@@ -68,10 +68,23 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
         </Box>
 
         <Box sx={{ flex: "none", textAlign: "center", px: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              minWidth: { xs: 40, sm: 60 },
+              fontSize: { xs: '1rem', sm: '1.25rem' },
+              px: { xs: 0.5, sm: 2 },
+            }}
+          >
             {scoreDisplay}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          {/* Hide 'Scheduled' on mobile to save space */}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ display: { xs: 'none', sm: 'block' } }}
+          >
             {gameStatus}
           </Typography>
         </Box>

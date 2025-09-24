@@ -27,7 +27,9 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
     away.score !== null &&
     away.score !== undefined;
 
-  const scoreDisplay = hasScore ? `${home.score} - ${away.score}` : "— —";
+  // Responsive score display: one dash for mobile, two for desktop
+  const scoreDisplayMobile = hasScore ? `${home.score} - ${away.score}` : "—";
+  const scoreDisplayDesktop = hasScore ? `${home.score} - ${away.score}` : "— —";
   const gameStatus = hasScore ? "" : "Scheduled";
 
   const formatOdds = (point: number | null, price: number | null) => {
@@ -46,7 +48,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: 2,
+          gap: { xs: 0, sm: 2 },
           mb: 1,
         }}
       >
@@ -67,7 +69,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
           </Typography>
         </Box>
 
-        <Box sx={{ flex: "none", textAlign: "center", px: 2 }}>
+        <Box sx={{ flex: "none", textAlign: "center", px: { xs: 0, sm: 2 } }}>
           <Typography
             variant="h6"
             sx={{
@@ -75,9 +77,22 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
               minWidth: { xs: 40, sm: 60 },
               fontSize: { xs: '1rem', sm: '1.25rem' },
               px: { xs: 0.5, sm: 2 },
+              display: { xs: 'block', sm: 'none' }
             }}
           >
-            {scoreDisplay}
+            {scoreDisplayMobile}
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              minWidth: { xs: 40, sm: 60 },
+              fontSize: { xs: '1rem', sm: '1.25rem' },
+              px: { xs: 0.5, sm: 2 },
+              display: { xs: 'none', sm: 'block' }
+            }}
+          >
+            {scoreDisplayDesktop}
           </Typography>
           {/* Hide 'Scheduled' on mobile to save space */}
           <Typography

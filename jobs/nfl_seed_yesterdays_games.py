@@ -46,11 +46,12 @@ def get_yesterdays_games(retries=3, delay=1):
     sdql_url = "https://s3.sportsdatabase.com/NFL/query"
     print("Connecting to database: {}".format(DATABASE_URL))
     
-    # Calculate yesterday's date in the required format (YYYYMMDD)
-    yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
-    
-    # SDQL query to fetch all games for yesterday (including neutral games to avoid duplicates)
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@(site='home' or site='neutral') and date={yesterday}"
+    # Calculate today and two days ago in the required format (YYYYMMDD)
+    today = datetime.today().strftime('%Y%m%d')
+    two_days_ago = (datetime.today() - timedelta(days=2)).strftime('%Y%m%d')
+
+    # SDQL query to fetch all games from two days ago up to yesterday (including neutral games to avoid duplicates)
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,start time,_t@(site='home' or site='neutral') and date<{today} and date>={two_days_ago}"
 
     headers = {
         'user': SDQL_USERNAME,
@@ -82,7 +83,7 @@ def get_yesterdays_games(retries=3, delay=1):
                     game['quarter scores'] = json.dumps(game['quarter scores'])  # Cast to JSON
                     game['o:quarter scores'] = json.dumps(game['o:quarter scores'])  # Cast to JSON
 
-                print("Successfully fetched {} games for {}.".format(len(formatted_result), yesterday))
+                print("Successfully fetched {} games for date range {} to {}.".format(len(formatted_result), two_days_ago, today))
                 return formatted_result
             else:
                 print("No games found for yesterday.")

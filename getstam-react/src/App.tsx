@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TabsNavigation from "./components/TabsNavigation";
@@ -26,12 +26,21 @@ function AppContent() {
   return (
     <>
       <Box sx={{ textAlign: "center", mt: 2 }}>
-        <Typography variant="h4" sx={{ fontWeight: 400, color: "#007bff", letterSpacing: 1 }}>
-          <span style={{ fontWeight: 400, color: "#888" }}>get</span>
-          <Box component="span" sx={{ fontWeight: 900, color: "#007bff", fontSize: "2.8rem", letterSpacing: 2, ml: 1 }}>
-            STAM
-          </Box>
-        </Typography>
+        <Link
+          to="/"
+          style={{
+            textDecoration: 'none',
+            cursor: 'pointer',
+            display: 'inline-block',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 400, color: "#007bff", letterSpacing: 1 }}>
+            <span style={{ fontWeight: 400, color: "#888" }}>get</span>
+            <Box component="span" sx={{ fontWeight: 900, color: "#007bff", fontSize: "2.8rem", letterSpacing: 2, ml: 1 }}>
+              STAM
+            </Box>
+          </Typography>
+        </Link>
         <Typography variant="subtitle1" sx={{ color: "#007bff" }}>
           Stats That Actually Matter
         </Typography>

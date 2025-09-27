@@ -27,7 +27,7 @@ def get_odds_data(sport, date):
     if date and date.tzinfo is None:
         date = eastern_tz.localize(date)
     date_str = date.strftime('%Y-%m-%d') if date else ''
-    scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?apiKey={api_key}"
+    scores_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/scores/?daysFrom=2&apiKey={api_key}"
     print(f"Scores URL: {scores_url}")
     if date_str:
         scores_url += f"&date={date_str}&dateFormat=iso"

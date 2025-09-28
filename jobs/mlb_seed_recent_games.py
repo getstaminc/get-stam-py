@@ -209,9 +209,20 @@ def seed_recent_games():
         # Calculate derived stats
         home_first_half_runs = sum(home_inning_scores[:5]) if len(home_inning_scores) >= 5 else None
         away_first_half_runs = sum(away_inning_scores[:5]) if len(away_inning_scores) >= 5 else None
-        
-        home_last_inning_runs = home_inning_scores[-1] if home_inning_scores else None
-        away_last_inning_runs = away_inning_scores[-1] if away_inning_scores else None
+
+        # Remaining runs after first 5 innings
+        home_remaining_runs = sum(home_inning_scores[5:]) if len(home_inning_scores) > 5 else None
+        away_remaining_runs = sum(away_inning_scores[5:]) if len(away_inning_scores) > 5 else None
+
+        # Parse first 5 over/under odds if available (match migration logic)
+        first_5_over_odds = None
+        first_5_under_odds = None
+        if game.get('total over F5 odds') and isinstance(game['total over F5 odds'], list) and len(game['total over F5 odds']) >= 2:
+            first_5_over_odds = game['total over F5 odds'][0]
+            first_5_under_odds = game['total over F5 odds'][1]
+        elif game.get('total over F5 odds') is not None and game.get('total under F5 odds') is not None:
+            first_5_over_odds = game.get('total over F5 odds')
+            first_5_under_odds = game.get('total under F5 odds')
 
         # Insert new game with retry logic
         for retry in range(3):
@@ -219,18 +230,24 @@ def seed_recent_games():
                 result = conn.execute(text("""
                     INSERT INTO mlb_games (
                         game_date, game_site, home_team_id, away_team_id, home_team_name, away_team_name, 
-                        home_runs, away_runs, total_runs, home_line, away_line, home_inning_runs,
-                        away_inning_runs, home_first_5_runs, away_first_5_runs,
-                        home_money_line, away_money_line,
-                        playoffs, start_time, total, home_starting_pitcher, away_starting_pitcher,
-                        home_first_5_line, away_first_5_line, total_first_5
+                        home_runs, away_runs, total, total_runs, total_margin, home_line, away_line,
+                        home_money_line, away_money_line, playoffs, start_time, 
+                        home_first_5_line, away_first_5_line, total_first_5, 
+                        first_5_over_odds, first_5_under_odds,
+                        home_starting_pitcher, away_starting_pitcher,
+                        home_inning_runs, away_inning_runs,
+                        home_first_5_runs, away_first_5_runs, 
+                        home_remaining_runs, away_remaining_runs
                     ) VALUES (
                         :game_date, :game_site, :home_team_id, :away_team_id, :home_team_name, :away_team_name,
-                        :home_runs, :away_runs, :total_runs, :home_line, :away_line,
-                        :home_inning_runs, :away_inning_runs, :home_first_5_runs, :away_first_5_runs,
-                        :home_money_line, :away_money_line,
-                        :playoffs, :start_time, :total, :home_starting_pitcher, :away_starting_pitcher,
-                        :home_first_5_line, :away_first_5_line, :total_first_5
+                        :home_runs, :away_runs, :total, :total_runs, :total_margin, :home_line, :away_line,
+                        :home_money_line, :away_money_line, :playoffs, :start_time,
+                        :home_first_5_line, :away_first_5_line, :total_first_5,
+                        :first_5_over_odds, :first_5_under_odds,
+                        :home_starting_pitcher, :away_starting_pitcher,
+                        :home_inning_runs, :away_inning_runs,
+                        :home_first_5_runs, :away_first_5_runs,
+                        :home_remaining_runs, :away_remaining_runs
                     )
                 """), {
                     'game_date': game['date'],
@@ -241,23 +258,28 @@ def seed_recent_games():
                     'away_team_name': game['o:team'],
                     'home_runs': game['runs'],
                     'away_runs': game['o:runs'],
+                    'total': game['total'],
                     'total_runs': game['runs'] + game['o:runs'],
+                    'total_margin': game['margin'],
                     'home_line': game['line'],
                     'away_line': game['o:line'],
-                    'home_inning_runs': json.dumps(home_inning_scores),
-                    'away_inning_runs': json.dumps(away_inning_scores),
-                    'home_first_5_runs': home_first_half_runs,
-                    'away_first_5_runs': away_first_half_runs,
                     'home_money_line': game.get('money line'),
                     'away_money_line': game.get('o:money line'),
                     'playoffs': bool(game.get('playoffs', 0)),
                     'start_time': start_time,
-                    'total': game['total'],
-                    'home_starting_pitcher': game.get('starter'),
-                    'away_starting_pitcher': game.get('o:starter'),
                     'home_first_5_line': game.get('line F5'),
                     'away_first_5_line': game.get('o:line F5'),
-                    'total_first_5': game.get('total F5')
+                    'total_first_5': game.get('total F5'),
+                    'first_5_over_odds': first_5_over_odds,
+                    'first_5_under_odds': first_5_under_odds,
+                    'home_starting_pitcher': game.get('starter'),
+                    'away_starting_pitcher': game.get('o:starter'),
+                    'home_inning_runs': json.dumps(home_inning_scores),
+                    'away_inning_runs': json.dumps(away_inning_scores),
+                    'home_first_5_runs': home_first_half_runs,
+                    'away_first_5_runs': away_first_half_runs,
+                    'home_remaining_runs': home_remaining_runs,
+                    'away_remaining_runs': away_remaining_runs
                 })
                 
                 print(f"Rows affected: {result.rowcount}")

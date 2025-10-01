@@ -1,4 +1,5 @@
 import React from "react";
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -72,12 +73,24 @@ function AppContent() {
           {/* Add more routes as needed */}
         </Routes>
       </Box>
-      <SiteFooter />
+      {/* Adsterra NativeBanner above SiteFooter */}
+      <div id="container-84c8772b3011daf3282d61f7f820fbc4"></div>
+  <SiteFooter />
     </>
   );
 }
 
 function App() {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = '//pl27749833.revenuecpmgate.com/84c8772b3011daf3282d61f7f820fbc4/invoke.js';
+    script.async = true;
+    script.setAttribute('data-cfasync', 'false');
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -92,6 +105,8 @@ function App() {
           <Router>
             <AppContent />
           </Router>
+          {/* Adsterra NativeBanner at bottom of all pages */}
+          <div id="container-84c8772b3011daf3282d61f7f820fbc4" style={{ margin: '24px auto', minHeight: 120 }}></div>
         </Box>
       </GameProvider>
     </ThemeProvider>

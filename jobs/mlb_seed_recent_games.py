@@ -59,7 +59,7 @@ def get_recent_mlb_games(retries=3, delay=1):
     
     # SDQL query for MLB games with all required fields (matching migration field names)
     sdql_url = f"https://s3.sportsdatabase.com/MLB/query"
-    sdql_query = f"date,site,team,o:team,runs,o:runs,total,margin,line,o:line,playoffs,start time,_t,starter,o:starter,line F5,o:line F5,total F5,total over F5 odds,inning runs,o:inning runs@(site='home' or site='neutral') and date={yesterday}"
+    sdql_query = f"date,site,team,o:team,runs,o:runs,total,margin,line,o:line,playoffs,start time,_t,starter,o:starter,line F5,o:line F5,total F5,total over F5 odds,inning runs,o:inning runs@(site='home' or site='neutral') and date=20250925"
 
     headers = {
         'user': SDQL_USERNAME,
@@ -152,23 +152,130 @@ def seed_recent_games():
                 game['start time'] = str(game['start time'])
             start_time = convert_start_time_to_time(game['start time'])
 
-        # Check if this exact game already exists OR if either team is already playing at this time
+        # Check if this exact game already exists (using pitchers and total instead of start_time)
         existing_game = conn.execute(text("""
             SELECT 1 FROM mlb_games
             WHERE game_date = :game_date
-            AND start_time = :start_time
-            AND ((home_team_name = :home_team AND away_team_name = :away_team)
-                 OR home_team_name = :home_team OR away_team_name = :home_team
-                 OR home_team_name = :away_team OR away_team_name = :away_team)
+            AND home_team_name = :home_team
+            AND away_team_name = :away_team
+            AND home_starting_pitcher = :home_starting_pitcher
+            AND away_starting_pitcher = :away_starting_pitcher
+            AND total = :total
         """), {
             'game_date': game['date'],
             'home_team': game['team'],
             'away_team': game['o:team'],
-            'start_time': start_time
+            'home_starting_pitcher': game.get('starter'),
+            'away_starting_pitcher': game.get('o:starter'),
+            'total': game.get('total')
         }).fetchone()
 
         if existing_game:
-            print(f"Skipping duplicate or conflicting game: {game['team']} vs {game['o:team']} on {game['date']} at {start_time}")
+            # Check for missing fields and update them if needed
+            print(f"Found existing game: {game['team']} vs {game['o:team']} on {game['date']} at {start_time}")
+            # Query the existing record for all relevant fields using same criteria as duplicate check
+            existing_row = conn.execute(text("""
+                SELECT game_id, home_runs, away_runs, total, total_runs, total_margin, home_line, away_line, home_money_line, away_money_line, playoffs, home_first_5_line, away_first_5_line, total_first_5, first_5_over_odds, first_5_under_odds, home_starting_pitcher, away_starting_pitcher, home_inning_runs, away_inning_runs, home_first_5_runs, away_first_5_runs, home_remaining_runs, away_remaining_runs
+                FROM mlb_games
+                WHERE game_date = :game_date
+                AND home_team_name = :home_team
+                AND away_team_name = :away_team
+                AND home_starting_pitcher = :home_starting_pitcher
+                AND away_starting_pitcher = :away_starting_pitcher
+                AND total = :total
+            """), {
+                'game_date': game['date'],
+                'home_team': game['team'],
+                'away_team': game['o:team'],
+                'home_starting_pitcher': game.get('starter'),
+                'away_starting_pitcher': game.get('o:starter'),
+                'total': game.get('total')
+            }).mappings().fetchone()
+
+            if existing_row:
+                update_fields = {}
+                field_map = {
+                    'home_runs': game['runs'],
+                    'away_runs': game['o:runs'],
+                    'total': game['total'],
+                    'total_runs': game['runs'] + game['o:runs'] if game['runs'] is not None and game['o:runs'] is not None else None,
+                    'total_margin': game['margin'],
+                    'home_line': game['line'],
+                    'away_line': game['o:line'],
+                    'home_money_line': game['line'],
+                    'away_money_line': game['o:line'],
+                    'playoffs': bool(game.get('playoffs', 0)),
+                    'home_first_5_line': game.get('line F5'),
+                    'away_first_5_line': game.get('o:line F5'),
+                    'total_first_5': game.get('total F5'),
+                    'first_5_over_odds': None,
+                    'first_5_under_odds': None,
+                    'home_starting_pitcher': game.get('starter'),
+                    'away_starting_pitcher': game.get('o:starter'),
+                    'home_inning_runs': None,
+                    'away_inning_runs': None,
+                    'home_first_5_runs': None,
+                    'away_first_5_runs': None,
+                    'home_remaining_runs': None,
+                    'away_remaining_runs': None
+                }
+                # Odds parsing logic (same as insert)
+                if game.get('total over F5 odds') and isinstance(game['total over F5 odds'], list) and len(game['total over F5 odds']) >= 2:
+                    field_map['first_5_over_odds'] = game['total over F5 odds'][0]
+                    field_map['first_5_under_odds'] = game['total over F5 odds'][1]
+                elif game.get('total over F5 odds') is not None and game.get('total under F5 odds') is not None:
+                    field_map['first_5_over_odds'] = game.get('total over F5 odds')
+                    field_map['first_5_under_odds'] = game.get('total under F5 odds')
+
+                # Inning scores and derived stats
+                try:
+                    home_inning_scores_raw = game['inning runs']
+                    away_inning_scores_raw = game['o:inning runs']
+                    if isinstance(home_inning_scores_raw, str):
+                        home_inning_scores_raw = json.loads(home_inning_scores_raw)
+                    if isinstance(away_inning_scores_raw, str):
+                        away_inning_scores_raw = json.loads(away_inning_scores_raw)
+                    if isinstance(home_inning_scores_raw, str):
+                        home_inning_scores = json.loads(home_inning_scores_raw)
+                    else:
+                        home_inning_scores = home_inning_scores_raw
+                    if isinstance(away_inning_scores_raw, str):
+                        away_inning_scores = json.loads(away_inning_scores_raw)
+                    else:
+                        away_inning_scores = away_inning_scores_raw
+                    if isinstance(home_inning_scores, list) and isinstance(away_inning_scores, list):
+                        field_map['home_inning_runs'] = json.dumps(home_inning_scores)
+                        field_map['away_inning_runs'] = json.dumps(away_inning_scores)
+                        field_map['home_first_5_runs'] = sum(home_inning_scores[:5]) if len(home_inning_scores) >= 5 else None
+                        field_map['away_first_5_runs'] = sum(away_inning_scores[:5]) if len(away_inning_scores) >= 5 else None
+                        field_map['home_remaining_runs'] = sum(home_inning_scores[5:]) if len(home_inning_scores) > 5 else None
+                        field_map['away_remaining_runs'] = sum(away_inning_scores[5:]) if len(away_inning_scores) > 5 else None
+                except Exception:
+                    pass
+
+                # Only update if any of the specified fields are null
+                fields_to_check = [
+                    'home_runs', 'away_runs', 'total', 'total_runs', 'total_margin', 'home_line', 'away_line',
+                    'home_money_line', 'away_money_line', 'playoffs', 'home_first_5_line', 'away_first_5_line',
+                    'total_first_5', 'first_5_over_odds', 'first_5_under_odds', 'home_starting_pitcher',
+                    'away_starting_pitcher', 'home_inning_runs', 'away_inning_runs', 'home_first_5_runs',
+                    'away_first_5_runs', 'home_remaining_runs', 'away_remaining_runs'
+                ]
+                needs_update = any(existing_row[field] is None for field in fields_to_check)
+                if needs_update:
+                    for field, value in field_map.items():
+                        if existing_row[field] is None and value is not None:
+                            update_fields[field] = value
+                    if update_fields:
+                        set_clause = ", ".join([f"{field} = :{field}" for field in update_fields.keys()])
+                        update_fields['game_id'] = existing_row['game_id']
+                        update_sql = f"UPDATE mlb_games SET {set_clause} WHERE game_id = :game_id"
+                        conn.execute(text(update_sql), update_fields)
+                        print(f"Updated missing fields for game: {game['team']} vs {game['o:team']} on {game['date']} at {start_time}")
+                    else:
+                        print(f"No missing fields to update for game: {game['team']} vs {game['o:team']} on {game['date']} at {start_time}")
+                else:
+                    print(f"All fields present for game: {game['team']} vs {game['o:team']} on {game['date']} at {start_time}, no update needed.")
             continue
 
         # This is a new game, insert it

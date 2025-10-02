@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Box, ClickAwayListener } from "@mui/material";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { BaseGame, NFLGame, MLBGame, SoccerGame, HistoricalGame, SportType, HistoricalGamesProps, getSportType } from '../types/gameTypes';
@@ -13,6 +15,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   sportType 
 }) => {
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(true);
 
   // Helper function to detect if device is mobile
   const isMobile = () => {
@@ -430,82 +433,83 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
   return (
     <ClickAwayListener onClickAway={handleClickAway}>
       <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          {title}
-        </Typography>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Date</strong></TableCell>
-                <TableCell><strong>Site</strong></TableCell>
-                <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
-                <TableCell><HeaderWithWinLossInfo>{getScoreLabel()}</HeaderWithWinLossInfo></TableCell>
-                <TableCell><HeaderWithSpreadInfo>{getSpreadLabel()}</HeaderWithSpreadInfo></TableCell>
-                <TableCell><strong>Opponent</strong></TableCell>
-                <TableCell><strong>Opponent {getScoreLabel()}</strong></TableCell>
-                <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {games.map((game, index) => {
-                const gameData = getGameData(game);
-                const teamData = getTeamData(game);
-                const teamLineResult = calculateLineResult(teamData.teamPoints, teamData.teamLine, teamData.opponentPoints);
-                const totalColor = getTotalColor(gameData.totalScore, gameData.totalLine);
-                
-                return (
-                  <TableRow key={game.game_id || index}>
-                    <TableCell>
-                      {formatDate(game.game_date)}
-                    </TableCell>
-                    <TableCell>
-                      {teamData.site}
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {teamName || (teamData.site === 'home' ? gameData.homeTeam : gameData.awayTeam)}
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {teamData.teamPoints ?? 'None'}
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: sportType === 'mlb' ? 'transparent' : teamLineResult.bgColor,
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {teamData.teamLine !== null ? teamData.teamLine : 'None'}
-                    </TableCell>
-                    <TableCell>
-                      {teamData.opponentName}
-                    </TableCell>
-                    <TableCell>
-                      {teamData.opponentPoints ?? 'None'}
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: totalColor,
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {gameData.totalLine ?? 'None'}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="h6" gutterBottom>
+            {title}
+          </Typography>
+          <Box sx={{ cursor: 'pointer', ml: 2 }} onClick={() => setExpanded((prev) => !prev)}>
+            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </Box>
+        </Box>
+        {expanded && (
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Date</strong></TableCell>
+                  <TableCell><strong>Site</strong></TableCell>
+                  <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
+                  <TableCell><HeaderWithWinLossInfo>{getScoreLabel()}</HeaderWithWinLossInfo></TableCell>
+                  <TableCell><HeaderWithSpreadInfo>{getSpreadLabel()}</HeaderWithSpreadInfo></TableCell>
+                  <TableCell><strong>Opponent</strong></TableCell>
+                  <TableCell><strong>Opponent {getScoreLabel()}</strong></TableCell>
+                  <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {games.map((game, index) => {
+                  const gameData = getGameData(game);
+                  const teamData = getTeamData(game);
+                  const teamLineResult = calculateLineResult(teamData.teamPoints, teamData.teamLine, teamData.opponentPoints);
+                  const totalColor = getTotalColor(gameData.totalScore, gameData.totalLine);
+                  return (
+                    <TableRow key={game.game_id || index}>
+                      <TableCell>
+                        {formatDate(game.game_date)}
+                      </TableCell>
+                      <TableCell>
+                        {teamData.site}
+                      </TableCell>
+                      <TableCell 
+                        sx={{ 
+                          backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {teamName || (teamData.site === 'home' ? gameData.homeTeam : gameData.awayTeam)}
+                      </TableCell>
+                      <TableCell 
+                        sx={{ 
+                          backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {teamData.teamPoints ?? 'None'}
+                      </TableCell>
+                      <TableCell 
+                        sx={{ 
+                          backgroundColor: sportType === 'mlb' ? 'transparent' : teamLineResult.bgColor,
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {teamData.teamLine !== null ? teamData.teamLine : 'None'}
+                      </TableCell>
+                      <TableCell>
+                        {teamData.opponentName}
+                      </TableCell>
+                      <TableCell>
+                        {teamData.opponentPoints ?? 'None'}
+                      </TableCell>
+                      <TableCell sx={{ backgroundColor: totalColor }}>
+                        {gameData.totalLine !== null ? gameData.totalLine : 'None'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Paper>
     </ClickAwayListener>
   );

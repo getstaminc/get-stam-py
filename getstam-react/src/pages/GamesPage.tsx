@@ -291,10 +291,8 @@ const GamesPage = () => {
 
   // Handle View Details button click
   const handleViewDetails = (game: any) => {
-    // Save game data to context
-    setCurrentGame(game);
-    // Navigate to game details page
-    navigate(`/game-details/${urlSport}?game_id=${game.game_id}`);
+  // Save game data to context only
+  setCurrentGame(game);
   };
 
   // Update URL when date or view changes
@@ -479,7 +477,7 @@ const GamesPage = () => {
                 to={`/game-details/${urlSport}?game_id=${match.game_id}`}
                 variant="contained"
                 color="primary"
-                onClick={() => handleViewDetails(match)}
+                onClick={() => setCurrentGame(match)}
                 size="medium"
                 sx={{
                   px: 3,

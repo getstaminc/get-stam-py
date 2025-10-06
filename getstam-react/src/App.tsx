@@ -73,24 +73,12 @@ function AppContent() {
           {/* Add more routes as needed */}
         </Routes>
       </Box>
-      {/* Adsterra NativeBanner above SiteFooter */}
-      <div id="container-84c8772b3011daf3282d61f7f820fbc4"></div>
   <SiteFooter />
     </>
   );
 }
 
 function App() {
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = '//pl27749833.revenuecpmgate.com/84c8772b3011daf3282d61f7f820fbc4/invoke.js';
-    script.async = true;
-    script.setAttribute('data-cfasync', 'false');
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -105,8 +93,6 @@ function App() {
           <Router>
             <AppContent />
           </Router>
-          {/* Adsterra NativeBanner at bottom of all pages */}
-          <div id="container-84c8772b3011daf3282d61f7f820fbc4" style={{ margin: '24px auto', minHeight: 120 }}></div>
         </Box>
       </GameProvider>
     </ThemeProvider>

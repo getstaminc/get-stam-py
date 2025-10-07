@@ -411,12 +411,13 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     }
   };
 
-  // Sport-specific spread label
+  // Sport-specific spread/line label
   const getSpreadLabel = () => {
     switch (sportType) {
       case 'soccer':
         return 'Spread';
       case 'mlb':
+      case 'nhl':
         return 'Line';
       default:
         return 'Spread';
@@ -503,7 +504,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          backgroundColor: sportType === 'mlb' ? 'transparent' : teamLineResult.bgColor,
+                          backgroundColor: (sportType === 'mlb' || sportType === 'nhl') ? 'transparent' : teamLineResult.bgColor,
                           fontWeight: 'bold'
                         }}
                       >

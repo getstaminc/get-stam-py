@@ -215,29 +215,35 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
     </Box>
   );
 
-  const HeaderWithSpreadInfo = ({ children }: { children: React.ReactNode }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-      <strong>{children}</strong>
-      <Tooltip 
-        title={<SpreadLegend />} 
-        arrow 
-        placement="top"
-        open={isMobile() ? openTooltip === `${tooltipPrefix}-spread` : undefined}
-        disableHoverListener={isMobile()}
-        disableFocusListener={isMobile()}
-        disableTouchListener={!isMobile()}
-      >
-        <InfoOutlinedIcon 
-          sx={{ 
-            fontSize: 16, 
-            color: '#666', 
-            cursor: 'help'
-          }}
-          onClick={() => handleTooltipClick(`${tooltipPrefix}-spread`)}
-        />
-      </Tooltip>
-    </Box>
-  );
+  const HeaderWithSpreadInfo = ({ children }: { children: React.ReactNode }) => {
+    // Hide info icon for MLB and NHL (when column is 'Line')
+    if (sportType === 'mlb' || sportType === 'nhl') {
+      return <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><strong>{children}</strong></Box>;
+    }
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <strong>{children}</strong>
+        <Tooltip 
+          title={<SpreadLegend />} 
+          arrow 
+          placement="top"
+          open={isMobile() ? openTooltip === `${tooltipPrefix}-spread` : undefined}
+          disableHoverListener={isMobile()}
+          disableFocusListener={isMobile()}
+          disableTouchListener={!isMobile()}
+        >
+          <InfoOutlinedIcon 
+            sx={{ 
+              fontSize: 16, 
+              color: '#666', 
+              cursor: 'help'
+            }}
+            onClick={() => handleTooltipClick(`${tooltipPrefix}-spread`)}
+          />
+        </Tooltip>
+      </Box>
+    );
+  };
 
   const HeaderWithTotalInfo = ({ children }: { children: React.ReactNode }) => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

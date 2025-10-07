@@ -68,7 +68,22 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
           homeStartingPitcher: mlbGame.home_starting_pitcher,
           awayStartingPitcher: mlbGame.away_starting_pitcher
         };
-      
+
+      case 'nhl':
+        const nhlGame = game as import('../types/gameTypes').NHLGame;
+        return {
+          homeTeam: nhlGame.home_team_name,
+          awayTeam: nhlGame.away_team_name,
+          homeScore: nhlGame.home_goals,
+          awayScore: nhlGame.away_goals,
+          homeLine: nhlGame.home_money_line,
+          awayLine: nhlGame.away_money_line,
+          totalScore: (typeof nhlGame.home_goals === 'number' && typeof nhlGame.away_goals === 'number') ? (nhlGame.home_goals + nhlGame.away_goals) : null,
+          totalLine: nhlGame.total,
+          homeMoneyLine: nhlGame.home_money_line,
+          awayMoneyLine: nhlGame.away_money_line
+        };
+
       case 'soccer':
         const soccerGame = game as SoccerGame;
         return {
@@ -84,9 +99,9 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
           awayMoneyLine: soccerGame.away_money_line,
           drawMoneyLine: soccerGame.draw_money_line
         };
-      
+
       default:
-        // Fallback for NHL - assume similar structure to NFL
+        // Fallback for other sports
         const defaultGame = game as NFLGame;
         return {
           homeTeam: defaultGame.home_team_name,

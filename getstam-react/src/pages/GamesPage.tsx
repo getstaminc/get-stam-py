@@ -28,12 +28,13 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
 };
 
 // Map URL sport to historical API sport type
-const SPORT_URL_TO_HISTORICAL: { [key: string]: 'mlb' | 'nfl' | 'ncaaf' | 'soccer' } = {
+const SPORT_URL_TO_HISTORICAL: { [key: string]: 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' } = {
   nfl: "nfl",
   mlb: "mlb", 
   ncaaf: "ncaaf",
   epl: "soccer",
-  nfl_preseason: "nfl", // Map preseason to nfl
+  nfl_preseason: "nfl", // Map preseason to nfl,
+  nhl: "nhl"
 };
 
 // Map Odds API sport key to display name
@@ -74,10 +75,13 @@ function getSportFromPath(pathname: string): string {
   return match ? match[1] : "nfl";
 }
 
+// Get API base URL from env, fallback to prod or dev
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === "development" ? "http://127.0.0.1:5000" : "https://www.getstam.com");
+
 // Fetch games from your backend API
 async function fetchGamesData(sportKey: string, date: Date) {
   const dateStr = formatDate(date);
-  const url = `https://www.getstam.com/api/odds/${sportKey}?date=${dateStr}`;
+  const url = `${API_BASE_URL}/api/odds/${sportKey}?date=${dateStr}`;
   try {
     const res = await fetch(url, {
       headers: {
@@ -107,6 +111,7 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     'soccer_uefa_europa_league': 'soccer',
     'soccer_fifa_world_cup': 'soccer',
     'soccer_uefa_nations_league': 'soccer',
+    'icehockey_nhl': 'nhl',
     // Add other sports as endpoints become available
   };
   
@@ -115,7 +120,7 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     throw new Error(`Trends analysis not available for sport: ${sportKey}`);
   }
   
-  const url = `https://www.getstam.com/api/historical/trends/${sportEndpoint}`;
+  const url = `${API_BASE_URL}/api/historical/trends/${sportEndpoint}`;
   const requestBody = {
     games: games,
     sportKey: sportKey,

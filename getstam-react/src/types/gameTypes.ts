@@ -59,7 +59,7 @@ export interface SoccerGame extends BaseGame {
   away_second_half_goals?: number;
 }
 
-// NBA/NHL game structure
+// NBA game structure
 export interface NBAGame extends BaseGame {
   home_team_name: string;
   away_team_name: string;
@@ -73,8 +73,21 @@ export interface NBAGame extends BaseGame {
   total?: number;
 }
 
+// NHL game structure
+export interface NHLGame extends BaseGame {
+  home_team_name: string;
+  away_team_name: string;
+  home_goals: number;
+  away_goals: number;
+  total_goals: number;
+  home_money_line: number;
+  away_money_line: number;
+  total: number;
+  playoffs: boolean;
+}
+
 // Union type for all game types
-export type HistoricalGame = NFLGame | MLBGame | SoccerGame;
+export type HistoricalGame = NFLGame | MLBGame | SoccerGame | NHLGame;
 
 // Unified game data interface for display components
 export interface GameData {

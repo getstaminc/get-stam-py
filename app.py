@@ -38,6 +38,7 @@ from api.routes.games import games_bp
 from api.routes.odds import odds_bp
 from api.routes.rankings import rankings_bp
 # Historical data routes
+from api.routes.historical.nhl_games import nhl_historical_bp
 from api.routes.historical.mlb_games import mlb_historical_bp
 from api.routes.historical.soccer_games import soccer_historical_bp
 from api.routes.historical.nfl_games import nfl_historical_bp
@@ -46,6 +47,7 @@ from api.routes.historical.nfl_trends import nfl_trends_bp
 from api.routes.historical.mlb_trends import mlb_trends_bp
 from api.routes.historical.ncaaf_trends import ncaaf_trends_bp
 from api.routes.historical.soccer_trends import soccer_trends_bp
+from api.routes.historical.nhl_trends import nhl_trends_bp
 from api.routes.mlb_pitchers import mlb_pitchers_bp
 from flask_cors import CORS
 
@@ -160,10 +162,12 @@ app.register_blueprint(mlb_historical_bp)
 app.register_blueprint(soccer_historical_bp)
 app.register_blueprint(nfl_historical_bp)
 app.register_blueprint(ncaaf_historical_bp)
+app.register_blueprint(nhl_historical_bp)
 app.register_blueprint(nfl_trends_bp)
 app.register_blueprint(mlb_trends_bp)
 app.register_blueprint(ncaaf_trends_bp)
 app.register_blueprint(soccer_trends_bp)
+app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_pitchers_bp)
 
 @app.route('/trends')

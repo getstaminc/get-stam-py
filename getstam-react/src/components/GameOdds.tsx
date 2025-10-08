@@ -20,6 +20,11 @@ type GameOddsProps = {
 
 const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
   const { home, away, totals } = game;
+  // Only hide odds if both scores are not null/undefined and at least one is not zero (game is actually over)
+  const isGameOver =
+    home?.score !== null && home?.score !== undefined &&
+    away?.score !== null && away?.score !== undefined &&
+    (home.score !== 0 || away.score !== 0);
 
   const hasScore =
     home.score !== null &&
@@ -124,47 +129,49 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
 
       <Divider sx={{ my: 2 }} />
 
-      {/* Odds */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 2,
-          textAlign: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            H2H
-          </Typography>
-          <Typography variant="body1">
-            {home.odds?.h2h !== undefined && away.odds?.h2h !== undefined
-              ? `${home.team}: ${home.odds.h2h} | ${away.team}: ${away.odds.h2h}`
-              : "N/A"}
-          </Typography>
+      {/* Odds: Only show if game is not over */}
+      {!isGameOver && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 2,
+            textAlign: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              H2H
+            </Typography>
+            <Typography variant="body1">
+              {home.odds?.h2h !== undefined && away.odds?.h2h !== undefined
+                ? `${home.team}: ${home.odds.h2h} | ${away.team}: ${away.odds.h2h}`
+                : "N/A"}
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              Spreads
+            </Typography>
+            <Typography variant="body1">
+              {home.odds?.spread_point !== undefined && away.odds?.spread_point !== undefined
+                ? `${home.team}: ${formatOdds(home.odds.spread_point, home.odds.spread_price)} | ${away.team}: ${formatOdds(away.odds.spread_point, away.odds.spread_price)}`
+                : "N/A"}
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              Totals
+            </Typography>
+            <Typography variant="body1">
+              {totals.over_point !== undefined && totals.under_point !== undefined
+                ? `Over: ${formatOdds(totals.over_point, totals.over_price)} | Under: ${formatOdds(totals.under_point, totals.under_price)}`
+                : "N/A"}
+            </Typography>
+          </Box>
         </Box>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            Spreads
-          </Typography>
-          <Typography variant="body1">
-            {home.odds?.spread_point !== undefined && away.odds?.spread_point !== undefined
-              ? `${home.team}: ${formatOdds(home.odds.spread_point, home.odds.spread_price)} | ${away.team}: ${formatOdds(away.odds.spread_point, away.odds.spread_price)}`
-              : "N/A"}
-          </Typography>
-        </Box>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            Totals
-          </Typography>
-          <Typography variant="body1">
-            {totals.over_point !== undefined && totals.under_point !== undefined
-              ? `Over: ${formatOdds(totals.over_point, totals.over_price)} | Under: ${formatOdds(totals.under_point, totals.under_price)}`
-              : "N/A"}
-          </Typography>
-        </Box>
-      </Box>
+      )}
     </Box>
   );
 };

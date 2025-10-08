@@ -7,7 +7,7 @@ from historical_odds import get_sdql_data
 from single_game_data import get_game_details
 from sdql_queries import get_last_5_games, get_last_5_games_vs_opponent
 from utils import convert_sport_key, mlb_totals, other_totals, convert_to_eastern, check_for_trends, convert_team_name
-from betting_guide import betting_guide
+
 from flask_caching import Cache
 from cache import cache, init_cache
 import logging
@@ -138,10 +138,6 @@ def get_cache_value(cache_key):
         logging.error(f"Error fetching cache key {cache_key}: {e}")
         return jsonify({'error': 'Internal Server Error'}), 500 
 
-# app.py
-from betting_guide import betting_guide  # Add this line
-
-app.register_blueprint(betting_guide)  # Register the blueprint
 
 def filter_scores_by_date(scores, selected_date_start):
     filtered_scores = []

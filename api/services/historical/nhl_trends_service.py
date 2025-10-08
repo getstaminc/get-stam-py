@@ -13,29 +13,40 @@ from .nhl_service import NHLService
 class NHLTrendsService(BaseHistoricalService):
     @classmethod
     def _batch_fetch_all_team_games(cls, teams: Set[str], limit: int) -> Dict[str, List[Dict]]:
-        """Batch fetch games for all teams in one database query."""
+        """Batch fetch games for all teams in one database query, using convert_team_name for lookups."""
         try:
+            import sys
+            sys.path.append('/Users/stephaniegillen/Projects/get-stam-api')
+            from shared_utils import convert_team_name
             from .nhl_service import NHLService
+            # Convert all team names to DB format
+            db_team_names = [convert_team_name(team) for team in teams]
             conn = NHLService._get_connection()
             if not conn:
                 return {}
-            placeholders = ','.join(['%s'] * len(teams))
+            placeholders = ','.join(['%s'] * len(db_team_names))
             query = f"""
                 SELECT * FROM nhl_games
                 WHERE home_team_name IN ({placeholders}) OR away_team_name IN ({placeholders})
                 ORDER BY game_date DESC
             """
-            params = list(teams) + list(teams)
+            params = db_team_names + db_team_names
             from psycopg2.extras import RealDictCursor
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(query, params)
                 all_games = cursor.fetchall()
+            # Map DB names back to original names
             team_games = {team: [] for team in teams}
+            original_to_db_name = {convert_team_name(team): team for team in teams}
             for game in all_games:
-                if game['home_team_name'] in team_games:
-                    team_games[game['home_team_name']].append(game)
-                if game['away_team_name'] in team_games:
-                    team_games[game['away_team_name']].append(game)
+                # Check if home team is in our list
+                if game['home_team_name'] in original_to_db_name:
+                    original_home = original_to_db_name[game['home_team_name']]
+                    team_games[original_home].append(game)
+                # Check if away team is in our list
+                if game['away_team_name'] in original_to_db_name:
+                    original_away = original_to_db_name[game['away_team_name']]
+                    team_games[original_away].append(game)
             for team in team_games:
                 team_games[team] = sorted(team_games[team], key=lambda x: x['game_date'], reverse=True)[:limit]
             return team_games
@@ -48,16 +59,25 @@ class NHLTrendsService(BaseHistoricalService):
 
     @classmethod
     def _batch_fetch_all_head_to_head_games(cls, team_pairs: List[Tuple[str, str]], limit: int) -> Dict[Tuple[str, str], List[Dict]]:
-        """Batch fetch head-to-head games for all team pairs in one query."""
+        """Batch fetch head-to-head games for all team pairs in one query, using convert_team_name for lookups."""
         try:
+            import sys
+            sys.path.append('/Users/stephaniegillen/Projects/get-stam-api')
+            from shared_utils import convert_team_name
             from .nhl_service import NHLService
+            # Convert all team names to DB format
+            db_team_pairs = [(convert_team_name(home), convert_team_name(away)) for home, away in team_pairs]
+            all_teams_in_pairs = set()
+            for home, away in team_pairs:
+                all_teams_in_pairs.add(home)
+                all_teams_in_pairs.add(away)
             conn = NHLService._get_connection()
             if not conn:
                 return {}
             h2h_results = {pair: [] for pair in team_pairs}
             h2h_conditions = []
             params = []
-            for home_team, away_team in team_pairs:
+            for (home_team, away_team), (orig_home, orig_away) in zip(db_team_pairs, team_pairs):
                 h2h_conditions.append("(home_team_name = %s AND away_team_name = %s) OR (home_team_name = %s AND away_team_name = %s)")
                 params.extend([home_team, away_team, away_team, home_team])
             if h2h_conditions:
@@ -70,12 +90,16 @@ class NHLTrendsService(BaseHistoricalService):
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                     cursor.execute(query, params)
                     all_h2h_games = cursor.fetchall()
+                # Map DB names back to original names
+                db_to_original = {convert_team_name(team): team for team in all_teams_in_pairs}
                 for game in all_h2h_games:
-                    for pair in team_pairs:
-                        if ((game['home_team_name'], game['away_team_name']) == pair or
-                            (game['home_team_name'], game['away_team_name']) == (pair[1], pair[0])):
-                            if len(h2h_results[pair]) < limit:
-                                h2h_results[pair].append(game)
+                    home_team_orig = db_to_original.get(game['home_team_name'], game['home_team_name'])
+                    away_team_orig = db_to_original.get(game['away_team_name'], game['away_team_name'])
+                    for orig_pair in team_pairs:
+                        if ((home_team_orig, away_team_orig) == orig_pair or
+                            (home_team_orig, away_team_orig) == (orig_pair[1], orig_pair[0])):
+                            if len(h2h_results[orig_pair]) < limit:
+                                h2h_results[orig_pair].append(game)
             return h2h_results
         except Exception as e:
             print(f"Error batch fetching head-to-head games: {e}")
@@ -146,14 +170,18 @@ class NHLTrendsService(BaseHistoricalService):
 
     @classmethod
     def _get_team_data_from_game(cls, game: Dict, team_name: str) -> Dict:
+        import sys
+        sys.path.append('/Users/stephaniegillen/Projects/get-stam-api')
+        from shared_utils import convert_team_name
         home_team = game.get('home_team_name')
         away_team = game.get('away_team_name')
         home_goals = game.get('home_goals', 0) or 0
         away_goals = game.get('away_goals', 0) or 0
+        converted_team_name = convert_team_name(team_name)
         team_side = None
-        if home_team == team_name:
+        if home_team == converted_team_name or home_team == team_name:
             team_side = 'home'
-        elif away_team == team_name:
+        elif away_team == converted_team_name or away_team == team_name:
             team_side = 'away'
         if team_side == 'home':
             return {'team_goals': home_goals, 'opponent_goals': away_goals}

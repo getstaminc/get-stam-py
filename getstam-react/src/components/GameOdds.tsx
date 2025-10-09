@@ -20,11 +20,16 @@ type GameOddsProps = {
 
 const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
   const { home, away, totals } = game;
-  // Only hide odds if both scores are not null/undefined and at least one is not zero (game is actually over)
+  // Hide odds if both scores are present and ALL odds/totals fields are null (game is over and no odds data)
+  const allOddsNull = (
+    (!home.odds || (home.odds.h2h === null && home.odds.spread_point === null && home.odds.spread_price === null)) &&
+    (!away.odds || (away.odds.h2h === null && away.odds.spread_point === null && away.odds.spread_price === null)) &&
+    (!totals || (totals.over_point === null && totals.under_point === null && totals.over_price === null && totals.under_price === null))
+  );
   const isGameOver =
     home?.score !== null && home?.score !== undefined &&
     away?.score !== null && away?.score !== undefined &&
-    (home.score !== 0 || away.score !== 0);
+    allOddsNull;
 
   const hasScore =
     home.score !== null &&
@@ -107,6 +112,15 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
           >
             {gameStatus}
           </Typography>
+          {/* Show FINAL label if game is over */}
+          {isGameOver && (
+            <Typography
+              variant="subtitle2"
+              sx={{ mt: 0.5, fontWeight: 700, letterSpacing: 1 }}
+            >
+              FINAL
+            </Typography>
+          )}
         </Box>
 
         <Box sx={{ flex: 1 }}>

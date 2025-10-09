@@ -18,10 +18,13 @@ SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 def get_yesterdays_nhl_games(retries=3, delay=1):
     sdql_url = "https://s3.sportsdatabase.com/NHL/query"
-    today = datetime.today().strftime('%Y%m%d')
-    yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
 
-    sdql_query = f"date,site,team,line,goals,o:team,o:line,o:goals,total,period scores,o:period scores,goalie,o:goalie,playoffs,power play goals,o:power play goals,shoot out,overtime @(site='home' or site='neutral') and date={yesterday}"
+    # Calculate today and two days ago in the required format (YYYYMMDD)
+    today = datetime.today().strftime('%Y%m%d')
+    two_days_ago = (datetime.today() - timedelta(days=2)).strftime('%Y%m%d')
+
+    # SDQL query to fetch all games from two days ago up to yesterday (not including today)
+    sdql_query = f"date,site,team,line,goals,o:team,o:line,o:goals,total,period scores,o:period scores,goalie,o:goalie,playoffs,power play goals,o:power play goals,shoot out,overtime @(site='home' or site='neutral') and date<{today} and date>={two_days_ago}"
 
 
     headers = {'user': SDQL_USERNAME, 'token': SDQL_TOKEN}
@@ -38,10 +41,10 @@ def get_yesterdays_nhl_games(retries=3, delay=1):
                 formatted_result = [dict(zip(headers, row)) for row in zip(*rows)]
                 for game in formatted_result:
                     game['date'] = datetime.strptime(str(game['date']), '%Y%m%d').strftime('%Y-%m-%d')
-                print(f"Fetched {len(formatted_result)} NHL games for {yesterday}.")
+                print(f"Fetched {len(formatted_result)} NHL games for the last two days.")
                 return formatted_result
             else:
-                print("No NHL games found for yesterday.")
+                print("No NHL games found for the last two days.")
                 return []
         except requests.exceptions.RequestException as e:
             print(f"SDQL request failed: {e}")
@@ -87,8 +90,22 @@ def seed_yesterdays_nhl_games():
             print(f"Skipping game due to missing team ID: Home: {home_team_name} (ID: {home_team_id}), Away: {away_team_name} (ID: {away_team_id})")
             continue
 
-        dedup_key = (game['date'], home_team_name, away_team_name)
-        # You can add duplicate logic here if needed
+
+        # Check if either team has already played on this date (handles duplicates from neutral games)
+        existing_game = conn.execute(text("""
+            SELECT 1 FROM nhl_games
+            WHERE game_date = :game_date
+            AND (home_team_name = :team1 OR away_team_name = :team1 
+                 OR home_team_name = :team2 OR away_team_name = :team2)
+        """), {
+            'game_date': game['date'],
+            'team1': home_team_name,
+            'team2': away_team_name
+        }).fetchone()
+
+        if existing_game:
+            print(f"Skipping duplicate - one of these teams already played on {game['date']}: {home_team_name} vs {away_team_name}")
+            continue
 
         home_period_goals = game.get('period scores', []) or []
         away_period_goals = game.get('o:period scores', []) or []

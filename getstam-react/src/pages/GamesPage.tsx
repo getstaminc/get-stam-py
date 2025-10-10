@@ -350,21 +350,13 @@ const GamesPage = () => {
             gap: 2
           }}
         >
-          <TextField
-            label="Select Date"
-            type="date"
-            value={formatDate(selectedDate)}
-            onChange={(e) => updateDate(new Date(e.target.value))}
-            InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 160, mb: { xs: 2, sm: 0 } }}
-          />
           {/* Only show buttons for current/future dates */}
-          {!isHistoricalDate && ( 
+          {!isHistoricalDate && (
             <Box
               sx={{
                 display: 'flex',
                 flexDirection: 'row',
-                justifyContent: { xs: 'center', md: 'flex-end' },
+                justifyContent: { xs: 'center', md: 'flex-start' },
                 alignItems: 'center',
                 width: '100%',
                 gap: 0
@@ -422,6 +414,14 @@ const GamesPage = () => {
               </Button>
             </Box>
           )}
+          <TextField
+            label="Select Date"
+            type="date"
+            value={formatDate(selectedDate)}
+            onChange={(e) => updateDate(new Date(e.target.value))}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 160, mb: { xs: 2, sm: 0 } }}
+          />
         </Box>
 
         {/* Show historical games for past dates */}

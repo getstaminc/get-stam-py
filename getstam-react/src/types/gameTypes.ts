@@ -154,6 +154,10 @@ export interface TeamOdds {
   spread_price: number | null;
 }
 
+export interface DrawOdds {
+  h2h: number | null;
+}
+
 export interface TotalsData {
   over_point: number | null;
   over_price: number | null;
@@ -165,6 +169,14 @@ export interface TeamData {
   team: string;
   score: number | null;
   odds: TeamOdds;
+}
+
+export interface GameWithDraw {
+  home: TeamData;
+  away: TeamData;
+  totals: TotalsData;
+  draw?: DrawOdds;
+  [key: string]: any;
 }
 
 // Live game data structure (for GameContext and similar)

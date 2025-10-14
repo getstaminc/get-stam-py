@@ -27,13 +27,12 @@ def initialize_odds_structure():
     home_odds = {"h2h": None, "spread_point": None, "spread_price": None}
     away_odds = {"h2h": None, "spread_point": None, "spread_price": None}
     totals = {"over_point": None, "over_price": None, "under_point": None, "under_price": None}
-    
-    return home_odds, away_odds, totals
+    draw_odds = {"h2h": None}
+    return home_odds, away_odds, totals, draw_odds
 
-def process_market_outcomes(market, home_team, away_team, home_odds, away_odds, totals):
+def process_market_outcomes(market, home_team, away_team, home_odds, away_odds, totals, draw_odds=None):
     """Process outcomes for a specific market (h2h, spreads, totals)"""
     market_key = market['key']
-    
     if market_key == "h2h":
         for outcome in market['outcomes']:
             price = int(outcome['price']) if 'price' in outcome else None
@@ -41,7 +40,8 @@ def process_market_outcomes(market, home_team, away_team, home_odds, away_odds, 
                 home_odds["h2h"] = price
             elif outcome['name'] == away_team:
                 away_odds["h2h"] = price
-                
+            elif outcome['name'].lower() == "draw" and draw_odds is not None:
+                draw_odds["h2h"] = price
     elif market_key == "spreads":
         for outcome in market['outcomes']:
             point = float(outcome['point']) if 'point' in outcome else None
@@ -52,7 +52,6 @@ def process_market_outcomes(market, home_team, away_team, home_odds, away_odds, 
             elif outcome['name'] == away_team:
                 away_odds["spread_point"] = point
                 away_odds["spread_price"] = price
-                
     elif market_key == "totals":
         for outcome in market['outcomes']:
             point = float(outcome['point']) if 'point' in outcome else None
@@ -66,13 +65,10 @@ def process_market_outcomes(market, home_team, away_team, home_odds, away_odds, 
 
 def process_odds_data(match, odds, home_team, away_team):
     """Process all odds data for a match"""
-    home_odds, away_odds, totals = initialize_odds_structure()
-    
+    home_odds, away_odds, totals, draw_odds = initialize_odds_structure()
     match_odds = next((o for o in odds if o['id'] == match['id']), None)
-    
     if match_odds:
         for bookmaker in match_odds['bookmakers']:
             for market in bookmaker['markets']:
-                process_market_outcomes(market, home_team, away_team, home_odds, away_odds, totals)
-    
-    return home_odds, away_odds, totals
+                process_market_outcomes(market, home_team, away_team, home_odds, away_odds, totals, draw_odds=draw_odds)
+    return home_odds, away_odds, totals, draw_odds

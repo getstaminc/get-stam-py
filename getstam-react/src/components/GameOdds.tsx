@@ -1,25 +1,23 @@
 import React from "react";
 import { Box, Typography, Divider } from "@mui/material";
-import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 
-type Game = {
-  home: TeamData;
-  away: TeamData;
-  totals: TotalsData;
-};
 
-type GameOddsProps = {
-  game: Game;
+import { GameWithDraw } from "../types/gameTypes";
+
+interface GameOddsProps {
+  game: GameWithDraw;
   pitcherData?: {
     home_pitcher?: string;
     away_pitcher?: string;
     home_pitcher_stats?: string;
     away_pitcher_stats?: string;
   };
-};
+}
 
 const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
-  const { home, away, totals } = game;
+  console.log("GameOdds game prop:", game);
+
+  const { home, away, totals, draw } = game as GameWithDraw;
   // Hide odds if both scores are present and ALL odds/totals fields are null (game is over and no odds data)
   const allOddsNull = (
     (!home.odds || (home.odds.h2h === null && home.odds.spread_point === null && home.odds.spread_price === null)) &&
@@ -155,13 +153,25 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
           }}
         >
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant="body1">
               H2H
             </Typography>
             <Typography variant="body1">
-              {home.odds?.h2h !== undefined && away.odds?.h2h !== undefined
-                ? `${home.team}: ${home.odds.h2h} | ${away.team}: ${away.odds.h2h}`
-                : "N/A"}
+              {home.odds?.h2h !== undefined && away.odds?.h2h !== undefined ? (
+                <>
+                  <span>{home.team}: {home.odds.h2h}</span>
+                  {" | "}
+                  <span>{away.team}: {away.odds.h2h}</span>
+                  {draw && draw.h2h !== undefined && draw.h2h !== null && (
+                    <>
+                      {" | "}
+                      <span>Draw: {draw.h2h}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                "N/A"
+              )}
             </Typography>
           </Box>
           <Box sx={{ flex: 1 }}>

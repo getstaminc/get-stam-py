@@ -71,12 +71,13 @@ class GameService:
         home_score, away_score = extract_scores(match)
 
         # Process odds
-        home_odds, away_odds, totals = process_odds_data(match, odds, home_team, away_team)
+        home_odds, away_odds, totals, draw_odds = process_odds_data(match, odds, home_team, away_team)
 
         # Format commence time
         commence_time_formatted = format_commence_time(match.get('commence_time'))
 
-        return {
+        # Add draw odds for soccer_epl only if present
+        game_obj = {
             "game_id": match['id'],
             "commence_time": commence_time_formatted,
             "isToday": is_today(match.get('commence_time'), selected_date_start),
@@ -92,3 +93,7 @@ class GameService:
                 "odds": away_odds
             }
         }
+        # Only add draw if this is a soccer_epl game and draw odds exist
+        if match.get('sport_key') == 'soccer_epl' and draw_odds and draw_odds.get('h2h') is not None:
+            game_obj["draw"] = {"h2h": draw_odds["h2h"]}
+        return game_obj

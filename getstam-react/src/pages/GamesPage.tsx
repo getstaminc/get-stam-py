@@ -473,6 +473,7 @@ const GamesPage = () => {
                 home: match.home,
                 away: match.away,
                 totals: match.totals,
+                ...(match.draw ? { draw: match.draw } : {})
               }}
               pitcherData={getGamePitcherData(match)}
             />

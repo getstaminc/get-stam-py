@@ -208,6 +208,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
                 home: game.home,
                 away: game.away,
                 totals: game.totals,
+                ...(game.draw ? { draw: game.draw } : {})
               }}
               pitcherData={getPitcherDataForGame?.(game)}
             />

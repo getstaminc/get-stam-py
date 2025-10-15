@@ -36,11 +36,13 @@ def analyze_soccer_trends():
         
         games = data['games']
         limit = data.get('limit', 5)
-        min_trend_length = data.get('min_trend_length', 3)
-        
+        # Support both min_trend_length and minTrendLength keys
+        min_trend_length = data.get('min_trend_length', data.get('minTrendLength', 3))
+        sport_key = data.get('sportKey')
+
         # Analyze trends for all games
         results, error = SoccerTrendsService.analyze_multiple_games_trends(
-            games, limit, min_trend_length
+            games, limit, min_trend_length, sport_key
         )
         
         if error:

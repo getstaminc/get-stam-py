@@ -19,7 +19,7 @@ def fetch_nfl_rankings():
 
     # Offense stat config
     OFFENSE_CONFIG = {
-        "Total (Yds/G)": {"section": "passing", "total_index": 12, "rank_index": 11},
+        "Total (Yds/G)": {"section": "passing", "total_index": 12, "rank_index": 12},
         "Passing (Yds/G)": {"section": "passing", "total_index": 3, "rank_index": 3},
         "Rushing (Yds/G)": {"section": "rushing", "total_index": 1, "rank_index": 1},
         "Scoring (Pts/G)": {"section": "passing", "total_index": 5, "rank_index": 5},

@@ -28,11 +28,13 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
 };
 
 // Map URL sport to historical API sport type
-const SPORT_URL_TO_HISTORICAL: { [key: string]: 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' } = {
+type HistoricalSportType = 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' | 'nba';
+const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   nfl: "nfl",
-  mlb: "mlb", 
+  mlb: "mlb",
   ncaaf: "ncaaf",
   epl: "soccer",
+  nba: "nba",
   nfl_preseason: "nfl", // Map preseason to nfl,
   nhl: "nhl"
 };
@@ -106,6 +108,7 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     'americanfootball_nfl_preseason': 'nfl',
     'americanfootball_ncaaf': 'ncaaf',
     'baseball_mlb': 'mlb',
+    'basketball_nba': 'nba',
     'soccer_epl': 'soccer',
     'soccer_uefa_champs_league': 'soccer',
     'soccer_uefa_europa_league': 'soccer',

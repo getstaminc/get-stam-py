@@ -25,9 +25,9 @@ class NBAService(BaseHistoricalService):
             query = """
                 SELECT 
                     game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
-                    home_points, away_points, total_points, home_line, away_line,
-                    home_money_line, away_money_line, total_points
-                FROM nba_games
+                    home_points, away_points, total_points, total, start_time, home_line, away_line,
+                    home_money_line, away_money_line
+                FROM nba_games_1
                 WHERE 1=1
             """
             params = []
@@ -68,13 +68,13 @@ class NBAService(BaseHistoricalService):
             query = """
                 SELECT 
                     game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
-                    home_points, away_points, total_points, home_line, away_line,
-                    home_money_line, away_money_line, total_points,
+                    home_points, away_points, total_points, total, start_time, home_line, away_line,
+                    home_money_line, away_money_line, total,
                     CASE 
                         WHEN home_team_id = %s THEN 'home'
                         WHEN away_team_id = %s THEN 'away'
                     END as team_side
-                FROM nba_games
+                FROM nba_games_1
                 WHERE home_team_id = %s OR away_team_id = %s
                 ORDER BY game_date DESC
                 LIMIT %s
@@ -116,9 +116,8 @@ class NBAService(BaseHistoricalService):
             query = """
                 SELECT 
                     game_id, game_date, home_team_name, away_team_name, home_points, away_points,
-                    total_points, home_line, away_line, home_money_line, away_money_line,
-                    total_points
-                FROM nba_games
+                    total_points, total, start_time, home_line, away_line, home_money_line, away_money_line
+                FROM nba_games_1
                 WHERE (home_team_id = %s AND away_team_id = %s) 
                    OR (home_team_id = %s AND away_team_id = %s)
                 ORDER BY game_date DESC

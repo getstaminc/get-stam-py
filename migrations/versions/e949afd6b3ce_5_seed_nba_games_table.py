@@ -29,7 +29,7 @@ SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 def get_historical_games(team, retries=3, delay=1):
     sdql_url = f"https://s3.sportsdatabase.com/NBA/query"
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,_t@team='{team}' and site='home'and date>20150101"
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,_t,start time@team='{team}' and site='home'and date>20150101 and date<20251029"
 
     headers = {
         'user': SDQL_USERNAME,
@@ -74,9 +74,10 @@ def upgrade():
     conn = op.get_bind()
 
     # Fetch all teams and store them in a dictionary
+    # Only load teams that are NBA (sport='NBA') so we don't accidentally map other sports' teams
     teams_dict = {
         team['team_name']: team['team_id']
-        for team in conn.execute(text("SELECT team_id, team_name FROM teams")).mappings()
+        for team in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'NBA'")).mappings()
     }
 
     for team in teams_dict.keys():
@@ -143,8 +144,8 @@ def upgrade():
                 raw_time = game.get(time_key)
                 if raw_time:
                     s = str(raw_time).strip()
-                    # Try multiple common formats: HH:MM, HH:MM:SS, 12-hour withAM/PM
-                    for fmt in ('%H:%M', '%H:%M:%S', '%I:%M%p', '%I:%M %p'):
+                    # Try multiple common formats: HH:MM, HHMM, HH:MM:SS, and 12-hour with AM/PM
+                    for fmt in ('%H:%M', '%H%M', '%H:%M:%S', '%H%M%S', '%I:%M%p', '%I:%M %p'):
                         try:
                             start_time_val = datetime.strptime(s, fmt).time()
                             break
@@ -158,13 +159,13 @@ def upgrade():
             conn.execute(text("""
                 INSERT INTO nba_games_1 (
                     game_date, game_site, home_team_id, away_team_id, home_team_name, away_team_name, home_points, away_points,
-                    total_points, total_margin, home_line, away_line, home_quarter_scores,
+                    total_points, total_margin, total, home_line, away_line, home_quarter_scores,
                     away_quarter_scores, home_first_half_points, away_first_half_points,
                     home_second_half_points, away_second_half_points, home_overtime_points, away_overtime_points,
                     home_money_line, away_money_line, playoffs, start_time
                 ) VALUES (
                     :game_date, :game_site, :home_team_id, :away_team_id, :home_team_name, :away_team_name,
-                    :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
+                    :home_points, :away_points, :total_points, :total_margin, :total, :home_line, :away_line,
                     :home_quarter_scores, :away_quarter_scores, :home_first_half_points, :away_first_half_points,
                     :home_second_half_points, :away_second_half_points, :home_overtime_points, :away_overtime_points,
                     :home_money_line, :away_money_line, :playoffs, :start_time

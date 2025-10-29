@@ -121,8 +121,8 @@ class NBATrendsService(BaseHistoricalService):
                 SELECT 
                     game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
                     home_points, away_points, total_points, home_line, away_line,
-                    home_money_line, away_money_line, total_points
-                FROM nba_games
+                    home_money_line, away_money_line, total_points, total
+                FROM nba_games_1
                 WHERE (home_team_name IN ({placeholders}) OR away_team_name IN ({placeholders}))
                 ORDER BY game_date DESC
             """
@@ -193,8 +193,8 @@ class NBATrendsService(BaseHistoricalService):
                     SELECT 
                         game_id, game_date, home_team_name, away_team_name, home_points, away_points,
                         total_points, home_line, away_line, home_money_line, away_money_line,
-                        total_points, home_team_id, away_team_id
-                    FROM nba_games
+                        total_points, home_team_id, away_team_id, total
+                    FROM nba_games_1
                     WHERE ({' OR '.join(h2h_conditions)})
                     ORDER BY game_date DESC
                 """

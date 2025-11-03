@@ -1,4 +1,4 @@
-"""Seed yesterday's NBA games into the nba_games table."""
+"""Seed yesterday's NBA games into the nba_games_1 table."""
 
 from sqlalchemy import create_engine, text
 from datetime import datetime, timedelta
@@ -25,7 +25,6 @@ def get_yesterdays_games(retries=3, delay=1):
     
     # Calculate yesterday's date in the required format (YYYYMMDD)
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
-    # SDQL query to fetch all games for yesterday
     sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,quarter scores,o:quarter scores,playoffs,money line,o:money line,_t@site='home' and date={yesterday}"
 
     headers = {
@@ -70,7 +69,7 @@ def get_yesterdays_games(retries=3, delay=1):
             return []
 
 def seed_yesterdays_games():
-    """Seed yesterday's NBA games into the nba_games table."""
+    """Seed yesterday's NBA games into the nba_games_1 table."""
     engine = create_engine(DATABASE_URL)
     conn = engine.connect()
 
@@ -95,13 +94,17 @@ def seed_yesterdays_games():
         home_quarter_scores = json.loads(game['quarter scores'])
         away_quarter_scores = json.loads(game['o:quarter scores'])
 
-        home_team_id = conn.execute(text("""
-            SELECT team_id FROM teams WHERE team_name = :home_team
+        # Resolve team IDs explicitly and restrict to NBA to avoid duplicates
+        home_team_row = conn.execute(text("""
+            SELECT team_id FROM teams WHERE team_name = :home_team AND sport = 'NBA'
         """), {'home_team': game['team']}).fetchone()
 
-        away_team_id = conn.execute(text("""
-            SELECT team_id FROM teams WHERE team_name = :away_team
+        away_team_row = conn.execute(text("""
+            SELECT team_id FROM teams WHERE team_name = :away_team AND sport = 'NBA'
         """), {'away_team': game['o:team']}).fetchone()
+
+        home_team_id = home_team_row[0] if home_team_row else None
+        away_team_id = away_team_row[0] if away_team_row else None
 
         if not home_team_id or not away_team_id:
             print(f"Team not found: Home - {game['team']}, Away - {game['o:team']}")
@@ -119,29 +122,31 @@ def seed_yesterdays_games():
         home_overtime_points = home_quarter_scores[4] if len(home_quarter_scores) > 4 else None
         away_overtime_points = away_quarter_scores[4] if len(away_quarter_scores) > 4 else None
 
-        # Insert data into nba_games table
+        # Insert data into nba_games_1 table
         result = conn.execute(text("""
-            INSERT INTO nba_games (
+            INSERT INTO nba_games_1 (
                 game_date, game_site, home_team_id, away_team_id, home_team_name, away_team_name, home_points, away_points,
                 total_points, total_margin, home_line, away_line, home_quarter_scores,
                 away_quarter_scores, home_first_half_points, away_first_half_points,
                 home_second_half_points, away_second_half_points, home_overtime_points, away_overtime_points,
-                home_money_line, away_money_line, playoffs
+                home_money_line, away_money_line, playoffs, total
             ) VALUES (
                 :game_date, :game_site, 
-                (SELECT team_id FROM teams WHERE team_name = :home_team),
-                (SELECT team_id FROM teams WHERE team_name = :away_team),
+                :home_team_id,
+                :away_team_id,
                 :home_team_name, :away_team_name,  -- Add these
                 :home_points, :away_points, :total_points, :total_margin, :home_line, :away_line,
                 :home_quarter_scores, :away_quarter_scores, :home_first_half_points, :away_first_half_points,
                 :home_second_half_points, :away_second_half_points, :home_overtime_points, :away_overtime_points,
-                :home_money_line, :away_money_line, :playoffs
+                :home_money_line, :away_money_line, :playoffs, :total
             )
         """), {
             'game_date': game['date'],
             'game_site': game['site'],
             'home_team': game['team'],
             'away_team': game['o:team'],
+            'home_team_id': home_team_id,
+            'away_team_id': away_team_id,
             'home_team_name': game['team'],  # Add this
             'away_team_name': game['o:team'],  # Add this
             'home_points': game['points'],
@@ -160,7 +165,8 @@ def seed_yesterdays_games():
             'away_overtime_points': away_overtime_points,
             'home_money_line': game['money line'],
             'away_money_line': game['o:money line'],
-            'playoffs': game['playoffs']
+            'playoffs': game['playoffs'],
+            'total': game['total']
         })
 
         # Log the response from the database

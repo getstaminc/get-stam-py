@@ -368,7 +368,7 @@ export const convertTeamNameNhl = (fullTeamName: string): string => {
     'St Louis Blues': 'Blues',
     'Tampa Bay Lightning': 'Lightning',
     'Toronto Maple Leafs': 'Maple Leafs',
-    'Utah Hockey Club': 'Hockey Club',
+    'Utah Mammoth': 'Mammoth',
     'Vancouver Canucks': 'Canucks',
     'Vegas Golden Knights': 'Knights',
     'Washington Capitals': 'Capitals',

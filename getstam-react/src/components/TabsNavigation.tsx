@@ -71,17 +71,36 @@ const TabsNavigation: React.FC = () => {
       <Box sx={{ flex: 1 }}>
         {isMobile ? (
           <>
-            <IconButton
-              edge="start"
+            <Button
+              variant="outlined"
               color="inherit"
-              aria-label="menu"
+              disableRipple
+              aria-label="more-sports"
               onClick={toggleDrawer(true)}
-              sx={{ ml: 1, mt: 1 }}
+              sx={{
+                ml: 1,
+                mt: 1,
+                mb: 1,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 1,
+                px: 2,
+                py: 0.5,
+                borderColor: 'rgba(0,0,0,0.12)',
+                bgcolor: 'transparent',
+                fontSize: '0.95rem',
+                color: '#555555',
+                '&:hover': {
+                  bgcolor: 'rgba(25,118,210,0.06)',
+                  borderColor: '#1976d2',
+                },
+              }}
             >
-              <MenuIcon />
-            </IconButton>
+              MORE SPORTS
+            </Button>
             <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-              <Box sx={{ width: 220 }} role="presentation" onClick={toggleDrawer(false)}>
+              {/* Add top padding so the drawer content doesn't sit flush against the top edge */}
+              <Box sx={{ width: 220, pt: 3, px: 1 }} role="presentation" onClick={toggleDrawer(false)}>
                 <List>
                   {inSeasonSports.map((sport) => (
                     <ListItem key={sport.name} disablePadding>
@@ -91,7 +110,7 @@ const TabsNavigation: React.FC = () => {
                     </ListItem>
                   ))}
                 </List>
-                <Divider />
+                <Divider sx={{ my: 1 }} />
                 <List>
                   {offSeasonSports.map((sport) => (
                     <ListItem key={sport.name} disablePadding>
@@ -101,7 +120,7 @@ const TabsNavigation: React.FC = () => {
                     </ListItem>
                   ))}
                 </List>
-                <Divider />
+                <Divider sx={{ my: 1 }} />
                 <List>
                   <ListItem disablePadding>
                     <ListItemButton component="a" href="/feature-request">
@@ -109,7 +128,7 @@ const TabsNavigation: React.FC = () => {
                     </ListItemButton>
                   </ListItem>
                 </List>
-                <Divider />
+                <Divider sx={{ my: 1 }} />
               </Box>
             </Drawer>
           </>

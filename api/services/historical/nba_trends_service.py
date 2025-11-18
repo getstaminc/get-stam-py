@@ -11,6 +11,15 @@ from .nba_service import NBAService
 
 class NBATrendsService(BaseHistoricalService):
     """Service for analyzing NBA game trends from historical data using batched queries."""
+
+    @staticmethod
+    def _norm_name(s: Optional[str]) -> Optional[str]:
+        if s is None:
+            return None
+        try:
+            return s.strip().lower()
+        except Exception:
+            return s
     
     @classmethod
     def analyze_multiple_games_trends(
@@ -75,12 +84,28 @@ class NBATrendsService(BaseHistoricalService):
                 h2h_games_with_side = []
                 for g in h2h_games:
                     g_copy = dict(g)
-                    if g_copy.get('home_team_name') == home_team:
+                    # Prefer resolved original names (added in the H2H fetch)
+                    # since DB may store short nicknames (e.g. 'Hawks').
+                    if g_copy.get('home_team_orig') == home_team:
                         g_copy['team_side'] = 'home'
-                    elif g_copy.get('away_team_name') == home_team:
+                    elif g_copy.get('away_team_orig') == home_team:
                         g_copy['team_side'] = 'away'
                     else:
-                        g_copy['team_side'] = None
+                        # Fallback: compare normalized DB names to the requested
+                        # home team name, and also allow a last-word match
+                        db_home_norm = cls._norm_name(g_copy.get('home_team_name'))
+                        db_away_norm = cls._norm_name(g_copy.get('away_team_name'))
+                        home_norm = cls._norm_name(home_team)
+                        home_last = None
+                        if home_norm and ' ' in home_norm:
+                            home_last = home_norm.split()[-1]
+
+                        if home_norm and (db_home_norm == home_norm or (home_last and db_home_norm == home_last)):
+                            g_copy['team_side'] = 'home'
+                        elif home_norm and (db_away_norm == home_norm or (home_last and db_away_norm == home_last)):
+                            g_copy['team_side'] = 'away'
+                        else:
+                            g_copy['team_side'] = None
                     h2h_games_with_side.append(g_copy)
 
                 head_to_head_trends = cls._analyze_team_trends(h2h_games_with_side, home_team, min_trend_length)
@@ -111,12 +136,25 @@ class NBATrendsService(BaseHistoricalService):
             sys.path.append('/Users/stephaniegillen/Projects/get-stam-api')
             from shared_utils import convert_team_name
 
-            db_team_names = [convert_team_name(team) for team in teams]
+            # Build a combined list of possible DB keys: converted short names,
+            # original full names, and a last-word fallback (e.g. 'Hawks'). This
+            # helps match rows even when naming conventions differ.
+            short_names = [convert_team_name(team) for team in teams]
+            combined = []
+            for k in short_names + list(teams):
+                if k not in combined:
+                    combined.append(k)
+            for team in teams:
+                if isinstance(team, str) and ' ' in team:
+                    last = team.split()[-1]
+                    if last not in combined:
+                        combined.append(last)
+
             conn = NBAService._get_connection()
             if not conn:
                 return {}
 
-            placeholders = ','.join(['%s'] * len(db_team_names))
+            placeholders = ','.join(['%s'] * len(combined))
             query = f"""
                 SELECT 
                     game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
@@ -126,7 +164,7 @@ class NBATrendsService(BaseHistoricalService):
                 WHERE (home_team_name IN ({placeholders}) OR away_team_name IN ({placeholders}))
                 ORDER BY game_date DESC
             """
-            params = db_team_names + db_team_names
+            params = combined + combined
 
             from psycopg2.extras import RealDictCursor
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -134,17 +172,32 @@ class NBATrendsService(BaseHistoricalService):
                 all_games = cursor.fetchall()
 
             team_games = {team: [] for team in teams}
-            original_to_db_name = {convert_team_name(team): team for team in teams}
+            # Map DB name variants (normalized) back to the original requested
+            # team name.
+            def _norm(v):
+                try:
+                    return v.strip().lower() if v is not None else None
+                except Exception:
+                    return v
+
+            original_to_db_name = {}
+            for team in teams:
+                original_to_db_name[ _norm(convert_team_name(team)) ] = team
+                original_to_db_name[ _norm(team) ] = team
+                if isinstance(team, str) and ' ' in team:
+                    original_to_db_name[ _norm(team.split()[-1]) ] = team
 
             for game in all_games:
                 game_dict = dict(game)
-                if game_dict['home_team_name'] in original_to_db_name:
-                    original_home = original_to_db_name[game_dict['home_team_name']]
+                db_home = _norm(game_dict.get('home_team_name'))
+                db_away = _norm(game_dict.get('away_team_name'))
+                if db_home in original_to_db_name:
+                    original_home = original_to_db_name[db_home]
                     game_with_side = dict(game_dict)
                     game_with_side['team_side'] = 'home'
                     team_games[original_home].append(game_with_side)
-                if game_dict['away_team_name'] in original_to_db_name:
-                    original_away = original_to_db_name[game_dict['away_team_name']]
+                if db_away in original_to_db_name:
+                    original_away = original_to_db_name[db_away]
                     game_with_side = dict(game_dict)
                     game_with_side['team_side'] = 'away'
                     team_games[original_away].append(game_with_side)
@@ -208,6 +261,11 @@ class NBATrendsService(BaseHistoricalService):
                     game_dict = dict(game)
                     home_team_orig = reverse_team_id_map.get(game_dict['home_team_id'])
                     away_team_orig = reverse_team_id_map.get(game_dict['away_team_id'])
+                    # Attach the resolved original names so callers can reliably
+                    # determine which side the requested team played on even when
+                    # the DB stores short/team nicknames.
+                    game_dict['home_team_orig'] = home_team_orig
+                    game_dict['away_team_orig'] = away_team_orig
                     for home, away in valid_pairs:
                         if ((home_team_orig == home and away_team_orig == away) or 
                             (home_team_orig == away and away_team_orig == home)):

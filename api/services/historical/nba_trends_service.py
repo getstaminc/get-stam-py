@@ -11,6 +11,15 @@ from .nba_service import NBAService
 
 class NBATrendsService(BaseHistoricalService):
     """Service for analyzing NBA game trends from historical data using batched queries."""
+
+    @staticmethod
+    def _norm_name(s: Optional[str]) -> Optional[str]:
+        if s is None:
+            return None
+        try:
+            return s.strip().lower()
+        except Exception:
+            return s
     
     @classmethod
     def analyze_multiple_games_trends(
@@ -111,12 +120,25 @@ class NBATrendsService(BaseHistoricalService):
             sys.path.append('/Users/stephaniegillen/Projects/get-stam-api')
             from shared_utils import convert_team_name
 
-            db_team_names = [convert_team_name(team) for team in teams]
+            # Build a combined list of possible DB keys: converted short names,
+            # original full names, and a last-word fallback (e.g. 'Hawks'). This
+            # helps match rows even when naming conventions differ.
+            short_names = [convert_team_name(team) for team in teams]
+            combined = []
+            for k in short_names + list(teams):
+                if k not in combined:
+                    combined.append(k)
+            for team in teams:
+                if isinstance(team, str) and ' ' in team:
+                    last = team.split()[-1]
+                    if last not in combined:
+                        combined.append(last)
+
             conn = NBAService._get_connection()
             if not conn:
                 return {}
 
-            placeholders = ','.join(['%s'] * len(db_team_names))
+            placeholders = ','.join(['%s'] * len(combined))
             query = f"""
                 SELECT 
                     game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
@@ -126,7 +148,7 @@ class NBATrendsService(BaseHistoricalService):
                 WHERE (home_team_name IN ({placeholders}) OR away_team_name IN ({placeholders}))
                 ORDER BY game_date DESC
             """
-            params = db_team_names + db_team_names
+            params = combined + combined
 
             from psycopg2.extras import RealDictCursor
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -134,17 +156,32 @@ class NBATrendsService(BaseHistoricalService):
                 all_games = cursor.fetchall()
 
             team_games = {team: [] for team in teams}
-            original_to_db_name = {convert_team_name(team): team for team in teams}
+            # Map DB name variants (normalized) back to the original requested
+            # team name.
+            def _norm(v):
+                try:
+                    return v.strip().lower() if v is not None else None
+                except Exception:
+                    return v
+
+            original_to_db_name = {}
+            for team in teams:
+                original_to_db_name[ _norm(convert_team_name(team)) ] = team
+                original_to_db_name[ _norm(team) ] = team
+                if isinstance(team, str) and ' ' in team:
+                    original_to_db_name[ _norm(team.split()[-1]) ] = team
 
             for game in all_games:
                 game_dict = dict(game)
-                if game_dict['home_team_name'] in original_to_db_name:
-                    original_home = original_to_db_name[game_dict['home_team_name']]
+                db_home = _norm(game_dict.get('home_team_name'))
+                db_away = _norm(game_dict.get('away_team_name'))
+                if db_home in original_to_db_name:
+                    original_home = original_to_db_name[db_home]
                     game_with_side = dict(game_dict)
                     game_with_side['team_side'] = 'home'
                     team_games[original_home].append(game_with_side)
-                if game_dict['away_team_name'] in original_to_db_name:
-                    original_away = original_to_db_name[game_dict['away_team_name']]
+                if db_away in original_to_db_name:
+                    original_away = original_to_db_name[db_away]
                     game_with_side = dict(game_dict)
                     game_with_side['team_side'] = 'away'
                     team_games[original_away].append(game_with_side)

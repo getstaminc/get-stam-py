@@ -25,7 +25,7 @@ def get_yesterdays_games(retries=3, delay=1):
     
     # Calculate yesterday's date in the required format (YYYYMMDD)
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,playoffs,money line,o:money line,_t,start time@(site='home' or site='neutral') and date=20251111"
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,playoffs,money line,o:money line,_t,start time@(site='home' or site='neutral') and date={yesterday}"
 
     headers = {
         'user': SDQL_USERNAME,

@@ -84,12 +84,28 @@ class NBATrendsService(BaseHistoricalService):
                 h2h_games_with_side = []
                 for g in h2h_games:
                     g_copy = dict(g)
-                    if g_copy.get('home_team_name') == home_team:
+                    # Prefer resolved original names (added in the H2H fetch)
+                    # since DB may store short nicknames (e.g. 'Hawks').
+                    if g_copy.get('home_team_orig') == home_team:
                         g_copy['team_side'] = 'home'
-                    elif g_copy.get('away_team_name') == home_team:
+                    elif g_copy.get('away_team_orig') == home_team:
                         g_copy['team_side'] = 'away'
                     else:
-                        g_copy['team_side'] = None
+                        # Fallback: compare normalized DB names to the requested
+                        # home team name, and also allow a last-word match
+                        db_home_norm = cls._norm_name(g_copy.get('home_team_name'))
+                        db_away_norm = cls._norm_name(g_copy.get('away_team_name'))
+                        home_norm = cls._norm_name(home_team)
+                        home_last = None
+                        if home_norm and ' ' in home_norm:
+                            home_last = home_norm.split()[-1]
+
+                        if home_norm and (db_home_norm == home_norm or (home_last and db_home_norm == home_last)):
+                            g_copy['team_side'] = 'home'
+                        elif home_norm and (db_away_norm == home_norm or (home_last and db_away_norm == home_last)):
+                            g_copy['team_side'] = 'away'
+                        else:
+                            g_copy['team_side'] = None
                     h2h_games_with_side.append(g_copy)
 
                 head_to_head_trends = cls._analyze_team_trends(h2h_games_with_side, home_team, min_trend_length)
@@ -245,6 +261,11 @@ class NBATrendsService(BaseHistoricalService):
                     game_dict = dict(game)
                     home_team_orig = reverse_team_id_map.get(game_dict['home_team_id'])
                     away_team_orig = reverse_team_id_map.get(game_dict['away_team_id'])
+                    # Attach the resolved original names so callers can reliably
+                    # determine which side the requested team played on even when
+                    # the DB stores short/team nicknames.
+                    game_dict['home_team_orig'] = home_team_orig
+                    game_dict['away_team_orig'] = away_team_orig
                     for home, away in valid_pairs:
                         if ((home_team_orig == home and away_team_orig == away) or 
                             (home_team_orig == away and away_team_orig == home)):

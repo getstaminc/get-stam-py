@@ -42,6 +42,7 @@ from api.routes.historical.nhl_games import nhl_historical_bp
 from api.routes.historical.mlb_games import mlb_historical_bp
 from api.routes.historical.soccer_games import soccer_historical_bp
 from api.routes.historical.nfl_games import nfl_historical_bp
+from api.routes.historical.ncaab_games import ncaab_historical_bp
 from api.routes.historical.ncaaf_games import ncaaf_historical_bp
 from api.routes.historical.nfl_trends import nfl_trends_bp
 from api.routes.historical.mlb_trends import mlb_trends_bp
@@ -50,6 +51,7 @@ from api.routes.historical.soccer_trends import soccer_trends_bp
 from api.routes.historical.nhl_trends import nhl_trends_bp
 from api.routes.historical.nba_games import nba_historical_bp
 from api.routes.historical.nba_trends import nba_trends_bp
+from api.routes.historical.ncaab_trends import ncaab_trends_bp
 from api.routes.mlb_pitchers import mlb_pitchers_bp
 from flask_cors import CORS
 
@@ -160,6 +162,7 @@ app.register_blueprint(mlb_historical_bp)
 app.register_blueprint(soccer_historical_bp)
 app.register_blueprint(nfl_historical_bp)
 app.register_blueprint(nba_historical_bp)
+app.register_blueprint(ncaab_historical_bp)
 app.register_blueprint(ncaaf_historical_bp)
 app.register_blueprint(nhl_historical_bp)
 app.register_blueprint(nfl_trends_bp)
@@ -167,6 +170,7 @@ app.register_blueprint(mlb_trends_bp)
 app.register_blueprint(ncaaf_trends_bp)
 app.register_blueprint(soccer_trends_bp)
 app.register_blueprint(nba_trends_bp)
+app.register_blueprint(ncaab_trends_bp)
 app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_pitchers_bp)
 

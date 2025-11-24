@@ -631,6 +631,7 @@ export const convertTeamNameNcaab = (fullTeamName: string): string => {
     'South Alabama Jaguars': 'SALAB',
     'South Carolina Gamecocks': 'SOCAR',
     'South Carolina St Bulldogs': 'SCST',
+    'South Dakota Coyotes': 'SD',
     'Stanford Cardinal': 'STAN',
     'Stephen F. Austin Lumberjacks': 'SFAUS',
     'Stetson Hatters': 'STET',

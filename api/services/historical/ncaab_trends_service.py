@@ -134,7 +134,7 @@ class NCAABTrendsService(BaseHistoricalService):
         try:
             import sys
             sys.path.append('/Users/stephaniegillen/Projects/get-stam-api')
-            from shared_utils import convert_team_name
+            from shared_utils import convert_team_name_ncaab as convert_team_name
 
             # Build a combined list of possible DB keys: converted short names,
             # original full names, and a last-word fallback (e.g. 'Hawks'). This
@@ -289,7 +289,7 @@ class NCAABTrendsService(BaseHistoricalService):
         try:
             import sys
             sys.path.append('/Users/stephaniegillen/Projects/get-stam-api')
-            from shared_utils import convert_team_name
+            from shared_utils import convert_team_name_ncaab as convert_team_name
 
             db_team_names = [convert_team_name(team) for team in teams]
             conn = NCAABService._get_connection()

@@ -87,7 +87,7 @@ export interface NHLGame extends BaseGame {
 }
 
 // Union type for all game types
-export type HistoricalGame = NFLGame | MLBGame | SoccerGame | NHLGame;
+export type HistoricalGame = NFLGame | MLBGame | SoccerGame | NHLGame | NBAGame;
 
 // Unified game data interface for display components
 export interface GameData {
@@ -113,7 +113,7 @@ export interface GameData {
   away_spread?: number;
 }
 
-export type SportType = 'nfl' | 'ncaaf' | 'mlb' | 'soccer' | 'nba' | 'nhl';
+export type SportType = 'nfl' | 'ncaaf' | 'mlb' | 'soccer' | 'nba' | 'nhl' | 'ncaab';
 
 export type HistoricalGamesProps = {
   title: string;
@@ -131,6 +131,7 @@ export const getSportType = (sportKey: string): SportType => {
     'americanfootball_nfl_preseason': 'nfl',
     'americanfootball_ncaaf': 'ncaaf',
     'basketball_nba': 'nba',
+    'basketball_ncaab': 'ncaab',
     'baseball_mlb': 'mlb',
     'icehockey_nhl': 'nhl',
     'soccer_epl': 'soccer',
@@ -138,6 +139,7 @@ export const getSportType = (sportKey: string): SportType => {
     'nfl': 'nfl',
     'ncaaf': 'ncaaf',
     'nba': 'nba',
+    'ncaab': 'ncaab',
     'mlb': 'mlb',
     'nhl': 'nhl',
     'soccer': 'soccer',

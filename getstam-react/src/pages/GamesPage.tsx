@@ -28,7 +28,7 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
 };
 
 // Map URL sport to historical API sport type
-type HistoricalSportType = 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' | 'nba';
+type HistoricalSportType = 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' | 'nba' | 'ncaab';
 const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   nfl: "nfl",
   mlb: "mlb",
@@ -36,7 +36,8 @@ const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   epl: "soccer",
   nba: "nba",
   nfl_preseason: "nfl", // Map preseason to nfl,
-  nhl: "nhl"
+  nhl: "nhl",
+  ncaab: "ncaab",
 };
 
 // Map Odds API sport key to display name
@@ -115,6 +116,7 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     'soccer_fifa_world_cup': 'soccer',
     'soccer_uefa_nations_league': 'soccer',
     'icehockey_nhl': 'nhl',
+    'basketball_ncaab': 'ncaab',
     // Add other sports as endpoints become available
   };
   

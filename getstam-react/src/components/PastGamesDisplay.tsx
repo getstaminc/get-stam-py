@@ -15,6 +15,9 @@ import {
 } from "@mui/material";
 import { GameData, SportType } from "../types/gameTypes";
 
+// Environment-aware API base URL: prefer REACT_APP_API_BASE_URL, fall back to localhost in dev
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV === "development" ? "http://127.0.0.1:5000" : "https://www.getstam.com");
+
 interface PastGamesDisplayProps {
   selectedDate: string; // Format: YYYY-MM-DD
   sportType: SportType;
@@ -60,7 +63,7 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
 
   const getApiEndpoint = () => {
     const formattedDate = selectedDate.replace(/-/g, ''); // Convert YYYY-MM-DD to YYYYMMDD
-    const baseUrl = "http://127.0.0.1:5000/api/historical";
+    const baseUrl = `${API_BASE_URL}/api/historical`;
     
     switch (sportType) {
       case 'mlb':

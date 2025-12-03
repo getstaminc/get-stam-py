@@ -15,6 +15,10 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   ncaaf: "americanfootball_ncaaf",
   ncaab: "basketball_ncaab",
   epl: "soccer_epl",
+  laliga: "soccer_spain_la_liga",
+  bundesliga: "soccer_germany_bundesliga",
+  ligue1: "soccer_france_ligue_one",
+  seriea: "soccer_italy_serie_a",
   nfl_preseason: "americanfootball_nfl_preseason",
 };
 
@@ -32,11 +36,26 @@ const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
 
 // Helper function to get soccer league from sport key
 const getSoccerLeague = (sportKey: string): string => {
-  if (sportKey === 'soccer_epl' || sportKey === 'epl') return 'epl';
-  // Future leagues can be added here:
-  // if (sportKey === 'soccer_champions_league') return 'champions_league';
-  // if (sportKey === 'soccer_fa_cup') return 'fa_cup';
-  return 'epl'; // Default to EPL for now
+  // Map known API sport keys to the league identifier used by the backend
+  switch (sportKey) {
+    case 'soccer_epl':
+    case 'epl':
+      return 'EPL';
+    case 'soccer_spain_la_liga':
+    case 'laliga':
+      return 'LA LIGA';
+    case 'soccer_germany_bundesliga':
+    case 'bundesliga':
+      return 'BUNDESLIGA';
+    case 'soccer_france_ligue_one':
+    case 'ligue1':
+      return 'LIGUE 1';
+    case 'soccer_italy_serie_a':
+    case 'seriea':
+      return 'SERIE A';
+    default:
+      return 'EPL'; // Default to EPL
+  }
 };
 
 // Helper function to check if sport is soccer

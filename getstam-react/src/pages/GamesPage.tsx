@@ -24,6 +24,10 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   ncaaf: "americanfootball_ncaaf",
   ncaab: "basketball_ncaab",
   epl: "soccer_epl",
+  laliga: "soccer_spain_la_liga",
+  bundesliga: "soccer_germany_bundesliga",
+  ligue1: "soccer_france_ligue_one",
+  seriea: "soccer_italy_serie_a",
   nfl_preseason: "americanfootball_nfl_preseason",
 };
 
@@ -34,10 +38,23 @@ const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   mlb: "mlb",
   ncaaf: "ncaaf",
   epl: "soccer",
+  laliga: "soccer",
+  bundesliga: "soccer",
+  ligue1: "soccer",
+  seriea: "soccer",
   nba: "nba",
   nfl_preseason: "nfl", // Map preseason to nfl,
   nhl: "nhl",
   ncaab: "ncaab",
+};
+
+// Map URL sport to the league identifier we send to the backend soccer endpoints
+const SPORT_URL_TO_SOCCER_LEAGUE_PARAM: { [key: string]: string } = {
+  epl: "EPL",
+  laliga: "LA LIGA",
+  bundesliga: "BUNDESLIGA",
+  ligue1: "LIGUE 1",
+  seriea: "SERIE A",
 };
 
 // Map Odds API sport key to display name
@@ -50,6 +67,10 @@ const SPORT_API_KEY_TO_DISPLAY: { [key: string]: string } = {
   americanfootball_ncaaf: "NCAAF",
   basketball_ncaab: "NCAAB",
   soccer_epl: "EPL",
+  soccer_spain_la_liga: "LA LIGA",
+  soccer_germany_bundesliga: "BUNDESLIGA",
+  soccer_france_ligue_one: "LIGUE 1",
+  soccer_italy_serie_a: "SERIE A",
 };
 
 const formatDate = (date: Date) => {
@@ -102,7 +123,7 @@ async function fetchGamesData(sportKey: string, date: Date) {
 }
 
 // Fetch trends from your new API endpoint
-async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: number) {
+async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: number, leagueSlug?: string) {
   // Map sportKey to the appropriate endpoint
   const sportEndpointMap: { [key: string]: string } = {
     'americanfootball_nfl': 'nfl',
@@ -120,12 +141,24 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     // Add other sports as endpoints become available
   };
   
-  const sportEndpoint = sportEndpointMap[sportKey];
+  let sportEndpoint = sportEndpointMap[sportKey];
+  // If we don't have a specific mapping but this is a soccer variant,
+  // treat any soccer_* key as the generic 'soccer' trends endpoint.
   if (!sportEndpoint) {
-    throw new Error(`Trends analysis not available for sport: ${sportKey}`);
+    if (sportKey.startsWith('soccer_')) {
+      sportEndpoint = 'soccer';
+    } else {
+      throw new Error(`Trends analysis not available for sport: ${sportKey}`);
+    }
   }
-  
-  const url = `${API_BASE_URL}/api/historical/trends/${sportEndpoint}`;
+  // For soccer variants, prefer league-specific endpoint when leagueSlug is provided
+  let url: string;
+  if (sportKey.startsWith('soccer_') && leagueSlug) {
+    // leagueSlug is the URL path segment (e.g. 'epl', 'ligue1', 'seriea')
+    url = `${API_BASE_URL}/api/historical/trends/soccer/${leagueSlug}`;
+  } else {
+    url = `${API_BASE_URL}/api/historical/trends/${sportEndpoint}`;
+  }
   const requestBody = {
     games: games,
     sportKey: sportKey,
@@ -273,10 +306,13 @@ const GamesPage = () => {
   // Analyze trends when switching to trends view or when minTrendLength changes
   useEffect(() => {
     // Use isTrends directly instead of activeView to avoid race condition
+    // DEBUG: log key state to help diagnose missing trends requests
+    console.log('trends-effect:', { urlSport, sportKey, isTrends, gamesCount: games.length, selectedDate: formatDate(selectedDate) });
+
     if (isTrends && games.length > 0) {
       setTrendsLoading(true);
       
-      fetchTrendsData(games, sportKey, minTrendLength)
+      fetchTrendsData(games, sportKey, minTrendLength, urlSport)
         .then((trendsResponse) => {
           // Extract the data array from the API response
           const trendsData = trendsResponse?.data || [];
@@ -289,6 +325,34 @@ const GamesPage = () => {
         .finally(() => {
           setTrendsLoading(false);
         });
+    } else if (isTrends && games.length === 0 && sportKey.startsWith('soccer_')) {
+      // No live odds games available from external API for this league; try fetching league-based historical games
+      // Use the backend league GET trends endpoint which accepts a date query parameter
+      const leagueSlug = urlSport; // e.g. 'laliga', 'seriea'
+      const dateStr = formatDateForUrl(selectedDate);
+      const leagueUrl = `${API_BASE_URL}/api/historical/soccer/${leagueSlug}/trends?date=${dateStr}`;
+      console.log('league-trends-fallback: fetching', leagueUrl);
+      setTrendsLoading(true);
+      fetch(leagueUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': process.env.REACT_APP_API_KEY || '',
+        }
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`League trends API error: ${res.status}`);
+          return res.json();
+        })
+        .then((json) => {
+          const trendsData = json?.data || [];
+          setGamesWithTrends(trendsData);
+        })
+        .catch((err) => {
+          console.error('Error fetching league trends:', err);
+          setGamesWithTrends([]);
+        })
+        .finally(() => setTrendsLoading(false));
     } else {
       setGamesWithTrends([]);
     }
@@ -434,6 +498,7 @@ const GamesPage = () => {
           <PastGamesDisplay
             selectedDate={formatDate(selectedDate)}
             sportType={historicalSportType}
+            leagueKey={SPORT_URL_TO_SOCCER_LEAGUE_PARAM[urlSport]}
           />
         )}
 

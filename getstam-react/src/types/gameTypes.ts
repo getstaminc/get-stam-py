@@ -135,6 +135,10 @@ export const getSportType = (sportKey: string): SportType => {
     'baseball_mlb': 'mlb',
     'icehockey_nhl': 'nhl',
     'soccer_epl': 'soccer',
+    'soccer_spain_la_liga': 'soccer',
+    'soccer_germany_bundesliga': 'soccer',
+    'soccer_france_ligue_one': 'soccer',
+    'soccer_italy_serie_a': 'soccer',
     // Also support short forms
     'nfl': 'nfl',
     'ncaaf': 'ncaaf',
@@ -143,7 +147,11 @@ export const getSportType = (sportKey: string): SportType => {
     'mlb': 'mlb',
     'nhl': 'nhl',
     'soccer': 'soccer',
-    'epl': 'soccer'
+    'epl': 'soccer',
+    'laliga': 'soccer',
+    'bundesliga': 'soccer',
+    'ligue1': 'soccer',
+    'seriea': 'soccer'
   };
   
   return sportMap[sportKey] || 'nfl'; // Default to NFL

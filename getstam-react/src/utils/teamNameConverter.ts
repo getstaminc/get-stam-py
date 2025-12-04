@@ -504,6 +504,8 @@ export const convertTeamNameNcaab = (fullTeamName: string): string => {
     'Xavier Musketeers': 'XAVER',
     'St. Francis (PA) Red Flash': 'STFRP',
     'Colorado Buffaloes': 'COL',
+    'The Citadel Bulldogs': 'CITDL',
+    'Green Bay Phoenix': 'WIGB',
     'Alabama A&M Bulldogs': 'ABAM',
     'Alabama Crimson Tide': 'ALAB',
     'Alabama St Hornets': 'ALAST',

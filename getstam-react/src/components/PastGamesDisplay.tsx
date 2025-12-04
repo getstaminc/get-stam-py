@@ -21,11 +21,13 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV
 interface PastGamesDisplayProps {
   selectedDate: string; // Format: YYYY-MM-DD
   sportType: SportType;
+  leagueKey?: string;
 }
 
 const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
   selectedDate,
-  sportType
+  sportType,
+  leagueKey
 }) => {
   const [games, setGames] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,7 +75,9 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
       case 'ncaaf':
         return `${baseUrl}/ncaaf/games?start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
       case 'soccer':
-        return `${baseUrl}/soccer/games?league=epl&start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
+        // Use provided leagueKey (e.g. 'EPL', 'BUNDESLIGA', etc.) when available
+        const leagueParam = leagueKey || 'epl';
+        return `${baseUrl}/soccer/games?league=${encodeURIComponent(leagueParam)}&start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
       default:
         return `${baseUrl}/${sportType}/games?start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
     }

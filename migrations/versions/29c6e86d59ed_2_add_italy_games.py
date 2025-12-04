@@ -1,8 +1,8 @@
-"""add italy
+"""2 add italy games
 
-Revision ID: c06225115194
-Revises: 72289ac8a760
-Create Date: 2025-12-01 20:56:42.207135
+Revision ID: 29c6e86d59ed
+Revises: 609cc43261e6
+Create Date: 2025-12-03 21:23:13.151641
 
 """
 from typing import Sequence, Union
@@ -17,10 +17,11 @@ from soccer_utils import translate_soccer_team_name
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c06225115194'
-down_revision: Union[str, None] = '72289ac8a760'
+revision: str = '29c6e86d59ed'
+down_revision: Union[str, None] = '609cc43261e6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
+
 
 
 def upgrade() -> None:
@@ -42,18 +43,21 @@ def upgrade() -> None:
     soccer_games = sa.Table('soccer_games', sa.MetaData(), autoload_with=bind)
 
     def parse_date(d: str):
-        # Expect dates in strict DD/MM/YYYY format (e.g. 22/08/2025)
-        try:
-            return datetime.strptime(d, "%d/%m/%Y").strftime("%Y-%m-%d")
-        except Exception:
-            raise ValueError(f"Unrecognized date format (expected DD/MM/YYYY): {d}")
+        # Try common date formats, including 2-digit years for older CSVs
+        for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%m/%d/%Y", "%d-%m-%Y", "%d.%m.%Y"):
+            try:
+                return datetime.strptime(d, fmt).strftime("%Y-%m-%d")
+            except Exception:
+                continue
+        raise ValueError(f"Unrecognized date format: {d}")
 
     def parse_start_time(row):
         """
-        Returns a Python time object from the 'Time' column in the row,
+        Returns a Python time object from the 'time' column in the row,
         or None if the column is missing or not parseable.
+        Keys are normalized to lowercase earlier so we read 'time'.
         """
-        time_str = row.get("Time")
+        time_str = row.get("time")
         if time_str:
             try:
                 return datetime.strptime(time_str, "%H:%M").time()
@@ -143,19 +147,8 @@ def upgrade() -> None:
                 try:
                     game_date = parse_date(date_raw)
                 except Exception:
-                    # try a few common alternate formats before giving up
-                    alt_date = None
-                    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d-%m-%Y", "%d.%m.%Y"):
-                        try:
-                            alt_date = datetime.strptime(date_raw, fmt).strftime("%Y-%m-%d")
-                            break
-                        except Exception:
-                            continue
-                    if alt_date:
-                        game_date = alt_date
-                    else:
-                        # skip bad date rows
-                        continue
+                    # skip bad date rows since parse_date now tries multiple formats
+                    continue
 
                 # accept multiple possible header names for home/away team columns
                 home_raw = row.get('hometeam') or row.get('home') or row.get('home_team')
@@ -242,23 +235,23 @@ def upgrade() -> None:
                     # skip inserting this row
                     continue
 
-                # parse scores and odds
-                FTHG = to_int(row.get('FTHG'))
-                FTAG = to_int(row.get('FTAG'))
-                HTHG = to_int(row.get('HTHG'))
-                HTAG = to_int(row.get('HTAG'))
+                # parse scores and odds (use lowercase keys after normalization)
+                FTHG = to_int(row.get('fthg'))
+                FTAG = to_int(row.get('ftag'))
+                HTHG = to_int(row.get('hthg'))
+                HTAG = to_int(row.get('htag'))
 
-                # parse kickoff/start time from the 'Time' column only (per spec)
+                # parse kickoff/start time from the 'time' column only (per spec)
                 start_time = parse_start_time(row)
 
-                B365H = to_int(row.get('B365H'))
-                B365D = to_int(row.get('B365D'))
-                B365A = to_int(row.get('B365A'))
-                over_price = to_int(row.get('BbAv>2.5') or row.get('B365>2.5'))
-                under_price = to_int(row.get('BbAv<2.5') or row.get('B365<2.5'))
+                B365H = to_int(row.get('b365h'))
+                B365D = to_int(row.get('b365d'))
+                B365A = to_int(row.get('b365a'))
+                over_price = to_int(row.get('bbav>2.5') or row.get('b365>2.5') or row.get('bbmx>2.5'))
+                under_price = to_int(row.get('bbav<2.5') or row.get('b365<2.5') or row.get('bbmx<2.5'))
                 AHCh = None
                 try:
-                    raw_ah = row.get('BbAHh') or row.get('BbAH') or row.get('AHCh')
+                    raw_ah = row.get('bbahh') or row.get('bbah') or row.get('ahch')
                     if raw_ah not in (None, '', 'NA'):
                         AHCh = float(raw_ah)
                 except Exception:

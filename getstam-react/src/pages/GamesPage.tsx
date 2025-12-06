@@ -96,7 +96,7 @@ const isPastDate = (date: Date): boolean => {
 // Helper to extract sport from URL path (e.g. "/nfl" → "nfl")
 function getSportFromPath(pathname: string): string {
   const match = pathname.match(/^\/([^/]+)/);
-  return match ? match[1] : "nfl";
+  return match ? match[1] : "nba";
 }
 
 // Get API base URL from env, fallback to prod or dev
@@ -191,9 +191,9 @@ const GamesPage = () => {
 
   // Get sport from URL path (e.g. "/nfl")
   const urlSport = getSportFromPath(location.pathname);
-  const sportKey = SPORT_URL_TO_API_KEY[urlSport] || "nfl";
+  const sportKey = SPORT_URL_TO_API_KEY[urlSport] || "basketball_nba";
   const historicalSportType = SPORT_URL_TO_HISTORICAL[urlSport];
-  const displaySport = SPORT_API_KEY_TO_DISPLAY[sportKey] || "NFL";
+  const displaySport = SPORT_API_KEY_TO_DISPLAY[sportKey] || "NBA";
 
   // Get date from URL query param if present
   const params = new URLSearchParams(location.search);

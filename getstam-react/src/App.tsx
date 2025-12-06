@@ -1,6 +1,6 @@
 import React from "react";
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TabsNavigation from "./components/TabsNavigation";
@@ -49,7 +49,7 @@ function AppContent() {
       <TabsNavigation />
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Routes>
-          <Route path="/" element={<GamesPage />} />
+          <Route path="/" element={<Navigate to="/nba" replace />} />
           <Route path="/nfl" element={<GamesPage />} />
           <Route path="/nfl/trends" element={<GamesPage />} />
           <Route path="/mlb" element={<GamesPage />} />

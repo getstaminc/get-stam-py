@@ -58,30 +58,59 @@ class NCAABService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
-    def get_team_games_by_id(team_id: int, limit: int = 10) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_team_games_by_id(team_id: int, limit: int = 10, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get historical games for a specific NCAAB team by ID."""
         try:
             conn = NCAABService._get_connection()
             if not conn:
                 return None, "Database connection failed"
 
-            query = """
-                SELECT 
-                    game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
-                    home_points, away_points, total_points, total, start_time, home_line, away_line,
-                    home_money_line, away_money_line, total,
-                    CASE 
-                        WHEN home_team_id = %s THEN 'home'
-                        WHEN away_team_id = %s THEN 'away'
-                    END as team_side
-                FROM ncaab_games
-                WHERE home_team_id = %s OR away_team_id = %s
-                ORDER BY game_date DESC
-                LIMIT %s
-            """
+            # Base query with venue filtering
+            if venue == 'home':
+                query = """
+                    SELECT 
+                        game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
+                        home_points, away_points, total_points, total, start_time, home_line, away_line,
+                        home_money_line, away_money_line, total,
+                        'home' as team_side
+                    FROM ncaab_games
+                    WHERE home_team_id = %s
+                    ORDER BY game_date DESC
+                    LIMIT %s
+                """
+                params = (team_id, limit)
+            elif venue == 'away':
+                query = """
+                    SELECT 
+                        game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
+                        home_points, away_points, total_points, total, start_time, home_line, away_line,
+                        home_money_line, away_money_line, total,
+                        'away' as team_side
+                    FROM ncaab_games
+                    WHERE away_team_id = %s
+                    ORDER BY game_date DESC
+                    LIMIT %s
+                """
+                params = (team_id, limit)
+            else:
+                query = """
+                    SELECT 
+                        game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
+                        home_points, away_points, total_points, total, start_time, home_line, away_line,
+                        home_money_line, away_money_line, total,
+                        CASE 
+                            WHEN home_team_id = %s THEN 'home'
+                            WHEN away_team_id = %s THEN 'away'
+                        END as team_side
+                    FROM ncaab_games
+                    WHERE home_team_id = %s OR away_team_id = %s
+                    ORDER BY game_date DESC
+                    LIMIT %s
+                """
+                params = (team_id, team_id, team_id, team_id, limit)
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (team_id, team_id, team_id, team_id, limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
                 games_list = [dict(game) for game in games]
                 processed_games = NCAABService._process_games_list(games_list)
@@ -93,7 +122,7 @@ class NCAABService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
-    def get_team_games_by_name(team_name: str, limit: int = 10) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_team_games_by_name(team_name: str, limit: int = 10, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get historical games for a specific NCAAB team by team name."""
         try:
             from shared_utils import convert_team_name
@@ -101,12 +130,12 @@ class NCAABService(BaseHistoricalService):
             team_id = NCAABService._get_team_id_by_name(db_team_name, 'NCAAB')
             if not team_id:
                 return None, f"Team '{team_name}' not found in database"
-            return NCAABService.get_team_games_by_id(team_id, limit)
+            return NCAABService.get_team_games_by_id(team_id, limit, venue)
         except Exception as e:
             return None, f"Error fetching team games by name: {str(e)}"
 
     @staticmethod
-    def get_head_to_head_games_by_id(team_id: int, opponent_id: int, limit: int = 5) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_head_to_head_games_by_id(team_id: int, opponent_id: int, limit: int = 5, venue: Optional[str] = None, perspective_team_id: Optional[int] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two NCAAB teams by ID."""
         try:
             conn = NCAABService._get_connection()
@@ -116,16 +145,31 @@ class NCAABService(BaseHistoricalService):
             query = """
                 SELECT 
                     game_id, game_date, home_team_name, away_team_name, home_points, away_points,
-                    total_points, total, start_time, home_line, away_line, home_money_line, away_money_line
+                    total_points, total, start_time, home_line, away_line, home_money_line, away_money_line,
+                    home_team_id, away_team_id
                 FROM ncaab_games
                 WHERE (home_team_id = %s AND away_team_id = %s) 
                    OR (home_team_id = %s AND away_team_id = %s)
-                ORDER BY game_date DESC
-                LIMIT %s
             """
+            
+            params = [team_id, opponent_id, opponent_id, team_id]
+            
+            # Add venue filtering if specified
+            if venue and perspective_team_id:
+                if venue == 'home':
+                    # Only games where perspective_team_id was home
+                    query += " AND home_team_id = %s"
+                    params.append(perspective_team_id)
+                elif venue == 'away':
+                    # Only games where perspective_team_id was away
+                    query += " AND away_team_id = %s"
+                    params.append(perspective_team_id)
+                    
+            query += " ORDER BY game_date DESC LIMIT %s"
+            params.append(limit)
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (team_id, opponent_id, opponent_id, team_id, limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
                 games_list = [dict(game) for game in games]
                 processed_games = NCAABService._process_games_list(games_list)
@@ -137,7 +181,7 @@ class NCAABService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
-    def get_head_to_head_games_by_name(home_team: str, away_team: str, limit: int = 5) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_head_to_head_games_by_name(home_team: str, away_team: str, limit: int = 5, venue: Optional[str] = None, team_perspective: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two NCAAB teams by team names."""
         try:
             from shared_utils import convert_team_name
@@ -149,7 +193,14 @@ class NCAABService(BaseHistoricalService):
                 return None, f"Home team '{home_team}' not found in database"
             if not away_team_id:
                 return None, f"Away team '{away_team}' not found in database"
-            return NCAABService.get_head_to_head_games_by_id(home_team_id, away_team_id, limit)
+            
+            # Convert team_perspective name to team_id if provided
+            perspective_team_id = None
+            if team_perspective:
+                db_perspective_team = convert_team_name(team_perspective)
+                perspective_team_id = NCAABService._get_team_id_by_name(db_perspective_team, 'NCAAB')
+            
+            return NCAABService.get_head_to_head_games_by_id(home_team_id, away_team_id, limit, venue, perspective_team_id)
         except Exception as e:
             return None, f"Error fetching head-to-head games by name: {str(e)}"
 

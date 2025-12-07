@@ -70,8 +70,9 @@ def get_nhl_team_games(team_name):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     playoffs = request.args.get('playoffs', type=bool)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
     
-    games, error = NHLService.get_team_games(team_name, limit, start_date, end_date, playoffs)
+    games, error = NHLService.get_team_games(team_name, limit, start_date, end_date, playoffs, venue)
     
     if error:
         return jsonify({'error': error}), 500
@@ -89,8 +90,10 @@ def get_nhl_head_to_head(team1, team2):
     limit = request.args.get('limit', 10, type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
+    team_perspective = request.args.get('team_perspective')  # Which team's venue to consider
     
-    games, error = NHLService.get_head_to_head_games(team1, team2, limit, start_date, end_date)
+    games, error = NHLService.get_head_to_head_games(team1, team2, limit, start_date, end_date, venue, team_perspective)
     
     if error:
         return jsonify({'error': error}), 500

@@ -118,20 +118,33 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const awayTeamName = away.team || game.away_team_name || "Away Team";
 
   return (
-    <Box>
-      <Paper elevation={3} sx={{ p: 3, mt: 4, maxWidth: 900, mx: "auto", backgroundColor: "#f9f9f9" }}>
+    <Box sx={{ px: { xs: 1, sm: 0 } }}>
+      <Paper elevation={3} sx={{ 
+        p: { xs: 2, sm: 3 }, 
+        mt: 4, 
+        maxWidth: 900, 
+        mx: { xs: 1, sm: "auto" },
+        backgroundColor: "#f9f9f9"
+      }}>
         {/* Odds section */}
         <GameOdds game={game} pitcherData={pitcherData} />
       </Paper>
 
       {/* Historical Games Section */}
-      <Box sx={{ maxWidth: 900, mx: "auto", mt: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
+      <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          mb: 3,
+          gap: { xs: 2, sm: 0 }
+        }}>
+          <Typography variant="h5" gutterBottom sx={{ mb: 0, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
             Recent Performance
           </Typography>
           
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+          <FormControl size="small" sx={{ minWidth: 120, width: { xs: '100%', sm: 'auto' } }}>
             <InputLabel id="games-limit-label">Show Games</InputLabel>
             <Select
               labelId="games-limit-label"
@@ -154,15 +167,56 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           <Tabs 
             value={activeTab} 
             onChange={handleTabChange} 
-            centered
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+            variant="fullWidth"
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                minWidth: { xs: 'auto', sm: 160 },
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                padding: { xs: '8px 4px', sm: '12px 16px' },
+                borderRight: { xs: '1px solid #e0e0e0', sm: 'none' },
+                '&:last-child': {
+                  borderRight: 'none'
+                },
+                '&.Mui-selected': {
+                  backgroundColor: { xs: '#f5f5f5', sm: 'transparent' },
+                  borderRight: { xs: '1px solid #1976d2', sm: 'none' }
+                }
+              },
+              '& .MuiTabs-flexContainer': {
+                borderBottom: { xs: '1px solid #e0e0e0', sm: 'none' }
+              }
+            }}
           >
             <Tab label={`Last ${gamesLimit}`} />
-            <Tab label={`${homeTeamName} Home Last ${gamesLimit}`} />
-            <Tab label={`${awayTeamName} Away Last ${gamesLimit}`} />
+            <Tab 
+              label={
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    {`${homeTeamName} Home Last ${gamesLimit}`}
+                  </Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                    {`${homeTeamName.length > 10 ? homeTeamName.substring(0, 10) + '...' : homeTeamName} Home`}
+                  </Box>
+                </Box>
+              }
+            />
+            <Tab 
+              label={
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    {`${awayTeamName} Away Last ${gamesLimit}`}
+                  </Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                    {`${awayTeamName.length > 10 ? awayTeamName.substring(0, 10) + '...' : awayTeamName} Away`}
+                  </Box>
+                </Box>
+              }
+            />
           </Tabs>
 
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {/* Tab 0: Last N Games (Original) */}
             {activeTab === 0 && (
               <Box>

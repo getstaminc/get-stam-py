@@ -143,31 +143,58 @@ class NCAAFService(BaseHistoricalService):
             if not conn:
                 return None, "Database connection failed"
             
-            query = """
-                SELECT 
-                    game_id, game_date, home_team_name, away_team_name, home_points, away_points,
-                    total_points, home_line, away_line, home_money_line, away_money_line,
-                    start_time, total, home_team_id, away_team_id
-                FROM ncaaf_games
-                WHERE (home_team_id = %s AND away_team_id = %s) 
-                   OR (home_team_id = %s AND away_team_id = %s)
-            """
-            
-            params = [team_id, opponent_id, opponent_id, team_id]
-            
-            # Add venue filtering if specified
+            # Build query based on venue filtering
             if venue and perspective_team_id:
                 if venue == 'home':
-                    # Only games where perspective_team_id was home
-                    query += " AND home_team_id = %s"
-                    params.append(perspective_team_id)
+                    # Only games where perspective_team was home against the opponent
+                    query = """
+                        SELECT 
+                            game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                            total_points, home_line, away_line, home_money_line, away_money_line,
+                            start_time, total, home_team_id, away_team_id
+                        FROM ncaaf_games
+                        WHERE home_team_id = %s AND away_team_id = %s
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
                 elif venue == 'away':
-                    # Only games where perspective_team_id was away
-                    query += " AND away_team_id = %s"
-                    params.append(perspective_team_id)
-                    
-            query += " ORDER BY game_date DESC LIMIT %s"
-            params.append(limit)
+                    # Only games where perspective_team was away against the opponent
+                    query = """
+                        SELECT 
+                            game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                            total_points, home_line, away_line, home_money_line, away_money_line,
+                            start_time, total, home_team_id, away_team_id
+                        FROM ncaaf_games
+                        WHERE away_team_id = %s AND home_team_id = %s
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
+                else:
+                    # Fallback to original logic
+                    query = """
+                        SELECT 
+                            game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                            total_points, home_line, away_line, home_money_line, away_money_line,
+                            start_time, total, home_team_id, away_team_id
+                        FROM ncaaf_games
+                        WHERE (home_team_id = %s AND away_team_id = %s) 
+                           OR (home_team_id = %s AND away_team_id = %s)
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [team_id, opponent_id, opponent_id, team_id, limit]
+            else:
+                # Original logic without venue filtering
+                query = """
+                    SELECT 
+                        game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                        total_points, home_line, away_line, home_money_line, away_money_line,
+                        start_time, total, home_team_id, away_team_id
+                    FROM ncaaf_games
+                    WHERE (home_team_id = %s AND away_team_id = %s) 
+                       OR (home_team_id = %s AND away_team_id = %s)
+                    ORDER BY game_date DESC LIMIT %s
+                """
+                params = [team_id, opponent_id, opponent_id, team_id, limit]
             
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(query, params)

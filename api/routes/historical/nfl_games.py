@@ -56,8 +56,9 @@ def get_nfl_games():
 def get_nfl_team_games_by_id(team_id):
     """Get games for a specific NFL team by ID."""
     limit = request.args.get('limit', 50, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
     
-    games, error = NFLService.get_team_games_by_id(team_id, limit)
+    games, error = NFLService.get_team_games_by_id(team_id, limit, venue)
     
     if error:
         return jsonify({'error': error}), 500
@@ -67,7 +68,8 @@ def get_nfl_team_games_by_id(team_id):
         'count': len(games) if games else 0,
         'sport': 'NFL',
         'team_id': team_id,
-        'limit': limit
+        'limit': limit,
+        'venue': venue
     })
 
 
@@ -75,8 +77,9 @@ def get_nfl_team_games_by_id(team_id):
 def get_nfl_team_games(team_name):
     """Get games for a specific NFL team by name."""
     limit = request.args.get('limit', 50, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
     
-    games, error = NFLService.get_team_games_by_name(team_name, limit)
+    games, error = NFLService.get_team_games_by_name(team_name, limit, venue)
     
     if error:
         return jsonify({'error': error}), 500
@@ -86,7 +89,8 @@ def get_nfl_team_games(team_name):
         'count': len(games) if games else 0,
         'sport': 'NFL',
         'team_name': team_name,
-        'limit': limit
+        'limit': limit,
+        'venue': venue
     })
 
 
@@ -94,8 +98,10 @@ def get_nfl_team_games(team_name):
 def get_nfl_head_to_head_by_id(team_id, opponent_id):
     """Get head-to-head games between two NFL teams by ID."""
     limit = request.args.get('limit', 10, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
+    team_perspective = request.args.get('team_perspective', type=int)  # which team's venue to filter by
     
-    games, error = NFLService.get_head_to_head_games_by_id(team_id, opponent_id, limit)
+    games, error = NFLService.get_head_to_head_games_by_id(team_id, opponent_id, limit, venue, team_perspective)
     
     if error:
         return jsonify({'error': error}), 500
@@ -106,7 +112,9 @@ def get_nfl_head_to_head_by_id(team_id, opponent_id):
         'sport': 'NFL',
         'team_id': team_id,
         'opponent_id': opponent_id,
-        'limit': limit
+        'limit': limit,
+        'venue': venue,
+        'team_perspective': team_perspective
     })
 
 
@@ -114,8 +122,10 @@ def get_nfl_head_to_head_by_id(team_id, opponent_id):
 def get_nfl_head_to_head(home_team, away_team):
     """Get head-to-head games between two NFL teams by name."""
     limit = request.args.get('limit', 10, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
+    team_perspective = request.args.get('team_perspective')  # which team's venue to filter by
     
-    games, error = NFLService.get_head_to_head_games_by_name(home_team, away_team, limit)
+    games, error = NFLService.get_head_to_head_games_by_name(home_team, away_team, limit, venue, team_perspective)
     
     if error:
         return jsonify({'error': error}), 500
@@ -126,5 +136,7 @@ def get_nfl_head_to_head(home_team, away_team):
         'sport': 'NFL',
         'home_team': home_team,
         'away_team': away_team,
-        'limit': limit
+        'limit': limit,
+        'venue': venue,
+        'team_perspective': team_perspective
     })

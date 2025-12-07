@@ -58,13 +58,14 @@ class NBAService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
-    def get_team_games_by_id(team_id: int, limit: int = 10) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_team_games_by_id(team_id: int, limit: int = 10, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get historical games for a specific NBA team by ID."""
         try:
             conn = NBAService._get_connection()
             if not conn:
                 return None, "Database connection failed"
 
+            # Base query
             query = """
                 SELECT 
                     game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
@@ -75,13 +76,28 @@ class NBAService(BaseHistoricalService):
                         WHEN away_team_id = %s THEN 'away'
                     END as team_side
                 FROM nba_games_1
-                WHERE home_team_id = %s OR away_team_id = %s
-                ORDER BY game_date DESC
-                LIMIT %s
+                WHERE 
             """
+            
+            params = [team_id, team_id]
+            
+            # Add venue filtering
+            if venue == 'home':
+                query += "home_team_id = %s"
+                params.append(team_id)
+            elif venue == 'away':
+                query += "away_team_id = %s"
+                params.append(team_id)
+            else:
+                # Default: both home and away games
+                query += "(home_team_id = %s OR away_team_id = %s)"
+                params.extend([team_id, team_id])
+                
+            query += " ORDER BY game_date DESC LIMIT %s"
+            params.append(limit)
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (team_id, team_id, team_id, team_id, limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
                 games_list = [dict(game) for game in games]
                 processed_games = NBAService._process_games_list(games_list)
@@ -93,7 +109,7 @@ class NBAService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
-    def get_team_games_by_name(team_name: str, limit: int = 10) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_team_games_by_name(team_name: str, limit: int = 10, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get historical games for a specific NBA team by team name."""
         try:
             from shared_utils import convert_team_name
@@ -101,31 +117,73 @@ class NBAService(BaseHistoricalService):
             team_id = NBAService._get_team_id_by_name(db_team_name, 'NBA')
             if not team_id:
                 return None, f"Team '{team_name}' not found in database"
-            return NBAService.get_team_games_by_id(team_id, limit)
+            return NBAService.get_team_games_by_id(team_id, limit, venue)
         except Exception as e:
             return None, f"Error fetching team games by name: {str(e)}"
 
     @staticmethod
-    def get_head_to_head_games_by_id(team_id: int, opponent_id: int, limit: int = 5) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_head_to_head_games_by_id(team_id: int, opponent_id: int, limit: int = 5, venue: Optional[str] = None, perspective_team_id: Optional[int] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two NBA teams by ID."""
         try:
             conn = NBAService._get_connection()
             if not conn:
                 return None, "Database connection failed"
 
-            query = """
-                SELECT 
-                    game_id, game_date, home_team_name, away_team_name, home_points, away_points,
-                    total_points, total, start_time, home_line, away_line, home_money_line, away_money_line
-                FROM nba_games_1
-                WHERE (home_team_id = %s AND away_team_id = %s) 
-                   OR (home_team_id = %s AND away_team_id = %s)
-                ORDER BY game_date DESC
-                LIMIT %s
-            """
+            # Build query based on venue filtering
+            if venue and perspective_team_id:
+                if venue == 'home':
+                    # Only games where perspective_team was home against the opponent
+                    query = """
+                        SELECT 
+                            game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                            total_points, total, start_time, home_line, away_line, home_money_line, away_money_line,
+                            home_team_id, away_team_id
+                        FROM nba_games_1
+                        WHERE home_team_id = %s AND away_team_id = %s
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
+                elif venue == 'away':
+                    # Only games where perspective_team was away against the opponent
+                    query = """
+                        SELECT 
+                            game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                            total_points, total, start_time, home_line, away_line, home_money_line, away_money_line,
+                            home_team_id, away_team_id
+                        FROM nba_games_1
+                        WHERE away_team_id = %s AND home_team_id = %s
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
+                else:
+                    # Fallback to original logic
+                    query = """
+                        SELECT 
+                            game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                            total_points, total, start_time, home_line, away_line, home_money_line, away_money_line,
+                            home_team_id, away_team_id
+                        FROM nba_games_1
+                        WHERE (home_team_id = %s AND away_team_id = %s) 
+                           OR (home_team_id = %s AND away_team_id = %s)
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [team_id, opponent_id, opponent_id, team_id, limit]
+            else:
+                # Original logic without venue filtering
+                query = """
+                    SELECT 
+                        game_id, game_date, home_team_name, away_team_name, home_points, away_points,
+                        total_points, total, start_time, home_line, away_line, home_money_line, away_money_line,
+                        home_team_id, away_team_id
+                    FROM nba_games_1
+                    WHERE (home_team_id = %s AND away_team_id = %s) 
+                       OR (home_team_id = %s AND away_team_id = %s)
+                    ORDER BY game_date DESC LIMIT %s
+                """
+                params = [team_id, opponent_id, opponent_id, team_id, limit]
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (team_id, opponent_id, opponent_id, team_id, limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
                 games_list = [dict(game) for game in games]
                 processed_games = NBAService._process_games_list(games_list)
@@ -137,7 +195,7 @@ class NBAService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
-    def get_head_to_head_games_by_name(home_team: str, away_team: str, limit: int = 5) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_head_to_head_games_by_name(home_team: str, away_team: str, limit: int = 5, venue: Optional[str] = None, team_perspective: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two NBA teams by team names."""
         try:
             from shared_utils import convert_team_name
@@ -149,7 +207,14 @@ class NBAService(BaseHistoricalService):
                 return None, f"Home team '{home_team}' not found in database"
             if not away_team_id:
                 return None, f"Away team '{away_team}' not found in database"
-            return NBAService.get_head_to_head_games_by_id(home_team_id, away_team_id, limit)
+            
+            # Convert team_perspective to team_id for consistency
+            perspective_team_id = None
+            if team_perspective:
+                db_perspective_team = convert_team_name(team_perspective)
+                perspective_team_id = NBAService._get_team_id_by_name(db_perspective_team, 'NBA')
+                
+            return NBAService.get_head_to_head_games_by_id(home_team_id, away_team_id, limit, venue, perspective_team_id)
         except Exception as e:
             return None, f"Error fetching head-to-head games by name: {str(e)}"
 

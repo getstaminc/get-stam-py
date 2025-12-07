@@ -118,7 +118,8 @@ class SoccerService(BaseHistoricalService):
         limit: int = 50,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        league: Optional[str] = None
+        league: Optional[str] = None,
+        venue: Optional[str] = None
     ) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get games for a specific soccer team."""
         try:
@@ -126,26 +127,61 @@ class SoccerService(BaseHistoricalService):
             if not conn:
                 return None, "Database connection failed"
             
-            query = """
-                SELECT 
-                    game_id, odds_id, league, game_date, home_team_id, away_team_id,
-                    home_team_name, away_team_name, home_goals, away_goals, total_goals,
-                    home_money_line, draw_money_line, away_money_line,
-                    home_spread, away_spread, total_over_point, total_over_price,
-                    total_under_point, total_under_price,
-                    home_first_half_goals, away_first_half_goals,
-                    home_second_half_goals, away_second_half_goals,
-                    home_overtime, away_overtime, start_time,
-                    created_date, modified_date,
-                    CASE 
-                        WHEN home_team_name ILIKE %s THEN 'home'
-                        WHEN away_team_name ILIKE %s THEN 'away'
-                    END as venue
-                FROM soccer_games
-                WHERE (home_team_name ILIKE %s OR away_team_name ILIKE %s)
-            """
-            
-            params = [f"%{team_name}%", f"%{team_name}%", f"%{team_name}%", f"%{team_name}%"]
+            # Base query with venue filtering
+            if venue == 'home':
+                query = """
+                    SELECT 
+                        game_id, odds_id, league, game_date, home_team_id, away_team_id,
+                        home_team_name, away_team_name, home_goals, away_goals, total_goals,
+                        home_money_line, draw_money_line, away_money_line,
+                        home_spread, away_spread, total_over_point, total_over_price,
+                        total_under_point, total_under_price,
+                        home_first_half_goals, away_first_half_goals,
+                        home_second_half_goals, away_second_half_goals,
+                        home_overtime, away_overtime, start_time,
+                        created_date, modified_date,
+                        'home' as venue
+                    FROM soccer_games
+                    WHERE home_team_name ILIKE %s
+                """
+                params = [f"%{team_name}%"]
+            elif venue == 'away':
+                query = """
+                    SELECT 
+                        game_id, odds_id, league, game_date, home_team_id, away_team_id,
+                        home_team_name, away_team_name, home_goals, away_goals, total_goals,
+                        home_money_line, draw_money_line, away_money_line,
+                        home_spread, away_spread, total_over_point, total_over_price,
+                        total_under_point, total_under_price,
+                        home_first_half_goals, away_first_half_goals,
+                        home_second_half_goals, away_second_half_goals,
+                        home_overtime, away_overtime, start_time,
+                        created_date, modified_date,
+                        'away' as venue
+                    FROM soccer_games
+                    WHERE away_team_name ILIKE %s
+                """
+                params = [f"%{team_name}%"]
+            else:
+                query = """
+                    SELECT 
+                        game_id, odds_id, league, game_date, home_team_id, away_team_id,
+                        home_team_name, away_team_name, home_goals, away_goals, total_goals,
+                        home_money_line, draw_money_line, away_money_line,
+                        home_spread, away_spread, total_over_point, total_over_price,
+                        total_under_point, total_under_price,
+                        home_first_half_goals, away_first_half_goals,
+                        home_second_half_goals, away_second_half_goals,
+                        home_overtime, away_overtime, start_time,
+                        created_date, modified_date,
+                        CASE 
+                            WHEN home_team_name ILIKE %s THEN 'home'
+                            WHEN away_team_name ILIKE %s THEN 'away'
+                        END as venue
+                    FROM soccer_games
+                    WHERE (home_team_name ILIKE %s OR away_team_name ILIKE %s)
+                """
+                params = [f"%{team_name}%", f"%{team_name}%", f"%{team_name}%", f"%{team_name}%"]
             
             if start_date:
                 query += " AND game_date >= %s"
@@ -202,7 +238,9 @@ class SoccerService(BaseHistoricalService):
         limit: int = 10,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        league: Optional[str] = None
+        league: Optional[str] = None,
+        venue: Optional[str] = None,
+        team_perspective: Optional[str] = None
     ) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two soccer teams."""
         try:
@@ -229,6 +267,17 @@ class SoccerService(BaseHistoricalService):
             """
             
             params = [f"%{team1}%", f"%{team2}%", f"%{team2}%", f"%{team1}%"]
+            
+            # Add venue filtering if specified
+            if venue and team_perspective:
+                if venue == 'home':
+                    # Only games where team_perspective was home
+                    query += " AND home_team_name ILIKE %s"
+                    params.append(f"%{team_perspective}%")
+                elif venue == 'away':
+                    # Only games where team_perspective was away
+                    query += " AND away_team_name ILIKE %s"
+                    params.append(f"%{team_perspective}%")
             
             if start_date:
                 query += " AND game_date >= %s"

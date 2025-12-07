@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Tabs, Tab } from "@mui/material";
 import GameOdds from "./GameOdds";
 import HistoricalGames from "./HistoricalGames";
 import { getSportType } from "../types/gameTypes";
@@ -53,6 +53,11 @@ type GameDetailsProps = {
   homeTeamHistory?: HistoricalData | null;
   awayTeamHistory?: HistoricalData | null;
   headToHeadHistory?: HistoricalData | null;
+  // New venue-specific props
+  homeTeamHomeGames?: HistoricalData | null;
+  homeTeamHomeVsAway?: HistoricalData | null;
+  awayTeamAwayGames?: HistoricalData | null;
+  awayTeamAwayVsHome?: HistoricalData | null;
   onLimitChange?: (limit: number) => void;
   currentLimit?: number;
   sportKey?: string; // Add sport key to determine which converter to use
@@ -72,6 +77,10 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   homeTeamHistory, 
   awayTeamHistory, 
   headToHeadHistory,
+  homeTeamHomeGames,
+  homeTeamHomeVsAway,
+  awayTeamAwayGames,
+  awayTeamAwayVsHome,
   onLimitChange,
   currentLimit = 5,
   sportKey = "americanfootball_nfl", // Default to NFL if not provided
@@ -82,12 +91,17 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 }) => {
   const { home, away } = game;
   const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
+  const [activeTab, setActiveTab] = useState<number>(0);
 
   const handleLimitChange = (newLimit: number) => {
     setGamesLimit(newLimit);
     if (onLimitChange) {
       onLimitChange(newLimit);
     }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
   const hasScore =
@@ -135,33 +149,95 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           </FormControl>
         </Box>
         
-        {/* Home Team Last N Games */}
-        <HistoricalGames
-          title={`${homeTeamName} - Last ${gamesLimit} Games`}
-          games={homeTeamHistory?.games || []}
-          loading={homeTeamHistory === null}
-          teamName={convertTeamNameBySport(sportKey, homeTeamName)}
-          sportType={getSportType(sportKey)}
-        />
+        {/* Historical Games Tabs */}
+        <Paper sx={{ mt: 3 }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={handleTabChange} 
+            centered
+            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          >
+            <Tab label={`Last ${gamesLimit}`} />
+            <Tab label={`${homeTeamName} Home Last ${gamesLimit}`} />
+            <Tab label={`${awayTeamName} Away Last ${gamesLimit}`} />
+          </Tabs>
 
-        {/* Away Team Last N Games */}
-        <HistoricalGames
-          title={`${awayTeamName} - Last ${gamesLimit} Games`}
-          games={awayTeamHistory?.games || []}
-          loading={awayTeamHistory === null}
-          teamName={convertTeamNameBySport(sportKey, awayTeamName)}
-          sportType={getSportType(sportKey)}
-        />
+          <Box sx={{ p: 3 }}>
+            {/* Tab 0: Last N Games (Original) */}
+            {activeTab === 0 && (
+              <Box>
+                <HistoricalGames
+                  title={`${homeTeamName} - Last ${gamesLimit} Games`}
+                  games={homeTeamHistory?.games || []}
+                  loading={homeTeamHistory === null}
+                  teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                  sportType={getSportType(sportKey)}
+                />
 
-        {/* Head to Head */}
-        <HistoricalGames
-          title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
-          games={headToHeadHistory?.games || []}
-          loading={headToHeadHistory === null}
-          teamName={convertTeamNameBySport(sportKey, homeTeamName)}
-          isHeadToHead={true}
-          sportType={getSportType(sportKey)}
-        />
+                <HistoricalGames
+                  title={`${awayTeamName} - Last ${gamesLimit} Games`}
+                  games={awayTeamHistory?.games || []}
+                  loading={awayTeamHistory === null}
+                  teamName={convertTeamNameBySport(sportKey, awayTeamName)}
+                  sportType={getSportType(sportKey)}
+                />
+
+                <HistoricalGames
+                  title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
+                  games={headToHeadHistory?.games || []}
+                  loading={headToHeadHistory === null}
+                  teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                  isHeadToHead={true}
+                  sportType={getSportType(sportKey)}
+                />
+              </Box>
+            )}
+
+            {/* Tab 1: Home Team Home Games */}
+            {activeTab === 1 && (
+              <Box>
+                <HistoricalGames
+                  title={`${homeTeamName} - Last ${gamesLimit} Home Games`}
+                  games={homeTeamHomeGames?.games || []}
+                  loading={homeTeamHomeGames === null}
+                  teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                  sportType={getSportType(sportKey)}
+                />
+
+                <HistoricalGames
+                  title={`${homeTeamName} vs ${awayTeamName} - Last ${gamesLimit} Home H2H`}
+                  games={homeTeamHomeVsAway?.games || []}
+                  loading={homeTeamHomeVsAway === null}
+                  teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                  isHeadToHead={true}
+                  sportType={getSportType(sportKey)}
+                />
+              </Box>
+            )}
+
+            {/* Tab 2: Away Team Away Games */}
+            {activeTab === 2 && (
+              <Box>
+                <HistoricalGames
+                  title={`${awayTeamName} - Last ${gamesLimit} Away Games`}
+                  games={awayTeamAwayGames?.games || []}
+                  loading={awayTeamAwayGames === null}
+                  teamName={convertTeamNameBySport(sportKey, awayTeamName)}
+                  sportType={getSportType(sportKey)}
+                />
+
+                <HistoricalGames
+                  title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} Away H2H`}
+                  games={awayTeamAwayVsHome?.games || []}
+                  loading={awayTeamAwayVsHome === null}
+                  teamName={convertTeamNameBySport(sportKey, awayTeamName)}
+                  isHeadToHead={true}
+                  sportType={getSportType(sportKey)}
+                />
+              </Box>
+            )}
+          </Box>
+        </Paper>
 
         {/* Team Rankings for NFL and NCAAF */}
         {(sportKey === 'americanfootball_nfl' || sportKey === 'americanfootball_ncaaf') && (

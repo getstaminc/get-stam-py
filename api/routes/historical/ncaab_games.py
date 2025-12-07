@@ -76,8 +76,9 @@ def get_ncaab_team_games_by_id(team_id):
 def get_ncaab_team_games(team_name):
     """Get games for a specific NCAAB team by name."""
     limit = request.args.get('limit', 50, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
 
-    games, error = NCAABService.get_team_games_by_name(team_name, limit)
+    games, error = NCAABService.get_team_games_by_name(team_name, limit, venue)
 
     if error:
         return jsonify({'error': error}), 500
@@ -115,8 +116,10 @@ def get_ncaab_head_to_head_by_id(team_id, opponent_id):
 def get_ncaab_head_to_head(home_team, away_team):
     """Get head-to-head games between two NCAAB teams by name."""
     limit = request.args.get('limit', 10, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
+    team_perspective = request.args.get('team_perspective')  # Which team's venue to consider
 
-    games, error = NCAABService.get_head_to_head_games_by_name(home_team, away_team, limit)
+    games, error = NCAABService.get_head_to_head_games_by_name(home_team, away_team, limit, venue, team_perspective)
 
     if error:
         return jsonify({'error': error}), 500

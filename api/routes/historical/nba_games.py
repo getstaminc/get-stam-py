@@ -57,8 +57,9 @@ def get_nba_games():
 def get_nba_team_games_by_id(team_id):
     """Get games for a specific NBA team by ID."""
     limit = request.args.get('limit', 50, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
 
-    games, error = NBAService.get_team_games_by_id(team_id, limit)
+    games, error = NBAService.get_team_games_by_id(team_id, limit, venue)
 
     if error:
         return jsonify({'error': error}), 500
@@ -68,7 +69,8 @@ def get_nba_team_games_by_id(team_id):
         'count': len(games) if games else 0,
         'sport': 'NBA',
         'team_id': team_id,
-        'limit': limit
+        'limit': limit,
+        'venue': venue
     })
 
 
@@ -76,8 +78,9 @@ def get_nba_team_games_by_id(team_id):
 def get_nba_team_games(team_name):
     """Get games for a specific NBA team by name."""
     limit = request.args.get('limit', 50, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
 
-    games, error = NBAService.get_team_games_by_name(team_name, limit)
+    games, error = NBAService.get_team_games_by_name(team_name, limit, venue)
 
     if error:
         return jsonify({'error': error}), 500
@@ -87,7 +90,8 @@ def get_nba_team_games(team_name):
         'count': len(games) if games else 0,
         'sport': 'NBA',
         'team_name': team_name,
-        'limit': limit
+        'limit': limit,
+        'venue': venue
     })
 
 
@@ -95,8 +99,10 @@ def get_nba_team_games(team_name):
 def get_nba_head_to_head_by_id(team_id, opponent_id):
     """Get head-to-head games between two NBA teams by ID."""
     limit = request.args.get('limit', 10, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
+    team_perspective = request.args.get('team_perspective', type=int)  # which team's venue to filter by
 
-    games, error = NBAService.get_head_to_head_games_by_id(team_id, opponent_id, limit)
+    games, error = NBAService.get_head_to_head_games_by_id(team_id, opponent_id, limit, venue, team_perspective)
 
     if error:
         return jsonify({'error': error}), 500
@@ -107,7 +113,9 @@ def get_nba_head_to_head_by_id(team_id, opponent_id):
         'sport': 'NBA',
         'team_id': team_id,
         'opponent_id': opponent_id,
-        'limit': limit
+        'limit': limit,
+        'venue': venue,
+        'team_perspective': team_perspective
     })
 
 
@@ -115,8 +123,10 @@ def get_nba_head_to_head_by_id(team_id, opponent_id):
 def get_nba_head_to_head(home_team, away_team):
     """Get head-to-head games between two NBA teams by name."""
     limit = request.args.get('limit', 10, type=int)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all
+    team_perspective = request.args.get('team_perspective')  # which team's venue to filter by
 
-    games, error = NBAService.get_head_to_head_games_by_name(home_team, away_team, limit)
+    games, error = NBAService.get_head_to_head_games_by_name(home_team, away_team, limit, venue, team_perspective)
 
     if error:
         return jsonify({'error': error}), 500
@@ -127,5 +137,7 @@ def get_nba_head_to_head(home_team, away_team):
         'sport': 'NBA',
         'home_team': home_team,
         'away_team': away_team,
-        'limit': limit
+        'limit': limit,
+        'venue': venue,
+        'team_perspective': team_perspective
     })

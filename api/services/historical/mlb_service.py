@@ -138,7 +138,8 @@ class MLBService(BaseHistoricalService):
         limit: int = 50,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        playoffs: Optional[bool] = None
+        playoffs: Optional[bool] = None,
+        venue: Optional[str] = None
     ) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get games for a specific MLB team."""
         try:
@@ -146,17 +147,40 @@ class MLBService(BaseHistoricalService):
             if not conn:
                 return None, "Database connection failed"
             
-            query = """
-                SELECT 
-                    game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
-                    home_line, away_line, home_inning_runs, away_inning_runs,
-                    home_starting_pitcher, away_starting_pitcher, playoffs,
-                    start_time, total, created_date, modified_date
-                FROM mlb_games
-                WHERE (home_team_name ILIKE %s OR away_team_name ILIKE %s)
-            """
-            
-            params = [f"%{team_name}%", f"%{team_name}%"]
+            # Base query
+            if venue == 'home':
+                query = """
+                    SELECT 
+                        game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
+                        home_line, away_line, home_inning_runs, away_inning_runs,
+                        home_starting_pitcher, away_starting_pitcher, playoffs,
+                        start_time, total, created_date, modified_date
+                    FROM mlb_games
+                    WHERE home_team_name ILIKE %s
+                """
+                params = [f"%{team_name}%"]
+            elif venue == 'away':
+                query = """
+                    SELECT 
+                        game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
+                        home_line, away_line, home_inning_runs, away_inning_runs,
+                        home_starting_pitcher, away_starting_pitcher, playoffs,
+                        start_time, total, created_date, modified_date
+                    FROM mlb_games
+                    WHERE away_team_name ILIKE %s
+                """
+                params = [f"%{team_name}%"]
+            else:
+                query = """
+                    SELECT 
+                        game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
+                        home_line, away_line, home_inning_runs, away_inning_runs,
+                        home_starting_pitcher, away_starting_pitcher, playoffs,
+                        start_time, total, created_date, modified_date
+                    FROM mlb_games
+                    WHERE (home_team_name ILIKE %s OR away_team_name ILIKE %s)
+                """
+                params = [f"%{team_name}%", f"%{team_name}%"]
             
             if start_date:
                 query += " AND game_date >= %s"
@@ -264,7 +288,9 @@ class MLBService(BaseHistoricalService):
         team2: str,
         limit: int = 10,
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
+        end_date: Optional[str] = None,
+        venue: Optional[str] = None,
+        team_perspective: Optional[str] = None
     ) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two MLB teams."""
         try:
@@ -286,6 +312,17 @@ class MLBService(BaseHistoricalService):
             """
             
             params = [f"%{team1}%", f"%{team2}%", f"%{team2}%", f"%{team1}%"]
+            
+            # Add venue filtering if specified
+            if venue and team_perspective:
+                if venue == 'home':
+                    # Only games where team_perspective was home
+                    query += " AND home_team_name ILIKE %s"
+                    params.append(f"%{team_perspective}%")
+                elif venue == 'away':
+                    # Only games where team_perspective was away
+                    query += " AND away_team_name ILIKE %s"
+                    params.append(f"%{team_perspective}%")
             
             if start_date:
                 query += " AND game_date >= %s"

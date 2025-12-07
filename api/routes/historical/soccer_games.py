@@ -93,8 +93,9 @@ def get_soccer_team_games(team_name):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     league = request.args.get('league')
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
     
-    games, error = SoccerService.get_team_games(team_name, limit, start_date, end_date, league)
+    games, error = SoccerService.get_team_games(team_name, limit, start_date, end_date, league, venue)
     
     if error:
         return jsonify({'error': error}), 500
@@ -114,8 +115,10 @@ def get_soccer_head_to_head(team1, team2):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     league = request.args.get('league')
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
+    team_perspective = request.args.get('team_perspective')  # Which team's venue to consider
     
-    games, error = SoccerService.get_head_to_head_games(team1, team2, limit, start_date, end_date, league)
+    games, error = SoccerService.get_head_to_head_games(team1, team2, limit, start_date, end_date, league, venue, team_perspective)
     
     if error:
         return jsonify({'error': error}), 500

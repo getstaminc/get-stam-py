@@ -9,10 +9,10 @@ from .base_service import BaseHistoricalService
 class NHLService(BaseHistoricalService):
 
     @staticmethod
-    def get_team_games(team_name: str, limit: int = 50, start_date: Optional[str] = None, end_date: Optional[str] = None, playoffs: Optional[bool] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_team_games(team_name: str, limit: int = 50, start_date: Optional[str] = None, end_date: Optional[str] = None, playoffs: Optional[bool] = None, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get games for a specific NHL team, with optional filters."""
         # Use get_team_games_by_name, and filter by date/playoffs if provided
-        games, error = NHLService.get_team_games_by_name(team_name, limit)
+        games, error = NHLService.get_team_games_by_name(team_name, limit, venue)
         if error or not games:
             return games, error
         # Filter in Python if needed (since get_team_games_by_name doesn't filter by date/playoffs)
@@ -25,9 +25,9 @@ class NHLService(BaseHistoricalService):
         return games, None
 
     @staticmethod
-    def get_head_to_head_games(team1: str, team2: str, limit: int = 10, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_head_to_head_games(team1: str, team2: str, limit: int = 10, start_date: Optional[str] = None, end_date: Optional[str] = None, venue: Optional[str] = None, team_perspective: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two NHL teams, with optional filters."""
-        games, error = NHLService.get_head_to_head_games_by_name(team1, team2, limit)
+        games, error = NHLService.get_head_to_head_games_by_name(team1, team2, limit, venue, team_perspective)
         if error or not games:
             return games, error
         # Filter in Python if needed
@@ -114,14 +114,24 @@ class NHLService(BaseHistoricalService):
             return None, str(e)
 
     @staticmethod
-    def get_team_games_by_name(team_name: str, limit: int = 50) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_team_games_by_name(team_name: str, limit: int = 50, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         try:
             conn = NHLService._get_connection()
             if not conn:
                 return None, "Database connection failed"
-            query = "SELECT * FROM nhl_games WHERE home_team_name ILIKE %s OR away_team_name ILIKE %s ORDER BY game_date DESC LIMIT %s"
+            
+            if venue == 'home':
+                query = "SELECT * FROM nhl_games WHERE home_team_name ILIKE %s ORDER BY game_date DESC LIMIT %s"
+                params = (f"%{team_name}%", limit)
+            elif venue == 'away':
+                query = "SELECT * FROM nhl_games WHERE away_team_name ILIKE %s ORDER BY game_date DESC LIMIT %s"
+                params = (f"%{team_name}%", limit)
+            else:
+                query = "SELECT * FROM nhl_games WHERE home_team_name ILIKE %s OR away_team_name ILIKE %s ORDER BY game_date DESC LIMIT %s"
+                params = (f"%{team_name}%", f"%{team_name}%", limit)
+                
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (f"%{team_name}%", f"%{team_name}%", limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
             # Ensure game_date is always a string (should be YYYY-MM-DD from DB)
             for g in games:
@@ -146,14 +156,29 @@ class NHLService(BaseHistoricalService):
             return None, str(e)
 
     @staticmethod
-    def get_head_to_head_games_by_name(home_team: str, away_team: str, limit: int = 10) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_head_to_head_games_by_name(home_team: str, away_team: str, limit: int = 10, venue: Optional[str] = None, team_perspective: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         try:
             conn = NHLService._get_connection()
             if not conn:
                 return None, "Database connection failed"
-            query = "SELECT * FROM nhl_games WHERE (home_team_name ILIKE %s AND away_team_name ILIKE %s) OR (home_team_name ILIKE %s AND away_team_name ILIKE %s) ORDER BY game_date DESC LIMIT %s"
+            
+            base_query = "SELECT * FROM nhl_games WHERE (home_team_name ILIKE %s AND away_team_name ILIKE %s) OR (home_team_name ILIKE %s AND away_team_name ILIKE %s)"
+            params = [f"%{home_team}%", f"%{away_team}%", f"%{away_team}%", f"%{home_team}%"]
+            
+            # Add venue filtering if specified
+            if venue and team_perspective:
+                if venue == 'home':
+                    base_query += " AND home_team_name ILIKE %s"
+                    params.append(f"%{team_perspective}%")
+                elif venue == 'away':
+                    base_query += " AND away_team_name ILIKE %s"
+                    params.append(f"%{team_perspective}%")
+            
+            query = base_query + " ORDER BY game_date DESC LIMIT %s"
+            params.append(limit)
+            
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (f"%{home_team}%", f"%{away_team}%", f"%{away_team}%", f"%{home_team}%", limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
             # Ensure game_date is always a string (should be YYYY-MM-DD from DB)
             for g in games:

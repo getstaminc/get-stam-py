@@ -94,6 +94,11 @@ const GameDetailsPage: React.FC = () => {
   const [homeTeamHistory, setHomeTeamHistory] = useState<any>(null);
   const [awayTeamHistory, setAwayTeamHistory] = useState<any>(null);
   const [headToHeadHistory, setHeadToHeadHistory] = useState<any>(null);
+  // New state for venue-specific data
+  const [homeTeamHomeGames, setHomeTeamHomeGames] = useState<any>(null);
+  const [homeTeamHomeVsAway, setHomeTeamHomeVsAway] = useState<any>(null);
+  const [awayTeamAwayGames, setAwayTeamAwayGames] = useState<any>(null);
+  const [awayTeamAwayVsHome, setAwayTeamAwayVsHome] = useState<any>(null);
   const [homeRankings, setHomeRankings] = useState<any>(null);
   const [awayRankings, setAwayRankings] = useState<any>(null);
   const [rankingsLoading, setRankingsLoading] = useState<boolean>(false);
@@ -137,6 +142,31 @@ const GameDetailsPage: React.FC = () => {
     return response.json();
   };
 
+  // Fetch team history with venue filter
+  const fetchTeamHistoryByVenue = async (sportKey: string, teamName: string, venue: 'home' | 'away', limit: number = 5) => {
+    const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
+    
+    let url: string;
+    
+    // Soccer uses a different endpoint structure with league parameter
+    if (isSoccerSport(sportKey)) {
+      const league = getSoccerLeague(sportKey);
+      url = `${API_BASE_URL}/api/historical/soccer/teams/${encodeURIComponent(convertedTeamName)}/games?league=${league}&limit=${limit}&venue=${venue}`;
+    } else {
+      // All other sports use the team-based endpoint
+      const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+      url = `${API_BASE_URL}/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedTeamName)}/games?limit=${limit}&venue=${venue}`;
+    }
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+      },
+    });
+    if (!response.ok) throw new Error("Failed to fetch team venue history");
+    return response.json();
+  };
+
   // Fetch head-to-head history
   const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
     const convertedHomeTeam = convertTeamNameBySport(sportKey, homeTeam);
@@ -160,6 +190,32 @@ const GameDetailsPage: React.FC = () => {
       },
     });
     if (!response.ok) throw new Error("Failed to fetch head-to-head history");
+    return response.json();
+  };
+
+  // Fetch head-to-head history with venue filter
+  const fetchHeadToHeadByVenue = async (sportKey: string, team1: string, team2: string, venue: 'home' | 'away', teamPerspective: string, limit: number = 5) => {
+    const convertedTeam1 = convertTeamNameBySport(sportKey, team1);
+    const convertedTeam2 = convertTeamNameBySport(sportKey, team2);
+    
+    let url: string;
+    
+    // Soccer uses a different endpoint structure with league parameter
+    if (isSoccerSport(sportKey)) {
+      const league = getSoccerLeague(sportKey);
+      url = `${API_BASE_URL}/api/historical/soccer/teams/${encodeURIComponent(convertedTeam1)}/vs/${encodeURIComponent(convertedTeam2)}?league=${league}&limit=${limit}&venue=${venue}&team_perspective=${encodeURIComponent(teamPerspective)}`;
+    } else {
+      // All other sports use the team vs team endpoint
+      const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
+      url = `${API_BASE_URL}/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedTeam1)}/vs/${encodeURIComponent(convertedTeam2)}?limit=${limit}&venue=${venue}&team_perspective=${encodeURIComponent(teamPerspective)}`;
+    }
+    
+    const response = await fetch(url, {
+      headers: {
+        "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+      },
+    });
+    if (!response.ok) throw new Error("Failed to fetch head-to-head venue history");
     return response.json();
   };
 
@@ -204,9 +260,15 @@ const GameDetailsPage: React.FC = () => {
   const fetchAllHistoricalData = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
     try {
       const promises = [
+        // Original data for "Last 5" tab
         fetchTeamHistory(sportKey, homeTeam, limit),
         fetchTeamHistory(sportKey, awayTeam, limit),
-        fetchHeadToHead(sportKey, homeTeam, awayTeam, limit)
+        fetchHeadToHead(sportKey, homeTeam, awayTeam, limit),
+        // New venue-specific data
+        fetchTeamHistoryByVenue(sportKey, homeTeam, 'home', limit), // Home team's home games
+        fetchHeadToHeadByVenue(sportKey, homeTeam, awayTeam, 'home', homeTeam, limit), // Home team's home games vs away team
+        fetchTeamHistoryByVenue(sportKey, awayTeam, 'away', limit), // Away team's away games
+        fetchHeadToHeadByVenue(sportKey, awayTeam, homeTeam, 'away', awayTeam, limit), // Away team's away games vs home team
       ];
       
       // Add rankings fetch for NFL and NCAAF games
@@ -215,11 +277,27 @@ const GameDetailsPage: React.FC = () => {
       }
       
       const results = await Promise.all(promises);
-      const [homeHistory, awayHistory, h2hHistory] = results;
+      const [
+        homeHistory, 
+        awayHistory, 
+        h2hHistory, 
+        homeTeamHomeGamesData, 
+        homeTeamHomeVsAwayData, 
+        awayTeamAwayGamesData, 
+        awayTeamAwayVsHomeData
+      ] = results;
       
+      // Set original data
       setHomeTeamHistory(homeHistory);
       setAwayTeamHistory(awayHistory);
       setHeadToHeadHistory(h2hHistory);
+      
+      // Set new venue-specific data
+      setHomeTeamHomeGames(homeTeamHomeGamesData);
+      setHomeTeamHomeVsAway(homeTeamHomeVsAwayData);
+      setAwayTeamAwayGames(awayTeamAwayGamesData);
+      setAwayTeamAwayVsHome(awayTeamAwayVsHomeData);
+      
     } catch (error) {
       console.error("Error fetching historical data:", error);
     }
@@ -326,6 +404,10 @@ const GameDetailsPage: React.FC = () => {
         homeTeamHistory={homeTeamHistory}
         awayTeamHistory={awayTeamHistory}
         headToHeadHistory={headToHeadHistory}
+        homeTeamHomeGames={homeTeamHomeGames}
+        homeTeamHomeVsAway={homeTeamHomeVsAway}
+        awayTeamAwayGames={awayTeamAwayGames}
+        awayTeamAwayVsHome={awayTeamAwayVsHome}
         onLimitChange={handleLimitChange}
         currentLimit={gamesLimit}
         sportKey={sportKey || "americanfootball_nfl"}

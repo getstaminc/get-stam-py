@@ -506,6 +506,7 @@ export const convertTeamNameNcaab = (fullTeamName: string): string => {
     'Colorado Buffaloes': 'COL',
     'The Citadel Bulldogs': 'CITDL',
     'Green Bay Phoenix': 'WIGB',
+    'Iowa Hawkeyes': 'IOWA',
     'Alabama A&M Bulldogs': 'ABAM',
     'Alabama Crimson Tide': 'ALAB',
     'Alabama St Hornets': 'ALAST',

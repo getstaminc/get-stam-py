@@ -100,14 +100,26 @@ class NHLService(BaseHistoricalService):
             return None, str(e)
 
     @staticmethod
-    def get_team_games_by_id(team_id: int, limit: int = 50) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_team_games_by_id(team_id: int, limit: int = 50, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         try:
             conn = NHLService._get_connection()
             if not conn:
                 return None, "Database connection failed"
-            query = "SELECT * FROM nhl_games WHERE home_team_id = %s OR away_team_id = %s ORDER BY game_date DESC LIMIT %s"
+            
+            # Base query
+            if venue == 'home':
+                query = "SELECT * FROM nhl_games WHERE home_team_id = %s ORDER BY game_date DESC LIMIT %s"
+                params = [team_id, limit]
+            elif venue == 'away':
+                query = "SELECT * FROM nhl_games WHERE away_team_id = %s ORDER BY game_date DESC LIMIT %s"
+                params = [team_id, limit]
+            else:
+                # Default: both home and away games
+                query = "SELECT * FROM nhl_games WHERE home_team_id = %s OR away_team_id = %s ORDER BY game_date DESC LIMIT %s"
+                params = [team_id, team_id, limit]
+                
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (team_id, team_id, limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
             return games, None
         except Exception as e:
@@ -142,14 +154,51 @@ class NHLService(BaseHistoricalService):
             return None, str(e)
 
     @staticmethod
-    def get_head_to_head_games_by_id(team_id: int, opponent_id: int, limit: int = 10) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    def get_head_to_head_games_by_id(team_id: int, opponent_id: int, limit: int = 10, venue: Optional[str] = None, perspective_team_id: Optional[int] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         try:
             conn = NHLService._get_connection()
             if not conn:
                 return None, "Database connection failed"
-            query = "SELECT * FROM nhl_games WHERE (home_team_id = %s AND away_team_id = %s) OR (home_team_id = %s AND away_team_id = %s) ORDER BY game_date DESC LIMIT %s"
+            
+            # Build query based on venue filtering
+            if venue and perspective_team_id:
+                if venue == 'home':
+                    # Only games where perspective_team was home against the opponent
+                    query = """
+                        SELECT * FROM nhl_games 
+                        WHERE home_team_id = %s AND away_team_id = %s 
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
+                elif venue == 'away':
+                    # Only games where perspective_team was away against the opponent
+                    query = """
+                        SELECT * FROM nhl_games 
+                        WHERE away_team_id = %s AND home_team_id = %s 
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
+                else:
+                    # Fallback to original logic
+                    query = """
+                        SELECT * FROM nhl_games 
+                        WHERE (home_team_id = %s AND away_team_id = %s) 
+                           OR (home_team_id = %s AND away_team_id = %s) 
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [team_id, opponent_id, opponent_id, team_id, limit]
+            else:
+                # Original logic without venue filtering
+                query = """
+                    SELECT * FROM nhl_games 
+                    WHERE (home_team_id = %s AND away_team_id = %s) 
+                       OR (home_team_id = %s AND away_team_id = %s) 
+                    ORDER BY game_date DESC LIMIT %s
+                """
+                params = [team_id, opponent_id, opponent_id, team_id, limit]
+            
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (team_id, opponent_id, opponent_id, team_id, limit))
+                cursor.execute(query, params)
                 games = cursor.fetchall()
             return games, None
         except Exception as e:
@@ -162,20 +211,54 @@ class NHLService(BaseHistoricalService):
             if not conn:
                 return None, "Database connection failed"
             
-            base_query = "SELECT * FROM nhl_games WHERE (home_team_name ILIKE %s AND away_team_name ILIKE %s) OR (home_team_name ILIKE %s AND away_team_name ILIKE %s)"
-            params = [f"%{home_team}%", f"%{away_team}%", f"%{away_team}%", f"%{home_team}%"]
+            # Convert team names using shared_utils
+            from shared_utils import convert_team_name
+            db_home_team = convert_team_name(home_team)
+            db_away_team = convert_team_name(away_team)
             
-            # Add venue filtering if specified
-            if venue and team_perspective:
+            # Convert team_perspective as well
+            db_team_perspective = None
+            if team_perspective:
+                db_team_perspective = convert_team_name(team_perspective)
+            
+            # Build query based on venue filtering
+            if venue and db_team_perspective:
                 if venue == 'home':
-                    base_query += " AND home_team_name ILIKE %s"
-                    params.append(f"%{team_perspective}%")
+                    # Only games where team_perspective was home against the other team
+                    other_team = db_away_team if db_team_perspective.lower() in db_home_team.lower() else db_home_team
+                    query = """
+                        SELECT * FROM nhl_games 
+                        WHERE home_team_name ILIKE %s AND away_team_name ILIKE %s
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [f"%{db_team_perspective}%", f"%{other_team}%", limit]
                 elif venue == 'away':
-                    base_query += " AND away_team_name ILIKE %s"
-                    params.append(f"%{team_perspective}%")
-            
-            query = base_query + " ORDER BY game_date DESC LIMIT %s"
-            params.append(limit)
+                    # Only games where team_perspective was away against the other team
+                    other_team = db_home_team if db_team_perspective.lower() in db_away_team.lower() else db_away_team
+                    query = """
+                        SELECT * FROM nhl_games 
+                        WHERE away_team_name ILIKE %s AND home_team_name ILIKE %s
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [f"%{db_team_perspective}%", f"%{other_team}%", limit]
+                else:
+                    # Fallback to original logic
+                    query = """
+                        SELECT * FROM nhl_games 
+                        WHERE (home_team_name ILIKE %s AND away_team_name ILIKE %s) 
+                           OR (home_team_name ILIKE %s AND away_team_name ILIKE %s)
+                        ORDER BY game_date DESC LIMIT %s
+                    """
+                    params = [f"%{db_home_team}%", f"%{db_away_team}%", f"%{db_away_team}%", f"%{db_home_team}%", limit]
+            else:
+                # Original logic without venue filtering
+                query = """
+                    SELECT * FROM nhl_games 
+                    WHERE (home_team_name ILIKE %s AND away_team_name ILIKE %s) 
+                       OR (home_team_name ILIKE %s AND away_team_name ILIKE %s)
+                    ORDER BY game_date DESC LIMIT %s
+                """
+                params = [f"%{db_home_team}%", f"%{db_away_team}%", f"%{db_away_team}%", f"%{db_home_team}%", limit]
             
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(query, params)

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Box, ClickAwayListener } from "@mui/material";
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -16,6 +16,22 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
 }) => {
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(true);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Check if table needs scroll indicator
+  useEffect(() => {
+    const checkScrollable = () => {
+      if (tableContainerRef.current) {
+        const { scrollWidth, clientWidth } = tableContainerRef.current;
+        setShowScrollIndicator(scrollWidth > clientWidth);
+      }
+    };
+
+    checkScrollable();
+    window.addEventListener('resize', checkScrollable);
+    return () => window.removeEventListener('resize', checkScrollable);
+  }, [games, expanded]);
 
   // Helper function to detect if device is mobile
   const isMobile = () => {
@@ -464,78 +480,114 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
           </Box>
         </Box>
         {expanded && (
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell><strong>Date</strong></TableCell>
-                  <TableCell><strong>Site</strong></TableCell>
-                  <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
-                  <TableCell><HeaderWithWinLossInfo>{getScoreLabel()}</HeaderWithWinLossInfo></TableCell>
-                  <TableCell><HeaderWithSpreadInfo>{getSpreadLabel()}</HeaderWithSpreadInfo></TableCell>
-                  <TableCell><strong>Opponent</strong></TableCell>
-                  <TableCell><strong>Opponent {getScoreLabel()}</strong></TableCell>
-                  <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {games.map((game, index) => {
-                  const gameData = getGameData(game);
-                  const teamData = getTeamData(game);
-                  const teamLineResult = calculateLineResult(teamData.teamPoints, teamData.teamLine, teamData.opponentPoints);
-                  const totalColor = getTotalColor(gameData.totalScore, gameData.totalLine);
-                  return (
-                    <TableRow key={game.game_id || index}>
-                      <TableCell>
-                        {formatDate(game.game_date)}
-                      </TableCell>
-                      <TableCell>
-                        {teamData.site}
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {teamName || (teamData.site === 'home' ? gameData.homeTeam : gameData.awayTeam)}
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {teamData.teamPoints ?? 'None'}
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          backgroundColor: (sportType === 'mlb' || sportType === 'nhl') ? 'transparent' : teamLineResult.bgColor,
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {teamData.teamLine !== null ? teamData.teamLine : 'None'}
-                      </TableCell>
-                      <TableCell>
-                        {teamData.opponentName}
-                      </TableCell>
-                      <TableCell>
-                        {teamData.opponentPoints ?? 'None'}
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          backgroundColor: totalColor,
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {gameData.totalLine ?? 'None'}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Box sx={{ position: 'relative' }}>
+            <TableContainer 
+              ref={tableContainerRef}
+              sx={{ 
+                overflowX: 'auto',
+                '&::-webkit-scrollbar': {
+                  height: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: '#f1f1f1',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: '#c1c1c1',
+                  borderRadius: '4px',
+                  '&:hover': {
+                    backgroundColor: '#a8a8a8',
+                  },
+                },
+              }}
+            >
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell><strong>Date</strong></TableCell>
+                    <TableCell><strong>Site</strong></TableCell>
+                    <TableCell><HeaderWithWinLossInfo>Team</HeaderWithWinLossInfo></TableCell>
+                    <TableCell><HeaderWithWinLossInfo>{getScoreLabel()}</HeaderWithWinLossInfo></TableCell>
+                    <TableCell><HeaderWithSpreadInfo>{getSpreadLabel()}</HeaderWithSpreadInfo></TableCell>
+                    <TableCell><strong>Opponent</strong></TableCell>
+                    <TableCell><strong>Opponent {getScoreLabel()}</strong></TableCell>
+                    <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {games.map((game, index) => {
+                    const gameData = getGameData(game);
+                    const teamData = getTeamData(game);
+                    const teamLineResult = calculateLineResult(teamData.teamPoints, teamData.teamLine, teamData.opponentPoints);
+                    const totalColor = getTotalColor(gameData.totalScore, gameData.totalLine);
+                    return (
+                      <TableRow key={game.game_id || index}>
+                        <TableCell>
+                          {formatDate(game.game_date)}
+                        </TableCell>
+                        <TableCell>
+                          {teamData.site}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {teamName || (teamData.site === 'home' ? gameData.homeTeam : gameData.awayTeam)}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {teamData.teamPoints ?? 'None'}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            backgroundColor: (sportType === 'mlb' || sportType === 'nhl') ? 'transparent' : teamLineResult.bgColor,
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {teamData.teamLine !== null ? teamData.teamLine : 'None'}
+                        </TableCell>
+                        <TableCell>
+                          {teamData.opponentName}
+                        </TableCell>
+                        <TableCell>
+                          {teamData.opponentPoints ?? 'None'}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            backgroundColor: totalColor,
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {gameData.totalLine ?? 'None'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {/* Scroll Indicator */}
+            {showScrollIndicator && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '20px',
+                  background: 'linear-gradient(to left, rgba(25, 118, 210, 0.3) 0%, rgba(25, 118, 210, 0.1) 50%, transparent 100%)',
+                  pointerEvents: 'none',
+                  borderRadius: '0 4px 4px 0',
+                }}
+              />
+            )}
+          </Box>
         )}
       </Paper>
     </ClickAwayListener>

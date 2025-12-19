@@ -94,6 +94,10 @@ def clear_cache():
     logging.info("Cache cleared")
     return "Cache cleared", 200
 
+# Serve Firebase messaging service worker from root
+@app.route('/firebase-messaging-sw.js')
+def firebase_sw():
+    return send_from_directory('.', 'firebase-messaging-sw.js')
 
 # Serve React app
 @app.route('/', defaults={'path': ''})

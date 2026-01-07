@@ -83,7 +83,7 @@ def resolve_player_simple(conn, player_name: str, game_date: date) -> int:
         return None
 
 
-def get_upcoming_nba_games(hours_ahead=12) -> List[Dict]:
+def get_upcoming_nba_games(hours_ahead=6) -> List[Dict]:
     """Get upcoming NBA games"""
     print(f"Fetching NBA games in next {hours_ahead} hours...")
     

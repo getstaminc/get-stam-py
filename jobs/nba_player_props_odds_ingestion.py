@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, date
 from typing import Dict, List, Optional
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+import pytz
 
 # Load environment variables
 load_dotenv()
@@ -200,7 +201,10 @@ def parse_player_props_from_game(game: Dict) -> List[Dict]:
     # Game info
     event_id = game['id']
     game_start = datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00'))
-    game_date = game_start.date()
+    # Convert to Eastern Time to get correct game date
+    eastern = pytz.timezone('US/Eastern')
+    game_start_et = game_start.astimezone(eastern)
+    game_date = game_start_et.date()
     home_team = game['home_team']
     away_team = game['away_team']
 

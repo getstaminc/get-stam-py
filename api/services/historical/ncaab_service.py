@@ -125,8 +125,8 @@ class NCAABService(BaseHistoricalService):
     def get_team_games_by_name(team_name: str, limit: int = 10, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get historical games for a specific NCAAB team by team name."""
         try:
-            from shared_utils import convert_team_name
-            db_team_name = convert_team_name(team_name)
+            from shared_utils import convert_team_name_ncaab
+            db_team_name = convert_team_name_ncaab(team_name)
             team_id = NCAABService._get_team_id_by_name(db_team_name, 'NCAAB')
             if not team_id:
                 return None, f"Team '{team_name}' not found in database"
@@ -211,11 +211,16 @@ class NCAABService(BaseHistoricalService):
     def get_head_to_head_games_by_name(home_team: str, away_team: str, limit: int = 5, venue: Optional[str] = None, team_perspective: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get head-to-head games between two NCAAB teams by team names."""
         try:
-            from shared_utils import convert_team_name
-            db_home_team = convert_team_name(home_team)
-            db_away_team = convert_team_name(away_team)
+            from shared_utils import convert_team_name_ncaab
+            
+            # Convert odds API team names to database team names
+            db_home_team = convert_team_name_ncaab(home_team)
+            db_away_team = convert_team_name_ncaab(away_team)
+            
+            # Get team IDs
             home_team_id = NCAABService._get_team_id_by_name(db_home_team, 'NCAAB')
             away_team_id = NCAABService._get_team_id_by_name(db_away_team, 'NCAAB')
+            
             if not home_team_id:
                 return None, f"Home team '{home_team}' not found in database"
             if not away_team_id:
@@ -224,10 +229,12 @@ class NCAABService(BaseHistoricalService):
             # Convert team_perspective name to team_id if provided
             perspective_team_id = None
             if team_perspective:
-                db_perspective_team = convert_team_name(team_perspective)
+                db_perspective_team = convert_team_name_ncaab(team_perspective)
                 perspective_team_id = NCAABService._get_team_id_by_name(db_perspective_team, 'NCAAB')
             
+            # Use existing method with team_ids
             return NCAABService.get_head_to_head_games_by_id(home_team_id, away_team_id, limit, venue, perspective_team_id)
+            
         except Exception as e:
             return None, f"Error fetching head-to-head games by name: {str(e)}"
 
@@ -279,6 +286,7 @@ class NCAABService(BaseHistoricalService):
                 'home_team_id': game.get('home_team_id'),
                 'home_team_name': game.get('home_team_name'),
                 'start_time': start_time,
+                'team_side': game.get('team_side'),
                 'total': game.get('total'),
                 'total_points': game.get('total_points')
             }

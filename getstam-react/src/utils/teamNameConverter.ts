@@ -197,7 +197,7 @@ export const convertTeamNameNcaaf = (fullTeamName: string): string => {
     'Memphis Tigers': 'MEM',
     'Mercer Bears': 'MER',
     'Miami Hurricanes': 'MIAF',
-    'Miami (OH) RedHawks': 'MIAO',
+    'Miami (OH) RedHawks': 'MIAOH',
     'Michigan Wolverines': 'MICH',
     'Minnesota Golden Gophers': 'MIN',
     'Ole Miss Rebels': 'MIS',

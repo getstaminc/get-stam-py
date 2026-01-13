@@ -35,6 +35,34 @@ def normalize_name_simple(name: str) -> str:
     return name.lower().strip().replace("'", "").replace("-", "").replace(".", "")
 
 
+def resolve_team_id_from_odds_api(conn, odds_team_name: str) -> Optional[int]:
+    """
+    Resolve team_id from odds_api_team_name in teams table.
+    
+    Args:
+        conn: Database connection
+        odds_team_name: Team name from Odds API (e.g., "Denver Nuggets")
+        
+    Returns:
+        team_id from teams table if found, None otherwise
+    """
+    try:
+        result = conn.execute(text("""
+            SELECT team_id FROM teams 
+            WHERE odds_api_team_name = :odds_team_name AND sport = 'NBA'
+        """), {'odds_team_name': odds_team_name}).fetchone()
+        
+        if result:
+            return result[0]
+        
+        print(f"    ⚠️ Could not resolve team: {odds_team_name}")
+        return None
+        
+    except Exception as e:
+        print(f"    ❌ Error resolving team {odds_team_name}: {e}")
+        return None
+
+
 def resolve_player_simple(conn, player_name: str, game_date: date) -> int:
     """
     Simple player resolver that reuses the provided connection to avoid too many connections.
@@ -54,11 +82,11 @@ def resolve_player_simple(conn, player_name: str, game_date: date) -> int:
         
         # Step 2: Create new player
         result = conn.execute(text("""
-            INSERT INTO nba_players (espn_player_name, normalized_name, first_seen_date, last_seen_date, created_at, updated_at)
-            VALUES (:espn_player_name, :normalized_name, :first_seen_date, :last_seen_date, NOW(), NOW())
+            INSERT INTO nba_players (player_name, normalized_name, first_seen_date, last_seen_date, created_at, updated_at)
+            VALUES (:player_name, :normalized_name, :first_seen_date, :last_seen_date, NOW(), NOW())
             RETURNING id
         """), {
-            'espn_player_name': player_name,
+            'player_name': player_name,
             'normalized_name': normalized,
             'first_seen_date': game_date,
             'last_seen_date': game_date
@@ -291,6 +319,10 @@ def insert_player_props_to_db(props_data: List[Dict]):
                     skipped_count += 1
                     continue
                 
+                # Resolve team IDs from odds_api_team_name
+                home_team_id = resolve_team_id_from_odds_api(conn, prop['home_team'])
+                away_team_id = resolve_team_id_from_odds_api(conn, prop['away_team'])
+                
                 # Map stat types to columns
                 stat_columns = {
                     'points': ('odds_player_points', 'odds_player_points_over_price', 'odds_player_points_under_price'),
@@ -323,6 +355,10 @@ def insert_player_props_to_db(props_data: List[Dict]):
                             {over_col} = :over_price,
                             {under_col} = :under_price,
                             normalized_name = (SELECT normalized_name FROM nba_players WHERE id = :player_id),
+                            odds_home_team = :odds_home_team,
+                            odds_away_team = :odds_away_team,
+                            odds_home_team_id = :odds_home_team_id,
+                            odds_away_team_id = :odds_away_team_id,
                             updated_at = NOW()
                         WHERE id = :record_id
                     """
@@ -332,6 +368,10 @@ def insert_player_props_to_db(props_data: List[Dict]):
                         'over_price': prop['over_price'],
                         'under_price': prop['under_price'],
                         'player_id': player_id,
+                        'odds_home_team': prop['home_team'],
+                        'odds_away_team': prop['away_team'],
+                        'odds_home_team_id': home_team_id,
+                        'odds_away_team_id': away_team_id,
                         'record_id': existing[0]
                     })
                     
@@ -341,11 +381,13 @@ def insert_player_props_to_db(props_data: List[Dict]):
                     insert_sql = f"""
                         INSERT INTO nba_player_props (
                             player_id, normalized_name, odds_event_id, game_date, bookmaker, odds_source,
+                            odds_home_team, odds_away_team, odds_home_team_id, odds_away_team_id,
                             {line_col}, {over_col}, {under_col}
                         ) VALUES (
                             :player_id, 
                             (SELECT normalized_name FROM nba_players WHERE id = :player_id),
                             :odds_event_id, :game_date, :bookmaker, :odds_source,
+                            :odds_home_team, :odds_away_team, :odds_home_team_id, :odds_away_team_id,
                             :line, :over_price, :under_price
                         )
                     """
@@ -356,6 +398,10 @@ def insert_player_props_to_db(props_data: List[Dict]):
                         'game_date': prop['game_date'],
                         'bookmaker': prop['bookmaker'],
                         'odds_source': 'odds_api',
+                        'odds_home_team': prop['home_team'],
+                        'odds_away_team': prop['away_team'],
+                        'odds_home_team_id': home_team_id,
+                        'odds_away_team_id': away_team_id,
                         'line': prop['line'],
                         'over_price': prop['over_price'],
                         'under_price': prop['under_price']

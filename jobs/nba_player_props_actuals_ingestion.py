@@ -652,9 +652,9 @@ def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):
             
             # Step 3: If still not found, try fuzzy matching with team ID verification
             if not existing:
-                # Extract last name and strip suffixes
-                last_name = get_last_name(normalized_name)
+                # Strip suffixes first, then extract last name
                 name_without_suffix = strip_name_suffix(normalized_name)
+                last_name = get_last_name(name_without_suffix)
                 
                 if last_name and team_id:
                     # Find props with matching last name on same date
@@ -701,9 +701,6 @@ def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):
                             'player_id': existing_player_id
                         })
                         print(f"    💾 Backfilled ESPN ID {espn_player_id} for future fast lookups")
-                            'espn_player_id': str(espn_player_id),
-                            'player_id': existing_player_id
-                        })
                 
                 # Update existing props record with actual stats and team info
                 conn.execute(text("""

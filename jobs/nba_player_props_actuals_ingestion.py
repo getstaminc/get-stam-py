@@ -21,48 +21,68 @@ DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 
 def get_yesterdays_nba_games(retries=3, delay=1):
     """
-    Fetch yesterday's completed NBA games from ESPN API.
+    Fetch yesterday's completed NBA games from ESPN API (in Eastern Time).
     
     Returns:
         List of completed games with event IDs
     """
-    print("Fetching yesterday's NBA games from ESPN...")
+    print("Fetching yesterday's NBA games from ESPN (Eastern Time)...")
     
-    # Get yesterday's date
-    yesterday = (datetime.utcnow() - timedelta(days=1)).strftime('%Y%m%d')
+    # Get yesterday's date in Eastern Time
+    eastern = pytz.timezone('US/Eastern')
+    now_et = datetime.now(eastern)
+    yesterday_et = now_et - timedelta(days=1)
     
-    url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={yesterday}"
+    # ESPN API uses dates in format YYYYMMDD
+    # We need to check both yesterday and today in UTC
+    # because games late at night ET appear as next day in UTC
+    dates_to_check = [
+        yesterday_et.strftime('%Y%m%d'),  # Yesterday ET
+        now_et.strftime('%Y%m%d')  # Today ET (for late games)
+    ]
+    
+    all_games = []
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     
-    for i in range(retries):
-        try:
-            response = requests.get(url, headers=headers, timeout=15)
-            response.raise_for_status()
-            
-            data = response.json()
-            games = data.get('events', [])
-            
-            # Filter for completed games only
-            completed_games = []
-            for game in games:
-                status = game.get('status', {}).get('type', {}).get('name', '')
-                if status == 'STATUS_FINAL':
-                    completed_games.append(game)
-            
-            print(f"Found {len(completed_games)} completed NBA games from yesterday")
-            return completed_games
-            
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching games (attempt {i+1}/{retries}): {e}")
-            if i < retries - 1:
-                time.sleep(delay)
-            else:
-                raise
+    for date_str in dates_to_check:
+        url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={date_str}"
+        
+        for i in range(retries):
+            try:
+                response = requests.get(url, headers=headers, timeout=15)
+                response.raise_for_status()
+                
+                data = response.json()
+                games = data.get('events', [])
+                
+                for game in games:
+                    # Parse game date and convert to Eastern Time
+                    game_date_str = game.get('date', '')
+                    if game_date_str:
+                        # Parse UTC time
+                        game_dt_utc = datetime.fromisoformat(game_date_str.replace('Z', '+00:00'))
+                        # Convert to Eastern Time
+                        game_dt_et = game_dt_utc.astimezone(eastern)
+                        # Check if game is on yesterday's date in ET
+                        if game_dt_et.date() == yesterday_et.date():
+                            status = game.get('status', {}).get('type', {}).get('name', '')
+                            if status == 'STATUS_FINAL':
+                                all_games.append(game)
+                
+                break  # Success, exit retry loop
+                
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching games for {date_str} (attempt {i+1}/{retries}): {e}")
+                if i < retries - 1:
+                    time.sleep(delay)
+                else:
+                    print(f"Failed to fetch games for {date_str} after {retries} attempts")
     
-    return []
+    print(f"Found {len(all_games)} completed NBA games from yesterday (Eastern Time)")
+    return all_games
 
 
 def get_nba_games_for_date_et(target_date: str, retries=3, delay=1):
@@ -416,115 +436,6 @@ def resolve_team_id(conn, espn_team_id: str, espn_team_name: str) -> Optional[in
         return None
 
 
-def update_player_props_with_actuals(conn, player_stats: List[Dict], resolver: PlayerResolver):
-    """
-    Update nba_player_props records with actual game statistics.
-    
-    Args:
-        conn: Database connection
-        player_stats: List of player stat records from ESPN
-        resolver: Player resolver instance
-    """
-    print(f"Updating player props with {len(player_stats)} player stat records...")
-    
-    updated_count = 0
-    
-    for stat_record in player_stats:
-        try:
-            # Normalize player name for matching (same logic as odds ingestion)
-            espn_player_name = stat_record['player_name']
-            normalized_name = normalize_player_name(espn_player_name)
-            
-            # Resolve team IDs from ESPN team IDs
-            team_id = resolve_team_id(conn, stat_record['team_id'], stat_record['team_name'])
-            opponent_team_id = resolve_team_id(conn, stat_record['opponent_team_id'], stat_record['opponent_team_name'])
-            
-            # First, try to find existing props record by player name (case-insensitive)
-            # This handles the case where odds were imported with different name casing
-            existing = conn.execute(text("""
-                SELECT id, player_id FROM nba_player_props
-                WHERE normalized_name = :normalized_name AND game_date = :game_date
-            """), {
-                'normalized_name': normalized_name,
-                'game_date': stat_record['game_date']
-            }).fetchone()
-            
-            if existing:
-                # Found existing props record by name match
-                props_id = existing[0]
-                existing_player_id = existing[1]
-                
-                # Update the player's ESPN ID if we have it and it's not set
-                espn_player_id = stat_record['athlete_data'].get('id')
-                if espn_player_id and existing_player_id:
-                    # Check if player already has ESPN ID
-                    player_info = conn.execute(text("""
-                        SELECT espn_player_id FROM nba_players WHERE id = :player_id
-                    """), {'player_id': existing_player_id}).fetchone()
-                    
-                    if player_info and not player_info[0]:
-                        # Update player with ESPN ID
-                        conn.execute(text("""
-                            UPDATE nba_players
-                            SET espn_player_id = :espn_player_id
-                            WHERE id = :player_id
-                        """), {
-                            'espn_player_id': str(espn_player_id),
-                            'player_id': existing_player_id
-                        })
-                
-                # Update existing props record with actual stats and team info
-                conn.execute(text("""
-                    UPDATE nba_player_props
-                    SET actual_player_points = :points,
-                        actual_player_rebounds = :rebounds,
-                        actual_player_assists = :assists,
-                        actual_player_threes = :threes,
-                        actual_player_minutes = :minutes,
-                        actual_player_fg = :fg,
-                        actual_player_ft = :ft,
-                        actual_plus_minus = :plus_minus,
-                        player_team_name = :team_name,
-                        player_team_id = :team_id,
-                        opponent_team_name = :opponent_team_name,
-                        opponent_team_id = :opponent_team_id,
-                        espn_event_id = :espn_event_id,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :record_id
-                """), {
-                    'points': stat_record['actual_points'],
-                    'rebounds': stat_record['actual_rebounds'],
-                    'assists': stat_record['actual_assists'],
-                    'threes': stat_record['actual_threes'],
-                    'minutes': stat_record['actual_minutes'],
-                    'fg': stat_record['actual_fg'],
-                    'ft': stat_record['actual_ft'],
-                    'plus_minus': stat_record['actual_plus_minus'],
-                    'team_name': stat_record['team_name'],
-                    'team_id': team_id,
-                    'opponent_team_name': stat_record['opponent_team_name'],
-                    'opponent_team_id': opponent_team_id,
-                    'espn_event_id': stat_record['event_id'],
-                    'record_id': props_id
-                })
-                
-                print(f"  ✅ Updated {espn_player_name}: {stat_record['actual_points']}pts/{stat_record['actual_rebounds']}reb/{stat_record['actual_assists']}ast")
-                updated_count += 1
-                
-            else:
-                # No existing nba_player_props record - this means we didn't have odds for this player
-                print(f"  ℹ️ No props record found for {espn_player_name} on {stat_record['game_date']} (no odds were available)")
-                
-        except Exception as e:
-            print(f"  ❌ Error updating {stat_record.get('player_name', 'unknown')}: {e}")
-            import traceback
-            traceback.print_exc()
-            continue
-    
-    print(f"Successfully updated {updated_count} player prop records with actuals")
-    return updated_count
-
-
 def test_single_game(event_id: str, odds_date: Optional[date] = None):
     """
     Test function to process a single game by event ID.
@@ -658,16 +569,21 @@ def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):
                 
                 if last_name and team_id:
                     # Find props with matching last name on same date
+                    # Check if last name appears in the name (handles suffixes on either side)
                     fuzzy_candidates = conn.execute(text("""
                         SELECT id, player_id, normalized_name, odds_home_team_id, odds_away_team_id 
                         FROM nba_player_props
                         WHERE game_date = :game_date 
-                        AND (normalized_name LIKE :last_name_pattern
-                             OR normalized_name = :name_without_suffix)
+                        AND (
+                            normalized_name LIKE :last_name_pattern_end
+                            OR normalized_name LIKE :last_name_pattern_middle
+                            OR normalized_name = :name_without_suffix
+                        )
                         AND (odds_home_team_id = :team_id OR odds_away_team_id = :team_id)
                     """), {
                         'game_date': stat_record['game_date'],
-                        'last_name_pattern': f'% {last_name}',
+                        'last_name_pattern_end': f'% {last_name}',  # Ends with last name (no suffix)
+                        'last_name_pattern_middle': f'% {last_name} %',  # Last name in middle (has suffix)
                         'name_without_suffix': name_without_suffix,
                         'team_id': team_id
                     }).fetchall()
@@ -744,7 +660,7 @@ def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):
                 
             else:
                 # No existing nba_player_props record - this means we didn't have odds for this player
-                print(f"  ℹ️ No props record found for {espn_player_name} on {stat_record['game_date']} (no odds were available)")
+                print(f"  ℹ️ No props record found for {espn_player_name} on {stat_record['game_date']} (event_id: {stat_record['event_id']}, no odds were available)")
                 
         except Exception as e:
             print(f"  ❌ Error updating {stat_record.get('player_name', 'unknown')}: {e}")
@@ -794,18 +710,21 @@ def seed_yesterdays_player_actuals():
                 print(f"\nProcessing game {i}/{len(games)}: {' vs '.join(team_names)} (ID: {game_id})")
                 
                 try:
-                    # Get game date
-                    game_date = datetime.fromisoformat(
-                        game['date'].replace('Z', '+00:00')
-                    ).date()
+                    # Get game date and convert to Eastern Time for matching odds
+                    eastern = pytz.timezone('US/Eastern')
+                    game_dt_utc = datetime.fromisoformat(game['date'].replace('Z', '+00:00'))
+                    game_dt_et = game_dt_utc.astimezone(eastern)
+                    game_date_et = game_dt_et.date()
+                    
+                    print(f"  Game time: {game_dt_et.strftime('%Y-%m-%d %I:%M %p')} ET")
                     
                     # Fetch detailed boxscore
                     boxscore_data = get_game_boxscore(game_id)
                     
                     if boxscore_data:
-                        # Extract player stats
+                        # Extract player stats (use ET date for matching odds)
                         game_stats = extract_player_stats_from_boxscore(
-                            boxscore_data, game_id, game_date
+                            boxscore_data, game_id, game_date_et
                         )
                         total_player_stats.extend(game_stats)
                         print(f"  Extracted stats for {len(game_stats)} players")
@@ -823,8 +742,8 @@ def seed_yesterdays_player_actuals():
             print(f"\nTotal player stat records: {len(total_player_stats)}")
             
             if total_player_stats:
-                # Update player_props records with actuals
-                updated = update_player_props_with_actuals(conn, total_player_stats, resolver)
+                # Update player_props records with actuals using the new fuzzy matching logic
+                updated = update_player_props_with_actuals_simple(conn, total_player_stats)
                 
                 # Commit transaction
                 conn.commit()
@@ -916,8 +835,8 @@ def seed_player_actuals_for_date(target_date: str):
             print(f"\nTotal player stat records: {len(total_player_stats)}")
             
             if total_player_stats:
-                # Update player_props records with actuals
-                updated = update_player_props_with_actuals(conn, total_player_stats, resolver)
+                # Update player_props records with actuals using the new fuzzy matching logic
+                updated = update_player_props_with_actuals_simple(conn, total_player_stats)
                 
                 # Commit transaction
                 conn.commit()

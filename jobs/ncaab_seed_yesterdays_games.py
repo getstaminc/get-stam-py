@@ -19,13 +19,15 @@ SDQL_USERNAME = 'TimRoss'
 SDQL_TOKEN = '3b88dcbtr97bb8e89b74r'
 
 def get_yesterdays_games(retries=3, delay=1):
-    """Fetch all of yesterday's games from the SDQL API."""
+    """Fetch all games from the last two days from the SDQL API."""
     sdql_url = f"https://s3.sportsdatabase.com/NCAABB/query"
     print(f"Connecting to database: {DATABASE_URL}")
     
-    # Calculate yesterday's date in the required format (YYYYMMDD)
-    yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
-    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,playoffs,money line,o:money line,_t,start time@(site='home' or site='neutral') and date={yesterday}"
+    # Calculate today and two days ago in the required format (YYYYMMDD)
+    today = datetime.today().strftime('%Y%m%d')
+    two_days_ago = (datetime.today() - timedelta(days=2)).strftime('%Y%m%d')
+    
+    sdql_query = f"date,site,team,o:team,points,o:points,total,margin,line,o:line,playoffs,money line,o:money line,_t,start time@(site='home' or site='neutral') and date<{today} and date>={two_days_ago}"
 
     headers = {
         'user': SDQL_USERNAME,
@@ -51,10 +53,10 @@ def get_yesterdays_games(retries=3, delay=1):
                 for game in formatted_result:
                     game['date'] = datetime.strptime(str(game['date']), '%Y%m%d').strftime('%Y-%m-%d')
 
-                print(f"Successfully fetched {len(formatted_result)} games for {yesterday}.")
+                print(f"Successfully fetched {len(formatted_result)} games from the last two days.")
                 return formatted_result
             else:
-                print("No games found for yesterday.")
+                print("No games found for the last two days.")
                 return []
         except requests.exceptions.RequestException as e:
             print(f"SDQL request failed: {e}")

@@ -77,10 +77,16 @@ def seed_yesterdays_games():
     games = get_yesterdays_games()
     print(f"Processing {len(games)} games.")
 
+    inserted_count = 0
+    skipped_duplicate_count = 0
+    skipped_missing_data_count = 0
+    skipped_missing_team_count = 0
+
     for game in games:
         # Skip games with missing points
         if game['points'] is None or game['o:points'] is None:
             print(f"Skipping game due to missing points: {game}")
+            skipped_missing_data_count += 1
             continue
 
         # Handle missing fields with default values
@@ -108,6 +114,28 @@ def seed_yesterdays_games():
 
         if not home_team_id or not away_team_id:
             print(f"Team not found: Home - {game['team']}, Away - {game['o:team']}")
+            skipped_missing_team_count += 1
+            continue
+
+        # Skip duplicate matchups: same two teams on the same date (order-insensitive)
+        exists = conn.execute(text("""
+            SELECT 1 FROM nba_games_1
+            WHERE game_date = :game_date
+              AND (
+                (home_team_id = :home_team_id AND away_team_id = :away_team_id)
+                OR
+                (home_team_id = :away_team_id AND away_team_id = :home_team_id)
+              )
+            LIMIT 1
+        """), {
+            'game_date': game['date'],
+            'home_team_id': home_team_id,
+            'away_team_id': away_team_id
+        }).fetchone()
+
+        if exists:
+            print(f"Skipping duplicate matchup for {game['date']}: {game['team']} vs {game['o:team']}")
+            skipped_duplicate_count += 1
             continue
 
         # Calculate first half points
@@ -171,9 +199,16 @@ def seed_yesterdays_games():
 
         # Log the response from the database
         print(f"Rows affected: {result.rowcount}")
+        inserted_count += 1
 
     # Commit the transaction
     conn.commit()
+    print("\n=== Summary ===")
+    print(f"Total games processed: {len(games)}")
+    print(f"✅ Inserted: {inserted_count}")
+    print(f"⏭️  Skipped (duplicates): {skipped_duplicate_count}")
+    print(f"⏭️  Skipped (missing data): {skipped_missing_data_count}")
+    print(f"⏭️  Skipped (missing team): {skipped_missing_team_count}")
     print("Transaction committed successfully.")
     conn.close()
     print("Seeding completed successfully.")

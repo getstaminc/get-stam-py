@@ -257,15 +257,38 @@ def extract_player_stats_from_boxscore(boxscore_data: Dict, game_id: str, game_d
             try:
                 athlete = athlete_data.get('athlete', {})
                 stats = athlete_data.get('stats', [])
-                
-                if not athlete or not stats:
-                    continue
+                did_not_play = athlete_data.get('didNotPlay', False)
                 
                 # Extract athlete info
                 espn_player_id = str(athlete.get('id', ''))
                 player_name = athlete.get('displayName', '')
                 
                 if not espn_player_id or not player_name:
+                    continue
+                
+                # Handle DNP players (no stats, just mark them as DNP)
+                if did_not_play or not stats:
+                    player_record = {
+                        'espn_player_id': espn_player_id,
+                        'player_name': player_name,
+                        'athlete_data': athlete,
+                        'event_id': game_id,
+                        'game_date': game_date,
+                        'team_name': team_name,
+                        'team_id': team_id,
+                        'opponent_team_name': opponent_team_name,
+                        'opponent_team_id': opponent_team_id,
+                        'did_not_play': True,
+                        'actual_points': None,
+                        'actual_rebounds': None,
+                        'actual_assists': None,
+                        'actual_threes': None,
+                        'actual_minutes': None,
+                        'actual_fg': None,
+                        'actual_ft': None,
+                        'actual_plus_minus': None,
+                    }
+                    player_stats.append(player_record)
                     continue
                 
                 # Map stats to dictionary
@@ -286,6 +309,7 @@ def extract_player_stats_from_boxscore(boxscore_data: Dict, game_id: str, game_d
                     'team_id': team_id,
                     'opponent_team_name': opponent_team_name,
                     'opponent_team_id': opponent_team_id,
+                    'did_not_play': False,
                     
                     # Core stats
                     'actual_points': safe_int(stat_dict.get('PTS')),
@@ -618,42 +642,67 @@ def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):
                         })
                         print(f"    💾 Backfilled ESPN ID {espn_player_id} for future fast lookups")
                 
-                # Update existing props record with actual stats and team info
-                conn.execute(text("""
-                    UPDATE nba_player_props
-                    SET actual_player_points = :points,
-                        actual_player_rebounds = :rebounds,
-                        actual_player_assists = :assists,
-                        actual_player_threes = :threes,
-                        actual_player_minutes = :minutes,
-                        actual_player_fg = :fg,
-                        actual_player_ft = :ft,
-                        actual_plus_minus = :plus_minus,
-                        player_team_name = :team_name,
-                        player_team_id = :team_id,
-                        opponent_team_name = :opponent_team_name,
-                        opponent_team_id = :opponent_team_id,
-                        espn_event_id = :espn_event_id,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :record_id
-                """), {
-                    'points': stat_record['actual_points'],
-                    'rebounds': stat_record['actual_rebounds'],
-                    'assists': stat_record['actual_assists'],
-                    'threes': stat_record['actual_threes'],
-                    'minutes': stat_record['actual_minutes'],
-                    'fg': stat_record['actual_fg'],
-                    'ft': stat_record['actual_ft'],
-                    'plus_minus': stat_record['actual_plus_minus'],
-                    'team_name': stat_record['team_name'],
-                    'team_id': team_id,
-                    'opponent_team_name': stat_record['opponent_team_name'],
-                    'opponent_team_id': opponent_team_id,
-                    'espn_event_id': stat_record['event_id'],
-                    'record_id': props_id
-                })
+                # Check if this is a DNP (did not play) record
+                is_dnp = stat_record.get('did_not_play', False)
                 
-                print(f"  ✅ Updated {espn_player_name}: {stat_record['actual_points']}pts/{stat_record['actual_rebounds']}reb/{stat_record['actual_assists']}ast")
+                if is_dnp:
+                    # Update with ESPN event ID and mark as DNP (no stats)
+                    conn.execute(text("""
+                        UPDATE nba_player_props
+                        SET player_team_name = :team_name,
+                            player_team_id = :team_id,
+                            opponent_team_name = :opponent_team_name,
+                            opponent_team_id = :opponent_team_id,
+                            espn_event_id = :espn_event_id,
+                            did_not_play = true,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :record_id
+                    """), {
+                        'team_name': stat_record['team_name'],
+                        'team_id': team_id,
+                        'opponent_team_name': stat_record['opponent_team_name'],
+                        'opponent_team_id': opponent_team_id,
+                        'espn_event_id': stat_record['event_id'],
+                        'record_id': props_id
+                    })
+                    print(f"  🚫 DNP: {espn_player_name} (event_id: {stat_record['event_id']})")
+                else:
+                    # Update existing props record with actual stats and team info
+                    conn.execute(text("""
+                        UPDATE nba_player_props
+                        SET actual_player_points = :points,
+                            actual_player_rebounds = :rebounds,
+                            actual_player_assists = :assists,
+                            actual_player_threes = :threes,
+                            actual_player_minutes = :minutes,
+                            actual_player_fg = :fg,
+                            actual_player_ft = :ft,
+                            actual_plus_minus = :plus_minus,
+                            player_team_name = :team_name,
+                            player_team_id = :team_id,
+                            opponent_team_name = :opponent_team_name,
+                            opponent_team_id = :opponent_team_id,
+                            espn_event_id = :espn_event_id,
+                            did_not_play = false,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :record_id
+                    """), {
+                        'points': stat_record['actual_points'],
+                        'rebounds': stat_record['actual_rebounds'],
+                        'assists': stat_record['actual_assists'],
+                        'threes': stat_record['actual_threes'],
+                        'minutes': stat_record['actual_minutes'],
+                        'fg': stat_record['actual_fg'],
+                        'ft': stat_record['actual_ft'],
+                        'plus_minus': stat_record['actual_plus_minus'],
+                        'team_name': stat_record['team_name'],
+                        'team_id': team_id,
+                        'opponent_team_name': stat_record['opponent_team_name'],
+                        'opponent_team_id': opponent_team_id,
+                        'espn_event_id': stat_record['event_id'],
+                        'record_id': props_id
+                    })
+                    print(f"  ✅ Updated {espn_player_name}: {stat_record['actual_points']}pts/{stat_record['actual_rebounds']}reb/{stat_record['actual_assists']}ast")
                 updated_count += 1
                 # Commit after each successful update to avoid transaction poisoning
                 conn.commit()

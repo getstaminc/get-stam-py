@@ -195,7 +195,7 @@ def get_game_boxscore(game_id: str, retries=3, delay=1) -> Optional[Dict]:
 
 def extract_player_stats_from_boxscore(boxscore_data: Dict, game_id: str, game_date: date) -> List[Dict]:
     """
-    Extract individual player statistics from ESPN boxscore.
+    Extract individual player statistics from ESPN boxscore, including DNP and injured players.
     
     Args:
         boxscore_data: ESPN boxscore API response
@@ -218,6 +218,59 @@ def extract_player_stats_from_boxscore(boxscore_data: Dict, game_id: str, game_d
     # Extract team info for both teams first (to determine opponent)
     team_info_list = []
     for team_data in teams:
+        team_info = team_data.get('team', {})
+        team_info_list.append({
+            'name': team_info.get('displayName', 'Unknown Team'),
+            'id': str(team_info.get('id', ''))
+        })
+    
+    # Also extract injured/out players from the injuries section
+    injuries = boxscore_data.get('injuries', [])
+    for injury_entry in injuries:
+        team_info = injury_entry.get('team', {})
+        team_name = team_info.get('displayName', 'Unknown Team')
+        team_id = str(team_info.get('id', ''))
+        
+        # Find opponent
+        opponent_team_name = 'Unknown'
+        opponent_team_id = ''
+        for ti in team_info_list:
+            if ti['id'] != team_id:
+                opponent_team_name = ti['name']
+                opponent_team_id = ti['id']
+                break
+        
+        # Process each injured/out player
+        for injury_detail in injury_entry.get('injuries', []):
+            athlete = injury_detail.get('athlete', {})
+            status = injury_detail.get('status', '')
+            
+            espn_player_id = str(athlete.get('id', ''))
+            player_name = athlete.get('displayName', '')
+            
+            if espn_player_id and player_name and status == 'Out':
+                # Add DNP record for injured/out player
+                player_record = {
+                    'espn_player_id': espn_player_id,
+                    'player_name': player_name,
+                    'athlete_data': athlete,
+                    'event_id': game_id,
+                    'game_date': game_date,
+                    'team_name': team_name,
+                    'team_id': team_id,
+                    'opponent_team_name': opponent_team_name,
+                    'opponent_team_id': opponent_team_id,
+                    'did_not_play': True,
+                    'actual_points': None,
+                    'actual_rebounds': None,
+                    'actual_assists': None,
+                    'actual_threes': None,
+                    'actual_minutes': None,
+                    'actual_fg': None,
+                    'actual_ft': None,
+                    'actual_plus_minus': None,
+                }
+                player_stats.append(player_record)
         team_info = team_data.get('team', {})
         team_info_list.append({
             'name': team_info.get('displayName', 'Unknown Team'),

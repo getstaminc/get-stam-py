@@ -644,7 +644,10 @@ def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):
                 name_without_suffix = strip_name_suffix(normalized_name)
                 last_name = get_last_name(name_without_suffix)
                 
-                if last_name and team_id:
+                # Skip fuzzy matching for known conflicts (Bronny/LeBron James on Lakers)
+                skip_fuzzy = normalized_name in ['bronny james']
+                
+                if last_name and team_id and not skip_fuzzy:
                     # Find props with matching last name on same date
                     # Check if last name appears in the name (handles suffixes on either side)
                     fuzzy_candidates = conn.execute(text("""

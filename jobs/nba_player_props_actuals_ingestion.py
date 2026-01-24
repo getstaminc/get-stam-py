@@ -455,6 +455,61 @@ def strip_name_suffix(normalized_name: str) -> str:
     return normalized_name
 
 
+def parse_name_parts(normalized_name: str) -> tuple[str, str]:
+    """
+    Parse a normalized name into first and last name parts.
+    
+    Args:
+        normalized_name: Normalized player name (e.g., "lebron james")
+        
+    Returns:
+        Tuple of (first_name, last_name). For multi-part names, first_name includes all but last part.
+    """
+    parts = normalized_name.strip().split()
+    if len(parts) == 0:
+        return '', ''
+    elif len(parts) == 1:
+        return '', parts[0]  # Only last name
+    else:
+        # First name is everything except the last part
+        return ' '.join(parts[:-1]), parts[-1]
+
+
+def names_match_strict(odds_name: str, espn_name: str) -> bool:
+    """
+    Check if two normalized names match using strict first + last name comparison.
+    Strips suffixes before comparing.
+    
+    Args:
+        odds_name: Normalized name from odds data
+        espn_name: Normalized name from ESPN data
+        
+    Returns:
+        True if both first AND last names match exactly (after suffix stripping)
+    """
+    # Strip suffixes from both names
+    odds_clean = strip_name_suffix(odds_name)
+    espn_clean = strip_name_suffix(espn_name)
+    
+    # Parse into first and last names
+    odds_first, odds_last = parse_name_parts(odds_clean)
+    espn_first, espn_last = parse_name_parts(espn_clean)
+    
+    # Both first AND last must match
+    # Handle cases where first name might be initial vs full name
+    first_match = False
+    if odds_first == espn_first:
+        first_match = True
+    elif odds_first and espn_first:
+        # Check if one is initial of the other (e.g., "j" vs "john")
+        if (len(odds_first) == 1 and espn_first.startswith(odds_first)):
+            first_match = True
+        elif (len(espn_first) == 1 and odds_first.startswith(espn_first)):
+            first_match = True
+    
+    return first_match and odds_last == espn_last
+
+
 def get_last_name(normalized_name: str) -> str:
     """
     Extract last name from normalized player name.
@@ -481,6 +536,26 @@ def safe_int(value) -> Optional[int]:
         return int(float(value))
     except (ValueError, TypeError):
         return None
+
+
+def build_espn_player_lookup_from_stats(player_stats: List[Dict]) -> Dict[str, Dict]:
+    """
+    Build a lookup dictionary from ESPN player stats for reverse matching.
+    
+    Args:
+        player_stats: List of player stat records from ESPN
+        
+    Returns:
+        Dictionary mapping espn_player_id -> player_stats
+    """
+    lookup = {}
+    
+    for stats in player_stats:
+        espn_id = stats.get('espn_player_id')
+        if espn_id:
+            lookup[espn_id] = stats
+    
+    return lookup
 
 
 def resolve_team_id(conn, espn_team_id: str, espn_team_name: str) -> Optional[int]:
@@ -585,7 +660,238 @@ def test_single_game(event_id: str, odds_date: Optional[date] = None):
         conn.close()
 
 
-def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):
+def update_player_props_with_actuals_reverse(conn, player_stats: List[Dict], game_date: date):
+    \"""
+    Update nba_player_props records using reverse approach (pull props first, then match in ESPN data).
+    Uses strict first + last name matching and logs unmatched players to mismatch table.
+    
+    Args:
+        conn: Database connection
+        player_stats: List of player stat records from ESPN
+        game_date: Date of the game
+        
+    Returns:
+        Number of records updated
+    \"""
+    print(f"Updating player props (reverse approach) for {game_date}...")
+    
+    if not player_stats:
+        return 0
+    
+    # Step 1: Build ESPN player lookup by ID and name
+    espn_by_id = {}
+    espn_by_name = {}
+    
+    # Also resolve team IDs
+    team_id_map = {}  # ESPN team ID -> internal team_id
+    
+    for stats in player_stats:
+        espn_id = stats.get('espn_player_id')
+        normalized_name = normalize_player_name(stats['player_name'])
+        
+        if espn_id:
+            espn_by_id[espn_id] = stats
+        espn_by_name[normalized_name] = stats
+        
+        # Cache team ID resolution
+        espn_team_id = stats.get('team_id')
+        if espn_team_id and espn_team_id not in team_id_map:
+            team_id = resolve_team_id(conn, espn_team_id, stats['team_name'])
+            if team_id:
+                team_id_map[espn_team_id] = team_id
+    
+    print(f"  Built ESPN lookup: {len(espn_by_id)} by ID, {len(espn_by_name)} by name")
+    
+    # Step 2: Get all prop records for this game date
+    # We need team IDs to filter
+    if not team_id_map:
+        print(\"  No team IDs resolved, cannot query props\")
+        return 0
+    
+    team_ids = list(team_id_map.values())
+    placeholders = ','.join([f':team_id_{i}' for i in range(len(team_ids))])
+    
+    query_params = {'game_date': game_date}
+    for i, tid in enumerate(team_ids):
+        query_params[f'team_id_{i}'] = tid
+    
+    prop_records = conn.execute(text(f\"""
+        SELECT id, player_id, normalized_name, odds_home_team_id, odds_away_team_id
+        FROM nba_player_props
+        WHERE game_date = :game_date
+        AND (odds_home_team_id IN ({placeholders}) OR odds_away_team_id IN ({placeholders}))
+    \"""), query_params).fetchall()
+    
+    if not prop_records:
+        print(f\"  No prop records found for {game_date}\")
+        return 0
+    
+    print(f\"  Found {len(prop_records)} prop records to update\")
+    
+    # Step 3: For each prop record, search for matching player in ESPN data
+    updated_count = 0
+    
+    for record in prop_records:
+        props_id, player_id, normalized_name, odds_home_team_id, odds_away_team_id = record
+        
+        try:
+            player_stats_match = None
+            
+            # Step 1: Look up ESPN player ID for this player
+            player_espn_id = conn.execute(text(\"""
+                SELECT espn_player_id FROM nba_players WHERE id = :player_id
+            \"""), {'player_id': player_id}).fetchone()
+            
+            # Step 2: If we have ESPN ID, search for it in ESPN data first
+            if player_espn_id and player_espn_id[0]:
+                player_stats_match = espn_by_id.get(player_espn_id[0])
+                if player_stats_match:
+                    print(f\"      ⚡ Matched by ESPN ID: {normalized_name} (ID: {player_espn_id[0]})\")
+            
+            # Step 3: If not found by ESPN ID, try exact normalized name match
+            if not player_stats_match:
+                player_stats_match = espn_by_name.get(normalized_name)
+                if player_stats_match:
+                    print(f\"      ✓ Exact name match: {normalized_name}\")
+            
+            # Step 4: If still not found, try strict first + last name matching
+            if not player_stats_match:
+                for espn_name, stats in espn_by_name.items():
+                    if names_match_strict(normalized_name, espn_name):
+                        player_stats_match = stats
+                        print(f\"      🔍 Strict name match: {normalized_name} → {espn_name}\")
+                        break
+            
+            if not player_stats_match:
+                # No match found - log to mismatch table
+                try:
+                    home_team_name = conn.execute(text(\"""
+                        SELECT team_name FROM teams WHERE team_id = :team_id
+                    \"""), {'team_id': odds_home_team_id}).fetchone()
+                    
+                    away_team_name = conn.execute(text(\"""
+                        SELECT team_name FROM teams WHERE team_id = :team_id
+                    \"""), {'team_id': odds_away_team_id}).fetchone()
+                    
+                    home_team_str = home_team_name[0] if home_team_name else 'Unknown'
+                    away_team_str = away_team_name[0] if away_team_name else 'Unknown'
+                    
+                    # Check if mismatch already exists
+                    existing_mismatch = conn.execute(text(\"""
+                        SELECT id FROM nba_player_name_mismatch
+                        WHERE nba_player_props_id = :props_id AND resolved = false
+                    \"""), {'props_id': props_id}).fetchone()
+                    
+                    if not existing_mismatch:
+                        conn.execute(text(\"""
+                            INSERT INTO nba_player_name_mismatch (
+                                nba_player_props_id, game_date, odds_home_team_id, odds_away_team_id,
+                                odds_home_team, odds_away_team, normalized_name, player_id,
+                                resolved, created_at, updated_at
+                            ) VALUES (
+                                :props_id, :game_date, :home_team_id, :away_team_id,
+                                :home_team_name, :away_team_name, :normalized_name, :player_id,
+                                false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                            )
+                        \"""), {
+                            'props_id': props_id, 'game_date': game_date,
+                            'home_team_id': odds_home_team_id, 'away_team_id': odds_away_team_id,
+                            'home_team_name': home_team_str, 'away_team_name': away_team_str,
+                            'normalized_name': normalized_name, 'player_id': player_id
+                        })
+                        print(f\"      ⚠️  Unmatched player logged: {normalized_name} ({home_team_str} vs {away_team_str})\")
+                    
+                except Exception as mismatch_error:
+                    print(f\"      ❌ Error logging mismatch for {normalized_name}: {mismatch_error}\")
+                
+                continue
+            
+            # Found a match - update the record
+            espn_player_id = player_stats_match.get('espn_player_id')
+            is_dnp = player_stats_match.get('did_not_play', False)
+            
+            # Backfill ESPN ID if needed
+            if espn_player_id and player_id:
+                existing_espn_id = conn.execute(text(\"""
+                    SELECT espn_player_id FROM nba_players WHERE id = :player_id
+                \"""), {'player_id': player_id}).fetchone()
+                
+                if existing_espn_id and not existing_espn_id[0]:
+                    id_in_use = conn.execute(text(\"""
+                        SELECT id FROM nba_players WHERE espn_player_id = :espn_player_id
+                    \"""), {'espn_player_id': str(espn_player_id)}).fetchone()
+                    
+                    if not id_in_use:
+                        conn.execute(text(\"""
+                            UPDATE nba_players SET espn_player_id = :espn_player_id
+                            WHERE id = :player_id
+                        \"""), {'espn_player_id': str(espn_player_id), 'player_id': player_id})
+            
+            # Resolve team IDs for this player
+            team_id = team_id_map.get(player_stats_match.get('team_id'))
+            opponent_team_id = team_id_map.get(player_stats_match.get('opponent_team_id'))
+            
+            # Update prop record
+            if is_dnp:
+                conn.execute(text(\"""
+                    UPDATE nba_player_props
+                    SET player_team_name = :team_name, player_team_id = :team_id,
+                        opponent_team_name = :opponent_team_name, opponent_team_id = :opponent_team_id,
+                        espn_event_id = :espn_event_id, did_not_play = true,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :record_id
+                \"""), {
+                    'team_name': player_stats_match['team_name'], 'team_id': team_id,
+                    'opponent_team_name': player_stats_match['opponent_team_name'],
+                    'opponent_team_id': opponent_team_id,
+                    'espn_event_id': player_stats_match['event_id'], 'record_id': props_id
+                })
+                print(f\"      🚫 DNP: {normalized_name}\")
+            else:
+                conn.execute(text(\"""
+                    UPDATE nba_player_props
+                    SET actual_player_points = :points, actual_player_rebounds = :rebounds,
+                        actual_player_assists = :assists, actual_player_threes = :threes,
+                        actual_player_minutes = :minutes, actual_player_fg = :fg,
+                        actual_player_ft = :ft, actual_plus_minus = :plus_minus,
+                        player_team_name = :team_name, player_team_id = :team_id,
+                        opponent_team_name = :opponent_team_name, opponent_team_id = :opponent_team_id,
+                        espn_event_id = :espn_event_id, did_not_play = false,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :record_id
+                \"""), {
+                    'points': player_stats_match['actual_points'],
+                    'rebounds': player_stats_match['actual_rebounds'],
+                    'assists': player_stats_match['actual_assists'],
+                    'threes': player_stats_match['actual_threes'],
+                    'minutes': player_stats_match['actual_minutes'],
+                    'fg': player_stats_match['actual_fg'],
+                    'ft': player_stats_match['actual_ft'],
+                    'plus_minus': player_stats_match['actual_plus_minus'],
+                    'team_name': player_stats_match['team_name'], 'team_id': team_id,
+                    'opponent_team_name': player_stats_match['opponent_team_name'],
+                    'opponent_team_id': opponent_team_id,
+                    'espn_event_id': player_stats_match['event_id'], 'record_id': props_id
+                })
+                pts = player_stats_match['actual_points']
+                reb = player_stats_match['actual_rebounds']
+                ast = player_stats_match['actual_assists']
+                print(f\"      ✅ {normalized_name}: {pts}pts/{reb}reb/{ast}ast\")
+            
+            updated_count += 1
+            conn.commit()
+            
+        except Exception as e:
+            print(f\"      ❌ Error updating {normalized_name}: {e}\")
+            conn.rollback()
+            conn.begin()
+            continue
+    
+    print(f\"  Successfully updated {updated_count} prop records\")
+    return updated_count
+
+
+def update_player_props_with_actuals_simple(conn, player_stats: List[Dict]):"
     """
     Update nba_player_props records with actual game statistics.
     Uses fuzzy matching with team verification for unmatched players.
@@ -847,12 +1153,22 @@ def seed_yesterdays_player_actuals():
             print(f"\nTotal player stat records: {len(total_player_stats)}")
             
             if total_player_stats:
-                # Update player_props records with actuals using the new fuzzy matching logic
-                updated = update_player_props_with_actuals_simple(conn, total_player_stats)
+                # Use reverse approach: get props first, then match in ESPN data
+                # Group stats by game date
+                from datetime import date as date_type
+                stats_by_date = {}
+                for stats in total_player_stats:
+                    gd = stats['game_date']
+                    if gd not in stats_by_date:
+                        stats_by_date[gd] = []
+                    stats_by_date[gd].append(stats)
                 
-                # Commit transaction
-                conn.commit()
-                print(f"\n✅ Successfully updated {updated} player prop records with actual results")
+                total_updated = 0
+                for game_date, stats_list in stats_by_date.items():
+                    updated = update_player_props_with_actuals_reverse(conn, stats_list, game_date)
+                    total_updated += updated
+                
+                print(f"\n✅ Successfully updated {total_updated} player prop records with actual results")
             else:
                 print("❌ No player stats data found to update")
         
@@ -940,12 +1256,21 @@ def seed_player_actuals_for_date(target_date: str):
             print(f"\nTotal player stat records: {len(total_player_stats)}")
             
             if total_player_stats:
-                # Update player_props records with actuals using the new fuzzy matching logic
-                updated = update_player_props_with_actuals_simple(conn, total_player_stats)
+                # Use reverse approach: get props first, then match in ESPN data
+                # Group stats by game date
+                stats_by_date = {}
+                for stats in total_player_stats:
+                    gd = stats['game_date']
+                    if gd not in stats_by_date:
+                        stats_by_date[gd] = []
+                    stats_by_date[gd].append(stats)
                 
-                # Commit transaction
-                conn.commit()
-                print(f"\n✅ Successfully updated {updated} player prop records with actual results for {target_date}")
+                total_updated = 0
+                for game_date, stats_list in stats_by_date.items():
+                    updated = update_player_props_with_actuals_reverse(conn, stats_list, game_date)
+                    total_updated += updated
+                
+                print(f"\n✅ Successfully updated {total_updated} player prop records with actual results for {target_date}")
             else:
                 print("❌ No player stats data found to update")
         

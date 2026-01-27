@@ -419,6 +419,7 @@ export const convertTeamNameNba = (fullTeamName: string): string => {
 // NCAAB Team Name Converter (placeholder - add college teams as needed)
 export const convertTeamNameNcaab = (fullTeamName: string): string => {
   const teamMap: { [key: string]: string } = {
+    'Nebraska Cornhuskers': 'NEB',
     'Abilene Christian Wildcats': 'ABCH',
     'Louisiana Ragin\' Cajuns': 'LOULA',
     'San Diego St Aztecs': 'SDST',

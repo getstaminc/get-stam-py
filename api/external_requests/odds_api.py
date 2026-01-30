@@ -36,11 +36,24 @@ def get_odds_data(sport, date):
     odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers={bookmaker}&markets=h2h,spreads,totals&oddsFormat=american"
 
     try:
+        print(f"Making request to scores URL: {scores_url}")
         scores_response = requests.get(scores_url)
+        print(f"Making request to odds URL: {odds_url}")
         odds_response = requests.get(odds_url)
+        
+        print(f"Scores response status: {scores_response.status_code}")
+        print(f"Odds response status: {odds_response.status_code}")
+        
         scores_response.raise_for_status()
         odds_response.raise_for_status()
-        return scores_response.json(), odds_response.json()
+        
+        scores_data = scores_response.json()
+        odds_data = odds_response.json()
+        
+        print(f"Scores data length: {len(scores_data)}")
+        print(f"Odds data length: {len(odds_data)}")
+        
+        return scores_data, odds_data
     except requests.exceptions.RequestException as e:
         print(f"Error fetching odds data: {str(e)}")
         return None, None

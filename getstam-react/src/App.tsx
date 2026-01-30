@@ -22,6 +22,13 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import GamesPage from "./pages/GamesPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
 
+// Betting 101 Pages
+import Betting101Page from "./pages/betting101/Betting101Page";
+import MoneylinePage from "./pages/betting101/MoneylinePage";
+import SpreadsPage from "./pages/betting101/SpreadsPage";
+import TotalsPage from "./pages/betting101/TotalsPage";
+import ParlaysPage from "./pages/betting101/ParlaysPage";
+
 function AppContent() {
   usePageView();
   return (
@@ -77,6 +84,11 @@ function AppContent() {
           <Route path="/feature-requests" element={<FeatureRequestsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />
+          <Route path="/betting101" element={<Betting101Page />} />
+          <Route path="/betting101/moneyline" element={<MoneylinePage />} />
+          <Route path="/betting101/spreads" element={<SpreadsPage />} />
+          <Route path="/betting101/totals" element={<TotalsPage />} />
+          <Route path="/betting101/parlays" element={<ParlaysPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           {/* Add more routes as needed */}
         </Routes>

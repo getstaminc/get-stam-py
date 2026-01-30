@@ -68,6 +68,21 @@ const SiteFooter: React.FC = () => (
           Betting Guide
         </Link>
         <Link
+          href="/betting101"
+          underline="none"
+          color="inherit"
+          sx={{
+            mx: 1,
+            transition: "color 0.2s",
+            "&:hover": {
+              color: "#007bff",
+              textDecoration: "none",
+            },
+          }}
+        >
+          Betting 101
+        </Link>
+        <Link
           href="/privacy-policy"
           underline="none"
           color="inherit"

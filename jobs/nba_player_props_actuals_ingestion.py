@@ -763,8 +763,31 @@ def update_player_props_with_actuals_reverse(conn, player_stats: List[Dict], gam
                         break
             
             if not player_stats_match:
-                # No match found - log to mismatch table
+                # No match found - check if this is a DNP or a real matching problem
                 try:
+                    # Check if this player has other prop records with consistent ESPN IDs
+                    other_props = conn.execute(text(\"""
+                        SELECT DISTINCT p.espn_player_id 
+                        FROM nba_player_props pp
+                        JOIN nba_players p ON pp.player_id = p.id
+                        WHERE pp.player_id = :player_id AND pp.id != :props_id
+                    \"""), {'player_id': player_id, 'props_id': props_id}).fetchall()
+                    
+                    # Extract unique ESPN IDs (excluding None)
+                    espn_ids = [row[0] for row in other_props if row[0] is not None]
+                    unique_espn_ids = set(espn_ids)
+                    
+                    # If player has other records with exactly one consistent ESPN ID, likely just DNP
+                    if len(unique_espn_ids) == 1:
+                        print(f\"      ℹ️  Player not in ESPN data (likely DNP): {normalized_name} (has ESPN ID {list(unique_espn_ids)[0]} from other games)\")
+                        continue
+                    
+                    # Otherwise, this is a real matching problem - log to mismatch table
+                    if len(unique_espn_ids) == 0:
+                        print(f\"      ⚠️  No ESPN ID found in any records for {normalized_name}\")
+                    else:
+                        print(f\"      ⚠️  Inconsistent ESPN IDs for {normalized_name}: {unique_espn_ids}\")
+                    
                     home_team_name = conn.execute(text(\"""
                         SELECT team_name FROM teams WHERE team_id = :team_id
                     \"""), {'team_id': odds_home_team_id}).fetchone()
@@ -799,10 +822,10 @@ def update_player_props_with_actuals_reverse(conn, player_stats: List[Dict], gam
                             'home_team_name': home_team_str, 'away_team_name': away_team_str,
                             'normalized_name': normalized_name, 'player_id': player_id
                         })
-                        print(f\"      ⚠️  Unmatched player logged: {normalized_name} ({home_team_str} vs {away_team_str})\")
+                        print(f\"      ⚠️  Unmatched player logged to mismatch table: {normalized_name} ({home_team_str} vs {away_team_str})\")
                     
                 except Exception as mismatch_error:
-                    print(f\"      ❌ Error logging mismatch for {normalized_name}: {mismatch_error}\")
+                    print(f\"      ❌ Error processing mismatch for {normalized_name}: {mismatch_error}\")
                 
                 continue
             

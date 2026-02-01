@@ -24,17 +24,41 @@ from sqlalchemy import create_engine, text
 
 
 def get_yesterdays_afcon_scores(retries=3, delay=1):
-    """Fetch AFCON scores from the last 3 days to get yesterday's completed games"""
+    """
+    Fetch AFCON scores from the last 3 days to get yesterday's completed games
+    
+    NOTE: As of January 2026, the Odds API does not appear to provide completed 
+    scores/results for AFCON games, only upcoming fixtures. This function is 
+    maintained in case coverage is added in the future.
+    """
     print("Fetching AFCON scores from Odds API...")
+    print("WARNING: AFCON scores may not be available from this API")
 
-    url = f"https://api.the-odds-api.com/v4/sports/soccer_africa_cup_of_nations/scores/?daysFrom=3&apiKey={ODDS_API_KEY}"
+    # Test both endpoints to see what's available
+    scores_url = f"https://api.the-odds-api.com/v4/sports/soccer_africa_cup_of_nations/scores/?daysFrom=3&apiKey={ODDS_API_KEY}"
+    odds_url = f"https://api.the-odds-api.com/v4/sports/soccer_africa_cup_of_nations/odds?apiKey={ODDS_API_KEY}&regions=us&markets=h2h&oddsFormat=american"
+
+    print("\n=== TESTING ODDS ENDPOINT ===")
+    try:
+        odds_response = requests.get(odds_url)
+        odds_response.raise_for_status()
+        odds_data = odds_response.json()
+        print(f"ODDS ENDPOINT RESPONSE:")
+        print(json.dumps(odds_data, indent=2))
+    except Exception as e:
+        print(f"ODDS ENDPOINT ERROR: {e}")
+
+    print("\n=== TESTING SCORES ENDPOINT ===")
 
     for i in range(retries):
         try:
-            response = requests.get(url)
+            response = requests.get(scores_url)
             response.raise_for_status()
             
             games = response.json()
+            
+            print(f"SCORES ENDPOINT RESPONSE:")
+            print(json.dumps(games, indent=2))
             
             # Filter for completed games from yesterday only
             yesterday = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
@@ -46,7 +70,9 @@ def get_yesterdays_afcon_scores(retries=3, delay=1):
                     if game_date == yesterday:
                         yesterday_games.append(game)
 
-            print(f"Found {len(yesterday_games)} completed AFCON games from yesterday ({yesterday})")
+            print(f"\nFound {len(yesterday_games)} completed AFCON games from yesterday ({yesterday})")
+            if len(games) > 0 and all(not game.get('completed') for game in games):
+                print("NOTE: API returned games but none are marked as completed - scores may not be supported for AFCON")
             return yesterday_games
             
         except requests.exceptions.RequestException as e:

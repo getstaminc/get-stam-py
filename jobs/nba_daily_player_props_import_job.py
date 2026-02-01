@@ -87,16 +87,7 @@ def main():
     print("  - Reverse approach queries database once per game instead of per player")
     print("  - Uses in-memory dictionary lookups for faster matching")
 
-    # Confirm before proceeding (skip for Heroku, but keep for manual runs)
-    if os.environ.get('HEROKU_SKIP_CONFIRM', '0') != '1':
-        try:
-            response = input("\nProceed with import? (y/n): ")
-            if response.lower() not in ['y', 'yes']:
-                print("Import cancelled.")
-                sys.exit(0)
-        except EOFError:
-            # If running non-interactively, just continue
-            pass
+    # No confirmation prompt: always proceed (required for Heroku Scheduler)
 
     print("\n" + "=" * 80)
     print("STEP 1: Importing Historical Odds")

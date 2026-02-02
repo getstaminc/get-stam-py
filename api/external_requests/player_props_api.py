@@ -36,19 +36,29 @@ def combine_player_props(event_data):
         combined_players = {}
         for market in bookmaker.get("markets", []):
             market_key = market.get("key")
+            # Group outcomes by player
+            player_outcomes = {}
             for outcome in market.get("outcomes", []):
                 player = outcome.get("description")
                 if not player:
                     continue
+                if player not in player_outcomes:
+                    player_outcomes[player] = []
+                player_outcomes[player].append(outcome)
+            # For each player, aggregate market data
+            for player, outcomes in player_outcomes.items():
                 if player not in combined_players:
                     combined_players[player] = {}
-                if market_key not in combined_players[player]:
-                    combined_players[player][market_key] = []
-                combined_players[player][market_key].append({
-                    "name": outcome.get("name"),
-                    "price": outcome.get("price"),
-                    "point": outcome.get("point")
-                })
+                # Find Over and Under outcomes
+                over = next((o for o in outcomes if o.get("name") == "Over"), None)
+                under = next((o for o in outcomes if o.get("name") == "Under"), None)
+                # Use Over point as the main point
+                point = over.get("point") if over else (under.get("point") if under else None)
+                combined_players[player][market_key] = {
+                    "point": point,
+                    "over_price": over.get("price") if over else None,
+                    "under_price": under.get("price") if under else None
+                }
         result["bookmakers"].append({
             "key": bookmaker.get("key"),
             "title": bookmaker.get("title"),

@@ -5,6 +5,7 @@ import os
 from flask import Blueprint, request, jsonify, abort
 from dotenv import load_dotenv
 from ..services.game_service import GameService
+from ..services.player_props_service import get_structured_player_props
 
 odds_bp = Blueprint('odds', __name__)
 
@@ -49,3 +50,16 @@ def get_single_game_odds(sport_key, game_id):
         return jsonify({'error': error}), 500
     
     return jsonify(result)
+
+# =============================================================================
+# PLAYER PROPS ENDPOINT
+# =============================================================================
+
+@odds_bp.route('/api/odds/nba/player-props/<event_id>', methods=['GET'])
+# @cache.cached(timeout=120, query_string=True)
+def get_player_props_for_event(event_id):
+    """Get player props for a specific NBA event/game by event_id"""
+    response, error = get_structured_player_props(event_id)
+    if error:
+        return jsonify({'error': error}), 500
+    return jsonify(response)

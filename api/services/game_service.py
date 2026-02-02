@@ -72,7 +72,7 @@ class GameService:
 
         # Process odds
         home_odds, away_odds, totals, draw_odds = process_odds_data(match, odds, home_team, away_team)
-
+        print('commence_time:', match.get('commence_time'))
         # Format commence time
         commence_time_formatted = format_commence_time(match.get('commence_time'))
 

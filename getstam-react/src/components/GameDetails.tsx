@@ -140,61 +140,102 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const awayTeamName = away.team || game.away_team_name || "Away Team";
 
 // PlayerPropsTable component
-const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => (
-  <Table size="small" sx={{ mt: 2 }}>
-    <TableHead>
-      <TableRow>
-        <TableCell>Player</TableCell>
-        <TableCell>Points</TableCell>
-        <TableCell>Assists</TableCell>
-        <TableCell>Rebounds</TableCell>
-        <TableCell>Threes</TableCell>
-        <TableCell>History</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {Object.entries(players).map(([name, data]: [string, any]) => (
-        <TableRow key={name}>
-          <TableCell>{name}</TableCell>
-          <TableCell>
-            {data.player_points && typeof data.player_points === 'object' && data.player_points.point !== undefined ? (
-              <div>Over/Under {data.player_points.point}</div>
-            ) : null}
-          </TableCell>
-          <TableCell>
-            {data.player_assists && typeof data.player_assists === 'object' && data.player_assists.point !== undefined ? (
-              <div>Over/Under {data.player_assists.point}</div>
-            ) : null}
-          </TableCell>
-          <TableCell>
-            {data.player_rebounds && typeof data.player_rebounds === 'object' && data.player_rebounds.point !== undefined ? (
-              <div>Over/Under {data.player_rebounds.point}</div>
-            ) : null}
-          </TableCell>
-          <TableCell>
-            {data.player_threes && typeof data.player_threes === 'object' && data.player_threes.point !== undefined ? (
-              <div>Over/Under {data.player_threes.point}</div>
-            ) : null}
-          </TableCell>
-          <TableCell>
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                History
-              </AccordionSummary>
-              <AccordionDetails>
-                {Array.isArray(data.historical) && data.historical.length > 0 ? data.historical.map((h: any, idx: number) => (
-                  <div key={idx}>
-                    {h.game_date}: {h.actual_player_points} pts, {h.actual_player_rebounds} reb, {h.actual_player_assists} ast, {h.actual_player_threes} 3PM
-                  </div>
-                )) : <Typography>No history</Typography>}
-              </AccordionDetails>
-            </Accordion>
-          </TableCell>
+const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
+  // Helper to get color for stat
+  const getColor = (actual: any, odds: any) => {
+    if (actual == null || odds == null || isNaN(Number(actual)) || isNaN(Number(odds))) return { bgColor: undefined, color: undefined };
+    if (Number(actual) > Number(odds)) return { bgColor: '#c8e6c9', color: '#000' }; // Light green, black text
+    if (Number(actual) < Number(odds)) return { bgColor: '#ffcdd2', color: '#000' }; // Light red, black text
+    return { bgColor: '#e0e0e0', color: '#000' }; // Grey for push, black text
+  };
+  return (
+    <Table size="small" sx={{ mt: 2 }}>
+      <TableHead>
+        <TableRow>
+          <TableCell>Player</TableCell>
+          <TableCell>Points</TableCell>
+          <TableCell>Assists</TableCell>
+          <TableCell>Rebounds</TableCell>
+          <TableCell>Threes</TableCell>
         </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-);
+      </TableHead>
+      <TableBody>
+        {Object.entries(players).map(([name, data]: [string, any]) => (
+          <React.Fragment key={name}>
+            {/* Main player prop row */}
+            <TableRow>
+              <TableCell>{name}</TableCell>
+              <TableCell>
+                {data.player_points && typeof data.player_points === 'object' && data.player_points.point !== undefined ? (
+                  <div>Over/Under {data.player_points.point}</div>
+                ) : null}
+              </TableCell>
+              <TableCell>
+                {data.player_assists && typeof data.player_assists === 'object' && data.player_assists.point !== undefined ? (
+                  <div>Over/Under {data.player_assists.point}</div>
+                ) : null}
+              </TableCell>
+              <TableCell>
+                {data.player_rebounds && typeof data.player_rebounds === 'object' && data.player_rebounds.point !== undefined ? (
+                  <div>Over/Under {data.player_rebounds.point}</div>
+                ) : null}
+              </TableCell>
+              <TableCell>
+                {data.player_threes && typeof data.player_threes === 'object' && data.player_threes.point !== undefined ? (
+                  <div>Over/Under {data.player_threes.point}</div>
+                ) : null}
+              </TableCell>
+            </TableRow>
+            {/* Collapsible historical records row */}
+            <TableRow>
+              <TableCell colSpan={5} sx={{ p: 0, border: 0 }}>
+                <Accordion sx={{ boxShadow: 'none', background: 'transparent' }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 0, p: 0 }}>
+                    <Typography variant="body2">Show History</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ p: 0 }}>
+                    {Array.isArray(data.historical) && data.historical.length > 0 ? (
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Date</TableCell>
+                            <TableCell>Points</TableCell>
+                            <TableCell>Assists</TableCell>
+                            <TableCell>Rebounds</TableCell>
+                            <TableCell>Threes</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {data.historical.map((h: any, idx: number) => (
+                            <TableRow key={idx}>
+                              <TableCell sx={{ fontSize: '0.85em', color: '#888' }}>{h.game_date}</TableCell>
+                              {(() => { const c = getColor(h.actual_player_points, h.odds_player_points); return (
+                                <TableCell sx={{ backgroundColor: c.bgColor, color: c.color }}>{h.actual_player_points != null ? h.actual_player_points : ''}</TableCell>
+                              ); })()}
+                              {(() => { const c = getColor(h.actual_player_assists, h.odds_player_assists); return (
+                                <TableCell sx={{ backgroundColor: c.bgColor, color: c.color }}>{h.actual_player_assists != null ? h.actual_player_assists : ''}</TableCell>
+                              ); })()}
+                              {(() => { const c = getColor(h.actual_player_rebounds, h.odds_player_rebounds); return (
+                                <TableCell sx={{ backgroundColor: c.bgColor, color: c.color }}>{h.actual_player_rebounds != null ? h.actual_player_rebounds : ''}</TableCell>
+                              ); })()}
+                              {(() => { const c = getColor(h.actual_player_threes, h.odds_player_threes); return (
+                                <TableCell sx={{ backgroundColor: c.bgColor, color: c.color }}>{h.actual_player_threes != null ? h.actual_player_threes : ''}</TableCell>
+                              ); })()}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : <Typography>No history</Typography>}
+                  </AccordionDetails>
+                </Accordion>
+              </TableCell>
+            </TableRow>
+          </React.Fragment>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>

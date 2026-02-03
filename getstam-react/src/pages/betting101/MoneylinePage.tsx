@@ -12,9 +12,11 @@ const MoneylinePage: React.FC = () => {
         <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>
           What is a Moneyline Bet?
         </Typography>
-        <Typography variant="body1" paragraph>
+        <Typography variant="body1" paragraph> 
+          If you are brand new to sports betting, the first term you will run into is moneyline.
           A moneyline bet is the simplest form of sports betting. You're simply picking which team will win the game, 
           regardless of the final score or margin of victory. No point spreads, no totals - just pick the winner.
+           If your team wins, your bet wins. If they lose, your bet loses. That’s it.
         </Typography>
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>
@@ -32,12 +34,12 @@ const MoneylinePage: React.FC = () => {
         </Card>
 
         <Typography variant="body1" paragraph>
-          <strong>Negative numbers (-150)</strong> indicate the favorite. You need to bet $150 to win $100.
+          <strong>Negative numbers indicate the favorite. (-150)</strong>  You need to bet $150 to win $100.
           The Lakers are favored to win this game.
         </Typography>
         
-        <Typography variant="body1" paragraph>
-          <strong>Positive numbers (+130)</strong> indicate the underdog. A $100 bet wins $130.
+        <Typography variant="body1" paragraph> 
+          <strong>Positive numbersindicate the underdog. (+130)</strong>  A $100 bet wins $130.
           The Warriors are the underdog in this matchup.
         </Typography>
 
@@ -102,8 +104,7 @@ const MoneylinePage: React.FC = () => {
               Remember
             </Typography>
             <Typography variant="body1">
-              Moneyline bets are perfect for beginners because they're straightforward - just pick the winner. 
-              However, always practice proper bankroll management and never bet more than you can afford to lose.
+              Always practice proper bankroll management and never bet more than you can afford to lose.
             </Typography>
           </CardContent>
         </Card>

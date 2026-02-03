@@ -15,7 +15,11 @@ const ParlaysPage: React.FC = () => {
         <Typography variant="body1" paragraph>
           A parlay bet combines multiple individual bets into one single wager. All selections in the parlay 
           must win for the bet to pay out. If even one selection loses, the entire parlay loses. The trade-off 
-          is that parlays offer much higher payouts than individual bets.
+          is that parlays offer much higher payouts than individual bets.<br />
+          Parlays can look exciting — huge payouts for small bets — but here’s the truth:<br />
+          <b>They are one of the fastest ways to lose money in sports betting.</b>
+
+
         </Typography>
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>
@@ -102,17 +106,6 @@ const ParlaysPage: React.FC = () => {
           <Typography component="li">Correlated bets that can boost or hurt each other</Typography>
         </Box>
 
-        <Typography variant="h5" component="h3" gutterBottom sx={{ mt: 3, fontWeight: 'bold' }}>
-          Teasers
-        </Typography>
-        <Typography variant="body1" paragraph>
-          Move the point spreads or totals in your favor for all selections, but accept lower payouts:
-        </Typography>
-        <Box component="ul" sx={{ pl: 2 }}>
-          <Typography component="li">6-point teaser: Lakers -7.5 becomes Lakers -1.5</Typography>
-          <Typography component="li">Lower risk, lower reward</Typography>
-        </Box>
-
         <Divider sx={{ my: 3 }} />
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ color: '#1976d2' }}>
@@ -143,26 +136,22 @@ const ParlaysPage: React.FC = () => {
         <Divider sx={{ my: 3 }} />
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ color: '#1976d2' }}>
-          Parlay Strategy
+          The Harsh Reality
         </Typography>
 
-        <Typography variant="h5" component="h3" gutterBottom sx={{ mt: 3, fontWeight: 'bold' }}>
-          Smart Parlay Approaches
+        <Typography variant="body1" paragraph>
+          Parlays are so heavily promoted because <b>they make sportsbooks the most money.</b><br />
+          Most bettors lose long before they ever hit a big one, and the odds are stacked that way on purpose.
+          Even professional bettors almost never play parlays — they stick to single bets with a better chance of success.<br />
+          <br />
+          Think about it this way:<br />
+          If a single bet gives you a 55% chance to win,<br />
+          then a 4-leg parlay of those same bets only gives you about a 9% chance to win them all.<br />
+          So while the payouts look flashy, the math is against you.
+
+
+
         </Typography>
-        <Box component="ul" sx={{ pl: 2 }}>
-          <Typography component="li" paragraph>
-            <strong>Small Stakes, Big Dreams:</strong> Use parlays for entertainment with small amounts you can afford to lose
-          </Typography>
-          <Typography component="li" paragraph>
-            <strong>Correlated Plays:</strong> In same-game parlays, look for bets that help each other (team winning + over total)
-          </Typography>
-          <Typography component="li" paragraph>
-            <strong>Heavy Favorites:</strong> Parlaying multiple heavy favorites can create decent payouts with "safer" bets
-          </Typography>
-          <Typography component="li" paragraph>
-            <strong>Limit Legs:</strong> The more legs you add, the less likely you are to win
-          </Typography>
-        </Box>
 
         <Typography variant="h5" component="h3" gutterBottom sx={{ mt: 3, fontWeight: 'bold' }}>
           What to Avoid
@@ -215,7 +204,7 @@ const ParlaysPage: React.FC = () => {
             <Typography variant="body1">
               Parlays are fun and can create big payouts, but they should not be your primary betting strategy. 
               The house edge increases with each leg you add. Use them sparingly for entertainment, not as 
-              a consistent way to make money. Many professional bettors avoid parlays entirely.
+              a consistent way to try to make money. Many professional bettors avoid parlays entirely.
             </Typography>
           </CardContent>
         </Card>

@@ -13,6 +13,7 @@ const TotalsPage: React.FC = () => {
           What is a Totals Bet?
         </Typography>
         <Typography variant="body1" paragraph>
+          When you bet the total, you are not betting on which team wins — you are betting on how much scoring happens in the game overall.<br />
           A totals bet, also known as an "Over/Under" bet, involves wagering on whether the combined final score 
           of both teams will be over or under a number set by the sportsbook. You're not picking a winner - 
           you're predicting if the game will be high-scoring or low-scoring.

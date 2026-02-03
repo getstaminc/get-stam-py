@@ -13,6 +13,8 @@ const SpreadsPage: React.FC = () => {
           What is a Point Spread?
         </Typography>
         <Typography variant="body1" paragraph>
+          If you have ever heard someone say, “The Eagles are favored by 7 points,” they are talking about the spread.<br />
+          <br />
           A point spread is designed to level the playing field between two teams. Instead of just picking 
           the winner, you're betting on whether a team will win by more than a certain number of points 
           (cover the spread) or keep the game closer than expected.
@@ -106,19 +108,6 @@ const SpreadsPage: React.FC = () => {
         </Typography>
 
         <Typography variant="h5" component="h3" gutterBottom sx={{ mt: 3, fontWeight: 'bold' }}>
-          Home Field Advantage
-        </Typography>
-        <Typography variant="body1" paragraph>
-          Sportsbooks typically give the home team about 2.5-3 points automatically. This accounts for:
-        </Typography>
-        <Box component="ul" sx={{ pl: 2 }}>
-          <Typography component="li">Crowd support</Typography>
-          <Typography component="li">Familiar surroundings</Typography>
-          <Typography component="li">No travel fatigue</Typography>
-          <Typography component="li">Referee bias (sometimes)</Typography>
-        </Box>
-
-        <Typography variant="h5" component="h3" gutterBottom sx={{ mt: 3, fontWeight: 'bold' }}>
           Key Numbers in Football
         </Typography>
         <Typography variant="body1" paragraph>
@@ -134,7 +123,7 @@ const SpreadsPage: React.FC = () => {
         <Divider sx={{ my: 3 }} />
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ color: '#1976d2' }}>
-          Spread Betting Strategy
+          Spread Considerations
         </Typography>
         
         <Box component="ul" sx={{ pl: 2 }}>
@@ -147,15 +136,7 @@ const SpreadsPage: React.FC = () => {
             early for better lines or late for more information.
           </Typography>
           <Typography component="li" paragraph>
-            <strong>Avoid Key Numbers:</strong> In football, try to avoid laying -3 or -7 if possible, 
-            as many games end with these exact margins.
-          </Typography>
-          <Typography component="li" paragraph>
-            <strong>Consider Motivation:</strong> Teams playing for playoff positioning may perform differently 
-            than those in meaningless games.
-          </Typography>
-          <Typography component="li" paragraph>
-            <strong>Injury Impact:</strong> Key player injuries can dramatically shift spreads and outcomes.
+            <strong>Injury Impact:</strong> Key player injuries can dramatically shift spreads and outcomes. Always check lineups.
           </Typography>
         </Box>
 
@@ -167,9 +148,6 @@ const SpreadsPage: React.FC = () => {
           <Typography component="li" paragraph>
             <strong>Confusing with Moneyline:</strong> Remember, you're not just picking the winner - 
             you need your team to cover the spread.
-          </Typography>
-          <Typography component="li" paragraph>
-            <strong>Ignoring Garbage Time:</strong> Late scores can affect spreads even if they don't change the winner.
           </Typography>
           <Typography component="li" paragraph>
             <strong>Betting Favorites Blindly:</strong> Favorites don't always cover large spreads, 

@@ -10,17 +10,24 @@ BOOKMAKERS = "draftkings"
 
 
 def get_player_props(event_id):
-    url = (
-        f"https://api.the-odds-api.com/v4/sports/basketball_nba/events/{event_id}/odds?"
-        f"apiKey={api_key}&date=2026-01-26T02:45:00Z&regions=us&markets={PLAYER_PROPS_MARKETS}&oddsFormat=american&bookmakers={BOOKMAKERS}"
-    )
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching player props: {str(e)}")
-        return None
+    # Try DraftKings first, then Fanduel if DraftKings has no player props
+    for bookmaker in ["draftkings", "fanduel"]:
+        url = (
+            f"https://api.the-odds-api.com/v4/sports/basketball_nba/events/{event_id}/odds?"
+            f"apiKey={api_key}&regions=us&markets={PLAYER_PROPS_MARKETS}&oddsFormat=american&bookmakers={bookmaker}"
+        )
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            # If there are player props for this bookmaker, return the data
+            if data.get("bookmakers") and any(b.get("markets") for b in data["bookmakers"]):
+                return data
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching player props from {bookmaker}: {str(e)}")
+            continue
+    # If neither bookmaker has data, return None
+    return None
 
 
 def combine_player_props(event_data):

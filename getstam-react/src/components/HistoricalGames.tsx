@@ -581,7 +581,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                   right: 0,
                   bottom: 0,
                   width: '20px',
-                  background: 'linear-gradient(to left, rgba(25, 118, 210, 0.3) 0%, rgba(25, 118, 210, 0.1) 50%, transparent 100%)',
+                  background: 'linear-gradient(to left, rgba(224,224,224,0.85) 0%, rgba(224,224,224,0.4) 50%, transparent 100%)',
                   pointerEvents: 'none',
                   borderRadius: '0 4px 4px 0',
                 }}

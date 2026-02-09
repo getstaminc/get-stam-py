@@ -160,15 +160,16 @@ const GameDetails: React.FC<GameDetailsProps> = ({
       </Paper>
 
       {/* Tabs for Recent Performance and Player Props */}
-
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
-        <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
-          <Tab label="Recent Performance" />
-          <Tab label="Player Props" />
-        </Tabs>
+        {sportKey === 'basketball_nba' ? (
+          <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
+            <Tab label="Recent Performance" />
+            <Tab label="Player Props" />
+          </Tabs>
+        ) : null}
 
         {/* Tab 0: Recent Performance (Historical Games) */}
-        {activeTab === 0 && (
+        {(activeTab === 0 || sportKey !== 'basketball_nba') && (
           <>
             <Box sx={{ 
               display: 'flex', 
@@ -340,7 +341,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         )}
 
         {/* Tab 1: Player Props */}
-        {activeTab === 1 && (
+        {activeTab === 1 && sportKey === 'basketball_nba' && (
           playerPropsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
               <CircularProgress />

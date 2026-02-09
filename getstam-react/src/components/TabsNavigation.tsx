@@ -101,7 +101,31 @@ const TabsNavigation: React.FC = () => {
       <Box sx={{ flex: 1 }}>
         {isMobile ? (
           <>
-            <Button variant="outlined" color="inherit" disableRipple aria-label="more-sports" onClick={toggleDrawer(true)} sx={{ ml:1, mt:1, mb:1, textTransform:'none', fontWeight:600, borderRadius:1, px:2 }}>MORE SPORTS</Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              disableRipple
+              aria-label="more-sports"
+              onClick={toggleDrawer(true)}
+              sx={{
+                ml: 1,
+                mt: 1,
+                mb: 1,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2,
+                color: '#333', // dark text for contrast
+                borderColor: '#e0e0e0', // lighter grey border
+                bgcolor: 'transparent',
+                '&:hover': {
+                  bgcolor: '#f5f5f5', // subtle light grey on hover
+                  borderColor: '#bdbdbd', // slightly darker on hover
+                },
+              }}
+            >
+              MORE SPORTS
+            </Button>
             <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
               <Box sx={{ width: 260, pt:3, px:1 }} role="presentation">
                 <List>
@@ -182,6 +206,36 @@ const TabsNavigation: React.FC = () => {
           <Button color="inherit" disableRipple sx={{ minHeight:48, textTransform:'none', fontWeight:500 }} onClick={() => navigate('/feature-requests')}>Feature Requests</Button>
         </Box>
       )}
+
+      {isMobile && (
+        <Button
+          variant="outlined"
+          color="inherit"
+          disableRipple
+          aria-label="feature-requests"
+          onClick={() => navigate('/feature-requests')}
+          sx={{
+            ml: 1,
+            mt: 1,
+            mb: 1,
+            mr: 1,
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 2,
+            px: 2,
+            color: '#333',
+            borderColor: '#e0e0e0',
+            bgcolor: 'transparent',
+            '&:hover': {
+              bgcolor: '#f5f5f5',
+              borderColor: '#bdbdbd',
+            },
+          }}
+        >
+          FEATURE REQUESTS
+        </Button>
+      )}
+      
     </Box>
   );
 };

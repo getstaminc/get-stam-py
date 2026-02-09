@@ -114,12 +114,7 @@ def main():
         print("\n⚡ Performance Improvement:")
         print("  - Reverse approach queries database once per game instead of per player")
         print("  - Uses in-memory dictionary lookups for faster matching")
-        
-        # Confirm before proceeding
-        response = input("\nProceed with import? (y/n): ")
-        if response.lower() not in ['y', 'yes']:
-            print("Import cancelled.")
-            sys.exit(0)
+
         
         print("\n" + "=" * 80)
         print("STEP 1: Importing Historical Odds")

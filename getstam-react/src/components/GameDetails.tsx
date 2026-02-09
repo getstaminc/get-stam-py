@@ -94,6 +94,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const { home, away } = game;
   const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
   const [activeTab, setActiveTab] = useState<number>(0); // 0: Recent Performance, 1: Player Props
+  const [historicalSubTab, setHistoricalSubTab] = useState<number>(0); // 0: Last N, 1: Home Last N, 2: Away Last N
   const [playerPropsData, setPlayerPropsData] = useState<any>(null);
   const [playerPropsLoading, setPlayerPropsLoading] = useState<boolean>(false);
 
@@ -125,6 +126,10 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+  };
+
+  const handleHistoricalSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setHistoricalSubTab(newValue);
   };
 
   const hasScore =
@@ -266,7 +271,27 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
                         aria-label={openPlayers.has(name) ? 'Collapse' : 'Expand'}
                       />
                     </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.95em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>{name}</TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: { xs: '0.95em', sm: '1em' },
+                        px: { xs: 1, sm: 2 },
+                        maxWidth: { xs: 80, sm: 180 },
+                        wordBreak: 'break-word',
+                        whiteSpace: { xs: 'pre-line', sm: 'normal' },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'inline',
+                          wordBreak: 'break-word',
+                          whiteSpace: { xs: 'pre-line', sm: 'normal' },
+                        }}
+                      >
+                        {typeof name === 'string' && name.includes(' ')
+                          ? name.replace(' ', '\n')
+                          : name}
+                      </Box>
+                    </TableCell>
                     <TableCell sx={{ fontSize: { xs: '0.95em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>
                       {data.player_points && typeof data.player_points === 'object' && data.player_points.point !== undefined ? (
                         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' } }}>
@@ -357,6 +382,7 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
       </Paper>
 
       {/* Tabs for Recent Performance and Player Props */}
+
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
         <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
           <Tab label="Recent Performance" />
@@ -394,32 +420,134 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
                 </Select>
               </FormControl>
             </Box>
+
+            {/* Historical Games Sub-Tabs */}
             <Paper sx={{ mt: 3 }}>
-              <HistoricalGames
-                title={`${homeTeamName} - Last ${gamesLimit} Games`}
-                games={homeTeamHistory?.games || []}
-                loading={homeTeamHistory === null}
-                teamName={convertTeamNameBySport(sportKey, homeTeamName)}
-                sportType={getSportType(sportKey)}
-              />
+              <Tabs
+                value={historicalSubTab}
+                onChange={handleHistoricalSubTabChange}
+                variant="fullWidth"
+                sx={{
+                  borderBottom: 1,
+                  borderColor: 'divider',
+                  '& .MuiTab-root': {
+                    minWidth: { xs: 'auto', sm: 160 },
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    padding: { xs: '8px 4px', sm: '12px 16px' },
+                    borderRight: { xs: '1px solid #e0e0e0', sm: 'none' },
+                    '&:last-child': {
+                      borderRight: 'none'
+                    },
+                    '&.Mui-selected': {
+                      backgroundColor: { xs: '#f5f5f5', sm: 'transparent' },
+                      borderRight: { xs: '1px solid #1976d2', sm: 'none' }
+                    }
+                  },
+                  '& .MuiTabs-flexContainer': {
+                    borderBottom: { xs: '1px solid #e0e0e0', sm: 'none' }
+                  }
+                }}
+              >
+                <Tab label={`Last ${gamesLimit}`} />
+                <Tab 
+                  label={
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        {`${homeTeamName} Home Last ${gamesLimit}`}
+                      </Box>
+                      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                        {`${homeTeamName.length > 10 ? homeTeamName.substring(0, 10) + '...' : homeTeamName} Home`}
+                      </Box>
+                    </Box>
+                  }
+                />
+                <Tab 
+                  label={
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        {`${awayTeamName} Away Last ${gamesLimit}`}
+                      </Box>
+                      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                        {`${awayTeamName.length > 10 ? awayTeamName.substring(0, 10) + '...' : awayTeamName} Away`}
+                      </Box>
+                    </Box>
+                  }
+                />
+              </Tabs>
 
-              <HistoricalGames
-                title={`${awayTeamName} - Last ${gamesLimit} Games`}
-                games={awayTeamHistory?.games || []}
-                loading={awayTeamHistory === null}
-                teamName={convertTeamNameBySport(sportKey, awayTeamName)}
-                sportType={getSportType(sportKey)}
-              />
+              <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                {/* Tab 0: Last N Games (Original) */}
+                {historicalSubTab === 0 && (
+                  <>
+                    <HistoricalGames
+                      title={`${homeTeamName} - Last ${gamesLimit} Games`}
+                      games={homeTeamHistory?.games || []}
+                      loading={homeTeamHistory === null}
+                      teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                      sportType={getSportType(sportKey)}
+                    />
+                    <HistoricalGames
+                      title={`${awayTeamName} - Last ${gamesLimit} Games`}
+                      games={awayTeamHistory?.games || []}
+                      loading={awayTeamHistory === null}
+                      teamName={convertTeamNameBySport(sportKey, awayTeamName)}
+                      sportType={getSportType(sportKey)}
+                    />
+                    <HistoricalGames
+                      title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
+                      games={headToHeadHistory?.games || []}
+                      loading={headToHeadHistory === null}
+                      teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                      isHeadToHead={true}
+                      sportType={getSportType(sportKey)}
+                    />
+                  </>
+                )}
 
-              <HistoricalGames
-                title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
-                games={headToHeadHistory?.games || []}
-                loading={headToHeadHistory === null}
-                teamName={convertTeamNameBySport(sportKey, homeTeamName)}
-                isHeadToHead={true}
-                sportType={getSportType(sportKey)}
-              />
+                {/* Tab 1: Home Team Home Games */}
+                {historicalSubTab === 1 && (
+                  <>
+                    <HistoricalGames
+                      title={`${homeTeamName} - Last ${gamesLimit} Home Games`}
+                      games={homeTeamHomeGames?.games || []}
+                      loading={homeTeamHomeGames === null}
+                      teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                      sportType={getSportType(sportKey)}
+                    />
+                    <HistoricalGames
+                      title={`${homeTeamName} vs ${awayTeamName} - Last ${gamesLimit} Home H2H`}
+                      games={homeTeamHomeVsAway?.games || []}
+                      loading={homeTeamHomeVsAway === null}
+                      teamName={convertTeamNameBySport(sportKey, homeTeamName)}
+                      isHeadToHead={true}
+                      sportType={getSportType(sportKey)}
+                    />
+                  </>
+                )}
+
+                {/* Tab 2: Away Team Away Games */}
+                {historicalSubTab === 2 && (
+                  <>
+                    <HistoricalGames
+                      title={`${awayTeamName} - Last ${gamesLimit} Away Games`}
+                      games={awayTeamAwayGames?.games || []}
+                      loading={awayTeamAwayGames === null}
+                      teamName={convertTeamNameBySport(sportKey, awayTeamName)}
+                      sportType={getSportType(sportKey)}
+                    />
+                    <HistoricalGames
+                      title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} Away H2H`}
+                      games={awayTeamAwayVsHome?.games || []}
+                      loading={awayTeamAwayVsHome === null}
+                      teamName={convertTeamNameBySport(sportKey, awayTeamName)}
+                      isHeadToHead={true}
+                      sportType={getSportType(sportKey)}
+                    />
+                  </>
+                )}
+              </Box>
             </Paper>
+
             {/* Team Rankings for NFL and NCAAF */}
             {(sportKey === 'americanfootball_nfl' || sportKey === 'americanfootball_ncaaf') && (
               <TeamRankings 

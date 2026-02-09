@@ -88,17 +88,8 @@ def get_historical_player_odds(event_id: str, target_date: date, retries=3, dela
     """
     print(f"    Fetching player odds for event {event_id}...")
     
-    # To get the correct odds snapshot, we need commence_time for this event.
-    # We'll require commence_time as an argument (breaking change), or fetch it from the event list if needed.
-    # For backward compatibility, try to fetch commence_time from the event list if not provided.
-    # But for now, let's assume we pass commence_time as an argument.
-    # So update the function signature:
-    # def get_historical_player_odds(event_id: str, commence_time: str, retries=3, delay=2) -> Optional[Dict]:
-    # For now, try to fetch commence_time from the event list (inefficient, but safe for now).
-    #
-    # Find commence_time for this event_id from today's event list
+    # Enhanced: Try multiple times (5 min before, exact, 1 min after commence_time)
     commence_time = None
-    # Try to get commence_time from today's event list
     today_events = get_historical_nba_events(target_date)
     for event in today_events:
         if event.get('id') == event_id:
@@ -106,62 +97,51 @@ def get_historical_player_odds(event_id: str, target_date: date, retries=3, dela
             break
     if not commence_time:
         print(f"      Could not find commence_time for event {event_id}, using fallback time.")
-        # Fallback: use 22:45:00Z as before
         date_str = target_date.strftime('%Y-%m-%d')
-        odds_query_time = f"{date_str}T22:45:00Z"
+        times_to_try = [f"{date_str}T22:45:00Z"]
     else:
-        # commence_time is like '2026-01-26T18:40:00Z'
         commence_dt = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
-        # Subtract 5 minutes
-        odds_query_time = (commence_dt - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        times_to_try = [
+            (commence_dt - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+            commence_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            (commence_dt + timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        ]
     url = f"https://api.the-odds-api.com/v4/historical/sports/basketball_nba/events/{event_id}/odds"
-    params = {
-        'apiKey': ODDS_API_KEY,
-        'date': odds_query_time,
-        'regions': 'us',
-        'markets': 'player_points,player_rebounds,player_assists,player_threes',
-        'oddsFormat': 'decimal',
-        'bookmakers': 'draftkings'
-    }
-    
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebSever/537.36"
     }
-    
-    for i in range(retries):
-        try:
-            response = requests.get(url, headers=headers, params=params, timeout=30)
-            
-            if response.status_code == 422:
-                # Common for historical data - odds not available for this event/date
-                print(f"      No player odds available for event {event_id} on {target_date}")
-                return None
-            
-            response.raise_for_status()
-            
-            response_data = response.json()
-            
-            # Historical API wraps data in a 'data' object
-            if isinstance(response_data, dict) and 'data' in response_data:
-                odds_data = response_data['data']
-            else:
-                odds_data = response_data
-            
-            if not odds_data or not odds_data.get('bookmakers'):
-                print(f"      No bookmaker data for event {event_id}")
-                return None
-                
-            print(f"      ✅ Found player odds for event {event_id}")
-            return odds_data
-            
-        except requests.exceptions.RequestException as e:
-            print(f"      Error fetching odds (attempt {i+1}/{retries}): {e}")
-            if i < retries - 1:
-                time.sleep(delay * (i + 1))
-            else:
-                print(f"      Failed to get odds for event {event_id}")
-                return None
-    
+    for odds_query_time in times_to_try:
+        params = {
+            'apiKey': ODDS_API_KEY,
+            'date': odds_query_time,
+            'regions': 'us',
+            'markets': 'player_points,player_rebounds,player_assists,player_threes',
+            'oddsFormat': 'decimal',
+            'bookmakers': 'draftkings'
+        }
+        for i in range(retries):
+            try:
+                response = requests.get(url, headers=headers, params=params, timeout=30)
+                if response.status_code == 422:
+                    print(f"      No player odds available for event {event_id} at {odds_query_time}")
+                    break
+                response.raise_for_status()
+                response_data = response.json()
+                if isinstance(response_data, dict) and 'data' in response_data:
+                    odds_data = response_data['data']
+                else:
+                    odds_data = response_data
+                if not odds_data or not odds_data.get('bookmakers'):
+                    print(f"      No bookmaker data for event {event_id} at {odds_query_time}")
+                    break
+                print(f"      ✅ Found player odds for event {event_id} at {odds_query_time}")
+                return odds_data
+            except requests.exceptions.RequestException as e:
+                print(f"      Error fetching odds (attempt {i+1}/{retries}) at {odds_query_time}: {e}")
+                if i < retries - 1:
+                    time.sleep(delay * (i + 1))
+                else:
+                    print(f"      Failed to get odds for event {event_id} at {odds_query_time}")
     return None
 
 

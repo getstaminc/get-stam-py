@@ -49,9 +49,9 @@ export const SpreadLegend = () => (
   <Legend
     title="Color Meanings:"
     items={[
-      { color: '#c8e6c9', label: 'Cover' },
-      { color: '#ffcdd2', label: 'Not Cover' },
-      { color: '#e0e0e0', label: 'Push' }
+      { color: '#c8e6c9', label: 'Covered' },
+      { color: '#ffcdd2', label: 'Didn\'t Cover' },
+      { color: '#e0e0e0', label: 'Pushed' }
     ]}
   />
 );

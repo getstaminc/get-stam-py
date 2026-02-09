@@ -166,15 +166,15 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#c8e6c9', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Cover</Typography>
+          <Typography variant="body2">Covered</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#ffcdd2', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Not Cover</Typography>
+          <Typography variant="body2">Didn't Cover</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Push</Typography>
+          <Typography variant="body2">Pushed</Typography>
         </Box>
       </Box>
     </Box>
@@ -189,15 +189,15 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#c8e6c9', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Over</Typography>
+          <Typography variant="body2">Went over</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#ffcdd2', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Under</Typography>
+          <Typography variant="body2">Went under</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Push</Typography>
+          <Typography variant="body2">Pushed</Typography>
         </Box>
       </Box>
     </Box>
@@ -581,7 +581,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                   right: 0,
                   bottom: 0,
                   width: '20px',
-                  background: 'linear-gradient(to left, rgba(25, 118, 210, 0.3) 0%, rgba(25, 118, 210, 0.1) 50%, transparent 100%)',
+                  background: 'linear-gradient(to left, rgba(224,224,224,0.85) 0%, rgba(224,224,224,0.4) 50%, transparent 100%)',
                   pointerEvents: 'none',
                   borderRadius: '0 4px 4px 0',
                 }}

@@ -112,7 +112,7 @@ def resolve_player_simple(conn, player_name: str, game_date: date) -> int:
         return None
 
 
-def get_upcoming_nba_games(hours_ahead=6) -> List[Dict]:
+def get_upcoming_nba_games(hours_ahead=24) -> List[Dict]:
     """Get upcoming NBA games"""
     print(f"Fetching NBA games in next {hours_ahead} hours...")
     
@@ -176,26 +176,19 @@ def fetch_player_props_for_event(event_id: str) -> Optional[Dict]:
         'regions': 'us',
         'markets': 'player_points,player_rebounds,player_assists,player_threes',
         'oddsFormat': 'american',
-        'bookmakers': 'draftkings,fanduel'
+        'bookmakers': 'draftkings,fanduel',
+        'date': '2026-02-02T02:45:00Z'  # Example date; adjust as needed
     }
+    
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
     
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=30)
-        
-        if response.status_code == 422:
-            print(f"    No player props available for event {event_id}")
-            return None
-        
-        response.raise_for_status()
-        return response.json()
-        
-    except Exception as e:
-        print(f"    Error fetching player props for {event_id}: {e}")
-        return None
+    print(f"URL to fetch player props: {url}")
+    print(f"Params: {params}")
+    # No data is fetched or inserted; function only prints the URL and params.
+    return None
 
 
 def parse_player_props_from_game(game: Dict) -> List[Dict]:

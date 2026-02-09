@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Table, TableBody, TableCell, TableHead, TableRow, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Button } from "@mui/material";
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Button } from "@mui/material";
 import GameOdds from "./GameOdds";
 import HistoricalGames from "./HistoricalGames";
 import { getSportType } from "../types/gameTypes";
 import TeamRankings from "./TeamRankings";
 import { convertTeamNameBySport } from "../utils/teamNameConverter";
 import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
+import PlayerPropsTable from "./PlayerPropsTable";
 
 type Game = {
   home: TeamData;
@@ -145,228 +144,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const homeTeamName = home.team || game.home_team_name || "Home Team";
   const awayTeamName = away.team || game.away_team_name || "Away Team";
 
-// PlayerPropsTable component
-const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
-  // Helper to get color for stat
-  const [openPlayers, setOpenPlayers] = useState<Set<string>>(() => new Set(Object.keys(players)));
-  const allPlayerNames = Object.keys(players);
-  const allExpanded = openPlayers.size === allPlayerNames.length;
-
-  const handleTogglePlayer = (name: string) => {
-    setOpenPlayers(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(name)) {
-        newSet.delete(name);
-      } else {
-        newSet.add(name);
-      }
-      return newSet;
-    });
-  };
-
-  const handleExpandCollapseAll = () => {
-    if (allExpanded) {
-      setOpenPlayers(new Set());
-    } else {
-      setOpenPlayers(new Set(allPlayerNames));
-    }
-  };
-  const getColor = (actual: any, odds: any) => {
-    if (actual == null || odds == null || isNaN(Number(actual)) || isNaN(Number(odds))) return { bgColor: undefined, color: undefined };
-    if (Number(actual) > Number(odds)) return { bgColor: '#c8e6c9', color: '#000' }; // Light green, black text
-    if (Number(actual) < Number(odds)) return { bgColor: '#ffcdd2', color: '#000' }; // Light red, black text
-    return { bgColor: '#e0e0e0', color: '#000' }; // Grey for push, black text
-  };
-  // For scroll indicator
-  const [showScrollIndicator, setShowScrollIndicator] = React.useState(false);
-  const tableContainerRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const checkScrollable = () => {
-      if (tableContainerRef.current) {
-        const { scrollWidth, clientWidth } = tableContainerRef.current;
-        setShowScrollIndicator(scrollWidth > clientWidth);
-      }
-    };
-    checkScrollable();
-    window.addEventListener('resize', checkScrollable);
-    return () => window.removeEventListener('resize', checkScrollable);
-  }, [players]);
-
-  return (
-    <Paper elevation={2} sx={{ p: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1 }}>
-        <Button
-          onClick={handleExpandCollapseAll}
-          variant="contained"
-          color="primary"
-          size="small"
-          startIcon={allExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            boxShadow: 'none',
-            fontWeight: 500,
-            fontSize: '1em',
-            px: 2,
-            py: 1,
-            minWidth: 120,
-          }}
-        >
-          {allExpanded ? 'Collapse All' : 'Expand All'}
-        </Button>
-      </Box>
-      <Box sx={{ position: 'relative' }}>
-        <Box
-          ref={tableContainerRef}
-          sx={{
-            overflowX: 'auto',
-            borderRadius: 1,
-            '&::-webkit-scrollbar': {
-              height: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: '#f1f1f1',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: '#c1c1c1',
-              borderRadius: '4px',
-              '&:hover': {
-                backgroundColor: '#a8a8a8',
-              },
-            },
-          }}
-        >
-          <Table size="small" sx={{ mt: 2, minWidth: 600 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: 40, px: { xs: 1, sm: 2 } }}></TableCell>
-                <TableCell sx={{ fontSize: { xs: '0.9em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>Player</TableCell>
-                <TableCell sx={{ fontSize: { xs: '0.9em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>Points</TableCell>
-                <TableCell sx={{ fontSize: { xs: '0.9em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>Assists</TableCell>
-                <TableCell sx={{ fontSize: { xs: '0.9em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>Rebounds</TableCell>
-                <TableCell sx={{ fontSize: { xs: '0.9em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>Threes</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {Object.entries(players).map(([name, data]: [string, any]) => (
-                <React.Fragment key={name}>
-                  {/* Main player prop row, clickable for collapse/expand */}
-                  <TableRow
-                    hover
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <TableCell sx={{ p: 0, textAlign: 'center', px: { xs: 1, sm: 2 } }}>
-                      <ExpandMoreIcon
-                        sx={{
-                          transform: openPlayers.has(name) ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.2s',
-                          cursor: 'pointer',
-                        }}
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleTogglePlayer(name);
-                        }}
-                        aria-label={openPlayers.has(name) ? 'Collapse' : 'Expand'}
-                      />
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: { xs: '0.95em', sm: '1em' },
-                        px: { xs: 1, sm: 2 },
-                        maxWidth: { xs: 80, sm: 180 },
-                        wordBreak: 'break-word',
-                        whiteSpace: { xs: 'pre-line', sm: 'normal' },
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: 'inline',
-                          wordBreak: 'break-word',
-                          whiteSpace: { xs: 'pre-line', sm: 'normal' },
-                        }}
-                      >
-                        {typeof name === 'string' && name.includes(' ')
-                          ? name.replace(' ', '\n')
-                          : name}
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.95em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>
-                      {data.player_points && typeof data.player_points === 'object' && data.player_points.point !== undefined ? (
-                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' } }}>
-                          <span>{data.player_points.point}</span>
-                          <span style={{ fontSize: '0.8em', color: '#888', marginLeft: 4, marginTop: 2 }}>{'O/U'}</span>
-                        </Box>
-                      ) : '—'}
-                    </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.95em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>
-                      {data.player_assists && typeof data.player_assists === 'object' && data.player_assists.point !== undefined ? (
-                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' } }}>
-                          <span>{data.player_assists.point}</span>
-                          <span style={{ fontSize: '0.8em', color: '#888', marginLeft: 4, marginTop: 2 }}>{'O/U'}</span>
-                        </Box>
-                      ) : '—'}
-                    </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.95em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>
-                      {data.player_rebounds && typeof data.player_rebounds === 'object' && data.player_rebounds.point !== undefined ? (
-                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' } }}>
-                          <span>{data.player_rebounds.point}</span>
-                          <span style={{ fontSize: '0.8em', color: '#888', marginLeft: 4, marginTop: 2 }}>{'O/U'}</span>
-                        </Box>
-                      ) : '—'}
-                    </TableCell>
-                    <TableCell sx={{ fontSize: { xs: '0.95em', sm: '1em' }, px: { xs: 1, sm: 2 } }}>
-                      {data.player_threes && typeof data.player_threes === 'object' && data.player_threes.point !== undefined ? (
-                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' } }}>
-                          <span>{data.player_threes.point}</span>
-                          <span style={{ fontSize: '0.8em', color: '#888', marginLeft: 4, marginTop: 2 }}>{'O/U'}</span>
-                        </Box>
-                      ) : '—'}
-                    </TableCell>
-                  </TableRow>
-                  {/* Collapsible historical rows directly under player row, no player name */}
-                  {openPlayers.has(name) && Array.isArray(data.historical) && data.historical.length > 0 && data.historical.map((h: any, idx: number) => (
-                    <TableRow key={name + '-history-' + idx}>
-                      <TableCell sx={{ fontSize: { xs: '0.95em', sm: '1em' }, px: { xs: 1, sm: 2 } }}></TableCell>
-                      <TableCell sx={{ fontSize: '0.85em', color: '#888', px: { xs: 1, sm: 2 } }}></TableCell>
-                      {(() => { const c = getColor(h.actual_player_points, h.odds_player_points); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 } }}>{h.odds_player_points != null ? h.odds_player_points : '—'}</TableCell>
-                      ); })()}
-                      {(() => { const c = getColor(h.actual_player_assists, h.odds_player_assists); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 } }}>{h.odds_player_assists != null ? h.odds_player_assists : '—'}</TableCell>
-                      ); })()}
-                      {(() => { const c = getColor(h.actual_player_rebounds, h.odds_player_rebounds); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 } }}>{h.odds_player_rebounds != null ? h.odds_player_rebounds : '—'}</TableCell>
-                      ); })()}
-                      {(() => { const c = getColor(h.actual_player_threes, h.odds_player_threes); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 } }}>{h.odds_player_threes != null ? h.odds_player_threes : '—'}</TableCell>
-                      ); })()}
-                    </TableRow>
-                  ))}
-                </React.Fragment>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
-        {/* Scroll Indicator */}
-        {showScrollIndicator && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              bottom: 0,
-              width: '20px',
-              background: 'linear-gradient(to left, rgba(224,224,224,0.85) 0%, rgba(224,224,224,0.4) 50%, transparent 100%)',
-              pointerEvents: 'none',
-              borderRadius: '0 4px 4px 0',
-            }}
-          />
-        )}
-      </Box>
-    </Paper>
-)};
+// PlayerPropsTable component is now imported from './PlayerPropsTable'
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
@@ -566,6 +344,12 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
           playerPropsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
               <CircularProgress />
+            </Box>
+          ) : playerPropsData && playerPropsData.error ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+              <Typography variant="body1" color="text.secondary">
+                {playerPropsData.error}
+              </Typography>
             </Box>
           ) : playerPropsData ? (
             <Box>

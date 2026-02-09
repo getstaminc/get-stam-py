@@ -18,6 +18,18 @@ def get_player_props(event_id):
         )
         try:
             response = requests.get(url)
+            # If the API returns a 404 or 422, handle gracefully
+            if response.status_code in (404, 422):
+                try:
+                    data = response.json()
+                    if (
+                        isinstance(data, dict)
+                        and (data.get("error_code") == "EVENT_NOT_FOUND" or "event not found" in str(data.get("message", "")).lower())
+                    ):
+                        return {"error": "Player prop odds not available at this time."}
+                except Exception:
+                    pass
+                return {"error": "Player prop odds not available at this time."}
             response.raise_for_status()
             data = response.json()
             # If there are player props for this bookmaker, return the data
@@ -26,8 +38,8 @@ def get_player_props(event_id):
         except requests.exceptions.RequestException as e:
             print(f"Error fetching player props from {bookmaker}: {str(e)}")
             continue
-    # If neither bookmaker has data, return None
-    return None
+    # If neither bookmaker has data, return a user-friendly error
+    return {"error": "Player prop odds not available at this time."}
 
 
 def combine_player_props(event_data):

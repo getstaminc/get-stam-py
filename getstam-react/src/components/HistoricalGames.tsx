@@ -166,15 +166,15 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#c8e6c9', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Cover</Typography>
+          <Typography variant="body2">Covered</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#ffcdd2', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Not Cover</Typography>
+          <Typography variant="body2">Didn't Cover</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Push</Typography>
+          <Typography variant="body2">Pushed</Typography>
         </Box>
       </Box>
     </Box>
@@ -189,15 +189,15 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#c8e6c9', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Over</Typography>
+          <Typography variant="body2">Went over</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#ffcdd2', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Under</Typography>
+          <Typography variant="body2">Went under</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, backgroundColor: '#e0e0e0', border: '1px solid #ccc' }} />
-          <Typography variant="body2">Push</Typography>
+          <Typography variant="body2">Pushed</Typography>
         </Box>
       </Box>
     </Box>

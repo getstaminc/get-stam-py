@@ -15,7 +15,6 @@ interface GameOddsProps {
 }
 
 const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData }) => {
-  console.log("GameOdds game prop:", game);
 
   const { home, away, totals, draw } = game as GameWithDraw;
   // Hide odds if both scores are present and ALL odds/totals fields are null (game is over and no odds data)

@@ -125,6 +125,24 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    
+    // Track tab clicks in Google Analytics
+    if (newValue === 1 && sportKey === 'basketball_nba') {
+      // For GA4 (gtag)
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'tab_click', {
+          event_category: 'User Interaction',
+          event_label: 'Player Props Tab',
+          sport: sportKey,
+          custom_parameter: 'player_props_tab_click'
+        });
+      }
+      
+      // For Universal Analytics (ga) - if you're still using it
+      if (typeof window !== 'undefined' && window.ga) {
+        window.ga('send', 'event', 'User Interaction', 'Tab Click', 'Player Props Tab');
+      }
+    }
   };
 
   const handleHistoricalSubTabChange = (event: React.SyntheticEvent, newValue: number) => {

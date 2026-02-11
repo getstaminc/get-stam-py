@@ -40,22 +40,23 @@ def get_last_n_player_props(player_id, n=5):
         rows = []
         for row in result.fetchall():
             record = dict(row._mapping)
-            # Convert game_date to Eastern Time and add short_game_date
-            dt = None
+            # Convert game_date to MM/DD/YY format
             if record.get("game_date"):
                 try:
-                    # Try parsing as ISO or datetime string
-                    dt = datetime.strptime(str(record["game_date"]), "%Y-%m-%d %H:%M:%S")
+                    # Parse the date string (handles various formats including GMT)
+                    dt = datetime.strptime(str(record["game_date"]), "%a, %d %b %Y %H:%M:%S %Z")
+                    record["short_game_date"] = dt.strftime("%m/%d/%y")
                 except Exception:
                     try:
-                        dt = datetime.strptime(str(record["game_date"]), "%Y-%m-%d")
+                        # Fallback for other date formats
+                        dt = datetime.strptime(str(record["game_date"]), "%Y-%m-%d %H:%M:%S")
+                        record["short_game_date"] = dt.strftime("%m/%d/%y")
                     except Exception:
-                        dt = None
-                if dt:
-                    dt_eastern = dt.replace(tzinfo=pytz.utc).astimezone(eastern)
-                    record["short_game_date"] = dt_eastern.strftime("%m/%d/%y")
-                else:
-                    record["short_game_date"] = None
+                        try:
+                            dt = datetime.strptime(str(record["game_date"]), "%Y-%m-%d")
+                            record["short_game_date"] = dt.strftime("%m/%d/%y")
+                        except Exception:
+                            record["short_game_date"] = None
             else:
                 record["short_game_date"] = None
             rows.append(record)

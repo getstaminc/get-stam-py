@@ -256,6 +256,7 @@ def build_player_stats_lookup(boxscore_data: Dict, game_id: str) -> tuple[Dict[s
     for team_data in teams:
         team_info = team_data.get('team', {})
         team_name = team_info.get('displayName', 'Unknown Team')
+        team_espn_id = str(team_info.get('id', ''))
         
         statistics = team_data.get('statistics', [])
         if not statistics:
@@ -289,6 +290,8 @@ def build_player_stats_lookup(boxscore_data: Dict, game_id: str) -> tuple[Dict[s
                         'player_name': player_name,
                         'normalized_name': normalized_name,
                         'did_not_play': True,
+                        'player_team_espn_id': team_espn_id,
+                        'player_team_name': team_name,
                         'actual_points': None,
                         'actual_rebounds': None,
                         'actual_assists': None,
@@ -311,6 +314,8 @@ def build_player_stats_lookup(boxscore_data: Dict, game_id: str) -> tuple[Dict[s
                     'player_name': player_name,
                     'normalized_name': normalized_name,
                     'did_not_play': False,
+                    'player_team_espn_id': team_espn_id,
+                    'player_team_name': team_name,
                     'actual_points': safe_int(stat_dict.get('PTS')),
                     'actual_rebounds': safe_int(stat_dict.get('REB')),
                     'actual_assists': safe_int(stat_dict.get('AST')),
@@ -639,36 +644,26 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
                             'player_id': player_id
                         })
             
-            # Determine player's team and opponent based on odds team IDs
-            player_team_name = 'Unknown'
-            player_team_id = None
-            opponent_team_name = 'Unknown'
-            opponent_team_id = None
+            # Determine player's team and opponent based on ESPN data (not odds data)
+            player_team_espn_id = player_stats.get('player_team_espn_id')
+            player_team_name = player_stats.get('player_team_name', 'Unknown')
             
-            # Find which team the player is on by checking odds team IDs
+            # Find the player's team ID by matching ESPN ID
+            player_team_id = None
+            opponent_team_id = None
+            opponent_team_name = 'Unknown'
+            
             for team_info in team_info_list:
-                if team_info['id'] == odds_home_team_id or team_info['id'] == odds_away_team_id:
-                    # This is one of the teams in the game
-                    if team_info['id'] == odds_home_team_id:
-                        player_team_name = team_info['name']
-                        player_team_id = team_info['id']
-                        # Find opponent (away team)
-                        for ti in team_info_list:
-                            if ti['id'] != team_info['id']:
-                                opponent_team_name = ti['name']
-                                opponent_team_id = ti['id']
-                                break
-                        break
-                    elif team_info['id'] == odds_away_team_id:
-                        player_team_name = team_info['name']
-                        player_team_id = team_info['id']
-                        # Find opponent (home team)
-                        for ti in team_info_list:
-                            if ti['id'] != team_info['id']:
-                                opponent_team_name = ti['name']
-                                opponent_team_id = ti['id']
-                                break
-                        break
+                if team_info['espn_id'] == player_team_espn_id:
+                    player_team_id = team_info['id']
+                    break
+            
+            # Find the opponent team (the other team in the game)
+            for team_info in team_info_list:
+                if team_info['espn_id'] != player_team_espn_id:
+                    opponent_team_id = team_info['id']
+                    opponent_team_name = team_info['name']
+                    break
             
             # Update prop record
             if is_dnp:
@@ -690,7 +685,7 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
                     'espn_event_id': game_id,
                     'record_id': props_id
                 })
-                print(f"      🚫 DNP: {normalized_name}")
+                print(f"      🚫 DNP: {normalized_name} ({player_team_name} vs {opponent_team_name})")
             else:
                 conn.execute(text("""
                     UPDATE nba_player_props
@@ -726,7 +721,7 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
                     'espn_event_id': game_id,
                     'record_id': props_id
                 })
-                print(f"      ✅ {normalized_name}: {player_stats['actual_points']}pts/{player_stats['actual_rebounds']}reb/{player_stats['actual_assists']}ast")
+                print(f"      ✅ {normalized_name} ({player_team_name} vs {opponent_team_name}): {player_stats['actual_points']}pts/{player_stats['actual_rebounds']}reb/{player_stats['actual_assists']}ast")
             
             updated_count += 1
             

@@ -27,8 +27,35 @@ const PlayerPropsLegend = () => (
 );
 
 const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
-  const [openPlayers, setOpenPlayers] = useState<Set<string>>(() => new Set(Object.keys(players)));
-  const allPlayerNames = Object.keys(players);
+  // Debug logging
+  console.log('PlayerPropsTable received players:', players);
+  console.log('Players type:', typeof players);
+  console.log('Is array:', Array.isArray(players));
+  
+  // Handle both array and object formats
+  let playersData: { [key: string]: any };
+  
+  if (Array.isArray(players)) {
+    // Convert array to object using player_name as key
+    playersData = {};
+    players.forEach((player, index) => {
+      const playerName = player.player_name || `Player ${index + 1}`;
+      playersData[playerName] = player;
+    });
+  } else if (players && typeof players === 'object') {
+    // Already an object
+    playersData = players;
+  } else {
+    // Invalid format or no data
+    console.error('Invalid players format:', players);
+    playersData = {};
+  }
+
+  // Check if we have any valid data
+  const hasData = Object.keys(playersData).length > 0;
+  
+  const [openPlayers, setOpenPlayers] = useState<Set<string>>(() => new Set(Object.keys(playersData)));
+  const allPlayerNames = Object.keys(playersData);
   const allExpanded = openPlayers.size === allPlayerNames.length;
 
   const handleTogglePlayer = (name: string) => {
@@ -72,6 +99,22 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
     window.addEventListener('resize', checkScrollable);
     return () => window.removeEventListener('resize', checkScrollable);
   }, [players]);
+
+  // If no data, show empty state
+  if (!hasData) {
+    return (
+      <Paper elevation={2} sx={{ p: 2, mb: 2, border: '1px solid #e0e0e0' }}>
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body1" color="text.secondary">
+            No player data available
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            This could be due to server issues or no historical data for these players
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  }
 
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 2, border: '1px solid #e0e0e0' }}>
@@ -158,7 +201,7 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {Object.entries(players).map(([name, data]: [string, any]) => (
+              {Object.entries(playersData).map(([name, data]: [string, any]) => (
                 <React.Fragment key={name}>
                   <TableRow hover style={{ cursor: 'pointer' }}>
                     <TableCell sx={{ p: 0, textAlign: 'center', px: { xs: 1, sm: 1 } }}>
@@ -177,13 +220,13 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
                     </TableCell>
                     <TableCell
                       sx={{
-                          fontWeight: 500,
-                          fontSize: '0.875rem',
-                          px: { xs: 0.5, sm: 1 },
-                          maxWidth: { xs: 80, sm: 80 },
-                          wordBreak: 'break-word',
-                          whiteSpace: { xs: 'pre-line', sm: 'normal' },
-                        }}
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        px: { xs: 0.5, sm: 1 },
+                        maxWidth: { xs: 80, sm: 80 },
+                        wordBreak: 'break-word',
+                        whiteSpace: { xs: 'pre-line', sm: 'normal' },
+                      }}
                     >
                       <Box
                         sx={{
@@ -194,7 +237,7 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
                       >
                         {typeof name === 'string' && name.includes(' ')
                           ? name.replace(' ', '\n')
-                          : name}
+                          : (name || 'Unknown Player')}
                       </Box>
                     </TableCell>
                     <TableCell sx={{ fontWeight: data.player_points && typeof data.player_points === 'object' && data.player_points.point !== undefined ? 700 : 400, fontSize: '0.875rem', px: { xs: 1, sm: 2 } }}>
@@ -230,28 +273,47 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
                       ) : '—'}
                     </TableCell>
                   </TableRow>
-                  {openPlayers.has(name) && Array.isArray(data.historical) && data.historical.length > 0 && data.historical.map((h: any, idx: number) => (
-                      <TableRow key={name + '-history-' + idx}>
+                  {openPlayers.has(name) && (
+                    data.historical && Array.isArray(data.historical) && data.historical.length > 0 ? (
+                      data.historical.map((h: any, idx: number) => (
+                        <TableRow key={name + '-history-' + idx}>
+                          <TableCell sx={{ fontSize: '0.875rem', px: { xs: 1, sm: 2 } }}></TableCell>
+                          <TableCell sx={{ fontSize: '0.85em', color: '#888', px: { xs: 1, sm: 2 } }}>
+                            {h.short_game_date ? h.short_game_date : ''} - 
+                            {h.opponent_team_name ?
+                              ' ' + h.opponent_team_name.split(' ').slice(-1)[0] : ''}
+                          </TableCell>
+                          {(() => { const c = getColor(h.actual_player_points, h.odds_player_points); return (
+                            <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>
+                              {h.odds_player_points != null ? h.odds_player_points : '—'}
+                            </TableCell>
+                          ); })()}
+                          {(() => { const c = getColor(h.actual_player_assists, h.odds_player_assists); return (
+                            <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>
+                              {h.odds_player_assists != null ? h.odds_player_assists : '—'}
+                            </TableCell>
+                          ); })()}
+                          {(() => { const c = getColor(h.actual_player_rebounds, h.odds_player_rebounds); return (
+                            <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>
+                              {h.odds_player_rebounds != null ? h.odds_player_rebounds : '—'}
+                            </TableCell>
+                          ); })()}
+                          {(() => { const c = getColor(h.actual_player_threes, h.odds_player_threes); return (
+                            <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>
+                              {h.odds_player_threes != null ? h.odds_player_threes : '—'}
+                            </TableCell>
+                          ); })()}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
                         <TableCell sx={{ fontSize: '0.875rem', px: { xs: 1, sm: 2 } }}></TableCell>
-                        <TableCell sx={{ fontSize: '0.85em', color: '#888', px: { xs: 1, sm: 2 } }}>
-                          {h.short_game_date ? h.short_game_date : ''} - 
-                          {h.opponent_team_name ?
-                            ' ' + h.opponent_team_name.split(' ').slice(-1)[0] : ''}
+                        <TableCell colSpan={5} sx={{ fontSize: '0.85em', color: '#888', px: { xs: 1, sm: 2 }, textAlign: 'center', py: 2 }}>
+                          No historical data available
                         </TableCell>
-                      {(() => { const c = getColor(h.actual_player_points, h.odds_player_points); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>{h.odds_player_points != null ? h.odds_player_points : '—'}</TableCell>
-                      ); })()}
-                      {(() => { const c = getColor(h.actual_player_assists, h.odds_player_assists); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>{h.odds_player_assists != null ? h.odds_player_assists : '—'}</TableCell>
-                      ); })()}
-                      {(() => { const c = getColor(h.actual_player_rebounds, h.odds_player_rebounds); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>{h.odds_player_rebounds != null ? h.odds_player_rebounds : '—'}</TableCell>
-                      ); })()}
-                      {(() => { const c = getColor(h.actual_player_threes, h.odds_player_threes); return (
-                        <TableCell sx={{ backgroundColor: c.bgColor, color: c.color, px: { xs: 1, sm: 2 }, fontWeight: 700 }}>{h.odds_player_threes != null ? h.odds_player_threes : '—'}</TableCell>
-                      ); })()}
-                    </TableRow>
-                  ))}
+                      </TableRow>
+                    )
+                  )}
                 </React.Fragment>
               ))}
             </TableBody>

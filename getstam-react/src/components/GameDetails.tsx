@@ -94,8 +94,14 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
   const [activeTab, setActiveTab] = useState<number>(0); // 0: Recent Performance, 1: Player Props
   const [historicalSubTab, setHistoricalSubTab] = useState<number>(0); // 0: Last N, 1: Home Last N, 2: Away Last N
+  const [playerPropsSubTab, setPlayerPropsSubTab] = useState<number>(0); // 0: Home Team, 1: Away Team
+  const [playerPropsLimit, setPlayerPropsLimit] = useState<number>(5); // Add this state
   const [playerPropsData, setPlayerPropsData] = useState<any>(null);
   const [playerPropsLoading, setPlayerPropsLoading] = useState<boolean>(false);
+  const [homeVenueData, setHomeVenueData] = useState<any>(null);
+  const [homeVsOpponentData, setHomeVsOpponentData] = useState<any>(null);
+  const [awayVenueData, setAwayVenueData] = useState<any>(null);
+  const [awayVsOpponentData, setAwayVsOpponentData] = useState<any>(null);
 
   useEffect(() => {
     const fetchPlayerProps = async () => {
@@ -103,18 +109,55 @@ const GameDetails: React.FC<GameDetailsProps> = ({
       const urlParams = new URLSearchParams(window.location.search);
       const gameId = urlParams.get('game_id');
       if (gameId) {
-        const res = await fetch(`/api/odds/nba/player-props/${gameId}`, {
-          headers: {
-            "X-API-KEY": process.env.REACT_APP_API_KEY || "",
-          },
-        });
-        const data = await res.json();
-        setPlayerPropsData(data);
+        try {
+          // Fetch all player props data with limit parameter
+          const [mainRes, homeVenueRes, homeVsOpponentRes, awayVenueRes, awayVsOpponentRes] = await Promise.all([
+            fetch(`/api/odds/nba/player-props/${gameId}?limit=${playerPropsLimit}`, {
+              headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+            }),
+            fetch(`/api/odds/nba/player-props/${gameId}/home-games?limit=${playerPropsLimit}`, {
+              headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+            }),
+            fetch(`/api/odds/nba/player-props/${gameId}/home-vs-opponent?limit=${playerPropsLimit}`, {
+              headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+            }),
+            fetch(`/api/odds/nba/player-props/${gameId}/away-games?limit=${playerPropsLimit}`, {
+              headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+            }),
+            fetch(`/api/odds/nba/player-props/${gameId}/away-vs-opponent?limit=${playerPropsLimit}`, {
+              headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+            })
+          ]);
+
+          const [mainData, homeVenueData, homeVsOpponentData, awayVenueData, awayVsOpponentData] = await Promise.all([
+            mainRes.json(),
+            homeVenueRes.json(),
+            homeVsOpponentRes.json(),
+            awayVenueRes.json(),
+            awayVsOpponentRes.json()
+          ]);
+
+          setPlayerPropsData(mainData);
+          setHomeVenueData(homeVenueData);
+          setHomeVsOpponentData(homeVsOpponentData);
+          setAwayVenueData(awayVenueData);
+          setAwayVsOpponentData(awayVsOpponentData);
+        } catch (error) {
+          console.error('Error fetching player props:', error);
+        }
       }
       setPlayerPropsLoading(false);
     };
     fetchPlayerProps();
-  }, []);
+  }, [playerPropsLimit]); // Add playerPropsLimit as dependency
+
+  const handlePlayerPropsLimitChange = (newLimit: number) => {
+    setPlayerPropsLimit(newLimit);
+  };
+
+  const handlePlayerPropsSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setPlayerPropsSubTab(newValue);
+  };
 
   const handleLimitChange = (newLimit: number) => {
     setGamesLimit(newLimit);
@@ -372,10 +415,125 @@ const GameDetails: React.FC<GameDetailsProps> = ({
             </Box>
           ) : playerPropsData ? (
             <Box>
-              <Typography variant="h6" sx={{ mt: 2 }}>{playerPropsData.home_team.name} Player Props</Typography>
-              <PlayerPropsTable players={playerPropsData.home_team.players} />
-              <Typography variant="h6" sx={{ mt: 4 }}>{playerPropsData.away_team.name} Player Props</Typography>
-              <PlayerPropsTable players={playerPropsData.away_team.players} />
+              {/* Player Props Header with Dropdown */}
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between', 
+                alignItems: { xs: 'flex-start', sm: 'center' }, 
+                mb: 2,
+                gap: { xs: 2, sm: 0 }
+              }}>
+                <Typography variant="h5" sx={{ mb: 0, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                  Player Props
+                </Typography>
+                <FormControl size="small" sx={{ minWidth: 120, width: { xs: '100%', sm: 'auto' } }}>
+                  <InputLabel id="player-props-limit-label">Show Games</InputLabel>
+                  <Select
+                    labelId="player-props-limit-label"
+                    id="player-props-limit-select"
+                    value={playerPropsLimit}
+                    label="Show Games"
+                    onChange={(e) => handlePlayerPropsLimitChange(e.target.value as number)}
+                  >
+                    <MenuItem value={3}>Last 3</MenuItem>
+                    <MenuItem value={5}>Last 5</MenuItem>
+                    <MenuItem value={10}>Last 10</MenuItem>
+                    <MenuItem value={15}>Last 15</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Paper sx={{ mt: 2 }}>
+                <Tabs
+                  value={playerPropsSubTab}
+                  onChange={handlePlayerPropsSubTabChange}
+                  variant="fullWidth"
+                  sx={{
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    '& .MuiTab-root': {
+                      fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                      padding: { xs: '8px 4px', sm: '12px 16px' }
+                    }
+                  }}
+                >
+                  <Tab label={`${playerPropsData.home_team?.name || 'Home'} Players`} />
+                  <Tab label={`${playerPropsData.away_team?.name || 'Away'} Players`} />
+                </Tabs>
+
+                <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                  {/* Home Team Players Tab */}
+                  {playerPropsSubTab === 0 && (
+                    <Box>
+                      <Typography variant="h6" sx={{ mb: 2 }}>Last {playerPropsLimit} Games</Typography>
+                      {playerPropsData.home_team?.players && typeof playerPropsData.home_team.players === 'object' ? (
+                        <PlayerPropsTable players={Object.entries(playerPropsData.home_team.players).map(([name, data]: [string, any]) => ({
+                          ...(typeof data === 'object' && data !== null ? data : {}),
+                          player_name: name
+                        }))} />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No data available</Typography>
+                      )}
+
+                      <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>Last {playerPropsLimit} Home Games</Typography>
+                      {homeVenueData?.players && typeof homeVenueData.players === 'object' ? (
+                        <PlayerPropsTable players={Object.entries(homeVenueData.players).map(([name, data]: [string, any]) => ({
+                          ...(typeof data === 'object' && data !== null ? data : {}),
+                          player_name: name
+                        }))} />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No home games data available</Typography>
+                      )}
+
+                      <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>Last {playerPropsLimit} Home Games vs {playerPropsData.away_team?.name}</Typography>
+                      {homeVsOpponentData?.players && typeof homeVsOpponentData.players === 'object' ? (
+                        <PlayerPropsTable players={Object.entries(homeVsOpponentData.players).map(([name, data]: [string, any]) => ({
+                          ...(typeof data === 'object' && data !== null ? data : {}),
+                          player_name: name
+                        }))} />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No head-to-head data available</Typography>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Away Team Players Tab */}
+                  {playerPropsSubTab === 1 && (
+                    <Box>
+                      <Typography variant="h6" sx={{ mb: 2 }}>Last {playerPropsLimit} Games</Typography>
+                      {playerPropsData.away_team?.players && typeof playerPropsData.away_team.players === 'object' ? (
+                        <PlayerPropsTable players={Object.entries(playerPropsData.away_team.players).map(([name, data]: [string, any]) => ({
+                          ...(typeof data === 'object' && data !== null ? data : {}),
+                          player_name: name
+                        }))} />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No data available</Typography>
+                      )}
+
+                      <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>Last {playerPropsLimit} Away Games</Typography>
+                      {awayVenueData?.players && typeof awayVenueData.players === 'object' ? (
+                        <PlayerPropsTable players={Object.entries(awayVenueData.players).map(([name, data]: [string, any]) => ({
+                          ...(typeof data === 'object' && data !== null ? data : {}),
+                          player_name: name
+                        }))} />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No away games data available</Typography>
+                      )}
+
+                      <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>Last {playerPropsLimit} Away Games vs {playerPropsData.home_team?.name}</Typography>
+                      {awayVsOpponentData?.players && typeof awayVsOpponentData.players === 'object' ? (
+                        <PlayerPropsTable players={Object.entries(awayVsOpponentData.players).map(([name, data]: [string, any]) => ({
+                          ...(typeof data === 'object' && data !== null ? data : {}),
+                          player_name: name
+                        }))} />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No head-to-head data available</Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
             </Box>
           ) : null
         )}

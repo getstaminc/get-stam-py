@@ -17,16 +17,17 @@ from ..external_requests.team_lookup import get_team_id_by_odds_api_team_name
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 
-# Create engine with connection pooling and proper settings
+# VERY aggressive connection limits for player props service
 engine = create_engine(
     DATABASE_URL,
     poolclass=QueuePool,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,  # Validate connections before use
-    pool_recycle=3600,   # Recycle connections after 1 hour
+    pool_size=1,        # Only 1 persistent connection
+    max_overflow=2,     # Only 2 overflow connections  
+    pool_pre_ping=True,
+    pool_recycle=900,   # Recycle every 15 minutes
+    pool_timeout=10,    # Short timeout
     connect_args={
-        "connect_timeout": 10,
+        "connect_timeout": 5,
         "application_name": "player_props_service"
     }
 )
@@ -35,17 +36,22 @@ engine = create_engine(
 _player_props_cache = TTLCache(maxsize=1000, ttl=21600)  # 6 hours
 
 def execute_with_retry(sql, params, max_retries=3):
-    """Execute SQL with connection retry logic"""
+    """Execute SQL with connection retry logic and proper connection handling"""
     for attempt in range(max_retries):
+        conn = None
         try:
-            with engine.connect() as conn:
-                result = conn.execute(text(sql), params)
-                return result.fetchall()
+            conn = engine.connect()
+            result = conn.execute(text(sql), params)
+            rows = result.fetchall()
+            return rows
         except Exception as e:
             logging.error(f"Database error on attempt {attempt + 1}: {str(e)}")
             if attempt == max_retries - 1:
                 raise
             time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+        finally:
+            if conn:
+                conn.close()  # Ensure connection is always closed
     return []
 
 @cached(cache=_player_props_cache)

@@ -511,7 +511,7 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                     <TableCell><HeaderWithSpreadInfo>{getSpreadLabel()}</HeaderWithSpreadInfo></TableCell>
                     <TableCell><strong>Opponent</strong></TableCell>
                     <TableCell><strong>Opponent {getScoreLabel()}</strong></TableCell>
-                    <TableCell><HeaderWithTotalInfo>Total</HeaderWithTotalInfo></TableCell>
+                    <TableCell><HeaderWithTotalInfo>Betting Total</HeaderWithTotalInfo></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

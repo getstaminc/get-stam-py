@@ -192,6 +192,10 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     setPlayerPropsLoading(false);
   };
 
+  const handlePlayerPropsLimitChange = (newLimit: number) => {
+    setPlayerPropsLimit(newLimit);
+  };
+
   const handlePlayerPropsSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setPlayerPropsSubTab(newValue);
   };

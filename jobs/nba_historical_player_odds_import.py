@@ -270,22 +270,44 @@ def resolve_team_id_from_odds_api(conn, odds_team_name: str) -> Optional[int]:
 
 def resolve_player_simple(conn, player_name: str, game_date: date) -> Optional[int]:
     """
-    Simple player resolver that reuses the provided connection.
+    Player resolver that checks aliases first, then creates new players if needed.
     """
     normalized = normalize_name_simple(player_name)
     
     try:
-        # Try to find existing player by normalized name
-        result = conn.execute(text("""
+        # Step 1: Check aliases first (most reliable for name variations)
+        alias_result = conn.execute(text("""
+            SELECT player_id FROM nba_player_aliases 
+            WHERE normalized_name = :name
+            ORDER BY created_at DESC
+            LIMIT 1
+        """), {'name': normalized}).fetchone()
+        
+        if alias_result:
+            print(f"    ✓ Found via alias: {player_name} -> player_id {alias_result[0]}")
+            return alias_result[0]
+        
+        # Step 2: Check nba_players table by normalized name
+        player_result = conn.execute(text("""
             SELECT id FROM nba_players WHERE normalized_name = :name
-        """), {'name': normalized})
+        """), {'name': normalized}).fetchone()
         
-        row = result.fetchone()
-        if row:
-            return row[0]
+        if player_result:
+            # Found existing player - add this name as an alias for future lookups
+            conn.execute(text("""
+                INSERT INTO nba_player_aliases (player_id, source, source_name, normalized_name, created_at)
+                VALUES (:player_id, 'odds_api', :source_name, :normalized_name, NOW())
+                ON CONFLICT (source, normalized_name) DO NOTHING
+            """), {
+                'player_id': player_result[0],
+                'source_name': player_name,
+                'normalized_name': normalized
+            })
+            print(f"    ✓ Found existing player and added alias: {player_name} -> player_id {player_result[0]}")
+            return player_result[0]
         
-        # Create new player
-        result = conn.execute(text("""
+        # Step 3: Create new player (no existing match found)
+        new_player_result = conn.execute(text("""
             INSERT INTO nba_players (player_name, normalized_name, first_seen_date, last_seen_date, created_at, updated_at)
             VALUES (:player_name, :normalized_name, :first_seen_date, :last_seen_date, NOW(), NOW())
             RETURNING id
@@ -296,9 +318,9 @@ def resolve_player_simple(conn, player_name: str, game_date: date) -> Optional[i
             'last_seen_date': game_date
         })
         
-        player_id = result.fetchone()[0]
+        player_id = new_player_result.fetchone()[0]
         
-        # Create alias
+        # Create alias for the new player
         conn.execute(text("""
             INSERT INTO nba_player_aliases (player_id, source, source_name, normalized_name, created_at)
             VALUES (:player_id, 'odds_api', :source_name, :normalized_name, NOW())
@@ -309,6 +331,7 @@ def resolve_player_simple(conn, player_name: str, game_date: date) -> Optional[i
             'normalized_name': normalized
         })
         
+        print(f"    ➕ Created new player: {player_name} (ID: {player_id})")
         return player_id
         
     except Exception as e:

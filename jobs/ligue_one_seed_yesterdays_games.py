@@ -15,7 +15,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 
 # Odds API credentials
-ODDS_API_KEY = 'e143ef401675904470a5b72e6145091a'
+ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 # Add the parent directory to the path so we can import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

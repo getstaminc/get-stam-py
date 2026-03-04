@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, text
 # Load environment variables
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
-ODDS_API_KEY = os.getenv("ODDS_API_KEY", 'e143ef401675904470a5b72e6145091a')
+ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 def get_historical_nba_events(target_date: date):
     """

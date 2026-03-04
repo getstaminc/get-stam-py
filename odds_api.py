@@ -1,9 +1,10 @@
 # odds_api.py
 import requests
 import datetime
+import os
 import pytz  # Import pytz for timezone handling
 
-api_key = 'e143ef401675904470a5b72e6145091a'
+api_key = os.getenv("ODDS_API_KEY")
 
 def get_odds_data(sport_key, date):
     try:

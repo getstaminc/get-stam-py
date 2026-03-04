@@ -15,7 +15,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 
 # Odds API credentials
-ODDS_API_KEY = os.getenv('ODDS_API_KEY') or 'e143ef401675904470a5b72e6145091a'
+ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 # Sport key for the Odds API. If the API uses a different key for La Liga,
 # override by setting LA_LIGA_SPORT_KEY in your environment.

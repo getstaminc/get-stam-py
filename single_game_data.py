@@ -1,9 +1,10 @@
+import os
 import requests
 from datetime import datetime
 from sdql_queries import get_last_5_games
 from utils import convert_sport_key
 
-api_key = 'e143ef401675904470a5b72e6145091a'
+api_key = os.getenv("ODDS_API_KEY")
 
 def get_game_details(sport_key, date, game_id):
     try:

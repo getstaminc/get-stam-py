@@ -9,9 +9,10 @@ export interface Sport {
 export const sports: Sport[] = [
   { name: "MLB", path: "/mlb", inSeason: false },
   { name: "NBA", path: "/nba", inSeason: true },
+  { name: "NCAAB", path: "/ncaab", inSeason: true },
   { name: "NHL", path: "/nhl", inSeason: true },
-  { name: "NFL", path: "/nfl", inSeason: true },
-  { name: "NCAAF", path: "/ncaaf", inSeason: true },
+  { name: "NFL", path: "/nfl", inSeason: false },
+  { name: "NCAAF", path: "/ncaaf", inSeason: false },
   // Group soccer leagues under a single Soccer nav item to reduce clutter
   {
     name: "SOCCER",
@@ -24,6 +25,5 @@ export const sports: Sport[] = [
       { name: "SERIE A", path: "/seriea" },
     ],
   },
-  { name: "NCAAB", path: "/ncaab", inSeason: true },
 ];
 

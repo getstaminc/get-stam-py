@@ -237,7 +237,7 @@ export const convertTeamNameNcaaf = (fullTeamName: string): string => {
     'Notre Dame Fighting Irish': 'NOTD',
     'North Texas Mean Green': 'NTX',
     'Ohio State Buckeyes': 'OHST',
-    'Ohio Bobcats': 'OHU',
+    'Ohio Bobcats': 'OHIO',
     'Oklahoma Sooners': 'OKLA',
     'Oklahoma State Cowboys': 'OKST',
     'Old Dominion Monarchs': 'OLDD',

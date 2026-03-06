@@ -28,6 +28,7 @@ def convert_team_name_ncaab(full_team_name):
         "South Dakota St Jackrabbits": "SDS",
         "Utah Valley Wolverines": "UTVAL",
         "Ohio State Buckeyes": "OHIOS",
+        "Ohio Bobcats": "OHIO",
         "Mt. St. Mary's Mountaineers": "MSTM",
         "UNC Asheville Bulldogs": "NCASH",
         "Tennessee St Tigers": "TENST",

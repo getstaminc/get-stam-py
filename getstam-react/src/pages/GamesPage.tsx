@@ -305,10 +305,6 @@ const GamesPage = () => {
 
   // Analyze trends when switching to trends view or when minTrendLength changes
   useEffect(() => {
-    // Use isTrends directly instead of activeView to avoid race condition
-    // DEBUG: log key state to help diagnose missing trends requests
-    console.log('trends-effect:', { urlSport, sportKey, isTrends, gamesCount: games.length, selectedDate: formatDate(selectedDate) });
-
     if (isTrends && games.length > 0) {
       setTrendsLoading(true);
       

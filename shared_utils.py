@@ -96,6 +96,7 @@ def convert_team_name_ncaab(full_team_name):
         "Xavier Musketeers": "XAVER",
         "St. Francis (PA) Red Flash": "STFRP",
         "Colorado Buffaloes": "COL",
+        "Santa Clara Broncos": "SCLAR",
         "Alabama A&M Bulldogs": "ABAM",
         "Alabama Crimson Tide": "ALAB",
         "Alabama St Hornets": "ALAST",

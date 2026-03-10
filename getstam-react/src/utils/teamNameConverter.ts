@@ -509,6 +509,7 @@ export const convertTeamNameNcaab = (fullTeamName: string): string => {
     'Green Bay Phoenix': 'WIGB',
     'Iowa Hawkeyes': 'IOWA',
     'Ohio Bobcats': 'OHIO',
+    'Santa Clara Broncos': "SCLAR",
     'Alabama A&M Bulldogs': 'ABAM',
     'Alabama Crimson Tide': 'ALAB',
     'Alabama St Hornets': 'ALAST',

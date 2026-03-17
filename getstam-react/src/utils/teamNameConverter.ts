@@ -668,7 +668,7 @@ export const convertTeamNameNcaab = (fullTeamName: string): string => {
     'North Carolina A&T Aggies': 'NCATT',
     'North Carolina Asheville Bulldogs': 'NCASH',
     'North Carolina Central Eagles': 'NCCEN',
-    'North Carolina State Wolfpack': 'NCSTA',
+    'NC State Wolfpack': 'NCSTA',
     'North Dakota Fighting Hawks': 'NDAKOT',
     'North Dakota State Bison': 'NODAK',
     'North Florida Ospreys': 'NFLA',

@@ -386,6 +386,9 @@ def find_player_in_lookup(normalized_name: str, lookup: Dict, conn, player_id: i
     3-step match: ESPN ID -> exact normalized name -> strict first+last name.
     Returns stats dict or None.
     """
+    # Normalize the database name to handle accents consistently
+    normalized_name = normalize_player_name(normalized_name)
+    
     # Step 1: Look up ESPN player ID
     player_espn_id = conn.execute(text("""
         SELECT espn_player_id FROM mlb_players WHERE id = :player_id

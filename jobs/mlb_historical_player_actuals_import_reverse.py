@@ -383,7 +383,7 @@ def resolve_internal_team_ids(conn, espn_team_id_1: str, espn_team_id_2: str) ->
 
 def find_player_in_lookup(normalized_name: str, lookup: Dict, conn, player_id: int, props_id: int) -> Optional[Dict]:
     """
-    3-step match: ESPN ID -> exact normalized name -> strict first+last name.
+    4-step match: ESPN ID -> exact normalized name -> alias table -> strict first+last name.
     Returns stats dict or None.
     """
     # Normalize the database name to handle accents consistently
@@ -406,7 +406,24 @@ def find_player_in_lookup(normalized_name: str, lookup: Dict, conn, player_id: i
         print(f"      ✓ Exact name match: {normalized_name}")
         return player_stats
 
-    # Step 3: Strict first+last name matching with suffix stripping
+    # Step 3: Check alias table for alternative names
+    try:
+        alias_results = conn.execute(text("""
+            SELECT normalized_name FROM mlb_player_aliases 
+            WHERE player_id = :player_id
+        """), {'player_id': player_id}).fetchall()
+        
+        for alias_row in alias_results:
+            alias_name = alias_row[0]
+            player_stats = lookup.get(alias_name)
+            if player_stats:
+                print(f"      🔗 Alias match: {normalized_name} → {alias_name}")
+                return player_stats
+                
+    except Exception as e:
+        print(f"      Error checking aliases: {e}")
+
+    # Step 4: Strict first+last name matching with suffix stripping
     for espn_name, stats in lookup.items():
         if names_match_strict(normalized_name, espn_name):
             print(f"      🔍 Strict name match (suffix stripped): {normalized_name} → {espn_name}")

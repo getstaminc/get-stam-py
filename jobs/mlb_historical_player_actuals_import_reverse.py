@@ -9,6 +9,7 @@ from typing import List, Dict, Optional, Tuple
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 import time as _time
+from unidecode import unidecode
 
 # Load environment variables
 load_dotenv()
@@ -100,6 +101,10 @@ def normalize_player_name(name: str) -> str:
     """Normalize player name to match the format used in odds ingestion."""
     if not name:
         return ''
+    
+    # Remove accents/diacritics
+    name = unidecode(name)
+    
     normalized = name.lower()
     normalized = normalized.replace("'", "").replace("-", "").replace(".", "")
     normalized = ' '.join(normalized.split())

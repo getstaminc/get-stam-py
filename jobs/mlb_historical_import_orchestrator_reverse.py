@@ -104,6 +104,7 @@ def main():
         print("\n⚡ Performance Improvement:")
         print("  - Reverse approach queries database once per game instead of per player")
         print("  - Uses in-memory dictionary lookups for faster matching")
+        print("  - Enhanced name normalization handles accents/diacritics (e.g., 'Sanó' → 'Sano')")
 
         print("\n" + "=" * 80)
         print("STEP 1: Importing Historical Odds")

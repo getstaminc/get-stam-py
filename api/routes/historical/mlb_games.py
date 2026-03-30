@@ -65,16 +65,37 @@ def get_mlb_game_by_id(game_id):
     return jsonify({'game': game, 'sport': 'MLB'})
 
 
-@mlb_historical_bp.route('/api/historical/mlb/teams/<team_name>/games', methods=['GET'])
-def get_mlb_team_games(team_name):
-    """Get games for a specific MLB team."""
+@mlb_historical_bp.route('/api/historical/mlb/teams/<int:team_id>/games', methods=['GET'])
+def get_mlb_team_games_by_id(team_id):
+    """Get games for a specific MLB team by ID."""
     limit = request.args.get('limit', 50, type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     playoffs = request.args.get('playoffs', type=bool)
     venue = request.args.get('venue')  # 'home', 'away', or None for all games
     
-    games, error = MLBService.get_team_games(team_name, limit, start_date, end_date, playoffs, venue)
+    games, error = MLBService.get_team_games_by_id(team_id, limit, start_date, end_date, playoffs, venue)
+    
+    if error:
+        return jsonify({'error': error}), 500
+    
+    return jsonify({
+        'games': games,
+        'count': len(games) if games else 0,
+        'team_id': team_id,
+        'sport': 'MLB'
+    })
+
+@mlb_historical_bp.route('/api/historical/mlb/teams/<team_name>/games', methods=['GET'])
+def get_mlb_team_games(team_name):
+    """Get games for a specific MLB team by name."""
+    limit = request.args.get('limit', 50, type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    playoffs = request.args.get('playoffs', type=bool)
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
+    
+    games, error = MLBService.get_team_games_by_name(team_name, limit, start_date, end_date, playoffs, venue)
     
     if error:
         return jsonify({'error': error}), 500
@@ -87,16 +108,38 @@ def get_mlb_team_games(team_name):
     })
 
 
+@mlb_historical_bp.route('/api/historical/mlb/teams/<int:team_id>/vs/<int:opponent_id>', methods=['GET'])
+def get_mlb_head_to_head_by_id(team_id, opponent_id):
+    """Get head-to-head games between two MLB teams by ID."""
+    limit = request.args.get('limit', 10, type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    venue = request.args.get('venue')  # 'home', 'away', or None for all games
+    team_perspective = request.args.get('team_perspective', type=int)  # Which team's venue to consider
+    
+    games, error = MLBService.get_head_to_head_games_by_id(team_id, opponent_id, limit, start_date, end_date, venue, team_perspective)
+    
+    if error:
+        return jsonify({'error': error}), 500
+    
+    return jsonify({
+        'games': games,
+        'count': len(games) if games else 0,
+        'team_id': team_id,
+        'opponent_id': opponent_id,
+        'sport': 'MLB'
+    })
+
 @mlb_historical_bp.route('/api/historical/mlb/teams/<team1>/vs/<team2>', methods=['GET'])
 def get_mlb_head_to_head(team1, team2):
-    """Get head-to-head games between two MLB teams."""
+    """Get head-to-head games between two MLB teams by name."""
     limit = request.args.get('limit', 10, type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     venue = request.args.get('venue')  # 'home', 'away', or None for all games
     team_perspective = request.args.get('team_perspective')  # Which team's venue to consider
     
-    games, error = MLBService.get_head_to_head_games(team1, team2, limit, start_date, end_date, venue, team_perspective)
+    games, error = MLBService.get_head_to_head_games_by_name(team1, team2, limit, start_date, end_date, venue, team_perspective)
     
     if error:
         return jsonify({'error': error}), 500

@@ -7,7 +7,7 @@ export interface Sport {
 }
 
 export const sports: Sport[] = [
-  { name: "MLB", path: "/mlb", inSeason: false },
+  { name: "MLB", path: "/mlb", inSeason: true },
   { name: "NBA", path: "/nba", inSeason: true },
   { name: "NCAAB", path: "/ncaab", inSeason: true },
   { name: "NHL", path: "/nhl", inSeason: true },

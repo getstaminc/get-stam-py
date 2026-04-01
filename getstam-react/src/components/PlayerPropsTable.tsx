@@ -27,10 +27,6 @@ const PlayerPropsLegend = () => (
 );
 
 const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
-  // Debug logging
-  console.log('PlayerPropsTable received players:', players);
-  console.log('Players type:', typeof players);
-  console.log('Is array:', Array.isArray(players));
   
   // Handle both array and object formats
   let playersData: { [key: string]: any };

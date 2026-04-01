@@ -42,14 +42,12 @@ export interface PitcherData {
 
 export const fetchPitcherData = async (): Promise<any> => {
   try {
-    console.log("🚀 Fetching pitcher data from API...");
     const response = await fetch("https://www.getstam.com/api/mlb/pitchers");
     if (!response.ok) {
       console.error(`Pitcher API failed with ${response.status}: ${response.statusText}`);
       return {};
     }
     const data = await response.json();
-    console.log("📊 Received pitcher data:", data);
     return data;
   } catch (error) {
     console.error("Error fetching pitcher data:", error);

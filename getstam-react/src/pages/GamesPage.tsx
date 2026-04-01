@@ -327,7 +327,6 @@ const GamesPage = () => {
       const leagueSlug = urlSport; // e.g. 'laliga', 'seriea'
       const dateStr = formatDateForUrl(selectedDate);
       const leagueUrl = `${API_BASE_URL}/api/historical/soccer/${leagueSlug}/trends?date=${dateStr}`;
-      console.log('league-trends-fallback: fetching', leagueUrl);
       setTrendsLoading(true);
       fetch(leagueUrl, {
         method: 'GET',

@@ -9,6 +9,7 @@ from .mlb_player_alias import MLBPlayerAlias
 from .mlb_player_name_mismatch import MLBPlayerNameMismatch
 from .mlb_batter_prop import MLBBatterProp
 from .mlb_pitcher_prop import MLBPitcherProp
+from .mlb_game import MLBGame
 from .team import Team
 
-__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'Team']
+__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'Team']

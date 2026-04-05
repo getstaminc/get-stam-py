@@ -231,17 +231,54 @@ def normalize_name_simple(name: str) -> str:
     return name.lower().strip().replace("'", "").replace("-", "").replace(".", "")
 
 
+_TEAM_ALIASES = {
+    # Athletics rebrand — odds_api_team_name is now "Athletics"
+    'Oakland Athletics': 'Athletics',
+    "A's": 'Athletics',
+    # Short names that may appear in Odds API
+    'Guardians': 'Cleveland Guardians',
+    'D-backs': 'Arizona Diamondbacks',
+    'Diamondbacks': 'Arizona Diamondbacks',
+    'Red Sox': 'Boston Red Sox',
+    'Blue Jays': 'Toronto Blue Jays',
+    'White Sox': 'Chicago White Sox',
+}
+
+
 def resolve_team_id_from_odds_api(conn, odds_team_name: str) -> Optional[int]:
     """
-    Resolve team_id from odds_api_team_name in teams table.
+    Resolve team_id for an Odds API team name with three fallback strategies:
+      1. Exact match on odds_api_team_name column
+      2. Alias lookup (e.g. "Athletics" → "Oakland Athletics") then odds_api_team_name match
+      3. Direct match on team_name column
     """
     try:
+        # Step 1: Exact match on odds_api_team_name
         result = conn.execute(text("""
             SELECT team_id FROM teams
             WHERE odds_api_team_name = :odds_team_name AND sport = 'MLB'
         """), {'odds_team_name': odds_team_name}).fetchone()
-
         if result:
+            return result[0]
+
+        # Step 2: Try known alias (e.g. "Athletics" → "Oakland Athletics")
+        canonical = _TEAM_ALIASES.get(odds_team_name)
+        if canonical:
+            result = conn.execute(text("""
+                SELECT team_id FROM teams
+                WHERE odds_api_team_name = :name AND sport = 'MLB'
+            """), {'name': canonical}).fetchone()
+            if result:
+                print(f"    🔧 Resolved via alias: '{odds_team_name}' → '{canonical}'")
+                return result[0]
+
+        # Step 3: Fallback — match against team_name column directly
+        result = conn.execute(text("""
+            SELECT team_id FROM teams
+            WHERE team_name = :team_name AND sport = 'MLB'
+        """), {'team_name': odds_team_name}).fetchone()
+        if result:
+            print(f"    🔧 Resolved via team_name: '{odds_team_name}'")
             return result[0]
 
         print(f"    ⚠️ Could not resolve team: {odds_team_name}")

@@ -4,7 +4,8 @@ import os
 import sys
 import requests
 import time
-from datetime import datetime, date, timedelta
+from collections import defaultdict
+from datetime import datetime, date, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
@@ -16,9 +17,17 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 
 
-def get_mlb_games_for_date(target_date: date, retries=3, delay=2) -> List[str]:
+def get_mlb_games_for_date(target_date: date, retries=3, delay=2) -> List[Dict]:
     """
-    Get all MLB game IDs for a specific historical date from ESPN.
+    Get all MLB games for a specific historical date from ESPN.
+
+    Returns a list of dicts sorted by game_datetime:
+        {
+            'game_id': str,
+            'game_datetime': datetime,       # UTC
+            'espn_home_team_id': str,
+            'espn_away_team_id': str,
+        }
     """
     print(f"Fetching MLB games for {target_date}...")
 
@@ -43,13 +52,43 @@ def get_mlb_games_for_date(target_date: date, retries=3, delay=2) -> List[str]:
             if not data.get('events'):
                 print(f"  No games found for {target_date}")
                 return []
-            game_ids = []
+            games = []
             for event in data['events']:
                 game_id = event.get('id')
-                if game_id:
-                    game_ids.append(game_id)
-            print(f"  Found {len(game_ids)} MLB games for {target_date}")
-            return game_ids
+                date_str_raw = event.get('date')
+                if not game_id:
+                    continue
+
+                game_datetime = None
+                if date_str_raw:
+                    try:
+                        game_datetime = datetime.fromisoformat(date_str_raw.replace('Z', '+00:00'))
+                    except ValueError:
+                        pass
+
+                espn_home_team_id = None
+                espn_away_team_id = None
+                competitions = event.get('competitions', [])
+                if competitions:
+                    for competitor in competitions[0].get('competitors', []):
+                        home_away = competitor.get('homeAway', '')
+                        team_id = str(competitor.get('team', {}).get('id', ''))
+                        if home_away == 'home':
+                            espn_home_team_id = team_id
+                        elif home_away == 'away':
+                            espn_away_team_id = team_id
+
+                games.append({
+                    'game_id': game_id,
+                    'game_datetime': game_datetime,
+                    'espn_home_team_id': espn_home_team_id,
+                    'espn_away_team_id': espn_away_team_id,
+                })
+
+            _epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+            games.sort(key=lambda g: g['game_datetime'] or _epoch)
+            print(f"  Found {len(games)} MLB games for {target_date}")
+            return games
         except requests.exceptions.RequestException as e:
             print(f"  Error fetching games (attempt {i+1}/{retries}): {e}")
             if i < retries - 1:
@@ -432,7 +471,68 @@ def find_player_in_lookup(normalized_name: str, lookup: Dict, conn, player_id: i
     return None
 
 
-def process_game_reverse(conn, game_id: str, game_date: date) -> int:
+def get_doubleheader_game_index(
+    game_id: str,
+    espn_team_id_1: str,
+    espn_team_id_2: str,
+    all_day_games: List[Dict],
+) -> int:
+    """
+    Return the 0-based position of game_id among all ESPN games today for this matchup.
+    For a normal (non-doubleheader) game this always returns 0.
+    For a doubleheader, returns 0 for the earlier game and 1 for the later game.
+    """
+    team_ids = {espn_team_id_1, espn_team_id_2}
+    matchup_games = [
+        g for g in all_day_games
+        if {g.get('espn_home_team_id'), g.get('espn_away_team_id')} == team_ids
+    ]
+    # all_day_games is already sorted by game_datetime; maintain that order
+    for idx, g in enumerate(matchup_games):
+        if g['game_id'] == game_id:
+            return idx
+    return 0
+
+
+def select_doubleheader_prop_record(conn, records: list, espn_game_index: int) -> Optional[tuple]:
+    """
+    Given multiple prop records for the same player on the same date (doubleheader),
+    return the record that corresponds to the ESPN game at position espn_game_index.
+
+    Primary sort key: start_time from mlb_games (via odds_event_id).
+    Fallback: created_at on the prop record itself.
+
+    records: list of tuples — (id, player_id, normalized_name, home_id, away_id,
+                                player_type, odds_event_id, created_at)
+    """
+    ODDS_EVENT_ID_IDX = 6
+    CREATED_AT_IDX = 7
+
+    def get_sort_key(record):
+        odds_event_id = record[ODDS_EVENT_ID_IDX]
+        if odds_event_id:
+            try:
+                row = conn.execute(text("""
+                    SELECT start_time FROM mlb_games WHERE odds_event_id = :eid
+                """), {'eid': odds_event_id}).fetchone()
+                if row and row[0]:
+                    return (0, row[0])
+            except Exception:
+                pass
+        # Fallback: use created_at
+        created_at = record[CREATED_AT_IDX]
+        return (1, created_at) if created_at else (2, None)
+
+    sorted_records = sorted(records, key=get_sort_key)
+
+    if espn_game_index >= len(sorted_records):
+        print(f"      ⚠️  Doubleheader index {espn_game_index} out of range ({len(sorted_records)} records); using last")
+        return sorted_records[-1]
+
+    return sorted_records[espn_game_index]
+
+
+def process_game_reverse(conn, game_id: str, game_date: date, espn_game_datetime: Optional[datetime] = None, all_day_games: Optional[List[Dict]] = None) -> int:
     """
     Process a single MLB game using the reverse approach.
     """
@@ -479,9 +579,17 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
 
     print(f"    Built lookup for {len(batter_lookup)} batters, {len(pitcher_lookup)} pitchers from ESPN")
 
+    # Determine doubleheader position for this ESPN game
+    espn_game_index = 0
+    if all_day_games and espn_team_id_1 and espn_team_id_2:
+        espn_game_index = get_doubleheader_game_index(game_id, espn_team_id_1, espn_team_id_2, all_day_games)
+        if espn_game_index > 0:
+            print(f"    🎯 Doubleheader detected: this is game {espn_game_index + 1} of the day for these teams")
+
     # Get all prop records for this game from both tables
     batter_records = conn.execute(text("""
-        SELECT id, player_id, normalized_name, odds_home_team_id, odds_away_team_id, 'batter' AS player_type
+        SELECT id, player_id, normalized_name, odds_home_team_id, odds_away_team_id,
+               'batter' AS player_type, odds_event_id, created_at
         FROM mlb_batter_props
         WHERE game_date = :game_date
         AND (odds_home_team_id = :team1_id OR odds_away_team_id = :team1_id
@@ -493,7 +601,8 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
     }).fetchall()
 
     pitcher_records = conn.execute(text("""
-        SELECT id, player_id, normalized_name, odds_home_team_id, odds_away_team_id, 'pitcher' AS player_type
+        SELECT id, player_id, normalized_name, odds_home_team_id, odds_away_team_id,
+               'pitcher' AS player_type, odds_event_id, created_at
         FROM mlb_pitcher_props
         WHERE game_date = :game_date
         AND (odds_home_team_id = :team1_id OR odds_away_team_id = :team1_id
@@ -512,10 +621,32 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
 
     print(f"    Found {len(prop_records)} prop records to update ({len(batter_records)} batters, {len(pitcher_records)} pitchers)")
 
+    # For doubleheaders: group by (player_id, player_type) and select only the record
+    # that corresponds to this ESPN game's position in the day's schedule.
+    player_type_groups = defaultdict(list)
+    for record in prop_records:
+        key = (record[1], record[5])  # (player_id, player_type)
+        player_type_groups[key].append(record)
+
+    records_to_process_ids = set()
+    for (pid, ptype), recs in player_type_groups.items():
+        if len(recs) == 1:
+            records_to_process_ids.add(recs[0][0])
+        else:
+            chosen = select_doubleheader_prop_record(conn, recs, espn_game_index)
+            if chosen:
+                records_to_process_ids.add(chosen[0])
+                print(f"    🎯 Doubleheader: selected record {chosen[0]} (game {espn_game_index + 1}) for {recs[0][2]}")
+            else:
+                for r in recs:
+                    records_to_process_ids.add(r[0])
+
+    prop_records_filtered = [r for r in prop_records if r[0] in records_to_process_ids]
+
     updated_count = 0
 
-    for record in prop_records:
-        props_id, player_id, normalized_name, odds_home_team_id, odds_away_team_id, player_type = record
+    for record in prop_records_filtered:
+        props_id, player_id, normalized_name, odds_home_team_id, odds_away_team_id, player_type, *_ = record
 
         # Determine table and lookup based on player_type
         if player_type == 'batter':
@@ -761,22 +892,24 @@ def import_historical_actuals_for_date_reverse(target_date: date, conn) -> int:
     """
     print(f"\n=== Importing Historical MLB Player Actuals (Reverse) for {target_date} ===")
 
-    game_ids = get_mlb_games_for_date(target_date)
+    all_day_games = get_mlb_games_for_date(target_date)
 
-    if not game_ids:
+    if not all_day_games:
         print(f"No games found for {target_date}")
         return 0
 
     total_updated = 0
 
-    for i, game_id in enumerate(game_ids, 1):
-        print(f"\n  Processing game {i}/{len(game_ids)}: {game_id}")
+    for i, game_info in enumerate(all_day_games, 1):
+        game_id = game_info['game_id']
+        game_datetime = game_info['game_datetime']
+        print(f"\n  Processing game {i}/{len(all_day_games)}: {game_id}")
 
         try:
-            updated = process_game_reverse(conn, game_id, target_date)
+            updated = process_game_reverse(conn, game_id, target_date, game_datetime, all_day_games)
             total_updated += updated
 
-            if i < len(game_ids):
+            if i < len(all_day_games):
                 time.sleep(2)
 
         except Exception as e:

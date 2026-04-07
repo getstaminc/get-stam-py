@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
   Button,
-  Paper,
   TextField,
   CircularProgress,
 } from "@mui/material";
@@ -531,9 +530,10 @@ const GamesPage = () => {
           </Typography>
         )}
 
-        {!isHistoricalDate && activeView === "all" && games.map((match) => (
-          <Paper key={match.game_id} elevation={3} sx={{ mb: 3, p: 2, borderRadius: 2,  backgroundColor: "#f9f9f9" }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
+          {!isHistoricalDate && activeView === "all" && games.map((match) => (
             <GameOdds
+              key={match.game_id}
               game={{
                 home: match.home,
                 away: match.away,
@@ -541,30 +541,11 @@ const GamesPage = () => {
                 ...(match.draw ? { draw: match.draw } : {})
               }}
               pitcherData={getGamePitcherData(match)}
+              detailsLink={`/game-details/${urlSport}?game_id=${match.game_id}`}
+              onViewDetails={() => setCurrentGame(match)}
             />
-            <Box sx={{ mt: 3, textAlign: "center" }}>
-              <Button
-                component={Link}
-                to={`/game-details/${urlSport}?game_id=${match.game_id}`}
-                variant="contained"
-                color="primary"
-                onClick={() => setCurrentGame(match)}
-                size="medium"
-                sx={{
-                  px: 3,
-                  py: 1,
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                  textTransform: "none",
-                  borderRadius: 2,
-                  textDecoration: "none"
-                }}
-              >
-                View Details
-              </Button>
-            </Box>
-          </Paper>
-        ))}
+          ))}
+        </Box>
 
         {!isHistoricalDate && activeView === "trends" && gamesLoading && (
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 2 }}>

@@ -2,6 +2,7 @@
 
 import os
 import sys
+import argparse
 import json
 import time
 import requests
@@ -48,18 +49,17 @@ def convert_start_time_to_time(start_time):
         return None
 
 
-def get_recent_mlb_games(retries=3, delay=1):
-    """Fetch MLB games from yesterday"""
-    print(f"Fetching MLB games from yesterday...")
-    
-    # Calculate yesterday's date in the required format (YYYYMMDD)
-    yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y%m%d')
-    
-    print(f"Date: {yesterday}")
-    
+def get_recent_mlb_games(date=None, retries=3, delay=1):
+    """Fetch MLB games for a given date (defaults to yesterday)"""
+    if date is None:
+        date = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    sdql_date = datetime.strptime(date, '%Y-%m-%d').strftime('%Y%m%d')
+    print(f"Fetching MLB games for {date}...")
+
     # SDQL query for MLB games with all required fields (matching migration field names)
     sdql_url = f"https://s3.sportsdatabase.com/MLB/query"
-    sdql_query = f"date,site,team,o:team,runs,o:runs,total,margin,line,o:line,playoffs,start time,_t,starter,o:starter,line F5,o:line F5,total F5,total over F5 odds,inning runs,o:inning runs@(site='home' or site='neutral') and date={yesterday}"
+    sdql_query = f"date,site,team,o:team,runs,o:runs,total,margin,line,o:line,playoffs,start time,_t,starter,o:starter,line F5,o:line F5,total F5,total over F5 odds,inning runs,o:inning runs@(site='home' or site='neutral') and date={sdql_date}"
 
     headers = {
         'user': SDQL_USERNAME,
@@ -91,10 +91,10 @@ def get_recent_mlb_games(retries=3, delay=1):
                     game['inning runs'] = json.dumps(game['inning runs'])  # Cast to JSON
                     game['o:inning runs'] = json.dumps(game['o:inning runs'])  # Cast to JSON
 
-                print(f"Successfully fetched {len(formatted_result)} games for {yesterday}.")
+                print(f"Successfully fetched {len(formatted_result)} games for {date}.")
                 return formatted_result
             else:
-                print("No games found for yesterday.")
+                print(f"No games found for {date}.")
                 return []
         except requests.exceptions.RequestException as e:
             print(f"SDQL request failed: {e}")
@@ -107,16 +107,16 @@ def get_recent_mlb_games(retries=3, delay=1):
             return []
 
 
-def seed_recent_games():
+def seed_recent_games(date=None):
     """Main function to seed recent MLB games"""
     print("Starting MLB recent games seeding...")
-    
+
     # Create database connection
     engine = create_engine(DATABASE_URL)
     conn = engine.connect()
 
     # Fetch recent games
-    games = get_recent_mlb_games()
+    games = get_recent_mlb_games(date)
     print(f"Processing {len(games)} games.")
 
     # Fetch all MLB teams from the database and store them in a dictionary
@@ -302,4 +302,5 @@ def seed_recent_games():
 
 
 if __name__ == "__main__":
-    seed_recent_games()
+    date_arg = sys.argv[1] if len(sys.argv) > 1 else None
+    seed_recent_games(date_arg)

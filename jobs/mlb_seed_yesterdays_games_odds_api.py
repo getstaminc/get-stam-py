@@ -2,6 +2,7 @@
 
 import os
 import sys
+import argparse
 import requests
 import json
 import time
@@ -28,37 +29,49 @@ shared_utils = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(shared_utils)
 
 
-def get_yesterdays_mlb_scores(retries=3, delay=1):
-    """Fetch completed MLB games from yesterday via Odds API scores endpoint."""
-    print("Fetching MLB scores from Odds API...")
-    url = f"https://api.the-odds-api.com/v4/sports/baseball_mlb/scores/?daysFrom=3&apiKey={ODDS_API_KEY}&dateFormat=iso"
+MAX_DAYS_FROM = 3  # Odds API scores endpoint limit
 
+def get_mlb_scores_for_range(start_date, end_date, retries=3, delay=1):
+    """Fetch completed MLB games within a date range via Odds API scores endpoint."""
     eastern_tz = pytz.timezone('US/Eastern')
-    yesterday = (datetime.now(eastern_tz) - timedelta(days=1)).strftime('%Y-%m-%d')
-    print(f"Filtering for Eastern date: {yesterday}")
+    today = datetime.now(eastern_tz).date()
+    start = datetime.strptime(start_date, '%Y-%m-%d').date()
+    days_back = (today - start).days + 1
+
+    if days_back > MAX_DAYS_FROM:
+        raise ValueError(
+            f"Start date {start_date} is {days_back} days ago — "
+            f"the Odds API scores endpoint only supports up to {MAX_DAYS_FROM} days back. "
+            f"Earliest allowed start date: {(today - timedelta(days=MAX_DAYS_FROM - 1)).strftime('%Y-%m-%d')}"
+        )
+
+    print(f"Fetching MLB scores from Odds API (daysFrom={days_back})...")
+    print(f"Filtering for Eastern date range: {start_date} to {end_date}")
+    url = f"https://api.the-odds-api.com/v4/sports/baseball_mlb/scores/?daysFrom={days_back}&apiKey={ODDS_API_KEY}&dateFormat=iso"
 
     for i in range(retries):
         try:
             response = requests.get(url)
             response.raise_for_status()
             games = response.json()
-            yesterday_games = []
+            matching_games = []
             for game in games:
                 if game.get('completed') and game.get('scores'):
                     commence_time_utc = datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00'))
                     commence_time_eastern = shared_utils.convert_to_eastern(commence_time_utc)
-                    if str(commence_time_eastern.date()) == yesterday:
-                        yesterday_games.append(game)
+                    game_date_str = str(commence_time_eastern.date())
+                    if start_date <= game_date_str <= end_date:
+                        matching_games.append(game)
 
-            print(f"Found {len(yesterday_games)} completed MLB games from yesterday ({yesterday})")
-            return yesterday_games, yesterday
+            print(f"Found {len(matching_games)} completed MLB games in range")
+            return matching_games
         except requests.exceptions.RequestException as e:
             print(f"Error fetching scores (attempt {i+1}/{retries}): {e}")
             if i < retries - 1:
                 time.sleep(delay)
             else:
                 raise
-    return [], None
+    return []
 
 
 def get_historical_odds_at_time(snapshot_time, retries=3, delay=1):
@@ -70,6 +83,8 @@ def get_historical_odds_at_time(snapshot_time, retries=3, delay=1):
         f"?apiKey={ODDS_API_KEY}&regions=us&bookmakers=draftkings"
         f"&markets=h2h,spreads,totals&oddsFormat=american&date={time_str}"
     )
+    safe_url = url.replace(ODDS_API_KEY, "YOUR_API_KEY")
+    print(f"  URL: {safe_url}")
 
     for i in range(retries):
         try:
@@ -106,9 +121,11 @@ def build_odds_lookup(games):
 
     for commence_utc in unique_times:
         snapshot_time = commence_utc - timedelta(hours=1)
+        print(f"  Game starts at {commence_utc} UTC — fetching odds snapshot at {snapshot_time} UTC (1 hour before)")
         data = get_historical_odds_at_time(snapshot_time)
         for odds_game in data:
-            odds_lookup[odds_game['id']] = odds_game
+            if odds_game['id'] not in odds_lookup:
+                odds_lookup[odds_game['id']] = odds_game
         time.sleep(0.5)  # be polite to the API
 
     print(f"Odds lookup built for {len(odds_lookup)} event(s)")
@@ -152,17 +169,17 @@ def parse_odds(odds_game):
     return result
 
 
-def seed_yesterdays_mlb_games():
-    """Main function to seed yesterday's MLB games from the Odds API."""
-    print("Starting MLB games seeding (Odds API)...")
+def seed_mlb_games(start_date, end_date):
+    """Main function to seed MLB games for a date range from the Odds API."""
+    print(f"Starting MLB games seeding (Odds API) for {start_date} to {end_date}...")
 
     engine = create_engine(DATABASE_URL)
     conn = engine.connect()
 
     try:
-        games, yesterday = get_yesterdays_mlb_scores()
+        games = get_mlb_scores_for_range(start_date, end_date)
         if not games:
-            print("No completed MLB games found for yesterday")
+            print(f"No completed MLB games found for {start_date} to {end_date}")
             return
 
         odds_lookup = build_odds_lookup(games)
@@ -290,4 +307,13 @@ def seed_yesterdays_mlb_games():
 
 
 if __name__ == "__main__":
-    seed_yesterdays_mlb_games()
+    eastern_tz = pytz.timezone('US/Eastern')
+    yesterday_str = (datetime.now(eastern_tz) - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    parser = argparse.ArgumentParser(description='Seed MLB games from Odds API')
+    parser.add_argument('--start-date', default=yesterday_str, help='Start date YYYY-MM-DD (default: yesterday)')
+    parser.add_argument('--end-date', help='End date YYYY-MM-DD (default: same as start-date)')
+    args = parser.parse_args()
+
+    end = args.end_date or args.start_date
+    seed_mlb_games(args.start_date, end)

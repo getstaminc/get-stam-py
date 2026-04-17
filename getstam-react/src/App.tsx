@@ -21,6 +21,7 @@ import BettingGuidePage from "./pages/BettingGuidePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import GamesPage from "./pages/GamesPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
+import MismatchPlayersPage from "./pages/MismatchPlayersPage";
 
 function AppContent() {
   usePageView();
@@ -78,6 +79,7 @@ function AppContent() {
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/internal/mismatch-players" element={<MismatchPlayersPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Box>

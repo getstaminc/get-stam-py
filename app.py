@@ -25,6 +25,7 @@ from api.routes.historical.nba_games import nba_historical_bp
 from api.routes.historical.nba_trends import nba_trends_bp
 from api.routes.historical.ncaab_trends import ncaab_trends_bp
 from api.routes.mlb_pitchers import mlb_pitchers_bp
+from api.routes.internal.mlb_mismatch import mlb_mismatch_bp
 from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
@@ -86,6 +87,7 @@ app.register_blueprint(nba_trends_bp)
 app.register_blueprint(ncaab_trends_bp)
 app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_pitchers_bp)
+app.register_blueprint(mlb_mismatch_bp)
 
 #Route to clear the cache
 @app.route('/clear-cache')

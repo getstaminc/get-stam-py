@@ -21,15 +21,16 @@ DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 
 def check_event_in_db(conn, event_id):
     """Returns (in_batter_props, in_pitcher_props) booleans."""
-    batter = conn.execute(text(
+    batter_count = conn.execute(text(
         "SELECT COUNT(*) FROM mlb_batter_props WHERE odds_event_id = :eid"
-    ), {'eid': event_id}).scalar() > 0
+    ), {'eid': event_id}).scalar()
 
-    pitcher = conn.execute(text(
+    pitcher_count = conn.execute(text(
         "SELECT COUNT(*) FROM mlb_pitcher_props WHERE odds_event_id = :eid"
-    ), {'eid': event_id}).scalar() > 0
+    ), {'eid': event_id}).scalar()
 
-    return batter, pitcher
+    print(f"  DB check {event_id}: batter_props={batter_count}, pitcher_props={pitcher_count}")
+    return batter_count > 0, pitcher_count > 0
 
 
 def main():

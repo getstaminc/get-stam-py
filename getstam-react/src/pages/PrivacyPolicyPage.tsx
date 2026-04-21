@@ -1,9 +1,15 @@
 import React from 'react';
 import { Box, Typography, Container, Paper } from '@mui/material';
+import SEO from '../components/SEO';
 
 const PrivacyPolicyPage: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SEO
+        title="Privacy Policy"
+        description="How GetSTAM collects and uses your data."
+        canonicalPath="/privacy-policy"
+      />
       <Paper elevation={2} sx={{ p: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
           Privacy Policy

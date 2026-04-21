@@ -5,6 +5,7 @@ import GameDetails from "../components/GameDetails";
 import { useGame } from "../contexts/GameContext";
 import { convertTeamNameBySport, convertSportKeyForDatabase } from "../utils/teamNameConverter";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
+import SEO from "../components/SEO";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -399,7 +400,11 @@ const GameDetailsPage: React.FC = () => {
 
   return (
     <div>
-      <GameDetails 
+      <SEO
+        title="Game Details"
+        description="In-depth odds, trends, and stats for this matchup."
+      />
+      <GameDetails
         game={gameData} 
         homeTeamHistory={homeTeamHistory}
         awayTeamHistory={awayTeamHistory}

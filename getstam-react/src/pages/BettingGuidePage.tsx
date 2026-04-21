@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Box, Typography, Button, Paper, TextField, Link, Container } from "@mui/material";
+import SEO from "../components/SEO";
 
 const BettingGuidePage: React.FC = () => {
   const [bankroll, setBankroll] = useState<string>("");
@@ -20,6 +21,11 @@ const BettingGuidePage: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SEO
+        title="Sports Betting Guide"
+        description="A beginner's guide to reading odds, spreads, totals, and trends."
+        canonicalPath="/betting-guide"
+      />
       <Paper elevation={2} sx={{ p: 4 }}>
         <main>
           <Typography variant="h3" component="h1" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>

@@ -1,9 +1,15 @@
 import React from "react";
 import { Box, Typography, Container, Paper } from "@mui/material";
+import SEO from "../components/SEO";
 
 const AboutUsPage: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <SEO
+        title="About Us"
+        description="Learn about GetSTAM and the stats that actually matter."
+        canonicalPath="/about-us"
+      />
       <Paper elevation={2} sx={{ p: 4 }}>
         <Typography 
           variant="h3" 

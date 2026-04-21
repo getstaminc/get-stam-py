@@ -9,6 +9,7 @@ import {
   Stack,
   CircularProgress,
 } from "@mui/material";
+import SEO from "../components/SEO";
 
 const ContactUsPage: React.FC = () => {
   const [name, setName] = useState("");
@@ -56,6 +57,11 @@ const ContactUsPage: React.FC = () => {
 
   return (
     <Box sx={{ maxWidth: 500, mx: "auto", mt: 6, mb: 6 }}>
+      <SEO
+        title="Contact Us"
+        description="Get in touch with the GetSTAM team."
+        canonicalPath="/contact-us"
+      />
       <Paper elevation={3} sx={{ p: 4 }}>
         <Typography variant="h5" fontWeight={700} mb={2}>
           Contact Us

@@ -14,7 +14,8 @@ import GameOdds from "../components/GameOdds";
 import GamesWithTrends from "../components/GamesWithTrends";
 import PastGamesDisplay from "../components/PastGamesDisplay";
 import { GameWithTrends } from "../utils/trendAnalysis";
-import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils"; 
+import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
+import SEO from "../components/SEO";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -382,6 +383,11 @@ const GamesPage = () => {
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", px: 2, py: 4 }}>
+      <SEO
+        title={`${displaySport} Games & Odds`}
+        description={`Today's ${displaySport} matchups, betting lines, spreads, and trends.`}
+        canonicalPath={`/${urlSport}`}
+      />
       <Box sx={{ width: "100%", maxWidth: 900 }}>
         <Typography
           variant="h4"

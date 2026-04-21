@@ -6,6 +6,8 @@ import {
   Button,
   TextField,
   CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import { useGame } from "../contexts/GameContext";
 import GameOdds from "../components/GameOdds";
@@ -413,68 +415,42 @@ const GamesPage = () => {
             gap: 2
           }}
         >
-          {/* Only show buttons for current/future dates */}
+          {/* Only show toggle for current/future dates */}
           {!isHistoricalDate && (
             <Box
               sx={{
                 display: 'flex',
-                flexDirection: 'row',
                 justifyContent: { xs: 'center', md: 'flex-start' },
                 alignItems: 'center',
                 width: '100%',
-                gap: 0
               }}
             >
-              <Button
-                variant={activeView === "all" ? "contained" : "outlined"}
-                color={activeView === "all" ? "primary" : "inherit"}
-                onClick={() => setActiveView("all")}
+              <ToggleButtonGroup
+                value={activeView}
+                exclusive
+                onChange={(_, val) => { if (val) setActiveView(val); }}
                 sx={{
-                  px: 3,
-                  py: 1,
-                  fontSize: "1rem",
-                  textTransform: "none",
-                  borderRadius: '8px 0 0 8px',
-                  borderRight: "1px solid #ccc",
-                  boxShadow: "none",
-                  ...(activeView === "all" && { zIndex: 1 }),
-                  ...(activeView !== "all" && {
-                    borderColor: '#e0e0e0',
-                    color: '#666',
-                    '&:hover': {
-                      borderColor: '#bdbdbd',
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                    }
-                  })
+                  '& .MuiToggleButton-root': {
+                    textTransform: 'none',
+                    fontSize: '1.05rem',
+                    fontWeight: 500,
+                    px: 4,
+                    py: 1.25,
+                    borderColor: '#d0d0d0',
+                    color: '#999',
+                    letterSpacing: '0.01em',
+                  },
+                  '& .MuiToggleButton-root.Mui-selected': {
+                    backgroundColor: '#1976d2',
+                    color: '#fff',
+                    fontWeight: 700,
+                    '&:hover': { backgroundColor: '#1565c0' },
+                  },
                 }}
               >
-                All Games
-              </Button>
-              <Button
-                variant={activeView === "trends" ? "contained" : "outlined"}
-                color={activeView === "trends" ? "primary" : "inherit"}
-                onClick={() => setActiveView("trends")}
-                sx={{
-                  px: 3,
-                  py: 1,
-                  fontSize: "1rem",
-                  textTransform: "none",
-                  borderRadius: '0 8px 8px 0',
-                  boxShadow: "none",
-                  borderLeft: "none",
-                  ...(activeView === "trends" && { zIndex: 1 }),
-                  ...(activeView !== "trends" && {
-                    borderColor: '#e0e0e0',
-                    color: '#666',
-                    '&:hover': {
-                      borderColor: '#bdbdbd',
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                    }
-                  })
-                }}
-              >
-                Games with Trends
-              </Button>
+                <ToggleButton value="all">All Games</ToggleButton>
+                <ToggleButton value="trends">Games with Trends</ToggleButton>
+              </ToggleButtonGroup>
             </Box>
           )}
           <TextField

@@ -384,9 +384,11 @@ const GamesPage = () => {
   return (
     <Box sx={{ display: "flex", justifyContent: "center", px: 2, py: 4 }}>
       <SEO
-        title={`${displaySport} Games & Odds`}
-        description={`Today's ${displaySport} matchups, betting lines, spreads, and trends.`}
-        canonicalPath={`/${urlSport}`}
+        title={isTrends ? `${displaySport} Trends` : `${displaySport} Games & Odds`}
+        description={isTrends
+          ? `${displaySport} betting trends and historical patterns for today's matchups.`
+          : `Today's ${displaySport} matchups, betting lines, spreads, and trends.`}
+        canonicalPath={isTrends ? `/${urlSport}/trends` : `/${urlSport}`}
       />
       <Box sx={{ width: "100%", maxWidth: 900 }}>
         <Typography

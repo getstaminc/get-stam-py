@@ -1,6 +1,7 @@
-from flask import Flask, jsonify, Blueprint, send_from_directory
+from flask import Flask, jsonify, Blueprint, send_from_directory, make_response
 from datetime import datetime
 import pytz
+import re
 
 from cache import cache, init_cache
 import logging
@@ -89,6 +90,75 @@ app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_pitchers_bp)
 app.register_blueprint(mlb_mismatch_bp)
 
+_SPORT_DISPLAY = {
+    'nfl': 'NFL', 'mlb': 'MLB', 'nba': 'NBA', 'nhl': 'NHL',
+    'ncaaf': 'NCAAF', 'ncaab': 'NCAAB',
+    'epl': 'EPL', 'laliga': 'La Liga', 'bundesliga': 'Bundesliga',
+    'ligue1': 'Ligue 1', 'seriea': 'Serie A',
+}
+
+_STATIC_PAGE_META = {
+    'about': ('About GetSTAM', 'Learn about GetSTAM and our sports analytics platform.'),
+    'contact': ('Contact Us | GetSTAM', 'Get in touch with the GetSTAM team.'),
+    'betting-guide': ('Betting Guide | GetSTAM', 'Learn how to read betting odds and use trends to your advantage.'),
+    'privacy-policy': ('Privacy Policy | GetSTAM', 'GetSTAM privacy policy.'),
+    'feature-requests': ('Feature Requests | GetSTAM', 'Request new features for GetSTAM.'),
+}
+
+def _get_page_meta(path):
+    """Return (title, description) for a given URL path."""
+    parts = [p for p in path.strip('/').split('/') if p]
+
+    if not parts:
+        return 'GetSTAM', 'Get stats that actually matter for all sports'
+
+    slug = parts[0]
+
+    if slug == 'game-details' and len(parts) >= 2:
+        sport_name = _SPORT_DISPLAY.get(parts[1], parts[1].upper())
+        return (
+            f'{sport_name} Game Details | GetSTAM',
+            f'Betting odds, trends, and head-to-head stats for this {sport_name} matchup.',
+        )
+
+    sport_name = _SPORT_DISPLAY.get(slug)
+    if sport_name:
+        if len(parts) >= 2 and parts[1] == 'trends':
+            return (
+                f'{sport_name} Betting Trends | GetSTAM',
+                f'Betting trends and historical patterns for {sport_name} matchups.',
+            )
+        return (
+            f'{sport_name} Games & Odds | GetSTAM',
+            f"Today's {sport_name} matchups, betting lines, spreads, and trends.",
+        )
+
+    if slug in _STATIC_PAGE_META:
+        return _STATIC_PAGE_META[slug]
+
+    return 'GetSTAM', 'Get stats that actually matter for all sports'
+
+
+_index_html_content = None
+
+def _get_index_html():
+    global _index_html_content
+    if _index_html_content is None:
+        with open('getstam-react/build/index.html', 'r') as f:
+            _index_html_content = f.read()
+    return _index_html_content
+
+
+def _inject_meta(html, title, description):
+    html = re.sub(r'<title>[^<]*</title>', f'<title>{title}</title>', html)
+    html = re.sub(
+        r'<meta\s+name="description"\s+content="[^"]*"\s*/?>',
+        f'<meta name="description" content="{description}" />',
+        html,
+    )
+    return html
+
+
 #Route to clear the cache
 @app.route('/clear-cache')
 def clear_cache():
@@ -115,8 +185,12 @@ def serve(path):
     static_file_path = os.path.join(app.static_folder, path)
     if os.path.exists(static_file_path) and os.path.isfile(static_file_path):
         return send_from_directory(app.static_folder, path)
-    # Serve index.html from the build root (not static)
-    return send_from_directory('getstam-react/build', 'index.html')
+    # Serve index.html with injected meta tags for crawler-friendly SSR
+    title, description = _get_page_meta(path)
+    html = _inject_meta(_get_index_html(), title, description)
+    response = make_response(html)
+    response.headers['Content-Type'] = 'text/html'
+    return response
 
 if __name__ == '__main__':
     # Start the Flask application

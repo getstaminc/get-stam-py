@@ -398,11 +398,22 @@ const GameDetailsPage: React.FC = () => {
     );
   }
 
+  const homeTeam = gameData.home?.team || gameData.home_team_name || "";
+  const awayTeam = gameData.away?.team || gameData.away_team_name || "";
+  const displaySport = sport?.toUpperCase() || "";
+  const seoTitle = homeTeam && awayTeam
+    ? `${awayTeam} vs ${homeTeam} ${displaySport} Odds & Trends`
+    : "Game Details";
+  const seoDescription = homeTeam && awayTeam
+    ? `Betting odds, trends, and head-to-head stats for ${awayTeam} vs ${homeTeam}.`
+    : "In-depth odds, trends, and stats for this matchup.";
+
   return (
     <div>
       <SEO
-        title="Game Details"
-        description="In-depth odds, trends, and stats for this matchup."
+        title={seoTitle}
+        description={seoDescription}
+        canonicalPath={`/game-details/${sport}?game_id=${gameId}`}
       />
       <GameDetails
         game={gameData} 

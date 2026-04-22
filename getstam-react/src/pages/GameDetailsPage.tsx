@@ -405,8 +405,8 @@ const GameDetailsPage: React.FC = () => {
     ? `${awayTeam} vs ${homeTeam} ${displaySport} Odds & Trends`
     : "Game Details";
   const seoDescription = homeTeam && awayTeam
-    ? `Betting odds, trends, and head-to-head stats for ${awayTeam} vs ${homeTeam}.`
-    : "In-depth odds, trends, and stats for this matchup.";
+    ? `${awayTeam} vs ${homeTeam} odds, ATS records, over/under trends, and head-to-head history.`
+    : "Point spreads, over/under lines, ATS records, and head-to-head history for this matchup.";
 
   return (
     <div>

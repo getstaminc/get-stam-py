@@ -126,11 +126,11 @@ def _get_page_meta(path):
         if len(parts) >= 2 and parts[1] == 'trends':
             return (
                 f'{sport_name} Betting Trends | GetSTAM',
-                f'Betting trends and historical patterns for {sport_name} matchups.',
+                f'{sport_name} ATS trends, over/under records, and historical betting patterns to find today\'s best matchups.',
             )
         return (
             f'{sport_name} Games & Odds | GetSTAM',
-            f"Today's {sport_name} matchups, betting lines, spreads, and trends.",
+            f"Today's {sport_name} odds, point spreads, over/under lines, and ATS records for every matchup.",
         )
 
     if slug in _STATIC_PAGE_META:
@@ -165,6 +165,45 @@ def clear_cache():
     cache.clear()
     logging.info("Cache cleared")
     return "Cache cleared", 200
+
+# Serve sitemap dynamically so daily pages always get today's lastmod
+@app.route('/sitemap.xml')
+def sitemap():
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    daily_sports = [
+        ('nba', '0.9'), ('mlb', '0.9'), ('nfl', '0.9'), ('nhl', '0.9'),
+        ('ncaaf', '0.8'), ('ncaab', '0.8'), ('epl', '0.8'), ('laliga', '0.8'),
+        ('bundesliga', '0.8'), ('ligue1', '0.8'), ('seriea', '0.8'),
+    ]
+    daily_trends = [
+        ('nba', '0.8'), ('mlb', '0.8'), ('nfl', '0.8'), ('nhl', '0.8'),
+        ('ncaaf', '0.7'), ('ncaab', '0.7'), ('epl', '0.7'), ('laliga', '0.7'),
+        ('bundesliga', '0.7'), ('ligue1', '0.7'), ('seriea', '0.7'),
+    ]
+    static_pages = [
+        ('https://www.getstam.com/about-us',      'monthly', '0.5', '2025-01-01'),
+        ('https://www.getstam.com/betting-guide',  'monthly', '0.6', '2025-01-01'),
+        ('https://www.getstam.com/contact-us',     'monthly', '0.4', '2025-01-01'),
+        ('https://www.getstam.com/privacy-policy', 'yearly',  '0.3', '2025-01-01'),
+    ]
+
+    urls = []
+    for sport, priority in daily_sports:
+        urls.append(f'  <url><loc>https://www.getstam.com/{sport}</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>{priority}</priority></url>')
+    for sport, priority in daily_trends:
+        urls.append(f'  <url><loc>https://www.getstam.com/{sport}/trends</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>{priority}</priority></url>')
+    for loc, changefreq, priority, lastmod in static_pages:
+        urls.append(f'  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>{changefreq}</changefreq><priority>{priority}</priority></url>')
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml += '\n'.join(urls)
+    xml += '\n</urlset>'
+
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/xml'
+    return response
+
 
 # Serve Firebase messaging service worker from root
 @app.route('/firebase-messaging-sw.js')

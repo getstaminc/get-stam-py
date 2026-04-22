@@ -27,6 +27,7 @@ const SEO: React.FC<SEOProps> = ({
       {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
 
       {/* Open Graph */}
+      <meta property="og:site_name" content="GetSTAM" />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content="website" />

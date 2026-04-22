@@ -386,8 +386,8 @@ const GamesPage = () => {
       <SEO
         title={isTrends ? `${displaySport} Trends` : `${displaySport} Games & Odds`}
         description={isTrends
-          ? `${displaySport} betting trends and historical patterns for today's matchups.`
-          : `Today's ${displaySport} matchups, betting lines, spreads, and trends.`}
+          ? `${displaySport} ATS trends, over/under records, and historical betting patterns to find today's best matchups.`
+          : `Today's ${displaySport} odds, point spreads, over/under lines, and ATS records for every matchup.`}
         canonicalPath={isTrends ? `/${urlSport}/trends` : `/${urlSport}`}
       />
       <Box sx={{ width: "100%", maxWidth: 900 }}>

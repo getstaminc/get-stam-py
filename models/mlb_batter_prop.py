@@ -19,7 +19,7 @@ class MLBBatterProp(Base):
     odds_batter_hits = Column(Numeric(4, 1))
     odds_batter_hits_over_price = Column(Integer)
     odds_batter_hits_under_price = Column(Integer)
-    odds_batter_home_runs = Column(Numeric(4, 1))
+    odds_batter_home_runs = Column(Numeric(4, 1), server_default='0.5')
     odds_batter_home_runs_over_price = Column(Integer)
     odds_batter_home_runs_under_price = Column(Integer)
     odds_batter_rbi = Column(Numeric(4, 1))

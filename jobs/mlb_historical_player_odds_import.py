@@ -126,7 +126,71 @@ def get_historical_player_odds(event_id: str, target_date: date, retries=3, dela
     return None
 
 
-def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[Dict]:
+def get_betmgm_home_run_odds(event_id: str, target_date: date, retries=3, delay=2) -> Optional[Dict]:
+    """
+    Get historical BetMGM batter_home_runs odds for a specific MLB event.
+    Mirrors get_historical_player_odds but targets only batter_home_runs from betmgm.
+    """
+    print(f"    Fetching BetMGM home run odds for event {event_id}...")
+
+    commence_time = None
+    today_events = get_historical_mlb_events(target_date)
+    for event in today_events:
+        if event.get('id') == event_id:
+            commence_time = event.get('commence_time')
+            break
+    if not commence_time:
+        print(f"      Could not find commence_time for event {event_id}, using fallback time.")
+        date_str = target_date.strftime('%Y-%m-%d')
+        times_to_try = [f"{date_str}T22:45:00Z"]
+    else:
+        commence_dt = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+        times_to_try = [
+            (commence_dt - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+            commence_dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            (commence_dt + timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        ]
+
+    url = f"https://api.the-odds-api.com/v4/historical/sports/baseball_mlb/events/{event_id}/odds"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    for odds_query_time in times_to_try:
+        params = {
+            'apiKey': ODDS_API_KEY,
+            'date': odds_query_time,
+            'regions': 'us',
+            'markets': 'batter_home_runs',
+            'oddsFormat': 'american',
+            'bookmakers': 'betmgm'
+        }
+        for i in range(retries):
+            try:
+                response = requests.get(url, headers=headers, params=params, timeout=30)
+                if response.status_code == 422:
+                    print(f"      No BetMGM home run odds available for event {event_id} at {odds_query_time}")
+                    break
+                response.raise_for_status()
+                response_data = response.json()
+                if isinstance(response_data, dict) and 'data' in response_data:
+                    odds_data = response_data['data']
+                else:
+                    odds_data = response_data
+                if not odds_data or not odds_data.get('bookmakers'):
+                    print(f"      No BetMGM data for event {event_id} at {odds_query_time}")
+                    break
+                print(f"      ✅ Found BetMGM home run odds for event {event_id} at {odds_query_time}")
+                return odds_data
+            except requests.exceptions.RequestException as e:
+                print(f"      Error fetching BetMGM odds (attempt {i+1}/{retries}) at {odds_query_time}: {e}")
+                if i < retries - 1:
+                    time.sleep(delay * (i + 1))
+                else:
+                    print(f"      Failed to get BetMGM odds for event {event_id} at {odds_query_time}")
+    return None
+
+
+def parse_historical_player_props(odds_data: Dict, commence_time: str, bookmaker_key: str = 'draftkings') -> List[Dict]:
     """
     Parse historical player props from MLB odds data.
     """
@@ -140,9 +204,9 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
         return props
 
     draftkings_data = None
-    for bookmaker in odds_data['bookmakers']:
-        if bookmaker['key'] == 'draftkings':
-            draftkings_data = bookmaker
+    for bk in odds_data['bookmakers']:
+        if bk['key'] == bookmaker_key:
+            draftkings_data = bk
             break
 
     if not draftkings_data or not draftkings_data.get('markets'):
@@ -200,7 +264,7 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
                     'game_date': game_date,
                     'home_team': home_team,
                     'away_team': away_team,
-                    'bookmaker': 'draftkings',
+                    'bookmaker': bookmaker_key,
                     'market_key': market_key,
                     'line': point,
                     'over_price': None,
@@ -487,6 +551,65 @@ def insert_historical_props_to_db(conn, props_data: List[Dict]) -> tuple:
     return inserted_count, player_errors
 
 
+def update_batter_home_runs_in_db(conn, hr_props: List[Dict]) -> tuple:
+    """
+    Update home run odds columns on existing mlb_batter_props records.
+    UPDATE-only: if no record exists for a player+event, log and skip.
+    Returns (updated_count, errors) where errors is a list of (player_name, error_str).
+    """
+    updated_count = 0
+    errors = []
+
+    for prop in hr_props:
+        try:
+            with conn.begin_nested():  # savepoint — rolls back only this prop on failure
+                player_id = resolve_player_simple(conn, prop['player_name'], prop['game_date'])
+
+                if not player_id:
+                    print(f"    Skipping {prop['player_name']} - could not resolve player")
+                    continue
+
+                existing = conn.execute(text("""
+                    SELECT id FROM mlb_batter_props
+                    WHERE player_id = :player_id AND odds_event_id = :odds_event_id
+                """), {
+                    'player_id': player_id,
+                    'odds_event_id': prop['event_id']
+                }).fetchone()
+
+                if not existing:
+                    print(f"    Skipping {prop['player_name']} - no existing batter_props record")
+                    continue
+
+                over_price = int(prop['over_price']) if prop['over_price'] is not None else None
+                under_price = int(prop['under_price']) if prop['under_price'] is not None else None
+
+                conn.execute(text("""
+                    UPDATE mlb_batter_props
+                    SET odds_batter_home_runs = :line,
+                        odds_batter_home_runs_over_price = :over_price,
+                        odds_batter_home_runs_under_price = :under_price,
+                        updated_at = NOW()
+                    WHERE player_id = :player_id AND odds_event_id = :odds_event_id
+                """), {
+                    'line': prop['line'],
+                    'over_price': over_price,
+                    'under_price': under_price,
+                    'player_id': player_id,
+                    'odds_event_id': prop['event_id']
+                })
+
+                updated_count += 1
+
+        except Exception as e:
+            player_name = prop.get('player_name', 'unknown')
+            error_str = str(e).splitlines()[0]
+            print(f"    ❌ Error updating home runs for {player_name}: {error_str}")
+            errors.append((player_name, error_str))
+
+    return updated_count, errors
+
+
 def import_historical_player_odds_for_date(target_date: date, conn) -> int:
     """
     Import all historical MLB player odds for a specific date.
@@ -555,6 +678,18 @@ def import_historical_player_odds_for_date(target_date: date, conn) -> int:
                 print(f"    ⚠️  {len(errors)} player prop(s) skipped due to errors:")
                 for name, err in unique_errors.items():
                     print(f"       • {name}: {err}")
+
+            # BetMGM home runs (separate targeted query)
+            betmgm_data = get_betmgm_home_run_odds(event_id, target_date)
+            if betmgm_data:
+                all_betmgm_props = parse_historical_player_props(betmgm_data, commence_time, bookmaker_key='betmgm')
+                hr_props = [p for p in all_betmgm_props if p['market_key'] == 'batter_home_runs']
+                if hr_props:
+                    updated, hr_errors = update_batter_home_runs_in_db(conn, hr_props)
+                    print(f"    Updated {updated} home run odds from BetMGM")
+                    if hr_errors:
+                        for name, err in hr_errors:
+                            print(f"       • {name}: {err}")
 
             if i < len(filtered_events):
                 time.sleep(3)

@@ -7,6 +7,7 @@ import TeamRankings from "./TeamRankings";
 import { convertTeamNameBySport } from "../utils/teamNameConverter";
 import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 import PlayerPropsTable from "./PlayerPropsTable";
+import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
 
 type Game = {
   home: TeamData;
@@ -105,6 +106,12 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const [hasLoadedPlayerProps, setHasLoadedPlayerProps] = useState<boolean>(false);
   const [loadedTeamTabs, setLoadedTeamTabs] = useState<Set<number>>(new Set()); // Track which team tabs have been loaded
 
+  // MLB player props state
+  const [mlbPlayerPropsData, setMlbPlayerPropsData] = useState<any>(null);
+  const [mlbPlayerPropsLoading, setMlbPlayerPropsLoading] = useState<boolean>(false);
+  const [mlbHasLoaded, setMlbHasLoaded] = useState<boolean>(false);
+  const [mlbPropsSubTab, setMlbPropsSubTab] = useState<number>(0); // 0: Home, 1: Away
+
   // Load player props when Player Props tab is clicked (home team by default)
   useEffect(() => {
     if (activeTab === 1 && sportKey === 'basketball_nba' && !hasLoadedPlayerProps) {
@@ -128,6 +135,20 @@ const GameDetails: React.FC<GameDetailsProps> = ({
       loadedTeamTabs.forEach(teamTab => {
         fetchPlayerProps(teamTab);
       });
+    }
+  }, [playerPropsLimit]);
+
+  // MLB: load player props when Player Props tab is clicked
+  useEffect(() => {
+    if (activeTab === 1 && sportKey === 'baseball_mlb' && !mlbHasLoaded) {
+      fetchMLBPlayerProps();
+    }
+  }, [activeTab, sportKey, mlbHasLoaded]);
+
+  // MLB: re-fetch when limit changes
+  useEffect(() => {
+    if (mlbHasLoaded && activeTab === 1 && sportKey === 'baseball_mlb') {
+      fetchMLBPlayerProps();
     }
   }, [playerPropsLimit]);
 
@@ -192,6 +213,25 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     setPlayerPropsLoading(false);
   };
 
+  const fetchMLBPlayerProps = async () => {
+    setMlbPlayerPropsLoading(true);
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get('game_id');
+    if (gameId) {
+      try {
+        const res = await fetch(`/api/odds/mlb/player-props/${gameId}?limit=${playerPropsLimit}`, {
+          headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+        });
+        const data = await res.json();
+        setMlbPlayerPropsData(data);
+        setMlbHasLoaded(true);
+      } catch (error) {
+        console.error('Error fetching MLB player props:', error);
+      }
+    }
+    setMlbPlayerPropsLoading(false);
+  };
+
   const handlePlayerPropsLimitChange = (newLimit: number) => {
     setPlayerPropsLimit(newLimit);
   };
@@ -211,7 +251,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     setActiveTab(newValue);
     
     // Track tab clicks in Google Analytics
-    if (newValue === 1 && sportKey === 'basketball_nba') {
+    if (newValue === 1 && (sportKey === 'basketball_nba' || sportKey === 'baseball_mlb')) {
       // For GA4 (gtag)
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'tab_click', {
@@ -261,7 +301,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
-        {sportKey === 'basketball_nba' ? (
+        {(sportKey === 'basketball_nba' || sportKey === 'baseball_mlb') ? (
           <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
             <Tab label="Recent Performance" />
             <Tab label="Player Props" />
@@ -269,7 +309,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         ) : null}
 
         {/* Tab 0: Recent Performance (Historical Games) */}
-        {(activeTab === 0 || sportKey !== 'basketball_nba') && (
+        {(activeTab === 0 || (sportKey !== 'basketball_nba' && sportKey !== 'baseball_mlb')) && (
           <>
             <Box sx={{ 
               display: 'flex', 
@@ -441,6 +481,104 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         )}
 
         {/* Tab 1: Player Props */}
+        {/* Tab 1: MLB Player Props */}
+        {activeTab === 1 && sportKey === 'baseball_mlb' && (
+          !mlbHasLoaded || mlbPlayerPropsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+              <CircularProgress />
+              <Typography variant="body2" sx={{ ml: 2 }}>Loading player props...</Typography>
+            </Box>
+          ) : mlbPlayerPropsData && mlbPlayerPropsData.error ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+              <Typography variant="body1" color="text.secondary">
+                {mlbPlayerPropsData.error}
+              </Typography>
+            </Box>
+          ) : mlbPlayerPropsData ? (
+            <Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                mb: 2,
+                gap: { xs: 2, sm: 0 }
+              }}>
+                <Typography variant="h5" sx={{ mb: 0, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                  Player Props
+                </Typography>
+                <FormControl size="small" sx={{ minWidth: 120, width: { xs: '100%', sm: 'auto' } }}>
+                  <InputLabel id="mlb-player-props-limit-label">Show Games</InputLabel>
+                  <Select
+                    labelId="mlb-player-props-limit-label"
+                    id="mlb-player-props-limit-select"
+                    value={playerPropsLimit}
+                    label="Show Games"
+                    onChange={(e) => handlePlayerPropsLimitChange(e.target.value as number)}
+                  >
+                    <MenuItem value={3}>Last 3</MenuItem>
+                    <MenuItem value={5}>Last 5</MenuItem>
+                    <MenuItem value={10}>Last 10</MenuItem>
+                    <MenuItem value={15}>Last 15</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Paper sx={{ mt: 2 }}>
+                <Tabs
+                  value={mlbPropsSubTab}
+                  onChange={(_, v) => setMlbPropsSubTab(v)}
+                  variant="fullWidth"
+                  sx={{
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    '& .MuiTab-root': {
+                      fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                      padding: { xs: '8px 4px', sm: '12px 16px' }
+                    }
+                  }}
+                >
+                  <Tab label={`${mlbPlayerPropsData.home_team?.name || 'Home'} Players`} />
+                  <Tab label={`${mlbPlayerPropsData.away_team?.name || 'Away'} Players`} />
+                </Tabs>
+
+                <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                  {/* Home Team */}
+                  {mlbPropsSubTab === 0 && (
+                    <Box>
+                      <Typography variant="h6" sx={{ mb: 1 }}>Batters</Typography>
+                      <MLBPlayerPropsTable
+                        players={mlbPlayerPropsData.home_team?.batters || {}}
+                        tableType="batter"
+                      />
+                      <Typography variant="h6" sx={{ mb: 1, mt: 3 }}>Pitchers</Typography>
+                      <MLBPlayerPropsTable
+                        players={mlbPlayerPropsData.home_team?.pitchers || {}}
+                        tableType="pitcher"
+                      />
+                    </Box>
+                  )}
+                  {/* Away Team */}
+                  {mlbPropsSubTab === 1 && (
+                    <Box>
+                      <Typography variant="h6" sx={{ mb: 1 }}>Batters</Typography>
+                      <MLBPlayerPropsTable
+                        players={mlbPlayerPropsData.away_team?.batters || {}}
+                        tableType="batter"
+                      />
+                      <Typography variant="h6" sx={{ mb: 1, mt: 3 }}>Pitchers</Typography>
+                      <MLBPlayerPropsTable
+                        players={mlbPlayerPropsData.away_team?.pitchers || {}}
+                        tableType="pitcher"
+                      />
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+            </Box>
+          ) : null
+        )}
+
         {activeTab === 1 && sportKey === 'basketball_nba' && (
           !hasLoadedPlayerProps ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>

@@ -27,6 +27,7 @@ from api.routes.historical.nba_trends import nba_trends_bp
 from api.routes.historical.ncaab_trends import ncaab_trends_bp
 from api.routes.mlb_pitchers import mlb_pitchers_bp
 from api.routes.internal.mlb_mismatch import mlb_mismatch_bp
+from api.routes.mlb_player_props import mlb_props_bp
 from flask_cors import CORS
 
 load_dotenv()  # Load environment variables from .env file
@@ -89,6 +90,7 @@ app.register_blueprint(ncaab_trends_bp)
 app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_pitchers_bp)
 app.register_blueprint(mlb_mismatch_bp)
+app.register_blueprint(mlb_props_bp)
 
 _SPORT_DISPLAY = {
     'nfl': 'NFL', 'mlb': 'MLB', 'nba': 'NBA', 'nhl': 'NHL',

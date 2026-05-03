@@ -12,3 +12,11 @@ def get_team_id_by_odds_api_team_name(team_name):
         if result:
             return result[0]
         return None
+
+
+def get_mlb_team_id_by_odds_api_team_name(team_name):
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT team_id FROM teams WHERE odds_api_team_name = :name AND sport = 'MLB'"), {"name": team_name}).fetchone()
+        if result:
+            return result[0]
+        return None

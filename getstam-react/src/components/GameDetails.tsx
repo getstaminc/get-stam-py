@@ -288,12 +288,12 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
-      <Paper elevation={3} sx={{ 
-        p: { xs: 2, sm: 3 }, 
-        mt: 4, 
-        maxWidth: 900, 
+      <Paper elevation={0} sx={{
+        p: { xs: 2, sm: 3 },
+        mt: 4,
+        maxWidth: 900,
         mx: { xs: 1, sm: "auto" },
-        backgroundColor: "#f9f9f9"
+        backgroundColor: "transparent"
       }}>
         {/* Odds section */}
         <GameOdds game={game} pitcherData={pitcherData} />

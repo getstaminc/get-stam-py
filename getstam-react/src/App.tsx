@@ -51,7 +51,7 @@ function AppContent() {
       <TabsNavigation />
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Routes>
-          <Route path="/" element={<Navigate to="/nba" replace />} />
+          <Route path="/" element={<Navigate to="/mlb" replace />} />
           <Route path="/nfl" element={<GamesPage />} />
           <Route path="/nfl/trends" element={<GamesPage />} />
           <Route path="/mlb" element={<GamesPage />} />

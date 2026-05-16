@@ -99,6 +99,101 @@ _SPORT_DISPLAY = {
     'ligue1': 'Ligue 1', 'seriea': 'Serie A',
 }
 
+def _team_slug(name):
+    return re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
+
+# oddsApiNames for each sport — mirrors teamSlugUtils.ts
+_SPORT_TEAMS = {
+    'nba': [
+        'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets',
+        'Chicago Bulls', 'Cleveland Cavaliers', 'Dallas Mavericks', 'Denver Nuggets',
+        'Detroit Pistons', 'Golden State Warriors', 'Houston Rockets', 'Indiana Pacers',
+        'Los Angeles Clippers', 'Los Angeles Lakers', 'Memphis Grizzlies', 'Miami Heat',
+        'Milwaukee Bucks', 'Minnesota Timberwolves', 'New Orleans Pelicans', 'New York Knicks',
+        'Oklahoma City Thunder', 'Orlando Magic', 'Philadelphia 76ers', 'Phoenix Suns',
+        'Portland Trail Blazers', 'Sacramento Kings', 'San Antonio Spurs', 'Toronto Raptors',
+        'Utah Jazz', 'Washington Wizards',
+    ],
+    'nfl': [
+        'Arizona Cardinals', 'Atlanta Falcons', 'Baltimore Ravens', 'Buffalo Bills',
+        'Carolina Panthers', 'Chicago Bears', 'Cincinnati Bengals', 'Cleveland Browns',
+        'Dallas Cowboys', 'Denver Broncos', 'Detroit Lions', 'Green Bay Packers',
+        'Houston Texans', 'Indianapolis Colts', 'Jacksonville Jaguars', 'Kansas City Chiefs',
+        'Las Vegas Raiders', 'Los Angeles Chargers', 'Los Angeles Rams', 'Miami Dolphins',
+        'Minnesota Vikings', 'New England Patriots', 'New Orleans Saints', 'New York Giants',
+        'New York Jets', 'Philadelphia Eagles', 'Pittsburgh Steelers', 'San Francisco 49ers',
+        'Seattle Seahawks', 'Tampa Bay Buccaneers', 'Tennessee Titans', 'Washington Commanders',
+    ],
+    'mlb': [
+        'Arizona Diamondbacks', 'Atlanta Braves', 'Baltimore Orioles', 'Boston Red Sox',
+        'Chicago Cubs', 'Chicago White Sox', 'Cincinnati Reds', 'Cleveland Guardians',
+        'Colorado Rockies', 'Detroit Tigers', 'Houston Astros', 'Kansas City Royals',
+        'Los Angeles Angels', 'Los Angeles Dodgers', 'Miami Marlins', 'Milwaukee Brewers',
+        'Minnesota Twins', 'New York Mets', 'New York Yankees', 'Oakland Athletics',
+        'Philadelphia Phillies', 'Pittsburgh Pirates', 'San Diego Padres', 'San Francisco Giants',
+        'Seattle Mariners', 'St. Louis Cardinals', 'Tampa Bay Rays', 'Texas Rangers',
+        'Toronto Blue Jays', 'Washington Nationals',
+    ],
+    'nhl': [
+        'Anaheim Ducks', 'Arizona Coyotes', 'Boston Bruins', 'Buffalo Sabres',
+        'Calgary Flames', 'Carolina Hurricanes', 'Chicago Blackhawks', 'Colorado Avalanche',
+        'Columbus Blue Jackets', 'Dallas Stars', 'Detroit Red Wings', 'Edmonton Oilers',
+        'Florida Panthers', 'Los Angeles Kings', 'Minnesota Wild', 'Montr\u00e9al Canadiens',
+        'Nashville Predators', 'New Jersey Devils', 'New York Islanders', 'New York Rangers',
+        'Ottawa Senators', 'Philadelphia Flyers', 'Pittsburgh Penguins', 'San Jose Sharks',
+        'Seattle Kraken', 'St Louis Blues', 'Tampa Bay Lightning', 'Toronto Maple Leafs',
+        'Utah Mammoth', 'Vancouver Canucks', 'Vegas Golden Knights', 'Washington Capitals',
+        'Winnipeg Jets',
+    ],
+    'ncaaf': [
+        'Alabama Crimson Tide', 'Appalachian State Mountaineers', 'Arizona Wildcats',
+        'Arizona State Sun Devils', 'Arkansas Razorbacks', 'Auburn Tigers', 'Baylor Bears',
+        'Boise State Broncos', 'Boston College Eagles', 'BYU Cougars', 'California Golden Bears',
+        'Cincinnati Bearcats', 'Clemson Tigers', 'Colorado Buffaloes', 'Florida Gators',
+        'Florida State Seminoles', 'Fresno State Bulldogs', 'Georgia Bulldogs',
+        'Georgia Tech Yellow Jackets', 'Houston Cougars', 'Illinois Fighting Illini',
+        'Indiana Hoosiers', 'Iowa Hawkeyes', 'Iowa State Cyclones', 'Kansas Jayhawks',
+        'Kansas State Wildcats', 'Kentucky Wildcats', 'Louisiana Ragin\' Cajuns', 'LSU Tigers',
+        'Louisville Cardinals', 'Maryland Terrapins', 'Memphis Tigers', 'Miami Hurricanes',
+        'Michigan Wolverines', 'Michigan State Spartans', 'Minnesota Golden Gophers',
+        'Mississippi State Bulldogs', 'Missouri Tigers', 'NC State Wolfpack', 'Nebraska Cornhuskers',
+        'Nevada Wolf Pack', 'North Carolina Tar Heels', 'Northwestern Wildcats',
+        'Notre Dame Fighting Irish', 'Ohio State Buckeyes', 'Oklahoma Sooners',
+        'Oklahoma State Cowboys', 'Ole Miss Rebels', 'Oregon Ducks', 'Oregon State Beavers',
+        'Penn State Nittany Lions', 'Pittsburgh Panthers', 'Purdue Boilermakers',
+        'Rutgers Scarlet Knights', 'San Diego State Aztecs', 'SMU Mustangs',
+        'South Carolina Gamecocks', 'Stanford Cardinal', 'Syracuse Orange', 'TCU Horned Frogs',
+        'Tennessee Volunteers', 'Texas Longhorns', 'Texas A&M Aggies', 'Texas Tech Red Raiders',
+        'Toledo Rockets', 'Tulane Green Wave', 'UCF Knights', 'UCLA Bruins', 'UNLV Rebels',
+        'USC Trojans', 'Utah Utes', 'Utah State Aggies', 'Vanderbilt Commodores',
+        'Virginia Cavaliers', 'Virginia Tech Hokies', 'Wake Forest Demon Deacons',
+        'Washington Huskies', 'Washington State Cougars', 'West Virginia Mountaineers',
+        'Wisconsin Badgers', 'Wyoming Cowboys',
+    ],
+    'ncaab': [
+        'Alabama Crimson Tide', 'Arizona Wildcats', 'Arizona State Sun Devils',
+        'Arkansas Razorbacks', 'Auburn Tigers', 'Baylor Bears', 'BYU Cougars',
+        'California Golden Bears', 'Cincinnati Bearcats', 'Clemson Tigers', 'Colorado Buffaloes',
+        'Colorado State Rams', 'UConn Huskies', 'Creighton Bluejays', 'Dayton Flyers',
+        'Duke Blue Devils', 'Florida Gators', 'Florida State Seminoles', 'Gonzaga Bulldogs',
+        'Georgia Bulldogs', 'Houston Cougars', 'Illinois Fighting Illini', 'Indiana Hoosiers',
+        'Iowa Hawkeyes', 'Iowa State Cyclones', 'Kansas Jayhawks', 'Kansas State Wildcats',
+        'Kentucky Wildcats', 'LSU Tigers', 'Maryland Terrapins', 'Memphis Tigers',
+        'Michigan Wolverines', 'Michigan State Spartans', 'Missouri Tigers', 'Nebraska Cornhuskers',
+        'North Carolina Tar Heels', 'NC State Wolfpack', 'Notre Dame Fighting Irish',
+        'Ohio State Buckeyes', 'Oklahoma Sooners', 'Oklahoma State Cowboys', 'Ole Miss Rebels',
+        'Oregon Ducks', 'Oregon State Beavers', 'Penn State Nittany Lions', 'Pittsburgh Panthers',
+        'Purdue Boilermakers', 'Rutgers Scarlet Knights', 'San Diego State Aztecs',
+        'SMU Mustangs', 'South Carolina Gamecocks', "St. John's Red Storm", 'Stanford Cardinal',
+        'Syracuse Orange', 'TCU Horned Frogs', 'Tennessee Volunteers', 'Texas Longhorns',
+        'Texas A&M Aggies', 'Texas Tech Red Raiders', 'UCLA Bruins', 'UNLV Rebels',
+        'USC Trojans', 'Utah Utes', 'Utah State Aggies', 'Vanderbilt Commodores', 'VCU Rams',
+        'Villanova Wildcats', 'Virginia Cavaliers', 'Virginia Tech Hokies',
+        'Wake Forest Demon Deacons', 'Washington Huskies', 'West Virginia Mountaineers',
+        'Wisconsin Badgers', 'Xavier Musketeers',
+    ],
+}
+
 _STATIC_PAGE_META = {
     'about': ('About GetSTAM', 'Learn about GetSTAM and our sports analytics platform.'),
     'contact': ('Contact Us | GetSTAM', 'Get in touch with the GetSTAM team.'),
@@ -115,6 +210,14 @@ def _get_page_meta(path):
         return 'GetSTAM', 'Get stats that actually matter for all sports'
 
     slug = parts[0]
+
+    if slug == 'team' and len(parts) >= 3:
+        sport_display = _SPORT_DISPLAY.get(parts[1], parts[1].upper())
+        team_name = parts[2].replace('-', ' ').title()
+        return (
+            f'{team_name} {sport_display} Odds & Stats | GetSTAM',
+            f'{team_name} betting odds, ATS records, and recent game results.',
+        )
 
     if slug == 'game-details' and len(parts) >= 2:
         sport_name = _SPORT_DISPLAY.get(parts[1], parts[1].upper())
@@ -190,11 +293,18 @@ def sitemap():
         ('https://www.getstam.com/privacy-policy', 'yearly',  '0.3', '2025-01-01'),
     ]
 
+    team_page_priority = {'nba': '0.7', 'nfl': '0.7', 'mlb': '0.7', 'nhl': '0.7', 'ncaaf': '0.6', 'ncaab': '0.6'}
+
     urls = []
     for sport, priority in daily_sports:
         urls.append(f'  <url><loc>https://www.getstam.com/{sport}</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>{priority}</priority></url>')
     for sport, priority in daily_trends:
         urls.append(f'  <url><loc>https://www.getstam.com/{sport}/trends</loc><lastmod>{today}</lastmod><changefreq>daily</changefreq><priority>{priority}</priority></url>')
+    for sport, teams in _SPORT_TEAMS.items():
+        priority = team_page_priority.get(sport, '0.6')
+        for team in teams:
+            slug = _team_slug(team)
+            urls.append(f'  <url><loc>https://www.getstam.com/team/{sport}/{slug}</loc><lastmod>{today}</lastmod><changefreq>weekly</changefreq><priority>{priority}</priority></url>')
     for loc, changefreq, priority, lastmod in static_pages:
         urls.append(f'  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>{changefreq}</changefreq><priority>{priority}</priority></url>')
 

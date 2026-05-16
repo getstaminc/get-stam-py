@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Box, Typography, Button } from "@mui/material";
 import { GameWithDraw } from "../types/gameTypes";
+import { getTeamPageLink } from "../utils/teamSlugUtils";
 
 interface GameOddsProps {
   game: GameWithDraw;
@@ -13,9 +14,10 @@ interface GameOddsProps {
   };
   detailsLink?: string;
   onViewDetails?: () => void;
+  sport?: string;
 }
 
-const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onViewDetails }) => {
+const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onViewDetails, sport }) => {
   const { home, away, totals, draw } = game as GameWithDraw;
 
   const allOddsNull = (
@@ -76,7 +78,18 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
         {/* Home team */}
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2 }}>
-            {home.team}
+            {sport ? (
+              <Link
+                to={getTeamPageLink(sport, home.team)}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <Box component="span" sx={{ "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
+                  {home.team}
+                </Box>
+              </Link>
+            ) : (
+              home.team
+            )}
           </Typography>
           {pitcherData?.home_pitcher && (
             <Box sx={{ mt: 0.25 }}>
@@ -108,7 +121,18 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
         {/* Away team */}
         <Box sx={{ textAlign: "right" }}>
           <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2 }}>
-            {away.team}
+            {sport ? (
+              <Link
+                to={getTeamPageLink(sport, away.team)}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <Box component="span" sx={{ "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
+                  {away.team}
+                </Box>
+              </Link>
+            ) : (
+              away.team
+            )}
           </Typography>
           {pitcherData?.away_pitcher && (
             <Box sx={{ mt: 0.25 }}>

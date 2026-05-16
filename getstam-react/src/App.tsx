@@ -22,6 +22,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import GamesPage from "./pages/GamesPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
 import MismatchPlayersPage from "./pages/MismatchPlayersPage";
+import TeamPage from "./pages/TeamPage";
 
 function AppContent() {
   usePageView();
@@ -80,6 +81,7 @@ function AppContent() {
           <Route path="/betting-guide" element={<BettingGuidePage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/internal/mismatch-players" element={<MismatchPlayersPage />} />
+          <Route path="/team/:sport/:teamSlug" element={<TeamPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Box>

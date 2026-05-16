@@ -527,6 +527,7 @@ const GamesPage = () => {
               pitcherData={getGamePitcherData(match)}
               detailsLink={`/game-details/${urlSport}?game_id=${match.game_id}`}
               onViewDetails={() => setCurrentGame(match)}
+              sport={urlSport}
             />
           ))}
         </Box>

@@ -55,7 +55,7 @@ def is_today(commence_time_str, selected_date_start=None):
         return selected_date_start.date() == date.today()
     
     if commence_time_str:
-        commence_date = parser.parse(commence_time_str).astimezone(pytz.utc)
-        return commence_date.date() == datetime.now(pytz.utc).date()
+        commence_date = parser.parse(commence_time_str).astimezone(eastern_tz)
+        return commence_date.date() == datetime.now(eastern_tz).date()
     
     return False

@@ -1,18 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Box, ClickAwayListener } from "@mui/material";
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { BaseGame, NFLGame, MLBGame, SoccerGame, HistoricalGame, SportType, HistoricalGamesProps, getSportType } from '../types/gameTypes';
 import { MoneylineLegend, SpreadLegend, TotalLegend } from './common/Legend';
+import { dbNameToSlug } from '../utils/teamSlugUtils';
 
-const HistoricalGames: React.FC<HistoricalGamesProps> = ({ 
-  title, 
-  games, 
-  loading = false, 
+type HistoricalGamesExtendedProps = HistoricalGamesProps & { sport?: string };
+
+const HistoricalGames: React.FC<HistoricalGamesExtendedProps> = ({
+  title,
+  games,
+  loading = false,
   teamName = "",
   isHeadToHead = false,
-  sportType 
+  sportType,
+  sport,
 }) => {
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(true);
@@ -528,13 +533,31 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                         <TableCell>
                           {teamData.site}
                         </TableCell>
-                        <TableCell 
-                          sx={{ 
+                        <TableCell
+                          sx={{
                             backgroundColor: getWinLossColor(teamData.teamPoints, teamData.opponentPoints),
                             fontWeight: 'bold'
                           }}
                         >
-                          {teamName || (teamData.site === 'home' ? gameData.homeTeam : gameData.awayTeam)}
+                          {(() => {
+                            const displayName = teamName || (teamData.site === 'home' ? gameData.homeTeam : gameData.awayTeam);
+                            if (sport) {
+                              const slug = dbNameToSlug(displayName, sport);
+                              if (slug) {
+                                return (
+                                  <Link
+                                    to={`/team/${sport}/${slug}`}
+                                    style={{ textDecoration: 'none', color: 'inherit' }}
+                                  >
+                                    <Box component="span" sx={{ '&:hover': { color: '#1976d2' }, cursor: 'pointer' }}>
+                                      {displayName}
+                                    </Box>
+                                  </Link>
+                                );
+                              }
+                            }
+                            return displayName;
+                          })()}
                         </TableCell>
                         <TableCell 
                           sx={{ 
@@ -553,7 +576,24 @@ const HistoricalGames: React.FC<HistoricalGamesProps> = ({
                           {teamData.teamLine !== null ? teamData.teamLine : 'None'}
                         </TableCell>
                         <TableCell>
-                          {teamData.opponentName}
+                          {(() => {
+                            if (sport && teamData.opponentName) {
+                              const slug = dbNameToSlug(teamData.opponentName, sport);
+                              if (slug) {
+                                return (
+                                  <Link
+                                    to={`/team/${sport}/${slug}`}
+                                    style={{ textDecoration: 'none', color: 'inherit' }}
+                                  >
+                                    <Box component="span" sx={{ '&:hover': { color: '#1976d2' }, cursor: 'pointer' }}>
+                                      {teamData.opponentName}
+                                    </Box>
+                                  </Link>
+                                );
+                              }
+                            }
+                            return teamData.opponentName;
+                          })()}
                         </TableCell>
                         <TableCell>
                           {teamData.opponentPoints ?? 'None'}

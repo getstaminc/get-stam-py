@@ -16,6 +16,7 @@ import PastGamesDisplay from "../components/PastGamesDisplay";
 import { GameWithTrends } from "../utils/trendAnalysis";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 import SEO from "../components/SEO";
+import { encodeGameId } from "../utils/gameIdCrypto";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -525,7 +526,7 @@ const GamesPage = () => {
                 ...(match.draw ? { draw: match.draw } : {})
               }}
               pitcherData={getGamePitcherData(match)}
-              detailsLink={`/game-details/${urlSport}?game_id=${match.game_id}`}
+              detailsLink={`/game-details/${urlSport}?game_id=${encodeGameId(match.game_id)}`}
               onViewDetails={() => setCurrentGame(match)}
               sport={urlSport}
             />

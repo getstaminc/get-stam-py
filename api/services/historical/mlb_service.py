@@ -253,71 +253,62 @@ class MLBService(BaseHistoricalService):
             # Build query based on venue filtering
             if venue and perspective_team_id:
                 if venue == 'home':
-                    # Only games where perspective_team was home against the opponent
                     query = """
-                        SELECT 
+                        SELECT
                             game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
                             home_line, away_line, home_inning_runs, away_inning_runs,
                             home_starting_pitcher, away_starting_pitcher, playoffs,
                             start_time, total, created_date, modified_date
                         FROM mlb_games
                         WHERE home_team_id = %s AND away_team_id = %s
-                        ORDER BY game_date DESC LIMIT %s
                     """
-                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id]
                 elif venue == 'away':
-                    # Only games where perspective_team was away against the opponent
                     query = """
-                        SELECT 
+                        SELECT
                             game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
                             home_line, away_line, home_inning_runs, away_inning_runs,
                             home_starting_pitcher, away_starting_pitcher, playoffs,
                             start_time, total, created_date, modified_date
                         FROM mlb_games
                         WHERE away_team_id = %s AND home_team_id = %s
-                        ORDER BY game_date DESC LIMIT %s
                     """
-                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id, limit]
+                    params = [perspective_team_id, opponent_id if opponent_id != perspective_team_id else team_id]
                 else:
-                    # Fallback to original logic
                     query = """
-                        SELECT 
+                        SELECT
                             game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
                             home_line, away_line, home_inning_runs, away_inning_runs,
                             home_starting_pitcher, away_starting_pitcher, playoffs,
                             start_time, total, created_date, modified_date
                         FROM mlb_games
-                        WHERE (home_team_id = %s AND away_team_id = %s) 
-                           OR (home_team_id = %s AND away_team_id = %s)
-                        ORDER BY game_date DESC LIMIT %s
+                        WHERE ((home_team_id = %s AND away_team_id = %s)
+                           OR (home_team_id = %s AND away_team_id = %s))
                     """
-                    params = [team_id, opponent_id, opponent_id, team_id, limit]
+                    params = [team_id, opponent_id, opponent_id, team_id]
             else:
-                # Original logic without venue filtering
                 query = """
-                    SELECT 
+                    SELECT
                         game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
                         home_line, away_line, home_inning_runs, away_inning_runs,
                         home_starting_pitcher, away_starting_pitcher, playoffs,
                         start_time, total, created_date, modified_date
                     FROM mlb_games
-                    WHERE (home_team_id = %s AND away_team_id = %s) 
-                       OR (home_team_id = %s AND away_team_id = %s)
+                    WHERE ((home_team_id = %s AND away_team_id = %s)
+                       OR (home_team_id = %s AND away_team_id = %s))
                 """
                 params = [team_id, opponent_id, opponent_id, team_id]
 
-            # Add date filters
+            # Apply date filters uniformly across all paths
             if start_date:
-                query = query.replace("ORDER BY", "AND game_date >= %s ORDER BY")
-                params.insert(-1 if 'LIMIT' in query else len(params), start_date)
-            
+                query += " AND game_date >= %s"
+                params.append(start_date)
             if end_date:
-                query = query.replace("ORDER BY", "AND game_date <= %s ORDER BY")
-                params.insert(-1 if 'LIMIT' in query else len(params), end_date)
+                query += " AND game_date <= %s"
+                params.append(end_date)
 
-            if 'LIMIT' not in query:
-                query += " ORDER BY game_date DESC LIMIT %s"
-                params.append(limit)
+            query += " ORDER BY game_date DESC LIMIT %s"
+            params.append(limit)
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(query, params)

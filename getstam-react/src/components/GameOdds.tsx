@@ -116,6 +116,14 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               FINAL
             </Typography>
           )}
+          {game.from_db && game.commence_time && (
+            <Typography sx={{ fontSize: "0.72rem", color: "#64748b", mt: 0.25 }}>
+              {(() => {
+                const [year, month, day] = (game.commence_time as string).split('T')[0].split('-').map(Number);
+                return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              })()}
+            </Typography>
+          )}
         </Box>
 
         {/* Away team */}

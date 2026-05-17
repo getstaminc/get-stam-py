@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Typography, Paper, Button, Chip, Stack, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
+import { encodeGameId } from "../utils/gameIdCrypto";
 import GameOdds from "./GameOdds";
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -239,7 +240,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
             <Box sx={{ mt: 3, textAlign: "center" }}>
               <Button
                 component={Link}
-                to={`/game-details/${urlSport}?game_id=${game.game_id}`}
+                to={`/game-details/${urlSport}?game_id=${encodeGameId(game.game_id)}`}
                 variant="contained"
                 color="primary"
                 onClick={() => onViewDetails(game)}

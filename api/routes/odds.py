@@ -47,12 +47,12 @@ def get_odds_for_sport(sport_key):
 def get_single_game_odds(sport_key, game_id):
     """Get odds details for a single game by game_id"""
     result, error = GameService.get_single_game(sport_key, game_id)
-    
+
     if error:
-        if error == 'Game not found':
-            return jsonify({'error': error}), 404
-        return jsonify({'error': error}), 500
-    
+        result, db_error = GameService.get_single_game_from_db(sport_key, game_id)
+        if db_error:
+            return jsonify({'error': 'Game not found'}), 404
+
     return jsonify(result)
 
 # =============================================================================

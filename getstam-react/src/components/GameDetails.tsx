@@ -8,6 +8,7 @@ import { convertTeamNameBySport } from "../utils/teamNameConverter";
 import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 import PlayerPropsTable from "./PlayerPropsTable";
 import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
+import { decodeGameId } from "../utils/gameIdCrypto";
 
 type Game = {
   home: TeamData;
@@ -158,7 +159,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const fetchPlayerProps = async (teamTab: number) => {
     setPlayerPropsLoading(true);
     const urlParams = new URLSearchParams(window.location.search);
-    const gameId = urlParams.get('game_id');
+    const gameId = decodeGameId(urlParams.get('game_id') || '');
     
     if (gameId) {
       try {
@@ -219,7 +220,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const fetchMLBPlayerProps = async () => {
     setMlbPlayerPropsLoading(true);
     const urlParams = new URLSearchParams(window.location.search);
-    const gameId = urlParams.get('game_id');
+    const gameId = decodeGameId(urlParams.get('game_id') || '');
     if (gameId) {
       try {
         const res = await fetch(`/api/odds/mlb/player-props/${gameId}?limit=${playerPropsLimit}`, {
@@ -254,7 +255,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     setActiveTab(newValue);
     
     // Track tab clicks in Google Analytics
-    if (newValue === 1 && (sportKey === 'basketball_nba' || sportKey === 'baseball_mlb')) {
+    if (newValue === 1 && sportKey === 'baseball_mlb') {
       // For GA4 (gtag)
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'tab_click', {
@@ -304,7 +305,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
-        {(sportKey === 'basketball_nba' || sportKey === 'baseball_mlb') && !isFromDb ? (
+        {sportKey === 'baseball_mlb' && !isFromDb ? (
           <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
             <Tab label="Recent Performance" />
             <Tab label="Player Props" />
@@ -312,7 +313,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         ) : null}
 
         {/* Tab 0: Recent Performance (Historical Games) */}
-        {(activeTab === 0 || (sportKey !== 'basketball_nba' && sportKey !== 'baseball_mlb')) && (
+        {(activeTab === 0 || sportKey !== 'baseball_mlb') && (
           <>
             <Box sx={{ 
               display: 'flex', 

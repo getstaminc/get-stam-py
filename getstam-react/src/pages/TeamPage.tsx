@@ -5,6 +5,7 @@ import SEO from "../components/SEO";
 import GameOdds from "../components/GameOdds";
 import HistoricalGames from "../components/HistoricalGames";
 import { getTeamBySlug } from "../utils/teamSlugUtils";
+import { encodeGameId } from "../utils/gameIdCrypto";
 import { HistoricalGame, SportType, GameWithDraw } from "../types/gameTypes";
 
 const API_BASE_URL =
@@ -161,7 +162,7 @@ const TeamPage: React.FC = () => {
             <GameOdds
               game={oddsGame}
               sport={sport}
-              detailsLink={`/game-details/${sport}?game_id=${(oddsGame as any).game_id}`}
+              detailsLink={`/game-details/${sport}?game_id=${encodeGameId((oddsGame as any).game_id)}`}
             />
           ) : (
             <Typography color="text.secondary">No game today</Typography>

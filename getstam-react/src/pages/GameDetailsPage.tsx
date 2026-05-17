@@ -4,6 +4,7 @@ import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
 import { useGame } from "../contexts/GameContext";
 import { convertTeamNameBySport, convertSportKeyForDatabase } from "../utils/teamNameConverter";
+import { decodeGameId } from "../utils/gameIdCrypto";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 import SEO from "../components/SEO";
 
@@ -89,7 +90,8 @@ async function fetchSingleGameData(sport: string, gameId: string) {
 const GameDetailsPage: React.FC = () => {
   const { sport } = useParams<{ sport: string }>();
   const [searchParams] = useSearchParams();
-  const gameId = searchParams.get('game_id');
+  const encodedGameId = searchParams.get('game_id') || '';
+  const gameId = decodeGameId(encodedGameId);
   const { currentGame } = useGame();
   const [gameData, setGameData] = useState<any>(null);
   const [homeTeamHistory, setHomeTeamHistory] = useState<any>(null);
@@ -119,11 +121,11 @@ const GameDetailsPage: React.FC = () => {
   };
 
   // Fetch team history
-  const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5) => {
+  const fetchTeamHistory = async (sportKey: string, teamName: string, limit: number = 5, endDate?: string) => {
     const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
-    
+
     let url: string;
-    
+
     // Soccer uses a different endpoint structure with league parameter
     if (isSoccerSport(sportKey)) {
       const league = getSoccerLeague(sportKey);
@@ -133,6 +135,7 @@ const GameDetailsPage: React.FC = () => {
       const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
       url = `${API_BASE_URL}/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedTeamName)}/games?limit=${limit}`;
     }
+    if (endDate) url += `&end_date=${endDate}`;
     
     const response = await fetch(url, {
       headers: {
@@ -144,11 +147,11 @@ const GameDetailsPage: React.FC = () => {
   };
 
   // Fetch team history with venue filter
-  const fetchTeamHistoryByVenue = async (sportKey: string, teamName: string, venue: 'home' | 'away', limit: number = 5) => {
+  const fetchTeamHistoryByVenue = async (sportKey: string, teamName: string, venue: 'home' | 'away', limit: number = 5, endDate?: string) => {
     const convertedTeamName = convertTeamNameBySport(sportKey, teamName);
-    
+
     let url: string;
-    
+
     // Soccer uses a different endpoint structure with league parameter
     if (isSoccerSport(sportKey)) {
       const league = getSoccerLeague(sportKey);
@@ -158,6 +161,7 @@ const GameDetailsPage: React.FC = () => {
       const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
       url = `${API_BASE_URL}/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedTeamName)}/games?limit=${limit}&venue=${venue}`;
     }
+    if (endDate) url += `&end_date=${endDate}`;
     
     const response = await fetch(url, {
       headers: {
@@ -169,12 +173,12 @@ const GameDetailsPage: React.FC = () => {
   };
 
   // Fetch head-to-head history
-  const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
+  const fetchHeadToHead = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5, endDate?: string) => {
     const convertedHomeTeam = convertTeamNameBySport(sportKey, homeTeam);
     const convertedAwayTeam = convertTeamNameBySport(sportKey, awayTeam);
-    
+
     let url: string;
-    
+
     // Soccer uses a different endpoint structure with league parameter
     if (isSoccerSport(sportKey)) {
       const league = getSoccerLeague(sportKey);
@@ -184,6 +188,7 @@ const GameDetailsPage: React.FC = () => {
       const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
       url = `${API_BASE_URL}/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedHomeTeam)}/vs/${encodeURIComponent(convertedAwayTeam)}?limit=${limit}`;
     }
+    if (endDate) url += `&end_date=${endDate}`;
     
     const response = await fetch(url, {
       headers: {
@@ -195,12 +200,12 @@ const GameDetailsPage: React.FC = () => {
   };
 
   // Fetch head-to-head history with venue filter
-  const fetchHeadToHeadByVenue = async (sportKey: string, team1: string, team2: string, venue: 'home' | 'away', teamPerspective: string, limit: number = 5) => {
+  const fetchHeadToHeadByVenue = async (sportKey: string, team1: string, team2: string, venue: 'home' | 'away', teamPerspective: string, limit: number = 5, endDate?: string) => {
     const convertedTeam1 = convertTeamNameBySport(sportKey, team1);
     const convertedTeam2 = convertTeamNameBySport(sportKey, team2);
-    
+
     let url: string;
-    
+
     // Soccer uses a different endpoint structure with league parameter
     if (isSoccerSport(sportKey)) {
       const league = getSoccerLeague(sportKey);
@@ -210,6 +215,7 @@ const GameDetailsPage: React.FC = () => {
       const dbSportKey = API_SPORT_TO_DB_SPORT[sportKey] || sportKey;
       url = `${API_BASE_URL}/api/historical/${dbSportKey}/teams/${encodeURIComponent(convertedTeam1)}/vs/${encodeURIComponent(convertedTeam2)}?limit=${limit}&venue=${venue}&team_perspective=${encodeURIComponent(teamPerspective)}`;
     }
+    if (endDate) url += `&end_date=${endDate}`;
     
     const response = await fetch(url, {
       headers: {
@@ -258,18 +264,18 @@ const GameDetailsPage: React.FC = () => {
   };
 
   // Function to fetch all historical data
-  const fetchAllHistoricalData = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5) => {
+  const fetchAllHistoricalData = async (sportKey: string, homeTeam: string, awayTeam: string, limit: number = 5, endDate?: string) => {
     try {
       const promises = [
         // Original data for "Last 5" tab
-        fetchTeamHistory(sportKey, homeTeam, limit),
-        fetchTeamHistory(sportKey, awayTeam, limit),
-        fetchHeadToHead(sportKey, homeTeam, awayTeam, limit),
+        fetchTeamHistory(sportKey, homeTeam, limit, endDate),
+        fetchTeamHistory(sportKey, awayTeam, limit, endDate),
+        fetchHeadToHead(sportKey, homeTeam, awayTeam, limit, endDate),
         // New venue-specific data
-        fetchTeamHistoryByVenue(sportKey, homeTeam, 'home', limit), // Home team's home games
-        fetchHeadToHeadByVenue(sportKey, homeTeam, awayTeam, 'home', homeTeam, limit), // Home team's home games vs away team
-        fetchTeamHistoryByVenue(sportKey, awayTeam, 'away', limit), // Away team's away games
-        fetchHeadToHeadByVenue(sportKey, awayTeam, homeTeam, 'away', awayTeam, limit), // Away team's away games vs home team
+        fetchTeamHistoryByVenue(sportKey, homeTeam, 'home', limit, endDate),
+        fetchHeadToHeadByVenue(sportKey, homeTeam, awayTeam, 'home', homeTeam, limit, endDate),
+        fetchTeamHistoryByVenue(sportKey, awayTeam, 'away', limit, endDate),
+        fetchHeadToHeadByVenue(sportKey, awayTeam, homeTeam, 'away', awayTeam, limit, endDate),
       ];
       
       // Add rankings fetch for NFL and NCAAF games
@@ -307,13 +313,14 @@ const GameDetailsPage: React.FC = () => {
   // Handle limit change from dropdown
   const handleLimitChange = async (newLimit: number) => {
     setGamesLimit(newLimit);
-    
+
     if (gameData && sportKey) {
       const homeTeam = gameData.home?.team || gameData.home_team_name;
       const awayTeam = gameData.away?.team || gameData.away_team_name;
-      
+      const endDate = gameData.from_db ? gameData.commence_time?.split('T')[0] : undefined;
+
       if (homeTeam && awayTeam) {
-        await fetchAllHistoricalData(sportKey, homeTeam, awayTeam, newLimit);
+        await fetchAllHistoricalData(sportKey, homeTeam, awayTeam, newLimit, endDate);
       }
     }
   };
@@ -329,10 +336,11 @@ const GameDetailsPage: React.FC = () => {
     // If we have game data from context and the game_id matches, use it
     if (currentGame && currentGame.game_id === gameId) {
       setGameData(currentGame);
-      
+
       // Also fetch historical data for context game
       if (sportKey && currentGame.home?.team && currentGame.away?.team) {
-        fetchAllHistoricalData(sportKey, currentGame.home.team, currentGame.away.team, gamesLimit);
+        const endDate = (currentGame as any).from_db ? currentGame.commence_time?.split('T')[0] : undefined;
+        fetchAllHistoricalData(sportKey, currentGame.home.team, currentGame.away.team, gamesLimit, endDate);
       }
       return;
     }
@@ -341,19 +349,20 @@ const GameDetailsPage: React.FC = () => {
     if (sportKey && gameId) {
       setLoading(true);
       setError(null);
-      
+
       fetchSingleGameData(sportKey, gameId)
         .then((data) => {
           if (data) {
             setGameData(data);
-            
+
             // After getting game data, fetch historical data
             // Check if data has team names (could be from odds API or database)
             const homeTeam = data.home?.team || data.home_team_name;
             const awayTeam = data.away?.team || data.away_team_name;
-            
+            const endDate = data.from_db ? (data.commence_time as string)?.split('T')[0] : undefined;
+
             if (homeTeam && awayTeam) {
-              fetchAllHistoricalData(sportKey, homeTeam, awayTeam, gamesLimit);
+              fetchAllHistoricalData(sportKey, homeTeam, awayTeam, gamesLimit, endDate);
             }
           } else {
             setError("Failed to load game data");
@@ -413,7 +422,7 @@ const GameDetailsPage: React.FC = () => {
       <SEO
         title={seoTitle}
         description={seoDescription}
-        canonicalPath={`/game-details/${sport}?game_id=${gameId}`}
+        canonicalPath={`/game-details/${sport}?game_id=${encodedGameId}`}
       />
       <GameDetails
         game={gameData} 

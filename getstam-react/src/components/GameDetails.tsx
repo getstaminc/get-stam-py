@@ -92,6 +92,9 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   pitcherData
 }) => {
   const { home, away } = game;
+  const isFromDb = (game as any).from_db === true;
+  const urlSport = getSportType(sportKey);
+  const teamPageSport: string | undefined = ['nba', 'nfl', 'mlb', 'nhl', 'ncaaf', 'ncaab'].includes(urlSport) ? urlSport : undefined;
   const [gamesLimit, setGamesLimit] = useState<number>(currentLimit);
   const [activeTab, setActiveTab] = useState<number>(0); // 0: Recent Performance, 1: Player Props
   const [historicalSubTab, setHistoricalSubTab] = useState<number>(0); // 0: Last N, 1: Home Last N, 2: Away Last N
@@ -296,12 +299,12 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         backgroundColor: "transparent"
       }}>
         {/* Odds section */}
-        <GameOdds game={game} pitcherData={pitcherData} />
+        <GameOdds game={game} pitcherData={pitcherData} sport={teamPageSport} />
       </Paper>
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
-        {(sportKey === 'basketball_nba' || sportKey === 'baseball_mlb') ? (
+        {(sportKey === 'basketball_nba' || sportKey === 'baseball_mlb') && !isFromDb ? (
           <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
             <Tab label="Recent Performance" />
             <Tab label="Player Props" />
@@ -404,6 +407,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       loading={homeTeamHistory === null}
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       sportType={getSportType(sportKey)}
+                      sport={teamPageSport}
                     />
                     <HistoricalGames
                       title={`${awayTeamName} - Last ${gamesLimit} Games`}
@@ -411,6 +415,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       loading={awayTeamHistory === null}
                       teamName={convertTeamNameBySport(sportKey, awayTeamName)}
                       sportType={getSportType(sportKey)}
+                      sport={teamPageSport}
                     />
                     <HistoricalGames
                       title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
@@ -419,6 +424,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
+                      sport={teamPageSport}
                     />
                   </>
                 )}
@@ -432,6 +438,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       loading={homeTeamHomeGames === null}
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       sportType={getSportType(sportKey)}
+                      sport={teamPageSport}
                     />
                     <HistoricalGames
                       title={`${homeTeamName} vs ${awayTeamName} - Last ${gamesLimit} Home H2H`}
@@ -440,6 +447,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
+                      sport={teamPageSport}
                     />
                   </>
                 )}
@@ -453,6 +461,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       loading={awayTeamAwayGames === null}
                       teamName={convertTeamNameBySport(sportKey, awayTeamName)}
                       sportType={getSportType(sportKey)}
+                      sport={teamPageSport}
                     />
                     <HistoricalGames
                       title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} Away H2H`}
@@ -461,6 +470,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       teamName={convertTeamNameBySport(sportKey, awayTeamName)}
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
+                      sport={teamPageSport}
                     />
                   </>
                 )}

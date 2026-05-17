@@ -2,8 +2,12 @@
 Game service for handling game-related business logic
 """
 from datetime import datetime, date
+import os
 import pytz
 from dateutil import parser
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from urllib.parse import urlparse
 
 from ..external_requests.odds_api import get_odds_data
 from ..utils.date_utils import (
@@ -96,3 +100,65 @@ class GameService:
         if match.get('sport_key') == 'soccer_epl' and draw_odds and draw_odds.get('h2h') is not None:
             game_obj["draw"] = {"h2h": draw_odds["h2h"]}
         return game_obj
+
+    @staticmethod
+    def get_single_game_from_db(sport_key, odds_event_id):
+        """Fallback for expired games: query DB by odds_event_id. MLB only."""
+        if sport_key != 'baseball_mlb':
+            return None, 'Not supported'
+        try:
+            database_url = os.getenv('DATABASE_URL')
+            if not database_url:
+                return None, 'Database connection failed'
+            parsed = urlparse(database_url)
+            conn = psycopg2.connect(
+                host=parsed.hostname,
+                database=parsed.path[1:],
+                user=parsed.username,
+                password=parsed.password,
+                port=parsed.port or 5432
+            )
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(
+                "SELECT * FROM mlb_games WHERE odds_event_id = %s LIMIT 1",
+                (odds_event_id,)
+            )
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            if not row:
+                return None, 'Game not found'
+            return {
+                'game': {
+                    "game_id": odds_event_id,
+                    "commence_time": row['game_date'].isoformat(),
+                    "isToday": False,
+                    "from_db": True,
+                    "home": {
+                        "team": row['home_team_name'],
+                        "score": row['home_runs'],
+                        "odds": {
+                            "h2h": row['home_money_line'],
+                            "spread_point": row['home_line'],
+                            "spread_price": None
+                        }
+                    },
+                    "away": {
+                        "team": row['away_team_name'],
+                        "score": row['away_runs'],
+                        "odds": {
+                            "h2h": row['away_money_line'],
+                            "spread_point": row['away_line'],
+                            "spread_price": None
+                        }
+                    },
+                    "totals": {
+                        "over_point": row['total'],
+                        "under_point": row['total'],
+                        "over_price": None,
+                        "under_price": None
+                    }
+                }
+            }, None
+        except Exception as e:
+            return None, str(e)

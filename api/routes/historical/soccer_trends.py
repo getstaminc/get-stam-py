@@ -1,6 +1,6 @@
 """Soccer trends API endpoints."""
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, redirect
 from cache import cache
 from ...services.historical.soccer_trends_service import SoccerTrendsService
 from ...services.historical.soccer_service import SoccerService
@@ -93,7 +93,7 @@ def league_trends(league_slug: str):
         }
         league = slug_map.get(league_slug.lower())
         if not league:
-            return jsonify({'error': f'Unsupported league: {league_slug}'}), 400
+            return redirect(f'/{league_slug}')
 
         limit = int(request.args.get('limit', 50))
         min_trend_length = int(request.args.get('min_trend_length', request.args.get('minTrendLength', 3)))

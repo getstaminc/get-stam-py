@@ -11,5 +11,6 @@ from .mlb_batter_prop import MLBBatterProp
 from .mlb_pitcher_prop import MLBPitcherProp
 from .mlb_game import MLBGame
 from .team import Team
+from .blog_post import BlogPost
 
-__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'Team']
+__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'Team', 'BlogPost']

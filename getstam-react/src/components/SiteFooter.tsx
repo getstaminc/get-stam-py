@@ -38,6 +38,18 @@ const SiteFooter: React.FC = () => (
         About Us
       </Link>
       <Link
+        href="/blog"
+        underline="none"
+        color="inherit"
+        sx={{
+          mx: 1,
+          transition: "color 0.2s",
+          "&:hover": { color: "#007bff", textDecoration: "none" },
+        }}
+      >
+        Blog
+      </Link>
+      <Link
         href="/contact-us"
         underline="none"
         color="inherit"

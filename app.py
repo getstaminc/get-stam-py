@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)  # Must run before any other imports that read env vars
+
 from flask import Flask, jsonify, Blueprint, send_from_directory, make_response
 from datetime import datetime
 import pytz
@@ -5,8 +9,6 @@ import re
 
 from cache import cache, init_cache
 import logging
-import os
-from dotenv import load_dotenv
 from api.routes.games import games_bp
 from api.routes.odds import odds_bp
 from api.routes.rankings import rankings_bp
@@ -28,9 +30,11 @@ from api.routes.historical.ncaab_trends import ncaab_trends_bp
 from api.routes.mlb_pitchers import mlb_pitchers_bp
 from api.routes.internal.mlb_mismatch import mlb_mismatch_bp
 from api.routes.mlb_player_props import mlb_props_bp
+from api.routes.webhooks.youtube_webhook import youtube_webhook_bp
+from api.routes.blog import blog_bp
+from api.routes.admin_blog import admin_blog_bp
 from flask_cors import CORS
 
-load_dotenv()  # Load environment variables from .env file
 
 # Configure Flask app to serve React build
 app = Flask(__name__, static_folder='getstam-react/build/static', static_url_path='/static')
@@ -91,6 +95,9 @@ app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_pitchers_bp)
 app.register_blueprint(mlb_mismatch_bp)
 app.register_blueprint(mlb_props_bp)
+app.register_blueprint(youtube_webhook_bp)
+app.register_blueprint(blog_bp)
+app.register_blueprint(admin_blog_bp)
 
 _SPORT_DISPLAY = {
     'nfl': 'NFL', 'mlb': 'MLB', 'nba': 'NBA', 'nhl': 'NHL',
@@ -200,6 +207,7 @@ _STATIC_PAGE_META = {
     'betting-guide': ('Betting Guide | GetSTAM', 'Learn how to read betting odds and use trends to your advantage.'),
     'privacy-policy': ('Privacy Policy | GetSTAM', 'GetSTAM privacy policy.'),
     'feature-requests': ('Feature Requests | GetSTAM', 'Request new features for GetSTAM.'),
+    'blog': ('Blog | GetSTAM', 'Sports betting analysis and tips.'),
 }
 
 def _get_page_meta(path):
@@ -237,6 +245,14 @@ def _get_page_meta(path):
             f'{sport_name} Games & Odds | GetSTAM',
             f"Today's {sport_name} odds, point spreads, over/under lines, and ATS records for every matchup.",
         )
+
+    if slug == 'blog':
+        if len(parts) >= 2:
+            return (
+                f'{parts[1].replace("-", " ").title()} | GetSTAM Blog',
+                'Sports betting insights from GetSTAM.',
+            )
+        return _STATIC_PAGE_META['blog']
 
     if slug in _STATIC_PAGE_META:
         return _STATIC_PAGE_META[slug]
@@ -291,6 +307,7 @@ def sitemap():
         ('https://www.getstam.com/betting-guide',  'monthly', '0.6', '2025-01-01'),
         ('https://www.getstam.com/contact-us',     'monthly', '0.4', '2025-01-01'),
         ('https://www.getstam.com/privacy-policy', 'yearly',  '0.3', '2025-01-01'),
+        ('https://www.getstam.com/blog',           'weekly',  '0.7', today),
     ]
 
     team_page_priority = {'nba': '0.7', 'nfl': '0.7', 'mlb': '0.7', 'nhl': '0.7', 'ncaaf': '0.6', 'ncaab': '0.6'}
@@ -307,6 +324,15 @@ def sitemap():
             urls.append(f'  <url><loc>https://www.getstam.com/team/{sport}/{slug}</loc><lastmod>{today}</lastmod><changefreq>weekly</changefreq><priority>{priority}</priority></url>')
     for loc, changefreq, priority, lastmod in static_pages:
         urls.append(f'  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>{changefreq}</changefreq><priority>{priority}</priority></url>')
+
+    # Blog post pages
+    try:
+        from api.services.blog_service import BlogService as _BlogService
+        post_slugs, _ = _BlogService.get_published_slugs()
+        for post_slug in post_slugs:
+            urls.append(f'  <url><loc>https://www.getstam.com/blog/{post_slug}</loc><lastmod>{today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>')
+    except Exception:
+        pass
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     xml += '\n'.join(urls)

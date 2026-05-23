@@ -23,6 +23,9 @@ import GamesPage from "./pages/GamesPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
 import MismatchPlayersPage from "./pages/MismatchPlayersPage";
 import TeamPage from "./pages/TeamPage";
+import BlogListPage from "./pages/BlogListPage";
+import BlogPostPage from "./pages/BlogPostPage";
+import BlogAdminPage from "./pages/BlogAdminPage";
 
 function AppContent() {
   usePageView();
@@ -82,6 +85,9 @@ function AppContent() {
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/internal/mismatch-players" element={<MismatchPlayersPage />} />
           <Route path="/team/:sport/:teamSlug" element={<TeamPage />} />
+          <Route path="/blog" element={<BlogListPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/admin/blog" element={<BlogAdminPage />} />
           {/* Add more routes as needed */}
         </Routes>
       </Box>

@@ -165,6 +165,7 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
   const requestBody = {
     games: games,
     sportKey: sportKey,
+    limit: 20,
     minTrendLength: minTrendLength
   };
   

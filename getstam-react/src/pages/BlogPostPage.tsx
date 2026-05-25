@@ -112,7 +112,11 @@ function GamePreviewSection({ post }: { post: BlogPost }) {
   const homeTeamTrends: any[] = trends.homeTeamTrends || [];
   const awayTeamTrends: any[] = trends.awayTeamTrends || [];
   const headToHeadTrends: any[] = trends.headToHeadTrends || [];
-  const hasTrends = homeTeamTrends.length > 0 || awayTeamTrends.length > 0 || headToHeadTrends.length > 0;
+  const homeTeamHomeTrends: any[] = trends.homeTeamHomeTrends || [];
+  const awayTeamAwayTrends: any[] = trends.awayTeamAwayTrends || [];
+  const homeAtHomeH2HTrends: any[] = trends.homeAtHomeH2HTrends || [];
+  const hasTrends = homeTeamTrends.length > 0 || awayTeamTrends.length > 0 || headToHeadTrends.length > 0 ||
+    homeTeamHomeTrends.length > 0 || awayTeamAwayTrends.length > 0 || homeAtHomeH2HTrends.length > 0;
 
   const gameDetailsUrl = post.odds_event_id
     ? `/game-details/${sportType}?game_id=${encodeGameId(post.odds_event_id)}`
@@ -206,13 +210,29 @@ function GamePreviewSection({ post }: { post: BlogPost }) {
           </Typography>
           <TeamTrends teamName={home_team!} trends={homeTeamTrends} />
           <TeamTrends teamName={away_team!} trends={awayTeamTrends} />
+          {homeTeamHomeTrends.length > 0 && (
+            <TeamTrends teamName={`${home_team} (Home)`} trends={homeTeamHomeTrends} />
+          )}
+          {awayTeamAwayTrends.length > 0 && (
+            <TeamTrends teamName={`${away_team} (Away)`} trends={awayTeamAwayTrends} />
+          )}
           {headToHeadTrends.length > 0 && (
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1, color: "#1976d2" }}>
-                Head-to-Head Trends:
+                H2H Trends:
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {headToHeadTrends.map((t: any, i: number) => <TrendChip key={i} trend={t} />)}
+              </Stack>
+            </Box>
+          )}
+          {homeAtHomeH2HTrends.length > 0 && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1, color: "#1976d2" }}>
+                {home_team} Home H2H:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {homeAtHomeH2HTrends.map((t: any, i: number) => <TrendChip key={i} trend={t} />)}
               </Stack>
             </Box>
           )}

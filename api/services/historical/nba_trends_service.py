@@ -51,10 +51,10 @@ class NBATrendsService(BaseHistoricalService):
             print(f"Found {len(all_teams)} unique teams: {list(all_teams)}")
 
             # Step 2: Batch fetch all team games data
-            all_team_games = cls._batch_fetch_all_team_games(all_teams, limit * 2)
+            all_team_games = cls._batch_fetch_all_team_games(all_teams, limit * 4)
 
             # Step 3: Batch fetch head-to-head data for all team pairs
-            all_h2h_games = cls._batch_fetch_all_head_to_head_games(team_pairs, limit)
+            all_h2h_games = cls._batch_fetch_all_head_to_head_games(team_pairs, limit * 2)
 
             # Step 4: Analyze trends for each game using the cached data
             results = []
@@ -72,16 +72,26 @@ class NBATrendsService(BaseHistoricalService):
                     })
                     continue
 
-                home_team_games = cls._filter_team_games(all_team_games.get(home_team, []), home_team, limit)
-                away_team_games = cls._filter_team_games(all_team_games.get(away_team, []), away_team, limit)
-                h2h_games = all_h2h_games.get((home_team, away_team), [])[:limit]
+                all_home_games = all_team_games.get(home_team, [])
+                all_away_games = all_team_games.get(away_team, [])
+                all_h2h = all_h2h_games.get((home_team, away_team), [])
+
+                home_team_games = cls._filter_team_games(all_home_games, home_team, limit)
+                away_team_games = cls._filter_team_games(all_away_games, away_team, limit)
+                h2h_games = all_h2h[:limit]
+
+                # Home/away venue-specific game lists
+                home_team_home_games = [g for g in all_home_games if g.get('team_side') == 'home'][:limit]
+                away_team_away_games = [g for g in all_away_games if g.get('team_side') == 'away'][:limit]
 
                 home_team_trends = cls._analyze_team_trends(home_team_games, home_team, min_trend_length)
                 away_team_trends = cls._analyze_team_trends(away_team_games, away_team, min_trend_length)
+                home_team_home_trends = cls._analyze_team_trends(home_team_home_games, home_team, min_trend_length)
+                away_team_away_trends = cls._analyze_team_trends(away_team_away_games, away_team, min_trend_length)
 
-                # For H2H, analyze only for the home team (consistent with UI expectation)
-                # Ensure team_side is set correctly for H2H games
+                # For H2H, ensure team_side is set correctly for the home team
                 h2h_games_with_side = []
+                home_at_home_h2h = []
                 for g in h2h_games:
                     g_copy = dict(g)
                     # Prefer resolved original names (added in the H2H fetch)
@@ -107,16 +117,34 @@ class NBATrendsService(BaseHistoricalService):
                         else:
                             g_copy['team_side'] = None
                     h2h_games_with_side.append(g_copy)
+                    if g_copy.get('team_side') == 'home':
+                        home_at_home_h2h.append(g_copy)
 
-                head_to_head_trends = cls._analyze_team_trends(h2h_games_with_side, home_team, min_trend_length)
+                # Also check remaining all_h2h games (beyond limit) for home_at_home
+                for g in all_h2h[limit:]:
+                    if g.get('home_team_orig') == home_team:
+                        g_copy = dict(g)
+                        g_copy['team_side'] = 'home'
+                        home_at_home_h2h.append(g_copy)
+                home_at_home_h2h = home_at_home_h2h[:limit]
 
-                has_trends = len(home_team_trends) > 0 or len(away_team_trends) > 0 or len(head_to_head_trends) > 0
+                head_to_head_trends = cls._apply_h2h_context(
+                    cls._analyze_team_trends(h2h_games_with_side, home_team, min_trend_length), home_team, away_team)
+                home_at_home_h2h_trends = cls._apply_h2h_context(
+                    cls._analyze_team_trends(home_at_home_h2h, home_team, min_trend_length), home_team, away_team, at_home=True)
+
+                has_trends = (len(home_team_trends) > 0 or len(away_team_trends) > 0 or
+                              len(head_to_head_trends) > 0 or len(home_team_home_trends) > 0 or
+                              len(away_team_away_trends) > 0 or len(home_at_home_h2h_trends) > 0)
 
                 results.append({
                     'game': game,
                     'homeTeamTrends': home_team_trends,
                     'awayTeamTrends': away_team_trends,
                     'headToHeadTrends': head_to_head_trends,
+                    'homeTeamHomeTrends': home_team_home_trends,
+                    'awayTeamAwayTrends': away_team_away_trends,
+                    'homeAtHomeH2HTrends': home_at_home_h2h_trends,
                     'hasTrends': has_trends
                 })
 

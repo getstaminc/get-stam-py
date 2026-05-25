@@ -116,16 +116,25 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
     const filteredHomeTeamTrends = filterTrendsByLength(gameWithTrends.homeTeamTrends);
     const filteredAwayTeamTrends = filterTrendsByLength(gameWithTrends.awayTeamTrends);
     const filteredHeadToHeadTrends = filterTrendsByLength(gameWithTrends.headToHeadTrends);
-    
-    const hasFilteredTrends = filteredHomeTeamTrends.length > 0 || 
-                              filteredAwayTeamTrends.length > 0 || 
-                              filteredHeadToHeadTrends.length > 0;
-    
+    const filteredHomeTeamHomeTrends = filterTrendsByLength(gameWithTrends.homeTeamHomeTrends || []);
+    const filteredAwayTeamAwayTrends = filterTrendsByLength(gameWithTrends.awayTeamAwayTrends || []);
+    const filteredHomeAtHomeH2HTrends = filterTrendsByLength(gameWithTrends.homeAtHomeH2HTrends || []);
+
+    const hasFilteredTrends = filteredHomeTeamTrends.length > 0 ||
+                              filteredAwayTeamTrends.length > 0 ||
+                              filteredHeadToHeadTrends.length > 0 ||
+                              filteredHomeTeamHomeTrends.length > 0 ||
+                              filteredAwayTeamAwayTrends.length > 0 ||
+                              filteredHomeAtHomeH2HTrends.length > 0;
+
     return {
       ...gameWithTrends,
       homeTeamTrends: filteredHomeTeamTrends,
       awayTeamTrends: filteredAwayTeamTrends,
       headToHeadTrends: filteredHeadToHeadTrends,
+      homeTeamHomeTrends: filteredHomeTeamHomeTrends,
+      awayTeamAwayTrends: filteredAwayTeamAwayTrends,
+      homeAtHomeH2HTrends: filteredHomeAtHomeH2HTrends,
       hasTrends: hasFilteredTrends
     };
   });
@@ -188,7 +197,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
       </Box>
       
       {gamesWithActiveTrends.map((gameWithTrends) => {
-        const { game, homeTeamTrends, awayTeamTrends, headToHeadTrends } = gameWithTrends;
+        const { game, homeTeamTrends, awayTeamTrends, headToHeadTrends, homeTeamHomeTrends, awayTeamAwayTrends, homeAtHomeH2HTrends } = gameWithTrends;
         const homeTeam = game.home?.team || game.home_team_name || 'Home';
         const awayTeam = game.away?.team || game.away_team_name || 'Away';
         
@@ -222,14 +231,32 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
               
               <TeamTrends teamName={homeTeam} trends={homeTeamTrends} />
               <TeamTrends teamName={awayTeam} trends={awayTeamTrends} />
-              
+              {(homeTeamHomeTrends?.length ?? 0) > 0 && (
+                <TeamTrends teamName={`${homeTeam} (Home)`} trends={homeTeamHomeTrends!} />
+              )}
+              {(awayTeamAwayTrends?.length ?? 0) > 0 && (
+                <TeamTrends teamName={`${awayTeam} (Away)`} trends={awayTeamAwayTrends!} />
+              )}
+
               {headToHeadTrends.length > 0 && (
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: '#1976d2' }}>
-                    Head-to-Head Trends:
+                    H2H Trends:
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     {headToHeadTrends.map((trend: TrendResult, index: number) => (
+                      <TrendChip key={index} trend={trend} />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+              {(homeAtHomeH2HTrends?.length ?? 0) > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: '#1976d2' }}>
+                    {homeTeam} Home H2H:
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {homeAtHomeH2HTrends!.map((trend: TrendResult, index: number) => (
                       <TrendChip key={index} trend={trend} />
                     ))}
                   </Stack>

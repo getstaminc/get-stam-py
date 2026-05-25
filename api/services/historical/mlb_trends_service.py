@@ -39,10 +39,10 @@ class MLBTrendsService(BaseHistoricalService):
             print(f"Found {len(all_teams)} unique teams: {list(all_teams)}")
             
             # Step 2: Batch fetch all team games data in one or two queries
-            all_team_games = cls._batch_fetch_all_team_games(all_teams, limit * 2)  # Get more data than needed
-            
+            all_team_games = cls._batch_fetch_all_team_games(all_teams, limit * 4)  # Get more data for home/away splits
+
             # Step 3: Batch fetch head-to-head data for all team pairs
-            all_h2h_games = cls._batch_fetch_all_head_to_head_games(team_pairs, limit)
+            all_h2h_games = cls._batch_fetch_all_head_to_head_games(team_pairs, limit * 2)
             
             # Step 4: Analyze trends for each game using the cached data
             results = []
@@ -61,22 +61,49 @@ class MLBTrendsService(BaseHistoricalService):
                     continue
                 
                 # Extract team-specific games from the batch data
-                home_team_games = cls._filter_team_games(all_team_games.get(home_team, []), home_team, limit)
-                away_team_games = cls._filter_team_games(all_team_games.get(away_team, []), away_team, limit)
-                h2h_games = all_h2h_games.get((home_team, away_team), [])[:limit]
-                
+                all_home_games = all_team_games.get(home_team, [])
+                all_away_games = all_team_games.get(away_team, [])
+                all_h2h = all_h2h_games.get((home_team, away_team), [])
+
+                home_team_games = cls._filter_team_games(all_home_games, home_team, limit)
+                away_team_games = cls._filter_team_games(all_away_games, away_team, limit)
+                h2h_games = all_h2h[:limit]
+
+                # Home/away venue-specific game lists
+                home_team_home_games = [g for g in all_home_games if g.get('team_side') == 'home'][:limit]
+                away_team_away_games = [g for g in all_away_games if g.get('team_side') == 'away'][:limit]
+
+                # H2H games where the home team was actually at home
+                home_at_home_h2h = []
+                for g in all_h2h:
+                    if g.get('home_team_orig') == home_team:
+                        g_copy = dict(g)
+                        g_copy['team_side'] = 'home'
+                        home_at_home_h2h.append(g_copy)
+                home_at_home_h2h = home_at_home_h2h[:limit]
+
                 # Analyze trends using the filtered data
                 home_team_trends = cls._analyze_team_trends(home_team_games, home_team, min_trend_length)
                 away_team_trends = cls._analyze_team_trends(away_team_games, away_team, min_trend_length)
-                head_to_head_trends = cls._analyze_team_trends(h2h_games, home_team, min_trend_length)
-                
-                has_trends = len(home_team_trends) > 0 or len(away_team_trends) > 0 or len(head_to_head_trends) > 0
-                
+                head_to_head_trends = cls._apply_h2h_context(
+                    cls._analyze_team_trends(h2h_games, home_team, min_trend_length), home_team, away_team)
+                home_team_home_trends = cls._analyze_team_trends(home_team_home_games, home_team, min_trend_length)
+                away_team_away_trends = cls._analyze_team_trends(away_team_away_games, away_team, min_trend_length)
+                home_at_home_h2h_trends = cls._apply_h2h_context(
+                    cls._analyze_team_trends(home_at_home_h2h, home_team, min_trend_length), home_team, away_team, at_home=True)
+
+                has_trends = (len(home_team_trends) > 0 or len(away_team_trends) > 0 or
+                              len(head_to_head_trends) > 0 or len(home_team_home_trends) > 0 or
+                              len(away_team_away_trends) > 0 or len(home_at_home_h2h_trends) > 0)
+
                 results.append({
                     'game': game,
                     'homeTeamTrends': home_team_trends,
                     'awayTeamTrends': away_team_trends,
                     'headToHeadTrends': head_to_head_trends,
+                    'homeTeamHomeTrends': home_team_home_trends,
+                    'awayTeamAwayTrends': away_team_away_trends,
+                    'homeAtHomeH2HTrends': home_at_home_h2h_trends,
                     'hasTrends': has_trends
                 })
             
@@ -218,10 +245,12 @@ class MLBTrendsService(BaseHistoricalService):
                     game_dict = dict(game)
                     home_team_orig = reverse_team_id_map.get(game_dict['home_team_id'])
                     away_team_orig = reverse_team_id_map.get(game_dict['away_team_id'])
-                    
+                    game_dict['home_team_orig'] = home_team_orig
+                    game_dict['away_team_orig'] = away_team_orig
+
                     # Find which pair this game belongs to
                     for home, away in valid_pairs:
-                        if ((home_team_orig == home and away_team_orig == away) or 
+                        if ((home_team_orig == home and away_team_orig == away) or
                             (home_team_orig == away and away_team_orig == home)):
                             if len(h2h_results[(home, away)]) < limit:
                                 h2h_results[(home, away)].append(game_dict)

@@ -35,6 +35,28 @@ class BaseHistoricalService:
         return processed_games
     
     @staticmethod
+    def _apply_h2h_context(trends: List[Dict], team_name: str, opponent_name: str, at_home: bool = False) -> List[Dict]:
+        """Rewrite H2H trend descriptions to include both team names."""
+        venue = ' at home' if at_home else ''
+        type_to_desc = {
+            'win_streak':      lambda n: f'{team_name} won {n} straight{venue} vs {opponent_name}',
+            'loss_streak':     lambda n: f'{team_name} lost {n} straight{venue} vs {opponent_name}',
+            'cover_streak':    lambda n: f'{team_name} covered {n} straight{venue} vs {opponent_name}',
+            'no_cover_streak': lambda n: f'{team_name} failed to cover {n} straight{venue} vs {opponent_name}',
+            'over_streak':     lambda n: f'Total went OVER {n} straight{venue} vs {opponent_name}',
+            'under_streak':    lambda n: f'Total went UNDER {n} straight{venue} vs {opponent_name}',
+            'draw_streak':     lambda n: f'Draw {n} straight{venue} vs {opponent_name}',
+        }
+        result = []
+        for trend in trends:
+            t = dict(trend)
+            formatter = type_to_desc.get(t.get('type', ''))
+            if formatter:
+                t['description'] = formatter(t['count'])
+            result.append(t)
+        return result
+
+    @staticmethod
     def _get_connection():
         """Get database connection from DATABASE_URL"""
         try:

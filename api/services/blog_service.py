@@ -469,7 +469,7 @@ Return ONLY valid JSON (no markdown code fences) with these exact keys:
             # 6. Trends
             trends_results, _ = TrendsService.analyze_multiple_games_trends(
                 [{"home_team_name": home_team, "away_team_name": away_team}],
-                limit=5
+                limit=20
             )
             trends = trends_results[0] if trends_results else {}
 

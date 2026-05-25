@@ -14,6 +14,9 @@ export interface GameWithTrends {
   homeTeamTrends: TrendResult[];
   awayTeamTrends: TrendResult[];
   headToHeadTrends: TrendResult[];
+  homeTeamHomeTrends?: TrendResult[];
+  awayTeamAwayTrends?: TrendResult[];
+  homeAtHomeH2HTrends?: TrendResult[];
   hasTrends: boolean;
 }
 

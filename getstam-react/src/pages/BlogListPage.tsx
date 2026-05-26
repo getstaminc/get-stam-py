@@ -14,6 +14,7 @@ import {
   Stack,
 } from "@mui/material";
 import SEO from "../components/SEO";
+import EmailSubscribeForm from "../components/EmailSubscribeForm";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
@@ -29,6 +30,7 @@ const CATEGORIES = [
   { value: "trends", label: "Trends" },
   { value: "analysis", label: "Analysis" },
   { value: "news", label: "News" },
+  { value: "daily_trends", label: "Daily Digest" },
 ];
 
 const SPORTS = [
@@ -39,11 +41,12 @@ const SPORTS = [
   { value: "nfl", label: "NFL" },
 ];
 
-const CATEGORY_COLORS: Record<string, "primary" | "success" | "warning" | "info"> = {
+const CATEGORY_COLORS: Record<string, "primary" | "success" | "warning" | "info" | "secondary"> = {
   preview: "primary",
   trends: "success",
   analysis: "warning",
   news: "info",
+  daily_trends: "secondary",
 };
 
 interface BlogPostSummary {
@@ -127,6 +130,26 @@ export default function BlogListPage() {
           ))}
         </Stack>
       </Box>
+
+      {/* Subscribe banner */}
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          background: "linear-gradient(135deg, #1976d2, #42a5f5)",
+          color: "#fff",
+          borderRadius: 2,
+          mb: 3,
+        }}
+      >
+        <Typography variant="h6" fontWeight={700} gutterBottom>
+          Get Daily Trends in Your Inbox
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
+          Every morning we send the strongest betting streaks across MLB, NHL, and NBA.
+        </Typography>
+        <EmailSubscribeForm compact={true} />
+      </Paper>
 
       {loading && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>

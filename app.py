@@ -33,6 +33,7 @@ from api.routes.mlb_player_props import mlb_props_bp
 from api.routes.webhooks.youtube_webhook import youtube_webhook_bp
 from api.routes.blog import blog_bp
 from api.routes.admin_blog import admin_blog_bp
+from api.routes.subscribers import subscribers_bp
 from flask_cors import CORS
 
 
@@ -98,6 +99,7 @@ app.register_blueprint(mlb_props_bp)
 app.register_blueprint(youtube_webhook_bp)
 app.register_blueprint(blog_bp)
 app.register_blueprint(admin_blog_bp)
+app.register_blueprint(subscribers_bp)
 
 _SPORT_DISPLAY = {
     'nfl': 'NFL', 'mlb': 'MLB', 'nba': 'NBA', 'nhl': 'NHL',

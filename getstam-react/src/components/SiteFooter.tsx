@@ -7,6 +7,7 @@ import FacebookIcon from "@mui/icons-material/Facebook";
 import MusicNoteIcon from "@mui/icons-material/MusicNote"; // TikTok substitute
 import AlternateEmailIcon from "@mui/icons-material/AlternateEmail"; // Threads substitute
 import { Link as RouterLink } from "react-router-dom";
+import EmailSubscribeForm from "./EmailSubscribeForm";
 
 
 const SiteFooter: React.FC = () => (
@@ -21,6 +22,12 @@ const SiteFooter: React.FC = () => (
       textAlign: "center",
     }}
   >
+    <Box sx={{ mb: 2, maxWidth: 420, mx: "auto" }}>
+      <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+        Daily Trends Digest
+      </Typography>
+      <EmailSubscribeForm compact={false} />
+    </Box>
     <Box sx={{ mb: 1 }}>
       <Link
         href="/about-us"

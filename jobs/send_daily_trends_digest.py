@@ -238,7 +238,7 @@ def run():
 
             trends_cls = cfg["trends_cls"]
             results, err = trends_cls.analyze_multiple_games_trends(
-                games_for_trends, limit=5, min_trend_length=3
+                games_for_trends, limit=10, min_trend_length=3
             )
             if err:
                 print(f"[digest] {display} trends error: {err}")

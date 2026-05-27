@@ -6,6 +6,8 @@ Runs every morning via cron:
 
 import os
 import sys
+import base64
+import binascii
 from datetime import datetime
 import pytz
 
@@ -32,6 +34,15 @@ SPORTS_CONFIG = [
     {"sport": "nhl", "sport_key": "icehockey_nhl", "display": "NHL", "trends_cls": NHLTrendsService, "min_trend_length": 3},
     {"sport": "nba", "sport_key": "basketball_nba", "display": "NBA", "trends_cls": NBATrendsService, "min_trend_length": 3},
 ]
+
+
+def _encode_game_id(hex_id):
+    """Convert Odds API hex game ID to URL-safe base64, matching encodeGameId() in the frontend."""
+    try:
+        raw_bytes = binascii.unhexlify(hex_id)
+        return base64.urlsafe_b64encode(raw_bytes).rstrip(b'=').decode('ascii')
+    except Exception:
+        return hex_id
 
 
 def _get_todays_games_from_scores(scores):
@@ -95,6 +106,11 @@ def _build_markdown(today_str, sport_results):
                 continue
             lines.append(f"### {away} @ {home}")
             lines.append("")
+            game_id = game.get("game_id", "")
+            sport_key = game.get("sport", "")
+            if game_id and sport_key:
+                lines.append(f"[View Game →](/game-details/{sport_key}?game_id={game_id})")
+                lines.append("")
             for trend_key, label in trend_keys:
                 trends = entry.get(trend_key, [])
                 if trends:
@@ -208,6 +224,8 @@ def run():
                 games_for_trends.append({
                     "home_team_name": home_short,
                     "away_team_name": away_short,
+                    "game_id": _encode_game_id(g.get("id", "")),
+                    "sport": sport,
                 })
 
             trends_cls = cfg["trends_cls"]

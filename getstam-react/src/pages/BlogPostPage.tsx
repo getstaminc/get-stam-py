@@ -67,7 +67,7 @@ interface BlogPost {
 
 interface TrendItem { description: string }
 interface TeamSection { label: string; trends: TrendItem[] }
-interface GameCard { matchup: string; teams: TeamSection[] }
+interface GameCard { matchup: string; gameUrl?: string; teams: TeamSection[] }
 interface SportSection { name: string; games: GameCard[] }
 
 function parseDailyDigest(markdown: string): { intro: string; sports: SportSection[] } {
@@ -99,6 +99,9 @@ function parseDailyDigest(markdown: string): { intro: string; sports: SportSecti
     } else if (line.startsWith("### ")) {
       flushGame();
       currentGame = { matchup: line.slice(4).trim(), teams: [] };
+    } else if (/^\[.*\]\(\/game-details\/[^)]+\)$/.test(line) && currentGame) {
+      const urlMatch = line.match(/\]\(([^)]+)\)/);
+      if (urlMatch) currentGame.gameUrl = urlMatch[1];
     } else if (/^\*\*[^*]+\*\*:/.test(line)) {
       flushTeam();
       const label = line.match(/^\*\*([^*]+)\*\*:/)?.[1] || "";
@@ -210,11 +213,33 @@ function DailyDigestContent({ content }: { content: string }) {
                     }}
                   >
                     {/* Matchup header */}
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-                      <Box sx={{ width: 4, height: 20, bgcolor: colors.bg, borderRadius: 1 }} />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
-                        {game.matchup}
-                      </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1.5 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ width: 4, height: 20, bgcolor: colors.bg, borderRadius: 1 }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
+                          {game.matchup}
+                        </Typography>
+                      </Box>
+                      {game.gameUrl && (
+                        <Button
+                          component={Link}
+                          to={game.gameUrl}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            fontSize: "0.7rem",
+                            py: 0.25,
+                            px: 1,
+                            borderRadius: 2,
+                            whiteSpace: "nowrap",
+                            borderColor: colors.bg,
+                            color: colors.bg,
+                            "&:hover": { bgcolor: colors.light },
+                          }}
+                        >
+                          View Game →
+                        </Button>
+                      )}
                     </Box>
 
                     {/* Team trends */}

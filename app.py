@@ -240,7 +240,7 @@ def _get_page_meta(path):
     if sport_name:
         if len(parts) >= 2 and parts[1] == 'trends':
             return (
-                f'{sport_name} Betting Trends | GetSTAM',
+                f'{sport_name} Trends | GetSTAM',
                 f'{sport_name} ATS trends, over/under records, and historical betting patterns to find today\'s best matchups.',
             )
         return (

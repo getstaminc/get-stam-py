@@ -30,7 +30,7 @@ const CATEGORIES = [
   { value: "trends", label: "Trends" },
   { value: "analysis", label: "Analysis" },
   { value: "news", label: "News" },
-  { value: "daily_trends", label: "Daily Digest" },
+  { value: "daily_trends", label: "Daily Trends" },
 ];
 
 const SPORTS = [
@@ -41,12 +41,20 @@ const SPORTS = [
   { value: "nfl", label: "NFL" },
 ];
 
+const CATEGORY_LABELS: Record<string, string> = {
+  preview: "Preview",
+  trends: "Trends",
+  analysis: "Analysis",
+  news: "News",
+  daily_trends: "Daily Trends",
+};
+
 const CATEGORY_COLORS: Record<string, "primary" | "success" | "warning" | "info" | "secondary"> = {
   preview: "primary",
   trends: "success",
   analysis: "warning",
   news: "info",
-  daily_trends: "secondary",
+  daily_trends: "primary",
 };
 
 interface BlogPostSummary {
@@ -197,7 +205,7 @@ export default function BlogListPage() {
                 <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
                   {post.category && (
                     <Chip
-                      label={post.category.charAt(0).toUpperCase() + post.category.slice(1)}
+                      label={CATEGORY_LABELS[post.category] ?? post.category.replace(/_/g, " ")}
                       size="small"
                       color={CATEGORY_COLORS[post.category] || "default"}
                       sx={{ alignSelf: "flex-start", mb: 1 }}

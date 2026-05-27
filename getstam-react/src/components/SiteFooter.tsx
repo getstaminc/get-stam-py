@@ -23,7 +23,7 @@ const SiteFooter: React.FC = () => (
     }}
   >
     <Box sx={{ mb: 2, maxWidth: 420, mx: "auto" }}>
-      <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+      <Typography variant="body2" sx={{ mb: 0.5 }}>
         Daily Trends Digest
       </Typography>
       <EmailSubscribeForm compact={false} />

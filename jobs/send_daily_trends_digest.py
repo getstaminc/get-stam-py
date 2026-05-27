@@ -28,9 +28,9 @@ eastern_tz = pytz.timezone('US/Eastern')
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://www.getstam.com")
 
 SPORTS_CONFIG = [
-    {"sport": "mlb", "sport_key": "baseball_mlb", "display": "MLB", "trends_cls": MLBTrendsService},
-    {"sport": "nhl", "sport_key": "icehockey_nhl", "display": "NHL", "trends_cls": NHLTrendsService},
-    {"sport": "nba", "sport_key": "basketball_nba", "display": "NBA", "trends_cls": NBATrendsService},
+    {"sport": "mlb", "sport_key": "baseball_mlb", "display": "MLB", "trends_cls": MLBTrendsService, "min_trend_length": 5},
+    {"sport": "nhl", "sport_key": "icehockey_nhl", "display": "NHL", "trends_cls": NHLTrendsService, "min_trend_length": 3},
+    {"sport": "nba", "sport_key": "basketball_nba", "display": "NBA", "trends_cls": NBATrendsService, "min_trend_length": 3},
 ]
 
 
@@ -72,7 +72,7 @@ def _build_markdown(today_str, sport_results):
     lines = [
         f"# Daily Trends Digest — {today_str}",
         "",
-        "Today's strongest betting trends across MLB, NHL, and NBA.",
+        "Today's strongest trends across MLB, NHL, and NBA.",
         "",
     ]
     for sport_display, game_trends_list in sport_results:
@@ -82,15 +82,20 @@ def _build_markdown(today_str, sport_results):
             game = entry["game"]
             home = game.get("home_team_name", "")
             away = game.get("away_team_name", "")
-            lines.append(f"### {away} @ {home}")
-            lines.append("")
-            for trend_key, label in [
+            trend_keys = [
                 ("homeTeamTrends", home),
                 ("awayTeamTrends", away),
                 ("homeTeamHomeTrends", f"{home} (at home)"),
                 ("awayTeamAwayTrends", f"{away} (away)"),
                 ("headToHeadTrends", "H2H"),
-            ]:
+                ("homeAtHomeH2HTrends", f"{home} (home H2H)"),
+            ]
+            # Skip games that have no renderable trends
+            if not any(entry.get(key) for key, _ in trend_keys):
+                continue
+            lines.append(f"### {away} @ {home}")
+            lines.append("")
+            for trend_key, label in trend_keys:
                 trends = entry.get(trend_key, [])
                 if trends:
                     lines.append(f"**{label}**:")
@@ -105,40 +110,10 @@ def _build_html_email(today_str, highest_trend, highest_team, sport_results, pos
     """Build inline-styled HTML for the email digest."""
     blog_url = f"{SITE_BASE_URL}/blog/{post_slug}"
 
-    # Build per-sport trend rows
-    sport_rows_html = ""
-    for sport_display, game_trends_list in sport_results:
-        sport_rows_html += f"""
-        <tr>
-          <td style="padding: 16px 24px 4px; font-family: Arial, sans-serif;">
-            <h3 style="margin: 0 0 8px; color: #1976d2; font-size: 16px;">{sport_display}</h3>
-          </td>
-        </tr>"""
-        for entry in game_trends_list:
-            game = entry["game"]
-            home = game.get("home_team_name", "")
-            away = game.get("away_team_name", "")
-            all_trends = (
-                [{"team": home, "t": t} for t in entry.get("homeTeamTrends", [])]
-                + [{"team": away, "t": t} for t in entry.get("awayTeamTrends", [])]
-                + [{"team": f"{home} (at home)", "t": t} for t in entry.get("homeTeamHomeTrends", [])]
-                + [{"team": f"{away} (away)", "t": t} for t in entry.get("awayTeamAwayTrends", [])]
-            )
-            if not all_trends:
-                continue
-            trend_items = "".join(
-                f'<li style="margin: 4px 0;"><strong>{item["team"]}</strong>: {item["t"]["description"]}</li>'
-                for item in all_trends
-            )
-            sport_rows_html += f"""
-        <tr>
-          <td style="padding: 4px 24px 12px; font-family: Arial, sans-serif;">
-            <p style="margin: 0 0 4px; font-weight: 600; color: #333;">{away} @ {home}</p>
-            <ul style="margin: 0; padding-left: 20px; color: #555; font-size: 14px;">
-              {trend_items}
-            </ul>
-          </td>
-        </tr>"""
+    sports_with_trends = [display for display, entries in sport_results if entries]
+    sports_line = ", ".join(sports_with_trends) if sports_with_trends else "MLB, NHL, NBA"
+
+    hero_text = f"<strong>{highest_team}</strong>: {highest_trend['description']}" if highest_team else highest_trend['description']
 
     return f"""<!DOCTYPE html>
 <html>
@@ -151,28 +126,27 @@ def _build_html_email(today_str, highest_trend, highest_team, sport_results, pos
 
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1976d2, #42a5f5); padding: 32px 24px; text-align: center;">
-              <p style="margin: 0 0 4px; font-family: Arial, sans-serif; color: rgba(255,255,255,0.85); font-size: 13px; letter-spacing: 1px; text-transform: uppercase;">GetSTAM Daily Digest — {today_str}</p>
-              <h1 style="margin: 0 0 16px; font-family: Arial, sans-serif; color: #ffffff; font-size: 26px; font-weight: 700; line-height: 1.3;">
+            <td style="background: linear-gradient(135deg, #1976d2, #42a5f5); padding: 40px 24px; text-align: center;">
+              <p style="margin: 0 0 8px; font-family: Arial, sans-serif; color: rgba(255,255,255,0.85); font-size: 13px; letter-spacing: 1px; text-transform: uppercase;">GetSTAM Daily Trends — {today_str}</p>
+              <h1 style="margin: 0 0 24px; font-family: Arial, sans-serif; color: #ffffff; font-size: 28px; font-weight: 700; line-height: 1.3;">
                 Today's Top Trend
               </h1>
-              <p style="margin: 0; font-family: Arial, sans-serif; color: #ffffff; font-size: 20px; font-weight: 600; background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 6px; display: inline-block;">
-                🔥 <strong>{highest_team}</strong>: {highest_trend['description']}
+              <p style="margin: 0; font-family: Arial, sans-serif; color: #ffffff; font-size: 20px; font-weight: 600; background: rgba(255,255,255,0.15); padding: 14px 24px; border-radius: 8px; display: inline-block;">
+                🔥 {hero_text}
               </p>
             </td>
           </tr>
 
-          <!-- Trends -->
-          <table width="100%" cellpadding="0" cellspacing="0">
-            {sport_rows_html}
-          </table>
-
-          <!-- CTA -->
+          <!-- Body -->
           <tr>
-            <td style="padding: 24px; text-align: center; border-top: 1px solid #eee;">
+            <td style="padding: 32px 24px; text-align: center;">
+              <p style="margin: 0 0 24px; font-family: Arial, sans-serif; font-size: 16px; color: #555; line-height: 1.6;">
+                Today's trends are in for <strong>{sports_line}</strong>.<br>
+                Click below to see all the streaks and make your picks.
+              </p>
               <a href="{blog_url}"
-                 style="display: inline-block; background: #1976d2; color: #ffffff; font-family: Arial, sans-serif; font-size: 15px; font-weight: 700; text-decoration: none; padding: 12px 32px; border-radius: 6px;">
-                View Full Trends →
+                 style="display: inline-block; background: #1976d2; color: #ffffff; font-family: Arial, sans-serif; font-size: 16px; font-weight: 700; text-decoration: none; padding: 14px 40px; border-radius: 6px;">
+                View Today's Trends →
               </a>
             </td>
           </tr>
@@ -238,7 +212,7 @@ def run():
 
             trends_cls = cfg["trends_cls"]
             results, err = trends_cls.analyze_multiple_games_trends(
-                games_for_trends, limit=10, min_trend_length=3
+                games_for_trends, limit=20, min_trend_length=cfg["min_trend_length"]
             )
             if err:
                 print(f"[digest] {display} trends error: {err}")
@@ -266,6 +240,10 @@ def run():
                     all_trends_flat.append({"team": home, "trend": trend, "sport": display})
                 for trend in entry.get("awayTeamAwayTrends", []):
                     all_trends_flat.append({"team": away, "trend": trend, "sport": display})
+                for trend in entry.get("headToHeadTrends", []):
+                    all_trends_flat.append({"team": "", "trend": trend, "sport": display})
+                for trend in entry.get("homeAtHomeH2HTrends", []):
+                    all_trends_flat.append({"team": "", "trend": trend, "sport": display})
 
         except Exception as e:
             print(f"[digest] {display} error (non-fatal): {e}")
@@ -279,7 +257,8 @@ def run():
     best_entry = max(all_trends_flat, key=lambda x: x["trend"]["count"])
     highest_trend = best_entry["trend"]
     highest_team = best_entry["team"]
-    subject = f"GetSTAM trends of the day: {highest_team} {highest_trend['description'].lower()}"
+    team_prefix = f"{highest_team}: " if highest_team else ""
+    subject = f"GetSTAM trends of the day: {team_prefix}{highest_trend['description']}"
     print(f"[digest] Highest trend: {highest_team} — {highest_trend['description']} (count={highest_trend['count']})")
 
     # --- Step 3: Create + publish blog post ---
@@ -289,7 +268,7 @@ def run():
         print(f"[digest] Post already exists (id={post_id}, status={existing['status']}), skipping creation")
     else:
         content_md = _build_markdown(today_str, sport_results)
-        excerpt = f"Today's strongest betting trends: {highest_team} {highest_trend['description'].lower()} and more across MLB, NHL, and NBA."
+        excerpt = f"Today's strongest trends: {highest_team} {highest_trend['description'].lower()} and more across MLB, NHL, and NBA."
         post_data = {
             "title": f"Daily Trends Digest — {today_str}",
             "slug": post_slug,

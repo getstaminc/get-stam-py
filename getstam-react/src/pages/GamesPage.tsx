@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -227,7 +227,8 @@ const GamesPage = () => {
   };
 
   const [nextGameDate, setNextGameDate] = useState<string | null>(null);
-  
+  const [digestBanner, setDigestBanner] = useState<{ excerpt: string; slug: string } | null>(null);
+
   // Check if selected date is in the past
   const isHistoricalDate = isPastDate(selectedDate);
 
@@ -265,6 +266,26 @@ const GamesPage = () => {
       setPitcherData({});
     }
   }, [sportKey]);
+
+  // Fetch daily trends banner (MLB/NHL/NBA only, today only)
+  useEffect(() => {
+    const todayStr = formatDate(getToday());
+    const selectedStr = formatDate(selectedDate);
+    if (!["mlb", "nhl", "nba"].includes(urlSport) || selectedStr !== todayStr) {
+      setDigestBanner(null);
+      return;
+    }
+    const slug = `daily-trends-${todayStr}`;
+    fetch(`${API_BASE_URL}/api/blog/posts/${slug}`, {
+      headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.excerpt) setDigestBanner({ excerpt: data.excerpt, slug });
+        else setDigestBanner(null);
+      })
+      .catch(() => setDigestBanner(null));
+  }, [urlSport, selectedDate]);
 
   // CRITICAL: Sync activeView with URL IMMEDIATELY - this must run before trend analysis
   useEffect(() => {
@@ -393,6 +414,35 @@ const GamesPage = () => {
         canonicalPath={isTrends ? `/${urlSport}/trends` : `/${urlSport}`}
       />
       <Box sx={{ width: "100%", maxWidth: 900 }}>
+        {digestBanner && (
+          <Box
+            component={RouterLink}
+            to={`/blog/${digestBanner.slug}`}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1.5,
+              px: 2,
+              py: 1,
+              mb: 2,
+              bgcolor: "#f0f7ff",
+              borderRadius: 2,
+              border: "1px solid #bbdefb",
+              textDecoration: "none",
+              color: "inherit",
+              cursor: "pointer",
+              "&:hover": { bgcolor: "#e3f2fd" },
+            }}
+          >
+            <Typography sx={{ fontSize: "0.82rem", color: "#1565c0", lineHeight: 1.4 }}>
+              🔥 {digestBanner.excerpt}
+            </Typography>
+            <Typography sx={{ fontSize: "0.78rem", color: "#1976d2", whiteSpace: "nowrap", fontWeight: 700 }}>
+              See all trends →
+            </Typography>
+          </Box>
+        )}
         <Typography
           variant="h4"
           align="center"

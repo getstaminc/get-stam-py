@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import {
   Alert,
@@ -20,6 +20,7 @@ import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 import { Link } from "react-router-dom";
 import SEO from "../components/SEO";
+import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import HistoricalGames from "../components/HistoricalGames";
 import { encodeGameId } from "../utils/gameIdCrypto";
 
@@ -434,6 +435,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const fromEmail = searchParams.get("ref") === "email";
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -547,6 +550,36 @@ export default function BlogPostPage() {
           alt={post.title}
           sx={{ width: "100%", maxHeight: 400, objectFit: "cover", borderRadius: 2, mb: 3 }}
         />
+      )}
+
+      {/* Subscribe nudge — daily digest only, hidden when arriving from email */}
+      {isDailyDigest && !fromEmail && (
+        <Box
+          sx={{
+            px: 2.5,
+            py: 2,
+            mb: 3,
+            bgcolor: "#f8f9ff",
+            border: "1px solid #e8eaf6",
+            borderRadius: 3,
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "flex-start", sm: "center" },
+            gap: 2,
+          }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.25 }}>
+              📬 Get your daily trends every morning
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              The strongest MLB, NHL &amp; NBA streaks delivered to your inbox before game time.
+            </Typography>
+          </Box>
+          <Box sx={{ minWidth: { sm: 280 }, width: { xs: "100%", sm: "auto" } }}>
+            <EmailSubscribeForm compact={true} />
+          </Box>
+        </Box>
       )}
 
       {/* Tags */}

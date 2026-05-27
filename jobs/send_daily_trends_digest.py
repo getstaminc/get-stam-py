@@ -124,7 +124,7 @@ def _build_markdown(today_str, sport_results):
 
 def _build_html_email(today_str, highest_trend, highest_team, sport_results, post_slug):
     """Build inline-styled HTML for the email digest."""
-    blog_url = f"{SITE_BASE_URL}/blog/{post_slug}"
+    blog_url = f"{SITE_BASE_URL}/blog/{post_slug}?ref=email"
 
     sports_with_trends = [display for display, entries in sport_results if entries]
     sports_line = ", ".join(sports_with_trends) if sports_with_trends else "MLB, NHL, NBA"
@@ -286,7 +286,7 @@ def run():
         print(f"[digest] Post already exists (id={post_id}, status={existing['status']}), skipping creation")
     else:
         content_md = _build_markdown(today_str, sport_results)
-        excerpt = f"Today's strongest trends: {highest_team} {highest_trend['description'].lower()} and more across MLB, NHL, and NBA."
+        excerpt = f"Today's strongest trends: {team_prefix}{highest_trend['description']} and more across MLB, NHL, and NBA."
         post_data = {
             "title": f"Daily Trends Digest — {today_str}",
             "slug": post_slug,

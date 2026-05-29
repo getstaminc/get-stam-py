@@ -321,18 +321,16 @@ def run():
         print("[digest] No subscribers found. Skipping email send.")
         return
 
-    print(f"[digest] Sending to {len(subscribers)} subscribers in batches of 50")
-    batch_size = 50
+    print(f"[digest] Sending to {len(subscribers)} subscribers individually")
     sent_count = 0
     error_count = 0
-    for i in range(0, len(subscribers), batch_size):
-        batch = subscribers[i:i + batch_size]
-        ok, err = EmailService.send_digest(batch, subject, html)
+    for email in subscribers:
+        ok, err = EmailService.send_digest_to_one(email, subject, html)
         if ok:
-            sent_count += len(batch)
+            sent_count += 1
         else:
-            print(f"[digest] Batch {i//batch_size + 1} send error: {err}")
-            error_count += len(batch)
+            print(f"[digest] Send error for {email}: {err}")
+            error_count += 1
 
     print(f"[digest] Done. Sent: {sent_count}, Errors: {error_count}")
 

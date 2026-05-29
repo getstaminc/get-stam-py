@@ -79,20 +79,20 @@ class EmailService:
             return [], str(e)
 
     @staticmethod
-    def send_digest(to_list, subject, html_content):
+    def send_digest_to_one(email, subject, html_content):
         """
-        Send a transactional email to a list of addresses.
+        Send a transactional email to a single recipient.
         Returns (True, None) or (False, err_str).
         """
         try:
             _client().transactional_emails.send_transac_email(
                 sender={"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
-                to=[{"email": e} for e in to_list],
+                to=[{"email": email}],
                 subject=subject,
                 html_content=html_content,
             )
             return True, None
 
         except Exception as e:
-            logger.error("EmailService.send_digest error: %s", e)
+            logger.error("EmailService.send_digest_to_one error: %s", e)
             return False, str(e)

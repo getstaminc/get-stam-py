@@ -25,8 +25,6 @@ def subscribe():
     ok, err = EmailService.subscribe(email)
     if ok:
         return jsonify({"subscribed": True}), 200
-    if err == "already_subscribed":
-        return jsonify({"error": "You're already subscribed!"}), 409
     logger.error("subscribe endpoint error for %s: %s", email, err)
     return jsonify({"error": "Failed to subscribe. Please try again later."}), 500
 

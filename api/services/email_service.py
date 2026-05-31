@@ -32,17 +32,10 @@ class EmailService:
             _client().contacts.create_contact(
                 email=email,
                 list_ids=[BREVO_LIST_ID],
-                update_enabled=False,
+                update_enabled=True,
             )
             return True, None
         except Exception as e:
-            # Brevo v4 returns 400 BadRequestError with code='duplicate_parameter' for existing contacts
-            body = getattr(e, 'body', None)
-            if isinstance(body, dict) and body.get('code') == 'duplicate_parameter':
-                return False, "already_subscribed"
-            status_code = getattr(e, 'status_code', None)
-            if status_code == 409:
-                return False, "already_subscribed"
             logger.error("EmailService.subscribe error: %s", e)
             return False, str(e)
 
@@ -85,9 +78,10 @@ class EmailService:
         Returns (True, None) or (False, err_str).
         """
         try:
+            from brevo.contacts.types.remove_contact_from_list_request_body_emails import RemoveContactFromListRequestBodyEmails
             _client().contacts.remove_contact_from_list(
                 list_id=BREVO_LIST_ID,
-                contact_emails={"emails": [email]},
+                request=RemoveContactFromListRequestBodyEmails(emails=[email]),
             )
             return True, None
         except Exception as e:

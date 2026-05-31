@@ -8,6 +8,7 @@ import os
 import sys
 import base64
 import binascii
+import urllib.parse
 from datetime import datetime
 import pytz
 
@@ -122,9 +123,11 @@ def _build_markdown(today_str, sport_results):
     return "\n".join(lines)
 
 
-def _build_html_email(today_str, highest_trend, highest_team, sport_results, post_slug):
+def _build_html_email(today_str, highest_trend, highest_team, sport_results, post_slug, recipient_email=""):
     """Build inline-styled HTML for the email digest."""
     blog_url = f"{SITE_BASE_URL}/blog/{post_slug}?ref=email"
+    encoded_email = base64.urlsafe_b64encode(recipient_email.encode()).rstrip(b"=").decode("ascii")
+    unsubscribe_url = f"{SITE_BASE_URL}/api/unsubscribe?e={urllib.parse.quote(encoded_email)}"
 
     sports_with_trends = [display for display, entries in sport_results if entries]
     sports_line = ", ".join(sports_with_trends) if sports_with_trends else "MLB, NHL, NBA"
@@ -172,7 +175,8 @@ def _build_html_email(today_str, highest_trend, highest_team, sport_results, pos
             <td style="padding: 16px 24px; text-align: center; background: #f9f9f9; border-top: 1px solid #eee;">
               <p style="margin: 0; font-family: Arial, sans-serif; font-size: 12px; color: #999;">
                 You're receiving this because you subscribed to GetSTAM daily trends.<br>
-                All odds and betting information are for entertainment purposes only.
+                All odds and betting information are for entertainment purposes only.<br><br>
+                <a href="{unsubscribe_url}" style="color: #999; text-decoration: underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
@@ -311,8 +315,6 @@ def run():
             print(f"[digest] Published post id={post_id}")
 
     # --- Step 4: Build email and send ---
-    html = _build_html_email(today_str, highest_trend, highest_team, sport_results, post_slug)
-
     subscribers, err = EmailService.get_all_subscribers()
     if err:
         print(f"[digest] Failed to get subscribers: {err}")
@@ -325,6 +327,7 @@ def run():
     sent_count = 0
     error_count = 0
     for email in subscribers:
+        html = _build_html_email(today_str, highest_trend, highest_team, sport_results, post_slug, email)
         ok, err = EmailService.send_digest_to_one(email, subject, html)
         if ok:
             sent_count += 1

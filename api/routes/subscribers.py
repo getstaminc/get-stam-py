@@ -1,8 +1,9 @@
 """Public subscriber endpoint — NO X-API-KEY guard."""
 
 import re
+import base64
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 
 from ..services.email_service import EmailService
 
@@ -28,3 +29,28 @@ def subscribe():
         return jsonify({"error": "You're already subscribed!"}), 409
     logger.error("subscribe endpoint error for %s: %s", email, err)
     return jsonify({"error": "Failed to subscribe. Please try again later."}), 500
+
+
+@subscribers_bp.route("/api/unsubscribe", methods=["GET"])
+def unsubscribe():
+    encoded = request.args.get("e", "")
+    try:
+        # Pad base64 if needed
+        padded = encoded + "=" * (-len(encoded) % 4)
+        email = base64.urlsafe_b64decode(padded).decode("utf-8").strip().lower()
+    except Exception:
+        return make_response("Invalid unsubscribe link.", 400, {"Content-Type": "text/plain"})
+
+    if not email or not EMAIL_RE.match(email):
+        return make_response("Invalid unsubscribe link.", 400, {"Content-Type": "text/plain"})
+
+    ok, err = EmailService.unsubscribe(email)
+    if ok:
+        html = """<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px 20px;">
+<h2>You've been unsubscribed.</h2>
+<p style="color:#555;">You won't receive any more daily trends emails from GetSTAM.</p>
+</body></html>"""
+        return make_response(html, 200, {"Content-Type": "text/html"})
+
+    logger.error("unsubscribe endpoint error for %s: %s", email, err)
+    return make_response("Something went wrong. Please try again later.", 500, {"Content-Type": "text/plain"})

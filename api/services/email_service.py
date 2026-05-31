@@ -79,6 +79,22 @@ class EmailService:
             return [], str(e)
 
     @staticmethod
+    def unsubscribe(email):
+        """
+        Remove an email from the list.
+        Returns (True, None) or (False, err_str).
+        """
+        try:
+            _client().contacts.remove_contact_from_list(
+                list_id=BREVO_LIST_ID,
+                contact_emails={"emails": [email]},
+            )
+            return True, None
+        except Exception as e:
+            logger.error("EmailService.unsubscribe error: %s", e)
+            return False, str(e)
+
+    @staticmethod
     def send_digest_to_one(email, subject, html_content):
         """
         Send a transactional email to a single recipient.

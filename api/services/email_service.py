@@ -97,6 +97,7 @@ class EmailService:
         try:
             _client().transactional_emails.send_transac_email(
                 sender={"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+                reply_to={"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
                 to=[{"email": email}],
                 subject=subject,
                 html_content=html_content,

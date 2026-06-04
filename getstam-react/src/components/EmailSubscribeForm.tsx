@@ -17,6 +17,7 @@ interface Props {
 
 export default function EmailSubscribeForm({ compact = false }: Props) {
   const [email, setEmail] = useState("");
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -41,6 +42,7 @@ export default function EmailSubscribeForm({ compact = false }: Props) {
         setError(body.error || "Something went wrong. Please try again.");
         return;
       }
+      setSubmittedEmail(email.trim());
       setSuccess(true);
       setEmail("");
     } catch {
@@ -50,10 +52,18 @@ export default function EmailSubscribeForm({ compact = false }: Props) {
     }
   };
 
+  const isGmail = submittedEmail.toLowerCase().endsWith("@gmail.com");
+
   if (success) {
     return (
       <Alert severity="success" sx={{ mt: compact ? 0 : 1 }}>
         You're subscribed! Check your inbox tomorrow morning.
+        {isGmail && (
+          <Box sx={{ mt: 1, fontSize: "0.85em", lineHeight: 1.5 }}>
+            <strong>Gmail tip:</strong> Your first email may land in Promotions.
+            Drag it to Primary and click <em>"Do this for future messages?"</em> → <strong>Yes</strong> so you never miss it.
+          </Box>
+        )}
       </Alert>
     );
   }

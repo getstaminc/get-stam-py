@@ -255,17 +255,17 @@ def run():
                 home = game.get("home_team_name", "")
                 away = game.get("away_team_name", "")
                 for trend in entry.get("homeTeamTrends", []):
-                    all_trends_flat.append({"team": home, "trend": trend, "sport": display})
+                    all_trends_flat.append({"label": home, "trend": trend, "sport": display})
                 for trend in entry.get("awayTeamTrends", []):
-                    all_trends_flat.append({"team": away, "trend": trend, "sport": display})
+                    all_trends_flat.append({"label": away, "trend": trend, "sport": display})
                 for trend in entry.get("homeTeamHomeTrends", []):
-                    all_trends_flat.append({"team": home, "trend": trend, "sport": display})
+                    all_trends_flat.append({"label": f"{home} (at home)", "trend": trend, "sport": display})
                 for trend in entry.get("awayTeamAwayTrends", []):
-                    all_trends_flat.append({"team": away, "trend": trend, "sport": display})
+                    all_trends_flat.append({"label": f"{away} (away)", "trend": trend, "sport": display})
                 for trend in entry.get("headToHeadTrends", []):
-                    all_trends_flat.append({"team": "", "trend": trend, "sport": display})
+                    all_trends_flat.append({"label": f"{home} vs {away}", "trend": trend, "sport": display})
                 for trend in entry.get("homeAtHomeH2HTrends", []):
-                    all_trends_flat.append({"team": "", "trend": trend, "sport": display})
+                    all_trends_flat.append({"label": f"{home} vs {away} (home)", "trend": trend, "sport": display})
 
         except Exception as e:
             print(f"[digest] {display} error (non-fatal): {e}")
@@ -278,7 +278,7 @@ def run():
     # --- Step 2: Find highest trend ---
     best_entry = max(all_trends_flat, key=lambda x: x["trend"]["count"])
     highest_trend = best_entry["trend"]
-    highest_team = best_entry["team"]
+    highest_team = best_entry["label"]
     team_prefix = f"{highest_team}: " if highest_team else ""
     subject = f"GetSTAM trends of the day: {team_prefix}{highest_trend['description']}"
     print(f"[digest] Highest trend: {highest_team} — {highest_trend['description']} (count={highest_trend['count']})")

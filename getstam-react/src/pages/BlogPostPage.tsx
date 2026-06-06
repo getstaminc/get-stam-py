@@ -127,8 +127,8 @@ function getTrendStyle(description: string) {
   const d = description.toLowerCase();
   if (d.includes("won") || d.includes("win")) return { bg: "#e8f5e9", color: "#2e7d32", border: "#a5d6a7", icon: <TrendingUpIcon sx={{ fontSize: 14 }} /> };
   if (d.includes("lost") || d.includes("loss")) return { bg: "#ffebee", color: "#c62828", border: "#ef9a9a", icon: <TrendingDownIcon sx={{ fontSize: 14 }} /> };
-  if (d.includes("over")) return { bg: "#e3f2fd", color: "#1565c0", border: "#90caf9", icon: <TrendingUpIcon sx={{ fontSize: 14 }} /> };
-  if (d.includes("under")) return { bg: "#f3e5f5", color: "#6a1b9a", border: "#ce93d8", icon: <TrendingDownIcon sx={{ fontSize: 14 }} /> };
+  if (d.includes("over")) return { bg: "#e8f5e9", color: "#2e7d32", border: "#a5d6a7", icon: <TrendingUpIcon sx={{ fontSize: 14 }} /> };
+  if (d.includes("under")) return { bg: "#ffebee", color: "#c62828", border: "#ef9a9a", icon: <TrendingDownIcon sx={{ fontSize: 14 }} /> };
   return { bg: "#f5f5f5", color: "#424242", border: "#e0e0e0", icon: undefined };
 }
 

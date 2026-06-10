@@ -25,6 +25,7 @@ from api.services.historical.nhl_trends_service import NHLTrendsService
 from api.services.historical.nba_trends_service import NBATrendsService
 from api.services.blog_service import BlogService
 from api.services.email_service import EmailService
+from api.services.historical.trend_context_service import get_streak_context
 
 eastern_tz = pytz.timezone('US/Eastern')
 
@@ -87,7 +88,7 @@ def _build_markdown(today_str, sport_results):
         "Today's strongest trends across MLB, NHL, and NBA.",
         "",
     ]
-    for sport_display, game_trends_list in sport_results:
+    for sport_display, sport_key_lower, game_trends_list in sport_results:
         lines.append(f"## {sport_display}")
         lines.append("")
         for entry in game_trends_list:
@@ -95,29 +96,36 @@ def _build_markdown(today_str, sport_results):
             home = game.get("home_team_name", "")
             away = game.get("away_team_name", "")
             trend_keys = [
-                ("homeTeamTrends", home),
-                ("awayTeamTrends", away),
-                ("homeTeamHomeTrends", f"{home} (at home)"),
-                ("awayTeamAwayTrends", f"{away} (away)"),
-                ("headToHeadTrends", "H2H"),
-                ("homeAtHomeH2HTrends", f"{home} (home H2H)"),
+                ("homeTeamTrends",     home,                       None),
+                ("awayTeamTrends",     away,                       None),
+                ("homeTeamHomeTrends", f"{home} (at home)",        None),
+                ("awayTeamAwayTrends", f"{away} (away)",           None),
+                ("headToHeadTrends",   "H2H",                      "gen_h2h"),
+                ("homeAtHomeH2HTrends", f"{home} (home H2H)",      "home_h2h"),
             ]
             # Skip games that have no renderable trends
-            if not any(entry.get(key) for key, _ in trend_keys):
+            if not any(entry.get(key) for key, _, _ in trend_keys):
                 continue
             lines.append(f"### {away} @ {home}")
             lines.append("")
             game_id = game.get("game_id", "")
-            sport_key = game.get("sport", "")
-            if game_id and sport_key:
-                lines.append(f"[View Game →](/game-details/{sport_key}?game_id={game_id})")
+            sport_route_key = game.get("sport", "")
+            if game_id and sport_route_key:
+                lines.append(f"[View Game →](/game-details/{sport_route_key}?game_id={game_id})")
                 lines.append("")
-            for trend_key, label in trend_keys:
+            for trend_key, label, h2h_mode in trend_keys:
                 trends = entry.get(trend_key, [])
                 if trends:
                     lines.append(f"**{label}**:")
                     for t in trends:
-                        lines.append(f"- {t['description']}")
+                        desc = t['description']
+                        if h2h_mode:
+                            context = get_streak_context(
+                                sport_key_lower, t['type'], t['count'], h2h_mode
+                            )
+                            if context:
+                                desc = f"{desc} — {context}"
+                        lines.append(f"- {desc}")
                     lines.append("")
         lines.append("")
     return "\n".join(lines)
@@ -129,7 +137,7 @@ def _build_html_email(today_str, highest_trend, highest_team, sport_results, pos
     encoded_email = base64.urlsafe_b64encode(recipient_email.encode()).rstrip(b"=").decode("ascii")
     unsubscribe_url = f"{SITE_BASE_URL}/api/unsubscribe?e={urllib.parse.quote(encoded_email)}"
 
-    sports_with_trends = [display for display, entries in sport_results if entries]
+    sports_with_trends = [display for display, _sk, entries in sport_results if entries]
     sports_line = ", ".join(sports_with_trends) if sports_with_trends else "MLB, NHL, NBA"
 
     hero_text = f"<strong>{highest_team}</strong>: {highest_trend['description']}" if highest_team else highest_trend['description']
@@ -198,7 +206,7 @@ def run():
 
     # --- Step 1: Collect trends for each sport ---
     all_trends_flat = []   # list of {team, trend, sport_display}
-    sport_results = []     # list of (sport_display, game_trends_list)
+    sport_results = []     # list of (sport_display, sport_key, game_trends_list)
 
     for cfg in SPORTS_CONFIG:
         sport = cfg["sport"]
@@ -247,7 +255,7 @@ def run():
                 continue
 
             print(f"[digest] {display}: {len(games_with_trends)} games with trends")
-            sport_results.append((display, games_with_trends))
+            sport_results.append((display, sport, games_with_trends))
 
             # Flatten all trends for highest-trend selection
             for entry in games_with_trends:

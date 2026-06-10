@@ -26,6 +26,7 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   nhl: "icehockey_nhl",
   ncaaf: "americanfootball_ncaaf",
   ncaab: "basketball_ncaab",
+  worldcup: "soccer_fifa_world_cup",
   epl: "soccer_epl",
   laliga: "soccer_spain_la_liga",
   bundesliga: "soccer_germany_bundesliga",
@@ -74,6 +75,7 @@ const SPORT_API_KEY_TO_DISPLAY: { [key: string]: string } = {
   soccer_germany_bundesliga: "BUNDESLIGA",
   soccer_france_ligue_one: "LIGUE 1",
   soccer_italy_serie_a: "SERIE A",
+  soccer_fifa_world_cup: "World Cup",
 };
 
 const formatDate = (date: Date) => {

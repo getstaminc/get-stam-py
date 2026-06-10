@@ -1,0 +1,1255 @@
+team_id,team_name,match_date,opponent,home_away,team_score,opponent_score,espn_event_id,espn_event_url,team_odds_american,opponent_odds_american,draw_odds_american
+624,Algeria,2025-12-31,Equatorial Guinea,away,3,1,732165,https://www.espn.com/soccer/match/_/gameId/732165/algeria-equatorial-guinea,-213,+625,+300
+624,Algeria,2025-12-24,Sudan,home,3,0,732143,https://www.espn.com/soccer/match/_/gameId/732143/sudan-algeria,-333,+900,+425
+624,Algeria,2025-10-14,Uganda,home,2,1,687302,https://www.espn.com/soccer/match/_/gameId/687302/uganda-algeria,-208,+600,+310
+624,Algeria,2025-11-18,Saudi Arabia,away,2,0,760377,https://www.espn.com/soccer/match/_/gameId/760377/algeria-saudi-arabia,+100,+240,+240
+624,Algeria,2026-03-31,Uruguay,home,0,0,401862321,https://www.espn.com/soccer/match/_/gameId/401862321/uruguay-algeria,+260,-105,+240
+624,Algeria,2025-03-25,Mozambique,home,5,1,687298,https://www.espn.com/soccer/match/_/gameId/687298/mozambique-algeria,-370,+1150,+425
+624,Algeria,2025-06-10,Sweden,away,3,4,735176,https://www.espn.com/soccer/match/_/gameId/735176/algeria-sweden,+240,-110,+240
+624,Algeria,2026-01-06,Congo DR,home,1,0,732175,https://www.espn.com/soccer/match/_/gameId/732175/congo-dr-algeria,+105,+300,+195
+624,Algeria,2025-09-04,Botswana,home,3,1,687299,https://www.espn.com/soccer/match/_/gameId/687299/botswana-algeria,-400,+1200,+450
+624,Algeria,2025-10-09,Somalia,away,3,0,687301,https://www.espn.com/soccer/match/_/gameId/687301/algeria-somalia,-3333,+4000,+1800
+624,Algeria,2025-11-13,Zimbabwe,home,3,1,760378,https://www.espn.com/soccer/match/_/gameId/760378/zimbabwe-algeria,-263,+800,+333
+624,Algeria,2025-06-05,Rwanda,home,2,0,735520,https://www.espn.com/soccer/match/_/gameId/735520/rwanda-algeria,,,
+624,Algeria,2025-12-28,Burkina Faso,home,1,0,732153,https://www.espn.com/soccer/match/_/gameId/732153/burkina-faso-algeria,-125,+400,+230
+624,Algeria,2025-05-03,Gambia,away,0,0,734422,https://www.espn.com/soccer/match/_/gameId/734422/algeria-gambia,,,
+624,Algeria,2026-01-10,Nigeria,home,0,2,732180,https://www.espn.com/soccer/match/_/gameId/732180/nigeria-algeria,+210,+150,+187
+624,Algeria,2025-08-23,Sudan,away,1,1,757053,https://www.espn.com/soccer/match/_/gameId/757053/algeria-sudan,,,
+624,Algeria,2025-09-08,Guinea,away,0,0,687300,https://www.espn.com/soccer/match/_/gameId/687300/algeria-guinea,-110,+333,+230
+624,Algeria,2025-06-09,Rwanda,home,2,0,736118,https://www.espn.com/soccer/match/_/gameId/736118/rwanda-algeria,,,
+624,Algeria,2025-08-04,Uganda,away,3,0,748066,https://www.espn.com/soccer/match/_/gameId/748066/algeria-uganda,,,
+624,Algeria,2025-08-18,Niger,home,0,0,748093,https://www.espn.com/soccer/match/_/gameId/748093/niger-algeria,-400,+1000,+350
+624,Algeria,2025-05-09,Gambia,home,3,0,734423,https://www.espn.com/soccer/match/_/gameId/734423/gambia-algeria,,,
+624,Algeria,2026-03-27,Guatemala,home,7,0,401862318,https://www.espn.com/soccer/match/_/gameId/401862318/guatemala-algeria,-455,+1350,+475
+624,Algeria,2025-03-21,Botswana,away,3,1,687297,https://www.espn.com/soccer/match/_/gameId/687297/algeria-botswana,,,
+624,Algeria,2025-08-08,South Africa,home,1,1,748073,https://www.espn.com/soccer/match/_/gameId/748073/south-africa-algeria,,,
+624,Algeria,2025-08-15,Guinea,away,1,1,748087,https://www.espn.com/soccer/match/_/gameId/748087/algeria-guinea,,,
+202,Argentina,2025-09-09,Ecuador,away,0,1,684665,https://www.espn.com/soccer/match/_/gameId/684665/argentina-ecuador,+145,+200,+200
+202,Argentina,2024-09-10,Colombia,away,1,2,684614,https://www.espn.com/soccer/match/_/gameId/684614/argentina-colombia,+475,-149,+250
+202,Argentina,2024-10-16,Bolivia,home,6,0,684623,https://www.espn.com/soccer/match/_/gameId/684623/bolivia-argentina,-1667,+2000,+1400
+202,Argentina,2025-10-15,Puerto Rico,away,6,0,758373,https://www.espn.com/soccer/match/_/gameId/758373/argentina-puerto-rico,-5000,+4000,+2200
+202,Argentina,2024-11-20,Peru,home,1,0,684633,https://www.espn.com/soccer/match/_/gameId/684633/peru-argentina,-588,+1650,+600
+202,Argentina,2026-03-31,Zambia,home,5,0,401866132,https://www.espn.com/soccer/match/_/gameId/401866132/zambia-argentina,-2000,+4000,+1550
+202,Argentina,2025-03-26,Brazil,home,4,1,684643,https://www.espn.com/soccer/match/_/gameId/684643/brazil-argentina,+130,+260,+190
+202,Argentina,2024-06-26,Chile,away,1,0,690713,https://www.espn.com/soccer/match/_/gameId/690713/argentina-chile,-122,+375,+220
+202,Argentina,2025-06-11,Colombia,home,1,1,684653,https://www.espn.com/soccer/match/_/gameId/684653/colombia-argentina,,,
+202,Argentina,2024-07-10,Canada,home,2,0,703950,https://www.espn.com/soccer/match/_/gameId/703950/canada-argentina,-303,+900,+400
+202,Argentina,2024-09-06,Chile,home,3,0,684608,https://www.espn.com/soccer/match/_/gameId/684608/chile-argentina,,,
+202,Argentina,2025-09-04,Venezuela,home,3,0,684658,https://www.espn.com/soccer/match/_/gameId/684658/venezuela-argentina,-769,+1900,+725
+202,Argentina,2024-10-10,Venezuela,away,1,1,684622,https://www.espn.com/soccer/match/_/gameId/684622/argentina-venezuela,,,
+202,Argentina,2024-11-14,Paraguay,away,1,2,684628,https://www.espn.com/soccer/match/_/gameId/684628/argentina-paraguay,-118,+425,+210
+202,Argentina,2025-06-06,Chile,away,1,0,684648,https://www.espn.com/soccer/match/_/gameId/684648/argentina-chile,,,
+202,Argentina,2024-06-21,Canada,home,2,0,690705,https://www.espn.com/soccer/match/_/gameId/690705/canada-argentina,,,
+202,Argentina,2024-07-05,Ecuador,home,1,1,703946,https://www.espn.com/soccer/match/_/gameId/703946/ecuador-argentina,,,
+202,Argentina,2024-06-09,Ecuador,home,1,0,701634,https://www.espn.com/soccer/match/_/gameId/701634/ecuador-argentina,,,
+202,Argentina,2024-07-15,Colombia,home,1,0,703953,https://www.espn.com/soccer/match/_/gameId/703953/colombia-argentina,,,
+202,Argentina,2024-06-30,Peru,home,2,0,690721,https://www.espn.com/soccer/match/_/gameId/690721/peru-argentina,,,
+202,Argentina,2025-10-11,Venezuela,home,1,0,758378,https://www.espn.com/soccer/match/_/gameId/758378/venezuela-argentina,,,
+202,Argentina,2025-11-14,Angola,away,2,0,760281,https://www.espn.com/soccer/match/_/gameId/760281/argentina-angola,-556,+1250,+650
+202,Argentina,2026-03-27,Mauritania,home,2,1,401866131,https://www.espn.com/soccer/match/_/gameId/401866131/mauritania-argentina,-5000,+6600,+3000
+202,Argentina,2025-03-21,Uruguay,away,1,0,684642,https://www.espn.com/soccer/match/_/gameId/684642/argentina-uruguay,+195,+160,+185
+202,Argentina,2024-06-15,Guatemala,home,4,1,699278,https://www.espn.com/soccer/match/_/gameId/699278/guatemala-argentina,,,
+628,Australia,2025-09-09,New Zealand,away,3,1,743813,https://www.espn.com/soccer/match/_/gameId/743813/australia-new-zealand,+130,+210,+220
+628,Australia,2024-09-10,Indonesia,away,0,0,710450,https://www.espn.com/soccer/match/_/gameId/710450/australia-indonesia,+450,-172,+290
+628,Australia,2024-10-15,Japan,away,1,1,710466,https://www.espn.com/soccer/match/_/gameId/710466/australia-japan,+175,+160,+200
+628,Australia,2025-10-15,United States,away,1,2,753162,https://www.espn.com/soccer/match/_/gameId/753162/australia-united-states,+320,-143,+230
+628,Australia,2024-11-19,Bahrain,away,2,2,710486,https://www.espn.com/soccer/match/_/gameId/710486/australia-bahrain,-133,+475,+210
+628,Australia,2025-11-19,Colombia,away,0,3,760258,https://www.espn.com/soccer/match/_/gameId/760258/australia-colombia,+725,-250,+333
+628,Australia,2026-03-31,Curaçao,home,5,1,401856595,https://www.espn.com/soccer/match/_/gameId/401856595/curacao-australia,-278,+650,+400
+628,Australia,2024-03-26,Lebanon,away,5,0,687480,https://www.espn.com/soccer/match/_/gameId/687480/australia-lebanon,-455,+1000,+550
+628,Australia,2025-03-25,China,away,2,0,710497,https://www.espn.com/soccer/match/_/gameId/710497/australia-china,-167,+450,+280
+628,Australia,2024-06-11,Palestine,home,5,0,687482,https://www.espn.com/soccer/match/_/gameId/687482/palestine-australia,-455,+1200,+475
+628,Australia,2025-06-10,Saudi Arabia,away,2,1,710521,https://www.espn.com/soccer/match/_/gameId/710521/australia-saudi-arabia,+310,+100,+220
+628,Australia,2024-09-05,Bahrain,home,0,1,710437,https://www.espn.com/soccer/match/_/gameId/710437/bahrain-australia,,,
+628,Australia,2024-10-10,China,home,3,1,710456,https://www.espn.com/soccer/match/_/gameId/710456/china-australia,,,
+628,Australia,2024-11-14,Saudi Arabia,home,0,0,710471,https://www.espn.com/soccer/match/_/gameId/710471/saudi-arabia-australia,,,
+628,Australia,2024-03-21,Lebanon,home,2,0,687479,https://www.espn.com/soccer/match/_/gameId/687479/lebanon-australia,,,
+628,Australia,2025-03-20,Indonesia,home,5,1,710488,https://www.espn.com/soccer/match/_/gameId/710488/indonesia-australia,,,
+628,Australia,2024-06-06,Bangladesh,away,2,0,687481,https://www.espn.com/soccer/match/_/gameId/687481/australia-bangladesh,-3333,+5000,+1600
+628,Australia,2025-06-05,Japan,home,1,0,710513,https://www.espn.com/soccer/match/_/gameId/710513/japan-australia,,,
+628,Australia,2024-01-28,Indonesia,home,4,0,698042,https://www.espn.com/soccer/match/_/gameId/698042/indonesia-australia,,,
+628,Australia,2026-05-31,Mexico,away,0,1,401861775,https://www.espn.com/soccer/match/_/gameId/401861775/australia-mexico,+380,-141,+260
+628,Australia,2025-09-05,New Zealand,home,1,0,743812,https://www.espn.com/soccer/match/_/gameId/743812/new-zealand-australia,,,
+628,Australia,2025-10-10,Canada,away,1,0,749807,https://www.espn.com/soccer/match/_/gameId/749807/australia-canada,+333,-137,+280
+628,Australia,2025-11-15,Venezuela,away,0,1,760259,https://www.espn.com/soccer/match/_/gameId/760259/australia-venezuela,+145,+200,+195
+628,Australia,2026-03-27,Cameroon,home,1,0,401856592,https://www.espn.com/soccer/match/_/gameId/401856592/cameroon-australia,+100,+240,+230
+628,Australia,2024-02-02,South Korea,home,1,2,698208,https://www.espn.com/soccer/match/_/gameId/698208/south-korea-australia,+240,+130,+200
+474,Austria,2025-09-09,Bosnia-Herzegovina,away,2,1,725014,https://www.espn.com/soccer/match/_/gameId/725014/austria-bosnia-herzegovina,+650,-278,+450
+474,Austria,2025-11-18,Bosnia-Herzegovina,home,1,1,724913,https://www.espn.com/soccer/match/_/gameId/724913/bosnia-herzegovina-austria,,,
+474,Austria,2026-03-31,South Korea,home,1,0,401856596,https://www.espn.com/soccer/match/_/gameId/401856596/south-korea-austria,-152,+360,+300
+474,Austria,2024-06-04,Serbia,home,2,1,699060,https://www.espn.com/soccer/match/_/gameId/699060/serbia-austria,+180,+150,+200
+474,Austria,2026-06-07,Netherlands,away,3,2,690603,https://www.espn.com/soccer/match/_/gameId/690603/austria-netherlands,+400,-133,+260
+474,Austria,2025-06-10,San Marino,away,4,0,724968,https://www.espn.com/soccer/match/_/gameId/724968/austria-san-marino,+5000,-10000,+3300
+474,Austria,2024-07-02,Türkiye,home,1,2,703938,https://www.espn.com/soccer/match/_/gameId/703938/turkiye-austria,-105,+320,+230
+474,Austria,2025-10-09,San Marino,home,10,0,725019,https://www.espn.com/soccer/match/_/gameId/725019/san-marino-austria,,,
+474,Austria,2024-10-10,Kazakhstan,home,4,0,698936,https://www.espn.com/soccer/match/_/gameId/698936/kazakhstan-austria,+1100,-556,+700
+474,Austria,2024-11-14,Kazakhstan,away,2,0,698986,https://www.espn.com/soccer/match/_/gameId/698986/austria-kazakhstan,,,
+474,Austria,2025-03-20,Serbia,home,1,1,723719,https://www.espn.com/soccer/match/_/gameId/723719/serbia-austria,,,
+474,Austria,2024-10-13,Norway,home,5,1,698965,https://www.espn.com/soccer/match/_/gameId/698965/norway-austria,-111,+300,+240
+474,Austria,2025-10-12,Romania,away,0,1,724857,https://www.espn.com/soccer/match/_/gameId/724857/austria-romania,-143,+380,+280
+474,Austria,2024-11-17,Slovenia,home,1,1,699016,https://www.espn.com/soccer/match/_/gameId/699016/slovenia-austria,-250,+650,+375
+474,Austria,2025-03-23,Serbia,away,0,2,723720,https://www.espn.com/soccer/match/_/gameId/723720/austria-serbia,,,
+474,Austria,2025-09-06,Cyprus,home,1,0,724992,https://www.espn.com/soccer/match/_/gameId/724992/cyprus-austria,+750,-303,+475
+474,Austria,2025-11-15,Cyprus,away,2,0,724891,https://www.espn.com/soccer/match/_/gameId/724891/austria-cyprus,,,
+474,Austria,2024-06-08,Switzerland,away,1,1,699061,https://www.espn.com/soccer/match/_/gameId/699061/austria-switzerland,+270,-110,+270
+474,Austria,2025-06-07,Romania,home,2,1,724957,https://www.espn.com/soccer/match/_/gameId/724957/romania-austria,,,
+474,Austria,2024-09-09,Norway,away,1,2,698924,https://www.espn.com/soccer/match/_/gameId/698924/austria-norway,,,
+474,Austria,2024-06-17,France,home,0,1,690580,https://www.espn.com/soccer/match/_/gameId/690580/france-austria,+475,-182,+320
+474,Austria,2026-06-01,Tunisia,home,1,0,401856597,https://www.espn.com/soccer/match/_/gameId/401856597/tunisia-austria,-227,+575,+340
+474,Austria,2024-09-06,Slovenia,away,1,1,698896,https://www.espn.com/soccer/match/_/gameId/698896/austria-slovenia,,,
+474,Austria,2026-03-27,Ghana,home,5,1,401856593,https://www.espn.com/soccer/match/_/gameId/401856593/ghana-austria,-189,+475,+320
+474,Austria,2024-06-21,Poland,away,3,1,690591,https://www.espn.com/soccer/match/_/gameId/690591/austria-poland,+110,+270,+225
+459,Belgium,2024-06-05,Montenegro,home,2,0,698284,https://www.espn.com/soccer/match/_/gameId/698284/montenegro-belgium,-500,+1400,+550
+459,Belgium,2024-06-26,Ukraine,away,0,0,690606,https://www.espn.com/soccer/match/_/gameId/690606/belgium-ukraine,+600,-222,+350
+459,Belgium,2025-11-18,Liechtenstein,home,7,0,724915,https://www.espn.com/soccer/match/_/gameId/724915/liechtenstein-belgium,+5000,,+4000
+459,Belgium,2026-04-01,Mexico,away,1,1,762264,https://www.espn.com/soccer/match/_/gameId/762264/belgium-mexico,-105,+250,+250
+459,Belgium,2024-03-26,England,away,2,2,689957,https://www.espn.com/soccer/match/_/gameId/689957/belgium-england,+450,-154,+280
+459,Belgium,2025-09-04,Liechtenstein,away,6,0,724974,https://www.espn.com/soccer/match/_/gameId/724974/belgium-liechtenstein,,,
+459,Belgium,2024-10-10,Italy,away,2,2,698939,https://www.espn.com/soccer/match/_/gameId/698939/belgium-italy,,,
+459,Belgium,2024-11-14,Italy,home,0,1,698988,https://www.espn.com/soccer/match/_/gameId/698988/italy-belgium,,,
+459,Belgium,2025-03-20,Ukraine,away,1,3,723717,https://www.espn.com/soccer/match/_/gameId/723717/belgium-ukraine,,,
+459,Belgium,2025-09-07,Kazakhstan,home,6,0,724998,https://www.espn.com/soccer/match/_/gameId/724998/kazakhstan-belgium,+1550,-625,+725
+459,Belgium,2024-11-17,Israel,away,0,1,699018,https://www.espn.com/soccer/match/_/gameId/699018/belgium-israel,-175,+425,+333
+459,Belgium,2025-03-23,Ukraine,home,3,0,723718,https://www.espn.com/soccer/match/_/gameId/723718/ukraine-belgium,,,
+459,Belgium,2025-11-15,Kazakhstan,away,1,1,724889,https://www.espn.com/soccer/match/_/gameId/724889/belgium-kazakhstan,,,
+459,Belgium,2026-03-28,United States,away,5,2,762258,https://www.espn.com/soccer/match/_/gameId/762258/belgium-united-states,+110,+200,+260
+459,Belgium,2024-06-08,Luxembourg,home,3,0,698041,https://www.espn.com/soccer/match/_/gameId/698041/luxembourg-belgium,-1250,+2500,+900
+459,Belgium,2024-06-22,Romania,home,2,0,690594,https://www.espn.com/soccer/match/_/gameId/690594/romania-belgium,-278,+750,+400
+459,Belgium,2024-09-09,France,away,0,2,698918,https://www.espn.com/soccer/match/_/gameId/698918/belgium-france,,,
+459,Belgium,2024-10-14,France,home,1,2,698974,https://www.espn.com/soccer/match/_/gameId/698974/france-belgium,,,
+459,Belgium,2025-10-13,Wales,away,4,2,724859,https://www.espn.com/soccer/match/_/gameId/724859/belgium-wales,-139,+380,+275
+459,Belgium,2025-06-09,Wales,home,4,3,724961,https://www.espn.com/soccer/match/_/gameId/724961/wales-belgium,,,
+459,Belgium,2024-06-17,Slovakia,home,0,1,690581,https://www.espn.com/soccer/match/_/gameId/690581/slovakia-belgium,-200,+550,+320
+459,Belgium,2024-07-01,France,away,0,1,703935,https://www.espn.com/soccer/match/_/gameId/703935/belgium-france,,,
+459,Belgium,2024-09-06,Israel,home,3,1,698897,https://www.espn.com/soccer/match/_/gameId/698897/israel-belgium,,,
+459,Belgium,2025-10-10,North Macedonia,home,0,0,724838,https://www.espn.com/soccer/match/_/gameId/724838/north-macedonia-belgium,-556,+1250,+675
+459,Belgium,2025-06-06,North Macedonia,away,1,1,724950,https://www.espn.com/soccer/match/_/gameId/724950/belgium-north-macedonia,,,
+452,Bosnia-Herzegovina,2025-09-09,Austria,home,1,2,725014,https://www.espn.com/soccer/match/_/gameId/725014/austria-bosnia-herzegovina,-278,+650,+450
+452,Bosnia-Herzegovina,2024-09-10,Hungary,away,0,0,698932,https://www.espn.com/soccer/match/_/gameId/698932/bosnia-herzegovina-hungary,+130,+220,+225
+452,Bosnia-Herzegovina,2024-11-19,Netherlands,home,1,1,699030,https://www.espn.com/soccer/match/_/gameId/699030/netherlands-bosnia-herzegovina,+700,-303,+450
+452,Bosnia-Herzegovina,2025-11-18,Austria,away,1,1,724913,https://www.espn.com/soccer/match/_/gameId/724913/bosnia-herzegovina-austria,,,
+452,Bosnia-Herzegovina,2026-03-31,Italy,home,1,1,761952,https://www.espn.com/soccer/match/_/gameId/761952/italy-bosnia-herzegovina,+550,-192,+310
+452,Bosnia-Herzegovina,2025-06-10,Slovenia,away,1,2,732244,https://www.espn.com/soccer/match/_/gameId/732244/bosnia-herzegovina-slovenia,+300,-108,+225
+452,Bosnia-Herzegovina,2025-10-09,Cyprus,away,2,2,725021,https://www.espn.com/soccer/match/_/gameId/725021/bosnia-herzegovina-cyprus,-105,+300,+240
+452,Bosnia-Herzegovina,2023-11-16,Luxembourg,away,1,4,655438,https://www.espn.com/soccer/match/_/gameId/655438/bosnia-herzegovina-luxembourg,+140,+200,+225
+452,Bosnia-Herzegovina,2026-03-26,Wales,away,1,1,761381,https://www.espn.com/soccer/match/_/gameId/761381/bosnia-herzegovina-wales,+425,-154,+290
+452,Bosnia-Herzegovina,2024-03-21,Ukraine,home,1,2,690329,https://www.espn.com/soccer/match/_/gameId/690329/ukraine-bosnia-herzegovina,+260,+115,+225
+452,Bosnia-Herzegovina,2025-10-12,Malta,away,4,1,733031,https://www.espn.com/soccer/match/_/gameId/733031/bosnia-herzegovina-malta,-130,+380,+230
+452,Bosnia-Herzegovina,2023-11-19,Slovakia,home,1,2,655462,https://www.espn.com/soccer/match/_/gameId/655462/slovakia-bosnia-herzegovina,+220,+138,+220
+452,Bosnia-Herzegovina,2024-06-09,Italy,away,0,1,699062,https://www.espn.com/soccer/match/_/gameId/699062/bosnia-herzegovina-italy,,,
+452,Bosnia-Herzegovina,2024-09-07,Netherlands,away,2,5,698904,https://www.espn.com/soccer/match/_/gameId/698904/bosnia-herzegovina-netherlands,,,
+452,Bosnia-Herzegovina,2025-09-06,San Marino,away,6,0,724994,https://www.espn.com/soccer/match/_/gameId/724994/bosnia-herzegovina-san-marino,-714,+1900,+775
+452,Bosnia-Herzegovina,2024-11-16,Germany,away,0,7,699011,https://www.espn.com/soccer/match/_/gameId/699011/bosnia-herzegovina-germany,+2800,-1667,+1100
+452,Bosnia-Herzegovina,2025-11-15,Romania,home,3,1,724895,https://www.espn.com/soccer/match/_/gameId/724895/romania-bosnia-herzegovina,,,
+452,Bosnia-Herzegovina,2025-06-07,San Marino,home,1,0,724953,https://www.espn.com/soccer/match/_/gameId/724953/san-marino-bosnia-herzegovina,,,
+452,Bosnia-Herzegovina,2023-10-16,Portugal,home,0,5,655423,https://www.espn.com/soccer/match/_/gameId/655423/portugal-bosnia-herzegovina,+700,-227,+350
+452,Bosnia-Herzegovina,2024-10-14,Hungary,home,0,2,698973,https://www.espn.com/soccer/match/_/gameId/698973/hungary-bosnia-herzegovina,,,
+452,Bosnia-Herzegovina,2025-03-24,Cyprus,home,2,1,724936,https://www.espn.com/soccer/match/_/gameId/724936/cyprus-bosnia-herzegovina,,,
+452,Bosnia-Herzegovina,2024-06-03,England,away,0,3,698294,https://www.espn.com/soccer/match/_/gameId/698294/bosnia-herzegovina-england,+1400,-588,+600
+452,Bosnia-Herzegovina,2024-10-11,Germany,home,1,2,698946,https://www.espn.com/soccer/match/_/gameId/698946/germany-bosnia-herzegovina,,,
+452,Bosnia-Herzegovina,2026-05-29,North Macedonia,home,0,0,401869326,https://www.espn.com/soccer/match/_/gameId/401869326/north-macedonia-bosnia-herzegovina,-130,+360,+240
+452,Bosnia-Herzegovina,2025-03-21,Romania,away,1,0,724928,https://www.espn.com/soccer/match/_/gameId/724928/bosnia-herzegovina-romania,,,
+205,Brazil,2024-06-12,United States,away,1,1,699281,https://www.espn.com/soccer/match/_/gameId/699281/brazil-united-states,-333,+800,+450
+205,Brazil,2025-09-09,Bolivia,away,0,1,684663,https://www.espn.com/soccer/match/_/gameId/684663/brazil-bolivia,+110,+270,+225
+205,Brazil,2024-09-11,Paraguay,away,0,1,684616,https://www.espn.com/soccer/match/_/gameId/684616/brazil-paraguay,+725,-256,+333
+205,Brazil,2024-10-16,Peru,home,4,0,684624,https://www.espn.com/soccer/match/_/gameId/684624/peru-brazil,-455,+1400,+525
+205,Brazil,2025-10-14,Japan,away,2,3,757632,https://www.espn.com/soccer/match/_/gameId/757632/brazil-japan,-159,+333,+340
+205,Brazil,2024-11-20,Uruguay,home,1,1,684635,https://www.espn.com/soccer/match/_/gameId/684635/uruguay-brazil,-161,+550,+260
+205,Brazil,2025-11-18,Tunisia,home,1,1,760053,https://www.espn.com/soccer/match/_/gameId/760053/tunisia-brazil,-714,+1700,+725
+205,Brazil,2026-04-01,Croatia,home,3,1,401843261,https://www.espn.com/soccer/match/_/gameId/401843261/croatia-brazil,-133,+310,+280
+205,Brazil,2025-03-26,Argentina,away,1,4,684643,https://www.espn.com/soccer/match/_/gameId/684643/brazil-argentina,+260,+130,+190
+205,Brazil,2025-06-11,Paraguay,home,1,0,684655,https://www.espn.com/soccer/match/_/gameId/684655/paraguay-brazil,,,
+205,Brazil,2024-07-03,Colombia,home,1,1,690728,https://www.espn.com/soccer/match/_/gameId/690728/colombia-brazil,-154,+450,+270
+205,Brazil,2025-09-05,Chile,home,3,0,684659,https://www.espn.com/soccer/match/_/gameId/684659/chile-brazil,-556,+1700,+550
+205,Brazil,2024-10-11,Chile,away,2,1,684619,https://www.espn.com/soccer/match/_/gameId/684619/brazil-chile,,,
+205,Brazil,2024-11-14,Venezuela,away,1,1,684632,https://www.espn.com/soccer/match/_/gameId/684632/brazil-venezuela,-161,+475,+260
+205,Brazil,2026-03-26,France,home,1,2,762452,https://www.espn.com/soccer/match/_/gameId/762452/france-brazil,+187,+125,+250
+205,Brazil,2025-03-21,Colombia,home,2,1,684638,https://www.espn.com/soccer/match/_/gameId/684638/colombia-brazil,,,
+205,Brazil,2025-06-05,Ecuador,away,0,0,684650,https://www.espn.com/soccer/match/_/gameId/684650/brazil-ecuador,+115,+300,+190
+205,Brazil,2026-05-31,Panama,home,6,2,401864003,https://www.espn.com/soccer/match/_/gameId/401864003/panama-brazil,-769,+1550,+800
+205,Brazil,2025-11-15,Senegal,home,2,0,760051,https://www.espn.com/soccer/match/_/gameId/760051/senegal-brazil,-222,+475,+350
+205,Brazil,2024-06-09,Mexico,away,3,2,692533,https://www.espn.com/soccer/match/_/gameId/692533/brazil-mexico,-238,+525,+350
+205,Brazil,2024-07-07,Uruguay,away,0,0,703949,https://www.espn.com/soccer/match/_/gameId/703949/brazil-uruguay,,,
+205,Brazil,2024-06-25,Costa Rica,home,0,0,690712,https://www.espn.com/soccer/match/_/gameId/690712/costa-rica-brazil,-1250,+2000,+1100
+205,Brazil,2024-09-07,Ecuador,home,1,0,684610,https://www.espn.com/soccer/match/_/gameId/684610/ecuador-brazil,,,
+205,Brazil,2025-10-10,South Korea,away,5,0,757631,https://www.espn.com/soccer/match/_/gameId/757631/brazil-south-korea,-213,+475,+375
+205,Brazil,2024-06-29,Paraguay,away,4,1,690719,https://www.espn.com/soccer/match/_/gameId/690719/brazil-paraguay,,,
+206,Canada,2025-09-09,Wales,away,1,0,733167,https://www.espn.com/soccer/match/_/gameId/733167/canada-wales,+200,+120,+250
+206,Canada,2024-09-11,Mexico,away,0,0,701260,https://www.espn.com/soccer/match/_/gameId/701260/canada-mexico,+130,+195,+185
+206,Canada,2024-10-15,Panama,home,2,1,719859,https://www.espn.com/soccer/match/_/gameId/719859/panama-canada,-200,+450,+300
+206,Canada,2025-10-15,Colombia,away,0,0,746411,https://www.espn.com/soccer/match/_/gameId/746411/canada-colombia,-159,+400,+290
+206,Canada,2024-11-20,Suriname,home,3,0,721467,https://www.espn.com/soccer/match/_/gameId/721467/suriname-canada,-769,+1600,+750
+206,Canada,2025-11-19,Venezuela,away,2,0,758716,https://www.espn.com/soccer/match/_/gameId/758716/canada-venezuela,+260,+105,+220
+206,Canada,2026-04-01,Tunisia,home,0,0,401856639,https://www.espn.com/soccer/match/_/gameId/401856639/tunisia-canada,-161,+400,+290
+206,Canada,2025-06-25,El Salvador,home,2,0,735341,https://www.espn.com/soccer/match/_/gameId/735341/el-salvador-canada,-455,+1300,+500
+206,Canada,2025-06-18,Honduras,home,6,0,735325,https://www.espn.com/soccer/match/_/gameId/735325/honduras-canada,-250,+600,+360
+206,Canada,2025-06-11,Ivory Coast,home,0,0,734941,https://www.espn.com/soccer/match/_/gameId/734941/ivory-coast-canada,+110,+230,+230
+206,Canada,2024-07-10,Argentina,away,0,2,703950,https://www.espn.com/soccer/match/_/gameId/703950/canada-argentina,+900,-303,+400
+206,Canada,2025-11-14,Ecuador,home,0,0,758183,https://www.espn.com/soccer/match/_/gameId/758183/ecuador-canada,+230,+125,+188
+206,Canada,2025-03-21,Mexico,home,0,2,723670,https://www.espn.com/soccer/match/_/gameId/723670/mexico-canada,,,
+206,Canada,2025-03-23,United States,home,2,1,723671,https://www.espn.com/soccer/match/_/gameId/723671/united-states-canada,+195,+130,+225
+206,Canada,2025-06-29,Guatemala,home,1,1,735344,https://www.espn.com/soccer/match/_/gameId/735344/guatemala-canada,,,
+206,Canada,2024-09-07,United States,away,2,1,707615,https://www.espn.com/soccer/match/_/gameId/707615/canada-united-states,,,
+206,Canada,2026-03-28,Iceland,home,2,2,401856638,https://www.espn.com/soccer/match/_/gameId/401856638/iceland-canada,-217,+525,+340
+206,Canada,2025-06-07,Ukraine,home,4,2,734938,https://www.espn.com/soccer/match/_/gameId/734938/ukraine-canada,+110,+230,+230
+206,Canada,2025-06-21,Curaçao,away,1,1,735332,https://www.espn.com/soccer/match/_/gameId/735332/canada-curacao,-455,+1100,+525
+206,Canada,2024-07-14,Uruguay,home,2,2,703952,https://www.espn.com/soccer/match/_/gameId/703952/uruguay-canada,+550,-222,+350
+206,Canada,2026-01-18,Guatemala,home,1,0,401844264,https://www.espn.com/soccer/match/_/gameId/401844264/guatemala-canada,,,
+206,Canada,2026-06-02,Uzbekistan,home,2,0,401853575,https://www.espn.com/soccer/match/_/gameId/401853575/uzbekistan-canada,-175,+475,+250
+206,Canada,2025-09-05,Romania,away,3,0,733151,https://www.espn.com/soccer/match/_/gameId/733151/canada-romania,+155,+145,+210
+206,Canada,2025-10-10,Australia,home,0,1,749807,https://www.espn.com/soccer/match/_/gameId/749807/australia-canada,-137,+333,+280
+206,Canada,2024-11-15,Suriname,away,1,0,721464,https://www.espn.com/soccer/match/_/gameId/721464/canada-suriname,,,
+2597,Cape Verde,2025-10-08,Libya,away,3,3,687219,https://www.espn.com/soccer/match/_/gameId/687219/cape-verde-libya,+130,+240,+185
+2597,Cape Verde,2025-09-09,Cameroon,home,1,0,687210,https://www.espn.com/soccer/match/_/gameId/687210/cameroon-cape-verde,+210,+155,+175
+2597,Cape Verde,2024-09-10,Mauritania,home,2,0,715422,https://www.espn.com/soccer/match/_/gameId/715422/mauritania-cape-verde,-111,+290,+195
+2597,Cape Verde,2024-10-15,Botswana,away,0,1,722079,https://www.espn.com/soccer/match/_/gameId/722079/cape-verde-botswana,,,
+2597,Cape Verde,2024-11-19,Mauritania,away,0,1,722119,https://www.espn.com/soccer/match/_/gameId/722119/cape-verde-mauritania,,,
+2597,Cape Verde,2025-03-25,Angola,away,2,1,687217,https://www.espn.com/soccer/match/_/gameId/687217/cape-verde-angola,+400,+100,+180
+2597,Cape Verde,2025-06-03,Malaysia,away,3,0,736105,https://www.espn.com/soccer/match/_/gameId/736105/cape-verde-malaysia,,,
+2597,Cape Verde,2024-06-11,Libya,home,1,0,687215,https://www.espn.com/soccer/match/_/gameId/687215/libya-cape-verde,,,
+2597,Cape Verde,2025-09-04,Mauritius,away,2,0,687218,https://www.espn.com/soccer/match/_/gameId/687218/cape-verde-mauritius,-200,+600,+300
+2597,Cape Verde,2024-10-10,Botswana,home,0,1,722041,https://www.espn.com/soccer/match/_/gameId/722041/botswana-cape-verde,,,
+2597,Cape Verde,2025-11-13,Iran,away,0,0,759987,https://www.espn.com/soccer/match/_/gameId/759987/cape-verde-iran,+275,-105,+200
+2597,Cape Verde,2025-05-29,Malaysia,away,1,1,736096,https://www.espn.com/soccer/match/_/gameId/736096/cape-verde-malaysia,,,
+2597,Cape Verde,2026-03-27,Chile,away,2,4,401856419,https://www.espn.com/soccer/match/_/gameId/401856419/cape-verde-chile,+340,-120,+230
+2597,Cape Verde,2024-03-21,Guyana,home,1,0,700587,https://www.espn.com/soccer/match/_/gameId/700587/guyana-cape-verde,-588,+1400,+600
+2597,Cape Verde,2025-03-20,Mauritius,home,1,0,687216,https://www.espn.com/soccer/match/_/gameId/687216/mauritius-cape-verde,,,
+2597,Cape Verde,2026-05-31,Serbia,home,3,0,401871172,https://www.espn.com/soccer/match/_/gameId/401871172/serbia-cape-verde,+250,-111,+225
+2597,Cape Verde,2026-03-30,Finland,home,1,1,401856602,https://www.espn.com/soccer/match/_/gameId/401856602/finland-cape-verde,+175,+145,+225
+2597,Cape Verde,2025-06-08,Georgia,away,1,1,735583,https://www.espn.com/soccer/match/_/gameId/735583/cape-verde-georgia,+360,-133,+250
+2597,Cape Verde,2024-06-08,Cameroon,away,1,4,687205,https://www.espn.com/soccer/match/_/gameId/687205/cape-verde-cameroon,,,
+2597,Cape Verde,2024-02-03,South Africa,home,0,0,698137,https://www.espn.com/soccer/match/_/gameId/698137/south-africa-cape-verde,+210,+150,+190
+2597,Cape Verde,2025-10-13,Eswatini,home,3,0,687220,https://www.espn.com/soccer/match/_/gameId/687220/eswatini-cape-verde,-769,+2000,+675
+2597,Cape Verde,2025-11-17,Egypt,away,1,1,761121,https://www.espn.com/soccer/match/_/gameId/761121/cape-verde-egypt,+230,+110,+190
+2597,Cape Verde,2024-03-25,Equatorial Guinea,home,1,0,700827,https://www.espn.com/soccer/match/_/gameId/700827/equatorial-guinea-cape-verde,-149,+375,+230
+2597,Cape Verde,2024-09-06,Egypt,away,0,3,715397,https://www.espn.com/soccer/match/_/gameId/715397/cape-verde-egypt,,,
+2597,Cape Verde,2024-11-15,Egypt,home,1,1,722106,https://www.espn.com/soccer/match/_/gameId/722106/egypt-cape-verde,,,
+208,Colombia,2024-07-11,Uruguay,away,1,0,703951,https://www.espn.com/soccer/match/_/gameId/703951/colombia-uruguay,+250,+110,+220
+208,Colombia,2025-09-09,Venezuela,away,6,3,684667,https://www.espn.com/soccer/match/_/gameId/684667/colombia-venezuela,+210,+140,+200
+208,Colombia,2024-09-10,Argentina,home,2,1,684614,https://www.espn.com/soccer/match/_/gameId/684614/argentina-colombia,-149,+475,+250
+208,Colombia,2024-10-15,Chile,home,4,0,684625,https://www.espn.com/soccer/match/_/gameId/684625/chile-colombia,-303,+1000,+375
+208,Colombia,2025-10-15,Canada,home,0,0,746411,https://www.espn.com/soccer/match/_/gameId/746411/canada-colombia,+400,-159,+290
+208,Colombia,2024-11-19,Ecuador,home,0,1,684637,https://www.espn.com/soccer/match/_/gameId/684637/ecuador-colombia,-137,+425,+230
+208,Colombia,2025-11-19,Australia,home,3,0,760258,https://www.espn.com/soccer/match/_/gameId/760258/australia-colombia,-250,+725,+333
+208,Colombia,2025-03-26,Paraguay,home,2,2,684646,https://www.espn.com/soccer/match/_/gameId/684646/paraguay-colombia,-222,+800,+290
+208,Colombia,2025-06-11,Argentina,away,1,1,684653,https://www.espn.com/soccer/match/_/gameId/684653/colombia-argentina,,,
+208,Colombia,2024-07-03,Brazil,away,1,1,690728,https://www.espn.com/soccer/match/_/gameId/690728/colombia-brazil,+450,-154,+270
+208,Colombia,2025-09-04,Bolivia,home,3,0,684660,https://www.espn.com/soccer/match/_/gameId/684660/bolivia-colombia,-833,+2000,+800
+208,Colombia,2024-10-10,Bolivia,away,0,1,684618,https://www.espn.com/soccer/match/_/gameId/684618/colombia-bolivia,,,
+208,Colombia,2026-03-26,Croatia,home,1,2,401847048,https://www.espn.com/soccer/match/_/gameId/401847048/croatia-colombia,+100,+250,+230
+208,Colombia,2025-03-21,Brazil,away,1,2,684638,https://www.espn.com/soccer/match/_/gameId/684638/colombia-brazil,,,
+208,Colombia,2026-03-29,France,home,1,3,762453,https://www.espn.com/soccer/match/_/gameId/762453/france-colombia,+280,-105,+250
+208,Colombia,2024-07-15,Argentina,away,0,1,703953,https://www.espn.com/soccer/match/_/gameId/703953/colombia-argentina,,,
+208,Colombia,2025-10-12,Mexico,away,4,0,751638,https://www.espn.com/soccer/match/_/gameId/751638/colombia-mexico,+110,+250,+220
+208,Colombia,2025-11-16,New Zealand,home,2,1,758715,https://www.espn.com/soccer/match/_/gameId/758715/new-zealand-colombia,-588,+1450,+625
+208,Colombia,2024-07-06,Panama,home,5,0,703948,https://www.espn.com/soccer/match/_/gameId/703948/panama-colombia,-345,+1000,+450
+208,Colombia,2024-06-24,Paraguay,home,2,1,690711,https://www.espn.com/soccer/match/_/gameId/690711/paraguay-colombia,,,
+208,Colombia,2026-06-01,Costa Rica,home,3,1,401866134,https://www.espn.com/soccer/match/_/gameId/401866134/costa-rica-colombia,-769,+1700,+775
+208,Colombia,2024-09-07,Peru,away,1,1,684611,https://www.espn.com/soccer/match/_/gameId/684611/colombia-peru,+850,-303,+375
+208,Colombia,2024-11-16,Uruguay,away,2,3,684630,https://www.espn.com/soccer/match/_/gameId/684630/colombia-uruguay,,,
+208,Colombia,2025-06-06,Peru,home,0,0,684649,https://www.espn.com/soccer/match/_/gameId/684649/peru-colombia,,,
+208,Colombia,2024-06-28,Costa Rica,home,3,0,690720,https://www.espn.com/soccer/match/_/gameId/690720/costa-rica-colombia,,,
+2850,Congo DR,2026-03-25,Bermuda,home,2,0,401866396,https://www.espn.com/soccer/match/_/gameId/401866396/bermuda-congo-dr,,,
+2850,Congo DR,2025-09-09,Senegal,home,2,3,687150,https://www.espn.com/soccer/match/_/gameId/687150/senegal-congo-dr,-154,+500,+230
+2850,Congo DR,2025-10-14,Sudan,home,1,0,687160,https://www.espn.com/soccer/match/_/gameId/687160/sudan-congo-dr,-345,+900,+450
+2850,Congo DR,2024-11-19,Ethiopia,home,1,2,722128,https://www.espn.com/soccer/match/_/gameId/722128/ethiopia-congo-dr,-312,+725,+333
+2850,Congo DR,2026-03-31,Jamaica,home,1,0,761389,https://www.espn.com/soccer/match/_/gameId/761389/jamaica-congo-dr,-161,+600,+220
+2850,Congo DR,2025-03-25,Mauritania,away,2,0,687157,https://www.espn.com/soccer/match/_/gameId/687157/congo-dr-mauritania,+105,+375,+188
+2850,Congo DR,2026-01-06,Algeria,away,0,1,732175,https://www.espn.com/soccer/match/_/gameId/732175/congo-dr-algeria,+300,+105,+195
+2850,Congo DR,2025-12-30,Botswana,away,3,0,732162,https://www.espn.com/soccer/match/_/gameId/732162/congo-dr-botswana,-345,+950,+425
+2850,Congo DR,2025-12-23,Benin,home,1,0,732137,https://www.espn.com/soccer/match/_/gameId/732137/benin-congo-dr,-154,+525,+225
+2850,Congo DR,2025-12-16,Zambia,away,2,0,762772,https://www.espn.com/soccer/match/_/gameId/762772/congo-dr-zambia,+375,-130,+240
+2850,Congo DR,2025-11-13,Cameroon,away,1,0,760048,https://www.espn.com/soccer/match/_/gameId/760048/congo-dr-cameroon,+290,+115,+180
+2850,Congo DR,2025-06-05,Mali,home,1,0,736110,https://www.espn.com/soccer/match/_/gameId/736110/mali-congo-dr,+200,+150,+163
+2850,Congo DR,2025-08-07,Zambia,home,2,0,748071,https://www.espn.com/soccer/match/_/gameId/748071/zambia-congo-dr,,,
+2850,Congo DR,2025-08-14,Angola,away,2,0,748086,https://www.espn.com/soccer/match/_/gameId/748086/congo-dr-angola,+180,+163,+163
+2850,Congo DR,2025-11-16,Nigeria,away,1,1,761088,https://www.espn.com/soccer/match/_/gameId/761088/congo-dr-nigeria,+400,-111,+200
+2850,Congo DR,2025-06-08,Madagascar,home,3,1,736115,https://www.espn.com/soccer/match/_/gameId/736115/madagascar-congo-dr,-125,+360,+230
+2850,Congo DR,2025-08-03,Kenya,away,0,1,748062,https://www.espn.com/soccer/match/_/gameId/748062/congo-dr-kenya,+160,+150,+200
+2850,Congo DR,2025-08-17,Morocco,home,1,3,748091,https://www.espn.com/soccer/match/_/gameId/748091/morocco-congo-dr,+290,-120,+220
+2850,Congo DR,2024-11-16,Guinea,away,0,1,722099,https://www.espn.com/soccer/match/_/gameId/722099/congo-dr-guinea,,,
+2850,Congo DR,2024-12-28,Chad,home,3,1,722306,https://www.espn.com/soccer/match/_/gameId/722306/chad-congo-dr,,,
+2850,Congo DR,2025-12-27,Senegal,away,1,1,732152,https://www.espn.com/soccer/match/_/gameId/732152/congo-dr-senegal,,,
+2850,Congo DR,2024-12-21,Chad,away,1,1,722305,https://www.espn.com/soccer/match/_/gameId/722305/congo-dr-chad,,,
+2850,Congo DR,2025-09-05,South Sudan,away,4,1,687158,https://www.espn.com/soccer/match/_/gameId/687158/congo-dr-south-sudan,-175,+550,+260
+2850,Congo DR,2025-10-10,Togo,away,1,0,687159,https://www.espn.com/soccer/match/_/gameId/687159/congo-dr-togo,-118,+333,+230
+2850,Congo DR,2025-03-21,South Sudan,home,1,0,687156,https://www.espn.com/soccer/match/_/gameId/687156/south-sudan-congo-dr,,,
+477,Croatia,2024-06-19,Albania,home,2,2,690586,https://www.espn.com/soccer/match/_/gameId/690586/albania-croatia,-227,+650,+350
+477,Croatia,2024-10-15,Poland,away,3,3,698981,https://www.espn.com/soccer/match/_/gameId/698981/croatia-poland,+150,+188,+240
+477,Croatia,2026-04-01,Brazil,away,1,3,401843261,https://www.espn.com/soccer/match/_/gameId/401843261/croatia-brazil,+310,-133,+280
+477,Croatia,2024-03-26,Egypt,away,4,2,701261,https://www.espn.com/soccer/match/_/gameId/701261/croatia-egypt,+110,+225,+210
+477,Croatia,2024-09-05,Portugal,away,1,2,698888,https://www.espn.com/soccer/match/_/gameId/698888/croatia-portugal,+230,+135,+210
+477,Croatia,2025-10-09,Czechia,away,0,0,725022,https://www.espn.com/soccer/match/_/gameId/725022/croatia-czechia,,,
+477,Croatia,2026-03-26,Colombia,away,2,1,401847048,https://www.espn.com/soccer/match/_/gameId/401847048/croatia-colombia,+250,+100,+230
+477,Croatia,2025-03-20,France,home,2,0,723709,https://www.espn.com/soccer/match/_/gameId/723709/france-croatia,-370,+900,+425
+477,Croatia,2024-09-08,Poland,home,1,0,698915,https://www.espn.com/soccer/match/_/gameId/698915/poland-croatia,,,
+477,Croatia,2025-10-12,Gibraltar,home,3,0,724856,https://www.espn.com/soccer/match/_/gameId/724856/gibraltar-croatia,+7000,,+2500
+477,Croatia,2025-03-23,France,away,0,2,723710,https://www.espn.com/soccer/match/_/gameId/723710/croatia-france,,,
+477,Croatia,2024-10-12,Scotland,home,2,1,698954,https://www.espn.com/soccer/match/_/gameId/698954/scotland-croatia,+250,+115,+230
+477,Croatia,2024-03-23,Tunisia,away,0,0,699074,https://www.espn.com/soccer/match/_/gameId/699074/croatia-tunisia,+425,-149,+260
+477,Croatia,2024-06-08,Portugal,away,2,1,698040,https://www.espn.com/soccer/match/_/gameId/698040/croatia-portugal,,,
+477,Croatia,2024-06-15,Spain,away,0,3,690575,https://www.espn.com/soccer/match/_/gameId/690575/croatia-spain,,,
+477,Croatia,2025-09-08,Montenegro,home,4,0,725010,https://www.espn.com/soccer/match/_/gameId/725010/montenegro-croatia,+525,-196,+333
+477,Croatia,2024-11-18,Portugal,home,1,1,699020,https://www.espn.com/soccer/match/_/gameId/699020/portugal-croatia,,,
+477,Croatia,2025-11-17,Montenegro,away,3,2,724907,https://www.espn.com/soccer/match/_/gameId/724907/croatia-montenegro,,,
+477,Croatia,2025-06-09,Czechia,home,5,1,724964,https://www.espn.com/soccer/match/_/gameId/724964/czechia-croatia,,,
+477,Croatia,2024-06-03,North Macedonia,home,3,0,693935,https://www.espn.com/soccer/match/_/gameId/693935/north-macedonia-croatia,-250,+750,+333
+477,Croatia,2024-06-24,Italy,home,1,1,690599,https://www.espn.com/soccer/match/_/gameId/690599/italy-croatia,+200,+155,+210
+477,Croatia,2025-09-05,Faroe Islands,away,1,0,724979,https://www.espn.com/soccer/match/_/gameId/724979/croatia-faroe-islands,+2000,-1250,+950
+477,Croatia,2024-11-15,Scotland,away,0,1,699001,https://www.espn.com/soccer/match/_/gameId/699001/croatia-scotland,,,
+477,Croatia,2025-11-14,Faroe Islands,home,3,1,724887,https://www.espn.com/soccer/match/_/gameId/724887/faroe-islands-croatia,,,
+477,Croatia,2025-06-06,Gibraltar,away,7,0,724949,https://www.espn.com/soccer/match/_/gameId/724949/croatia-gibraltar,,,
+11678,Curacao,2021-10-06,Bahrain,away,0,4,620637,https://www.espn.com/soccer/match/_/gameId/620637/curacao-bahrain,+375,-154,+260
+11678,Curacao,2017-03-23,El Salvador,home,1,1,476594,https://www.espn.com/soccer/match/_/gameId/476594/el-salvador-curacao,-102,+280,+230
+11678,Curacao,2025-03-19,Kazakhstan,away,0,2,734874,https://www.espn.com/soccer/match/_/gameId/734874/curacao-kazakhstan,,,
+11678,Curacao,2024-06-05,Barbados,home,4,1,698142,https://www.espn.com/soccer/match/_/gameId/698142/barbados-curacao,-3333,+4000,+1600
+11678,Curacao,2019-06-05,India,home,3,1,540608,https://www.espn.com/soccer/match/_/gameId/540608/india-curacao,,,
+11678,Curacao,2025-09-10,Bermuda,home,3,2,754245,https://www.espn.com/soccer/match/_/gameId/754245/bermuda-curacao,+1050,-435,+525
+11678,Curacao,2011-09-07,Haiti,home,2,4,330060,https://www.espn.com/soccer/match/_/gameId/330060/haiti-curacao,+105,+240,+260
+11678,Curacao,2022-09-27,Indonesia,away,1,2,653768,https://www.espn.com/soccer/match/_/gameId/653768/curacao-indonesia,+110,+180,+275
+11678,Curacao,2019-09-10,Haiti,away,1,1,540358,https://www.espn.com/soccer/match/_/gameId/540358/curacao-haiti,,,
+11678,Curacao,2023-10-18,Trinidad and Tobago,home,5,3,680556,https://www.espn.com/soccer/match/_/gameId/680556/trinidad-and-tobago-curacao,-192,+550,+290
+11678,Curacao,2025-10-14,Trinidad and Tobago,home,1,1,754256,https://www.espn.com/soccer/match/_/gameId/754256/trinidad-and-tobago-curacao,,,
+11678,Curacao,2011-10-11,Haiti,away,2,2,332852,https://www.espn.com/soccer/match/_/gameId/332852/curacao-haiti,,,
+11678,Curacao,2017-10-10,Qatar,away,2,1,497534,https://www.espn.com/soccer/match/_/gameId/497534/curacao-qatar,,,
+11678,Curacao,2025-11-19,Jamaica,away,0,0,754267,https://www.espn.com/soccer/match/_/gameId/754267/curacao-jamaica,+333,-111,+230
+11678,Curacao,2011-11-16,US Virgin Islands,home,6,1,332873,https://www.espn.com/soccer/match/_/gameId/332873/us-virgin-islands-curacao,,,
+11678,Curacao,2026-03-31,Australia,away,1,5,401856595,https://www.espn.com/soccer/match/_/gameId/401856595/curacao-australia,+650,-278,+400
+11678,Curacao,2023-03-28,Argentina,away,0,7,666851,https://www.espn.com/soccer/match/_/gameId/666851/curacao-argentina,+5000,-5000,+2000
+11678,Curacao,2021-06-09,Guatemala,home,0,0,578790,https://www.espn.com/soccer/match/_/gameId/578790/guatemala-curacao,-111,+300,+250
+11678,Curacao,2019-06-26,Jamaica,away,1,1,539222,https://www.espn.com/soccer/match/_/gameId/539222/curacao-jamaica,,,
+11678,Curacao,2025-06-25,Honduras,away,1,2,735340,https://www.espn.com/soccer/match/_/gameId/735340/curacao-honduras,+240,+120,+210
+11678,Curacao,2025-06-18,El Salvador,home,0,0,735324,https://www.espn.com/soccer/match/_/gameId/735324/el-salvador-curacao,,,
+11678,Curacao,2021-06-15,Panama,home,0,0,603518,https://www.espn.com/soccer/match/_/gameId/603518/panama-curacao,+375,-143,+240
+11678,Curacao,2023-06-13,Puerto Rico,home,0,0,670749,https://www.espn.com/soccer/match/_/gameId/670749/puerto-rico-curacao,,,
+11678,Curacao,2017-06-13,Canada,away,1,2,476391,https://www.espn.com/soccer/match/_/gameId/476391/curacao-canada,-455,+1100,+525
+11678,Curacao,2025-06-10,Haiti,away,5,1,698198,https://www.espn.com/soccer/match/_/gameId/698198/curacao-haiti,,,
+11678,Curacao,2023-09-07,Trinidad and Tobago,away,0,1,680537,https://www.espn.com/soccer/match/_/gameId/680537/curacao-trinidad-and-tobago,,,
+11678,Curacao,2023-11-17,El Salvador,home,1,1,690256,https://www.espn.com/soccer/match/_/gameId/690256/el-salvador-curacao,,,
+11678,Curacao,2019-11-14,Costa Rica,home,1,2,540347,https://www.espn.com/soccer/match/_/gameId/540347/costa-rica-curacao,,,
+11678,Curacao,2025-11-14,Bermuda,away,7,0,754265,https://www.espn.com/soccer/match/_/gameId/754265/curacao-bermuda,,,
+11678,Curacao,2021-03-25,St. Vincent and the Grenadines,home,5,0,578838,https://www.espn.com/soccer/match/_/gameId/578838/st-vincent-and-the-grenadines-curacao,,,
+11678,Curacao,2022-06-10,Canada,away,0,4,634299,https://www.espn.com/soccer/match/_/gameId/634299/curacao-canada,,,
+11678,Curacao,2017-07-14,El Salvador,away,0,2,475836,https://www.espn.com/soccer/match/_/gameId/475836/curacao-el-salvador,,,
+11678,Curacao,2023-09-11,Martinique,away,0,1,680543,https://www.espn.com/soccer/match/_/gameId/680543/curacao-martinique,+145,+188,+230
+11678,Curacao,2021-10-03,Bonaire,home,1,0,620641,https://www.espn.com/soccer/match/_/gameId/620641/bonaire-curacao,,,
+11678,Curacao,2019-10-14,Costa Rica,away,0,0,540352,https://www.espn.com/soccer/match/_/gameId/540352/curacao-costa-rica,,,
+11678,Curacao,2021-03-28,Cuba,away,2,1,578822,https://www.espn.com/soccer/match/_/gameId/578822/curacao-cuba,-556,+1000,+550
+11678,Curacao,2019-07-01,United States,away,0,1,547957,https://www.espn.com/soccer/match/_/gameId/547957/curacao-united-states,,,
+11678,Curacao,2017-07-09,Jamaica,home,0,2,475843,https://www.espn.com/soccer/match/_/gameId/475843/jamaica-curacao,,,
+11678,Curacao,2017-07-17,Mexico,home,0,2,475831,https://www.espn.com/soccer/match/_/gameId/475831/mexico-curacao,,,
+11678,Curacao,2019-09-07,Haiti,home,1,0,540362,https://www.espn.com/soccer/match/_/gameId/540362/haiti-curacao,,,
+11678,Curacao,2022-09-24,Indonesia,away,2,3,653767,https://www.espn.com/soccer/match/_/gameId/653767/curacao-indonesia,,,
+11678,Curacao,2021-10-09,New Zealand,home,1,2,620634,https://www.espn.com/soccer/match/_/gameId/620634/new-zealand-curacao,+210,+120,+225
+11678,Curacao,2022-11-27,Suriname,home,2,2,658381,https://www.espn.com/soccer/match/_/gameId/658381/suriname-curacao,,,
+11678,Curacao,2026-05-30,Scotland,away,1,4,401856621,https://www.espn.com/soccer/match/_/gameId/401856621/curacao-scotland,+800,-323,+425
+11678,Curacao,2023-03-26,Canada,home,0,2,634308,https://www.espn.com/soccer/match/_/gameId/634308/canada-curacao,,,
+11678,Curacao,2019-03-23,Antigua and Barbuda,away,1,2,526333,https://www.espn.com/soccer/match/_/gameId/526333/curacao-antigua-and-barbuda,,,
+11678,Curacao,2024-06-09,Aruba,away,2,0,698151,https://www.espn.com/soccer/match/_/gameId/698151/curacao-aruba,+1850,-1000,+1000
+11678,Curacao,2019-06-08,Vietnam,away,1,1,541375,https://www.espn.com/soccer/match/_/gameId/541375/curacao-vietnam,,,
+11678,Curacao,2021-06-05,British Virgin Islands,away,8,0,578798,https://www.espn.com/soccer/match/_/gameId/578798/curacao-british-virgin-islands,+5000,,+3300
+11678,Curacao,2025-06-21,Canada,home,1,1,735332,https://www.espn.com/soccer/match/_/gameId/735332/canada-curacao,,,
+11678,Curacao,2017-06-18,Nicaragua,home,0,0,480212,https://www.espn.com/soccer/match/_/gameId/480212/nicaragua-curacao,,,
+11678,Curacao,2021-06-12,Panama,away,1,2,603521,https://www.espn.com/soccer/match/_/gameId/603521/curacao-panama,,,
+11678,Curacao,2024-09-09,St. Martin,home,4,0,702754,https://www.espn.com/soccer/match/_/gameId/702754/st-martin-curacao,,,
+11678,Curacao,2018-09-11,Grenada,home,10,0,526382,https://www.espn.com/soccer/match/_/gameId/526382/grenada-curacao,-200,+450,+333
+11678,Curacao,2024-10-14,Grenada,home,1,0,702797,https://www.espn.com/soccer/match/_/gameId/702797/grenada-curacao,,,
+11678,Curacao,2023-11-21,El Salvador,home,1,1,690309,https://www.espn.com/soccer/match/_/gameId/690309/el-salvador-curacao,,,
+11678,Curacao,2018-11-20,Guadeloupe,home,6,0,526349,https://www.espn.com/soccer/match/_/gameId/526349/guadeloupe-curacao,,,
+11678,Curacao,2024-11-18,St. Lucia,home,4,1,702818,https://www.espn.com/soccer/match/_/gameId/702818/st-lucia-curacao,,,
+11678,Curacao,2018-03-27,Bolivia,home,1,0,508512,https://www.espn.com/soccer/match/_/gameId/508512/bolivia-curacao,,,
+11678,Curacao,2022-06-07,Honduras,away,2,1,634295,https://www.espn.com/soccer/match/_/gameId/634295/curacao-honduras,,,
+11678,Curacao,2019-06-17,El Salvador,home,0,1,539238,https://www.espn.com/soccer/match/_/gameId/539238/el-salvador-curacao,,,
+11678,Curacao,2024-09-06,St. Lucia,away,1,2,702741,https://www.espn.com/soccer/match/_/gameId/702741/curacao-st-lucia,,,
+11678,Curacao,2025-09-06,Trinidad and Tobago,away,0,0,754240,https://www.espn.com/soccer/match/_/gameId/754240/curacao-trinidad-and-tobago,,,
+11678,Curacao,2011-09-02,Antigua and Barbuda,away,2,5,331109,https://www.espn.com/soccer/match/_/gameId/331109/curacao-antigua-and-barbuda,,,
+11678,Curacao,2011-10-08,Antigua and Barbuda,home,0,1,332423,https://www.espn.com/soccer/match/_/gameId/332423/antigua-and-barbuda-curacao,,,
+11678,Curacao,2023-10-13,Panama,home,1,2,680550,https://www.espn.com/soccer/match/_/gameId/680550/panama-curacao,,,
+11678,Curacao,2018-10-12,US Virgin Islands,away,5,0,526378,https://www.espn.com/soccer/match/_/gameId/526378/curacao-us-virgin-islands,,,
+11678,Curacao,2024-10-11,Grenada,away,0,0,702782,https://www.espn.com/soccer/match/_/gameId/702782/curacao-grenada,,,
+11678,Curacao,2025-10-10,Jamaica,home,2,0,754251,https://www.espn.com/soccer/match/_/gameId/754251/jamaica-curacao,,,
+11678,Curacao,2021-10-01,Aruba,home,7,1,620642,https://www.espn.com/soccer/match/_/gameId/620642/aruba-curacao,,,
+11678,Curacao,2024-11-15,St. Martin,away,5,0,702809,https://www.espn.com/soccer/match/_/gameId/702809/curacao-st-martin,,,
+11678,Curacao,2011-11-11,US Virgin Islands,away,3,0,332864,https://www.espn.com/soccer/match/_/gameId/332864/curacao-us-virgin-islands,,,
+11678,Curacao,2026-03-27,China,away,0,2,401856591,https://www.espn.com/soccer/match/_/gameId/401856591/curacao-china,-189,+425,+310
+11678,Curacao,2018-03-24,Bolivia,home,1,1,508514,https://www.espn.com/soccer/match/_/gameId/508514/bolivia-curacao,,,
+11678,Curacao,2025-06-06,St. Lucia,home,4,0,698176,https://www.espn.com/soccer/match/_/gameId/698176/st-lucia-curacao,,,
+11678,Curacao,2022-06-04,Honduras,home,0,1,634291,https://www.espn.com/soccer/match/_/gameId/634291/honduras-curacao,,,
+11678,Curacao,2019-06-22,Honduras,away,1,0,539229,https://www.espn.com/soccer/match/_/gameId/539229/curacao-honduras,,,
+11678,Curacao,2023-06-17,St. Kitts and Nevis,home,1,1,668441,https://www.espn.com/soccer/match/_/gameId/668441/st-kitts-and-nevis-curacao,,,
+450,Czechia,2024-06-26,Türkiye,home,1,2,690608,https://www.espn.com/soccer/match/_/gameId/690608/turkiye-czechia,+145,+190,+230
+450,Czechia,2024-09-10,Ukraine,home,3,2,698927,https://www.espn.com/soccer/match/_/gameId/698927/ukraine-czechia,+180,+155,+220
+450,Czechia,2024-11-19,Georgia,home,2,1,699045,https://www.espn.com/soccer/match/_/gameId/699045/georgia-czechia,+100,+275,+230
+450,Czechia,2026-03-31,Denmark,home,2,2,761955,https://www.espn.com/soccer/match/_/gameId/761955/denmark-czechia,+290,+100,+240
+450,Czechia,2024-03-26,Armenia,home,2,1,694653,https://www.espn.com/soccer/match/_/gameId/694653/armenia-czechia,-400,+1000,+475
+450,Czechia,2025-03-25,Gibraltar,away,4,0,724941,https://www.espn.com/soccer/match/_/gameId/724941/czechia-gibraltar,+4000,-5000,+1550
+450,Czechia,2024-06-18,Portugal,away,1,2,690584,https://www.espn.com/soccer/match/_/gameId/690584/czechia-portugal,+500,-200,+333
+450,Czechia,2025-10-09,Croatia,home,0,0,725022,https://www.espn.com/soccer/match/_/gameId/725022/croatia-czechia,,,
+450,Czechia,2025-11-13,San Marino,home,1,0,757634,https://www.espn.com/soccer/match/_/gameId/757634/san-marino-czechia,-10000,+5000,+2500
+450,Czechia,2026-03-26,Republic of Ireland,home,2,2,761378,https://www.espn.com/soccer/match/_/gameId/761378/republic-of-ireland-czechia,,,
+450,Czechia,2025-10-12,Faroe Islands,away,1,2,724852,https://www.espn.com/soccer/match/_/gameId/724852/czechia-faroe-islands,-204,+550,+340
+450,Czechia,2026-05-31,Kosovo,home,2,1,401872603,https://www.espn.com/soccer/match/_/gameId/401872603/kosovo-czechia,-111,+260,+250
+450,Czechia,2024-09-07,Georgia,away,1,4,698901,https://www.espn.com/soccer/match/_/gameId/698901/czechia-georgia,,,
+450,Czechia,2024-11-16,Albania,away,0,0,699009,https://www.espn.com/soccer/match/_/gameId/699009/czechia-albania,+115,+250,+210
+450,Czechia,2025-03-22,Faroe Islands,home,2,1,724932,https://www.espn.com/soccer/match/_/gameId/724932/faroe-islands-czechia,,,
+450,Czechia,2024-06-22,Georgia,away,1,1,690596,https://www.espn.com/soccer/match/_/gameId/690596/czechia-georgia,,,
+450,Czechia,2025-09-08,Saudi Arabia,home,1,1,749810,https://www.espn.com/soccer/match/_/gameId/749810/saudi-arabia-czechia,-167,+425,+290
+450,Czechia,2024-10-14,Ukraine,away,1,1,698977,https://www.espn.com/soccer/match/_/gameId/698977/czechia-ukraine,,,
+450,Czechia,2025-11-17,Gibraltar,home,6,0,724909,https://www.espn.com/soccer/match/_/gameId/724909/gibraltar-czechia,,,
+450,Czechia,2025-06-09,Croatia,away,1,5,724964,https://www.espn.com/soccer/match/_/gameId/724964/czechia-croatia,,,
+450,Czechia,2024-06-10,North Macedonia,home,2,1,698253,https://www.espn.com/soccer/match/_/gameId/698253/north-macedonia-czechia,-333,+700,+375
+450,Czechia,2025-09-05,Montenegro,away,2,0,724987,https://www.espn.com/soccer/match/_/gameId/724987/czechia-montenegro,-152,+425,+280
+450,Czechia,2024-10-11,Albania,home,2,0,698945,https://www.espn.com/soccer/match/_/gameId/698945/albania-czechia,,,
+450,Czechia,2024-06-07,Malta,home,7,1,701562,https://www.espn.com/soccer/match/_/gameId/701562/malta-czechia,-455,+1200,+450
+450,Czechia,2025-06-06,Montenegro,home,2,0,724948,https://www.espn.com/soccer/match/_/gameId/724948/montenegro-czechia,,,
+209,Ecuador,2024-06-26,Jamaica,home,3,1,690716,https://www.espn.com/soccer/match/_/gameId/690716/jamaica-ecuador,-200,+650,+300
+209,Ecuador,2024-06-13,Bolivia,home,3,1,702336,https://www.espn.com/soccer/match/_/gameId/702336/bolivia-ecuador,-500,+1600,+525
+209,Ecuador,2025-09-09,Argentina,home,1,0,684665,https://www.espn.com/soccer/match/_/gameId/684665/argentina-ecuador,+200,+145,+200
+209,Ecuador,2024-09-10,Peru,home,1,0,684615,https://www.espn.com/soccer/match/_/gameId/684615/peru-ecuador,+225,+155,+165
+209,Ecuador,2024-10-15,Uruguay,away,0,0,684627,https://www.espn.com/soccer/match/_/gameId/684627/ecuador-uruguay,+475,-137,+230
+209,Ecuador,2025-10-15,Mexico,away,1,1,755899,https://www.espn.com/soccer/match/_/gameId/755899/ecuador-mexico,+210,+110,+220
+209,Ecuador,2024-11-19,Colombia,away,1,0,684637,https://www.espn.com/soccer/match/_/gameId/684637/ecuador-colombia,+425,-137,+230
+209,Ecuador,2025-11-19,New Zealand,home,2,0,758717,https://www.espn.com/soccer/match/_/gameId/758717/new-zealand-ecuador,-278,+775,+360
+209,Ecuador,2026-03-31,Netherlands,away,1,1,762551,https://www.espn.com/soccer/match/_/gameId/762551/ecuador-netherlands,+500,-175,+280
+209,Ecuador,2025-03-26,Chile,away,0,0,684645,https://www.espn.com/soccer/match/_/gameId/684645/ecuador-chile,+170,+187,+180
+209,Ecuador,2025-06-11,Peru,away,0,0,684656,https://www.espn.com/soccer/match/_/gameId/684656/ecuador-peru,,,
+209,Ecuador,2025-09-04,Paraguay,away,0,0,684661,https://www.espn.com/soccer/match/_/gameId/684661/ecuador-paraguay,+290,+130,+175
+209,Ecuador,2024-10-10,Paraguay,home,0,0,684620,https://www.espn.com/soccer/match/_/gameId/684620/paraguay-ecuador,,,
+209,Ecuador,2024-11-15,Bolivia,home,4,0,684629,https://www.espn.com/soccer/match/_/gameId/684629/bolivia-ecuador,,,
+209,Ecuador,2025-11-14,Canada,away,0,0,758183,https://www.espn.com/soccer/match/_/gameId/758183/ecuador-canada,+125,+230,+188
+209,Ecuador,2025-06-05,Brazil,home,0,0,684650,https://www.espn.com/soccer/match/_/gameId/684650/brazil-ecuador,+300,+115,+190
+209,Ecuador,2024-07-05,Argentina,away,1,1,703946,https://www.espn.com/soccer/match/_/gameId/703946/ecuador-argentina,,,
+209,Ecuador,2024-07-01,Mexico,away,0,0,690723,https://www.espn.com/soccer/match/_/gameId/690723/ecuador-mexico,,,
+209,Ecuador,2024-06-16,Honduras,home,2,1,702269,https://www.espn.com/soccer/match/_/gameId/702269/honduras-ecuador,-345,+750,+450
+209,Ecuador,2026-05-30,Saudi Arabia,home,2,1,401869431,https://www.espn.com/soccer/match/_/gameId/401869431/saudi-arabia-ecuador,-208,+650,+250
+209,Ecuador,2024-06-22,Venezuela,home,1,2,690708,https://www.espn.com/soccer/match/_/gameId/690708/venezuela-ecuador,-323,+1000,+380
+209,Ecuador,2024-09-07,Brazil,away,0,1,684610,https://www.espn.com/soccer/match/_/gameId/684610/ecuador-brazil,,,
+209,Ecuador,2025-10-11,United States,away,1,1,753161,https://www.espn.com/soccer/match/_/gameId/753161/ecuador-united-states,+180,+140,+220
+209,Ecuador,2026-03-27,Morocco,away,1,1,401860936,https://www.espn.com/soccer/match/_/gameId/401860936/ecuador-morocco,+190,+145,+180
+209,Ecuador,2025-03-21,Venezuela,home,2,1,684639,https://www.espn.com/soccer/match/_/gameId/684639/venezuela-ecuador,,,
+2620,Egypt,2025-10-08,Djibouti,away,3,0,687121,https://www.espn.com/soccer/match/_/gameId/687121/egypt-djibouti,-5000,+8000,+2200
+2620,Egypt,2026-01-14,Senegal,away,0,1,732181,https://www.espn.com/soccer/match/_/gameId/732181/egypt-senegal,+375,-105,+200
+2620,Egypt,2025-09-09,Burkina Faso,away,0,0,687120,https://www.espn.com/soccer/match/_/gameId/687120/egypt-burkina-faso,+140,+220,+200
+2620,Egypt,2024-10-15,Mauritania,away,1,0,722078,https://www.espn.com/soccer/match/_/gameId/722078/egypt-mauritania,,,
+2620,Egypt,2024-11-19,Botswana,home,1,1,722126,https://www.espn.com/soccer/match/_/gameId/722126/botswana-egypt,-400,+1000,+360
+2620,Egypt,2026-03-31,Spain,away,0,0,401851847,https://www.espn.com/soccer/match/_/gameId/401851847/egypt-spain,+1050,-455,+550
+2620,Egypt,2025-03-25,Sierra Leone,home,1,0,687118,https://www.espn.com/soccer/match/_/gameId/687118/sierra-leone-egypt,-625,+1800,+600
+2620,Egypt,2025-12-16,Nigeria,home,2,1,762474,https://www.espn.com/soccer/match/_/gameId/762474/nigeria-egypt,+220,+125,+220
+2620,Egypt,2026-05-28,Russia,home,1,0,401870853,https://www.espn.com/soccer/match/_/gameId/401870853/russia-egypt,,,
+2620,Egypt,2025-10-12,Guinea-Bissau,home,1,0,687122,https://www.espn.com/soccer/match/_/gameId/687122/guinea-bissau-egypt,-370,+1200,+425
+2620,Egypt,2025-03-09,South Africa,home,1,3,733952,https://www.espn.com/soccer/match/_/gameId/733952/south-africa-egypt,-102,+320,+200
+2620,Egypt,2025-03-02,South Africa,away,1,1,733951,https://www.espn.com/soccer/match/_/gameId/733951/egypt-south-africa,,,
+2620,Egypt,2026-01-17,Nigeria,home,0,0,732183,https://www.espn.com/soccer/match/_/gameId/732183/nigeria-egypt,,,
+2620,Egypt,2026-01-10,Ivory Coast,home,3,2,732179,https://www.espn.com/soccer/match/_/gameId/732179/ivory-coast-egypt,+260,+135,+175
+2620,Egypt,2025-11-17,Cape Verde,home,1,1,761121,https://www.espn.com/soccer/match/_/gameId/761121/cape-verde-egypt,+110,+230,+190
+2620,Egypt,2026-01-05,Benin,home,3,1,732173,https://www.espn.com/soccer/match/_/gameId/732173/benin-egypt,-238,+850,+300
+2620,Egypt,2025-12-29,Angola,away,0,0,732157,https://www.espn.com/soccer/match/_/gameId/732157/egypt-angola,,,
+2620,Egypt,2025-12-22,Zimbabwe,home,2,1,732135,https://www.espn.com/soccer/match/_/gameId/732135/zimbabwe-egypt,-286,+825,+360
+2620,Egypt,2025-09-05,Ethiopia,home,2,0,687119,https://www.espn.com/soccer/match/_/gameId/687119/ethiopia-egypt,-769,+2800,+650
+2620,Egypt,2024-10-11,Mauritania,home,2,0,722052,https://www.espn.com/soccer/match/_/gameId/722052/mauritania-egypt,,,
+2620,Egypt,2024-11-15,Cape Verde,away,1,1,722106,https://www.espn.com/soccer/match/_/gameId/722106/egypt-cape-verde,,,
+2620,Egypt,2025-11-14,Uzbekistan,home,0,2,759988,https://www.espn.com/soccer/match/_/gameId/759988/uzbekistan-egypt,+220,+110,+210
+2620,Egypt,2026-03-27,Saudi Arabia,away,4,0,401854539,https://www.espn.com/soccer/match/_/gameId/401854539/egypt-saudi-arabia,+125,+188,+210
+2620,Egypt,2025-03-21,Ethiopia,away,2,0,687117,https://www.espn.com/soccer/match/_/gameId/687117/egypt-ethiopia,,,
+2620,Egypt,2025-12-26,South Africa,home,1,0,732146,https://www.espn.com/soccer/match/_/gameId/732146/south-africa-egypt,,,
+448,England,2024-07-10,Netherlands,away,2,1,703944,https://www.espn.com/soccer/match/_/gameId/703944/england-netherlands,+163,+220,+180
+448,England,2025-09-09,Serbia,away,5,0,725017,https://www.espn.com/soccer/match/_/gameId/725017/england-serbia,+900,-333,+450
+448,England,2024-09-10,Finland,home,2,0,698928,https://www.espn.com/soccer/match/_/gameId/698928/finland-england,+1000,-370,+500
+448,England,2025-10-14,Latvia,away,5,0,724871,https://www.espn.com/soccer/match/_/gameId/724871/england-latvia,-2000,+4000,+1350
+448,England,2026-03-31,Japan,home,0,1,762554,https://www.espn.com/soccer/match/_/gameId/762554/japan-england,-172,+425,+300
+448,England,2024-06-25,Slovenia,home,0,0,690602,https://www.espn.com/soccer/match/_/gameId/690602/slovenia-england,-333,+900,+425
+448,England,2025-06-10,Senegal,home,1,3,733159,https://www.espn.com/soccer/match/_/gameId/733159/senegal-england,-204,+550,+310
+448,England,2025-10-09,Wales,home,3,0,733158,https://www.espn.com/soccer/match/_/gameId/733158/wales-england,-500,+1000,+600
+448,England,2024-10-10,Greece,home,1,2,698935,https://www.espn.com/soccer/match/_/gameId/698935/greece-england,+260,+115,+220
+448,England,2024-11-14,Greece,away,3,0,698990,https://www.espn.com/soccer/match/_/gameId/698990/england-greece,,,
+448,England,2025-11-13,Serbia,home,2,0,724879,https://www.espn.com/soccer/match/_/gameId/724879/serbia-england,,,
+448,England,2024-06-20,Denmark,away,1,1,690590,https://www.espn.com/soccer/match/_/gameId/690590/england-denmark,-133,+425,+240
+448,England,2024-10-13,Finland,away,3,1,698962,https://www.espn.com/soccer/match/_/gameId/698962/england-finland,,,
+448,England,2024-11-17,Republic of Ireland,home,5,0,699017,https://www.espn.com/soccer/match/_/gameId/699017/republic-of-ireland-england,,,
+448,England,2025-11-16,Albania,away,2,0,724902,https://www.espn.com/soccer/match/_/gameId/724902/england-albania,-294,+875,+400
+448,England,2024-06-30,Slovakia,home,2,1,703933,https://www.espn.com/soccer/match/_/gameId/703933/slovakia-england,-238,+800,+320
+448,England,2024-06-16,Serbia,away,1,0,690578,https://www.espn.com/soccer/match/_/gameId/690578/england-serbia,,,
+448,England,2024-07-14,Spain,away,1,2,703945,https://www.espn.com/soccer/match/_/gameId/703945/england-spain,,,
+448,England,2024-09-07,Republic of Ireland,away,2,0,698903,https://www.espn.com/soccer/match/_/gameId/698903/england-republic-of-ireland,,,
+448,England,2025-09-06,Andorra,home,2,0,724991,https://www.espn.com/soccer/match/_/gameId/724991/andorra-england,-10000,+6000,+4000
+448,England,2025-06-07,Andorra,away,1,0,724954,https://www.espn.com/soccer/match/_/gameId/724954/england-andorra,,,
+448,England,2024-07-06,Switzerland,home,1,1,703941,https://www.espn.com/soccer/match/_/gameId/703941/switzerland-england,+120,+300,+188
+448,England,2025-03-24,Latvia,home,3,0,724937,https://www.espn.com/soccer/match/_/gameId/724937/latvia-england,,,
+448,England,2026-03-27,Uruguay,home,1,1,762553,https://www.espn.com/soccer/match/_/gameId/762553/uruguay-england,-182,+475,+320
+448,England,2025-03-21,Albania,home,2,0,724926,https://www.espn.com/soccer/match/_/gameId/724926/albania-england,,,
+478,France,2025-09-09,Iceland,home,2,1,725018,https://www.espn.com/soccer/match/_/gameId/725018/iceland-france,+775,-312,+450
+478,France,2024-06-25,Poland,home,1,1,690604,https://www.espn.com/soccer/match/_/gameId/690604/poland-france,-400,+1100,+500
+478,France,2024-07-09,Spain,away,1,2,703943,https://www.espn.com/soccer/match/_/gameId/703943/france-spain,+195,+140,+225
+478,France,2024-10-10,Israel,away,4,1,698943,https://www.espn.com/soccer/match/_/gameId/698943/france-israel,+1600,-769,+850
+478,France,2024-11-14,Israel,home,0,0,698989,https://www.espn.com/soccer/match/_/gameId/698989/israel-france,,,
+478,France,2025-11-13,Ukraine,home,4,0,724881,https://www.espn.com/soccer/match/_/gameId/724881/ukraine-france,-625,+1700,+675
+478,France,2026-03-26,Brazil,away,2,1,762452,https://www.espn.com/soccer/match/_/gameId/762452/france-brazil,+125,+187,+250
+478,France,2025-03-20,Croatia,away,0,2,723709,https://www.espn.com/soccer/match/_/gameId/723709/france-croatia,+900,-370,+425
+478,France,2025-06-05,Spain,away,4,5,723736,https://www.espn.com/soccer/match/_/gameId/723736/france-spain,,,
+478,France,2024-11-17,Italy,away,3,1,699019,https://www.espn.com/soccer/match/_/gameId/699019/france-italy,,,
+478,France,2025-11-16,Azerbaijan,away,3,1,724901,https://www.espn.com/soccer/match/_/gameId/724901/france-azerbaijan,-714,+2000,+725
+478,France,2026-03-29,Colombia,away,3,1,762453,https://www.espn.com/soccer/match/_/gameId/762453/france-colombia,-105,+280,+250
+478,France,2025-03-23,Croatia,home,2,0,723710,https://www.espn.com/soccer/match/_/gameId/723710/croatia-france,,,
+478,France,2024-06-09,Canada,home,0,0,701986,https://www.espn.com/soccer/match/_/gameId/701986/canada-france,-588,+1200,+650
+478,France,2025-06-08,Germany,away,2,0,723737,https://www.espn.com/soccer/match/_/gameId/723737/france-germany,+163,+145,+280
+478,France,2024-09-09,Belgium,home,2,0,698918,https://www.espn.com/soccer/match/_/gameId/698918/belgium-france,,,
+478,France,2024-10-14,Belgium,away,2,1,698974,https://www.espn.com/soccer/match/_/gameId/698974/france-belgium,,,
+478,France,2025-10-13,Iceland,away,2,2,724866,https://www.espn.com/soccer/match/_/gameId/724866/france-iceland,,,
+478,France,2024-06-17,Austria,away,1,0,690580,https://www.espn.com/soccer/match/_/gameId/690580/france-austria,-182,+475,+320
+478,France,2024-07-01,Belgium,home,1,0,703935,https://www.espn.com/soccer/match/_/gameId/703935/belgium-france,,,
+478,France,2024-09-06,Italy,home,1,3,698898,https://www.espn.com/soccer/match/_/gameId/698898/italy-france,,,
+478,France,2025-09-05,Ukraine,away,2,0,724984,https://www.espn.com/soccer/match/_/gameId/724984/france-ukraine,,,
+478,France,2025-10-10,Azerbaijan,home,3,0,724842,https://www.espn.com/soccer/match/_/gameId/724842/azerbaijan-france,,,
+478,France,2024-06-21,Netherlands,away,0,0,690592,https://www.espn.com/soccer/match/_/gameId/690592/france-netherlands,+150,+200,+210
+478,France,2024-07-05,Portugal,away,0,0,703940,https://www.espn.com/soccer/match/_/gameId/703940/france-portugal,+140,+240,+190
+481,Germany,2025-06-04,Portugal,home,1,2,723735,https://www.espn.com/soccer/match/_/gameId/723735/portugal-germany,-111,+280,+275
+481,Germany,2024-06-19,Hungary,home,2,0,690587,https://www.espn.com/soccer/match/_/gameId/690587/hungary-germany,+450,-175,+333
+481,Germany,2024-09-10,Netherlands,away,2,2,698930,https://www.espn.com/soccer/match/_/gameId/698930/germany-netherlands,,,
+481,Germany,2024-11-19,Hungary,away,1,1,699044,https://www.espn.com/soccer/match/_/gameId/699044/germany-hungary,,,
+481,Germany,2025-09-04,Slovakia,away,0,2,724977,https://www.espn.com/soccer/match/_/gameId/724977/germany-slovakia,+800,-345,+500
+481,Germany,2025-03-20,Italy,away,2,1,723713,https://www.espn.com/soccer/match/_/gameId/723713/germany-italy,+290,-110,+260
+481,Germany,2025-09-07,Northern Ireland,home,3,1,725001,https://www.espn.com/soccer/match/_/gameId/725001/northern-ireland-germany,+625,-256,+400
+481,Germany,2026-05-31,Finland,home,4,0,758381,https://www.espn.com/soccer/match/_/gameId/758381/finland-germany,-909,+1400,+800
+481,Germany,2025-03-23,Italy,home,3,3,723714,https://www.espn.com/soccer/match/_/gameId/723714/italy-germany,,,
+481,Germany,2025-06-08,France,home,0,2,723737,https://www.espn.com/soccer/match/_/gameId/723737/france-germany,+145,+163,+280
+481,Germany,2024-06-23,Switzerland,away,1,1,690598,https://www.espn.com/soccer/match/_/gameId/690598/germany-switzerland,+115,+210,+250
+481,Germany,2024-09-07,Hungary,home,5,0,698906,https://www.espn.com/soccer/match/_/gameId/698906/hungary-germany,,,
+481,Germany,2024-11-16,Bosnia-Herzegovina,home,7,0,699011,https://www.espn.com/soccer/match/_/gameId/699011/bosnia-herzegovina-germany,-1667,+2800,+1100
+481,Germany,2024-06-29,Denmark,home,2,0,703932,https://www.espn.com/soccer/match/_/gameId/703932/denmark-germany,-161,+475,+280
+481,Germany,2024-10-14,Netherlands,home,1,0,698971,https://www.espn.com/soccer/match/_/gameId/698971/netherlands-germany,,,
+481,Germany,2025-10-13,Northern Ireland,away,1,0,724861,https://www.espn.com/soccer/match/_/gameId/724861/germany-northern-ireland,,,
+481,Germany,2025-11-17,Slovakia,home,6,0,724911,https://www.espn.com/soccer/match/_/gameId/724911/slovakia-germany,,,
+481,Germany,2026-03-30,Ghana,home,2,1,762773,https://www.espn.com/soccer/match/_/gameId/762773/ghana-germany,-625,+1150,+750
+481,Germany,2024-10-11,Bosnia-Herzegovina,away,2,1,698946,https://www.espn.com/soccer/match/_/gameId/698946/germany-bosnia-herzegovina,,,
+481,Germany,2025-10-10,Luxembourg,home,4,0,724839,https://www.espn.com/soccer/match/_/gameId/724839/luxembourg-germany,+1350,-833,+750
+481,Germany,2025-11-14,Luxembourg,away,2,0,724885,https://www.espn.com/soccer/match/_/gameId/724885/germany-luxembourg,,,
+481,Germany,2026-03-27,Switzerland,away,4,3,762550,https://www.espn.com/soccer/match/_/gameId/762550/germany-switzerland,,,
+481,Germany,2024-06-07,Greece,home,2,1,700918,https://www.espn.com/soccer/match/_/gameId/700918/greece-germany,,,
+481,Germany,2024-06-14,Scotland,home,5,1,690573,https://www.espn.com/soccer/match/_/gameId/690573/scotland-germany,-345,+900,+475
+481,Germany,2024-07-05,Spain,away,1,2,703939,https://www.espn.com/soccer/match/_/gameId/703939/germany-spain,+180,+170,+210
+4469,Ghana,2025-10-08,Central African Republic,away,5,0,687369,https://www.espn.com/soccer/match/_/gameId/687369/ghana-central-african-republic,,,
+4469,Ghana,2025-05-28,Nigeria,home,1,2,735406,https://www.espn.com/soccer/match/_/gameId/735406/nigeria-ghana,-105,+250,+240
+4469,Ghana,2024-10-15,Sudan,away,0,2,722063,https://www.espn.com/soccer/match/_/gameId/722063/ghana-sudan,,,
+4469,Ghana,2025-11-18,South Korea,away,0,1,760052,https://www.espn.com/soccer/match/_/gameId/760052/ghana-south-korea,+350,-152,+290
+4469,Ghana,2024-03-26,Uganda,away,2,2,700484,https://www.espn.com/soccer/match/_/gameId/700484/ghana-uganda,,,
+4469,Ghana,2024-09-05,Angola,home,0,1,715403,https://www.espn.com/soccer/match/_/gameId/715403/angola-ghana,,,
+4469,Ghana,2025-09-04,Chad,away,1,1,687368,https://www.espn.com/soccer/match/_/gameId/687368/ghana-chad,-556,+1400,+550
+4469,Ghana,2024-10-10,Sudan,home,0,0,722039,https://www.espn.com/soccer/match/_/gameId/722039/sudan-ghana,,,
+4469,Ghana,2024-06-06,Mali,away,2,1,687355,https://www.espn.com/soccer/match/_/gameId/687355/ghana-mali,+270,+110,+200
+4469,Ghana,2025-10-12,Comoros,home,1,0,687370,https://www.espn.com/soccer/match/_/gameId/687370/comoros-ghana,-303,+1000,+375
+4469,Ghana,2024-12-22,Nigeria,home,0,0,722309,https://www.espn.com/soccer/match/_/gameId/722309/nigeria-ghana,,,
+4469,Ghana,2025-05-31,Trinidad and Tobago,away,4,0,736093,https://www.espn.com/soccer/match/_/gameId/736093/ghana-trinidad-and-tobago,+775,-333,+450
+4469,Ghana,2024-12-28,Nigeria,away,1,3,722310,https://www.espn.com/soccer/match/_/gameId/722310/ghana-nigeria,,,
+4469,Ghana,2024-09-09,Niger,away,1,1,715428,https://www.espn.com/soccer/match/_/gameId/715428/ghana-niger,,,
+4469,Ghana,2025-09-08,Mali,home,1,0,687360,https://www.espn.com/soccer/match/_/gameId/687360/mali-ghana,,,
+4469,Ghana,2024-11-18,Niger,home,1,2,722125,https://www.espn.com/soccer/match/_/gameId/722125/niger-ghana,,,
+4469,Ghana,2026-03-30,Germany,away,1,2,762773,https://www.espn.com/soccer/match/_/gameId/762773/ghana-germany,+1150,-625,+750
+4469,Ghana,2025-03-24,Madagascar,away,3,0,687367,https://www.espn.com/soccer/match/_/gameId/687367/ghana-madagascar,-110,+333,+225
+4469,Ghana,2024-06-10,Central African Republic,home,4,3,687365,https://www.espn.com/soccer/match/_/gameId/687365/central-african-republic-ghana,,,
+4469,Ghana,2024-11-15,Angola,away,1,1,722086,https://www.espn.com/soccer/match/_/gameId/722086/ghana-angola,,,
+4469,Ghana,2025-11-14,Japan,away,0,2,760050,https://www.espn.com/soccer/match/_/gameId/760050/ghana-japan,+500,-217,+360
+4469,Ghana,2026-05-23,Mexico,away,0,2,401861774,https://www.espn.com/soccer/match/_/gameId/401861774/ghana-mexico,+825,-323,+425
+4469,Ghana,2026-03-27,Austria,away,1,5,401856593,https://www.espn.com/soccer/match/_/gameId/401856593/ghana-austria,+475,-189,+320
+4469,Ghana,2024-03-22,Nigeria,away,1,2,700491,https://www.espn.com/soccer/match/_/gameId/700491/ghana-nigeria,,,
+4469,Ghana,2025-03-21,Chad,home,5,0,687366,https://www.espn.com/soccer/match/_/gameId/687366/chad-ghana,,,
+2654,Haiti,2025-09-10,Costa Rica,away,3,3,754246,https://www.espn.com/soccer/match/_/gameId/754246/haiti-costa-rica,-125,+320,+260
+2654,Haiti,2025-11-19,Nicaragua,home,2,0,754268,https://www.espn.com/soccer/match/_/gameId/754268/nicaragua-haiti,-455,+1100,+550
+2654,Haiti,2026-03-31,Iceland,home,1,1,401856641,https://www.espn.com/soccer/match/_/gameId/401856641/iceland-haiti,+188,+115,+260
+2654,Haiti,2025-06-10,Curaçao,home,1,5,698198,https://www.espn.com/soccer/match/_/gameId/698198/curacao-haiti,+105,+240,+260
+2654,Haiti,2025-10-10,Nicaragua,away,3,0,754248,https://www.espn.com/soccer/match/_/gameId/754248/haiti-nicaragua,,,
+2654,Haiti,2023-10-12,Suriname,away,1,1,680549,https://www.espn.com/soccer/match/_/gameId/680549/haiti-suriname,+220,+120,+200
+2654,Haiti,2025-11-14,Costa Rica,home,1,0,754262,https://www.espn.com/soccer/match/_/gameId/754262/costa-rica-haiti,,,
+2654,Haiti,2024-06-06,St. Lucia,home,2,1,698145,https://www.espn.com/soccer/match/_/gameId/698145/st-lucia-haiti,,,
+2654,Haiti,2025-06-19,Trinidad and Tobago,away,1,1,735328,https://www.espn.com/soccer/match/_/gameId/735328/haiti-trinidad-and-tobago,-417,+825,+575
+2654,Haiti,2023-10-16,Jamaica,home,2,3,680553,https://www.espn.com/soccer/match/_/gameId/680553/jamaica-haiti,+280,-105,+240
+2654,Haiti,2024-06-09,Barbados,away,3,1,698157,https://www.espn.com/soccer/match/_/gameId/698157/haiti-barbados,-2500,+4000,+1200
+2654,Haiti,2025-06-22,United States,away,1,2,735335,https://www.espn.com/soccer/match/_/gameId/735335/haiti-united-states,+475,-200,+340
+2654,Haiti,2025-06-16,Saudi Arabia,home,0,1,735320,https://www.espn.com/soccer/match/_/gameId/735320/saudi-arabia-haiti,+320,-128,+260
+2654,Haiti,2026-03-29,Tunisia,home,0,1,401856640,https://www.espn.com/soccer/match/_/gameId/401856640/tunisia-haiti,+260,+105,+225
+2654,Haiti,2024-03-23,French Guiana,away,1,1,701238,https://www.espn.com/soccer/match/_/gameId/701238/haiti-french-guiana,,,
+2654,Haiti,2025-03-22,Azerbaijan,away,3,0,733984,https://www.espn.com/soccer/match/_/gameId/733984/haiti-azerbaijan,+200,+110,+220
+2654,Haiti,2025-06-07,Aruba,away,5,0,698182,https://www.espn.com/soccer/match/_/gameId/698182/haiti-aruba,-1111,+2000,+1100
+2654,Haiti,2024-09-09,Sint Maarten,home,6,0,702758,https://www.espn.com/soccer/match/_/gameId/702758/sint-maarten-haiti,+3300,-2000,+1400
+2654,Haiti,2024-10-15,Aruba,home,5,3,702796,https://www.espn.com/soccer/match/_/gameId/702796/aruba-haiti,,,
+2654,Haiti,2025-10-14,Honduras,away,0,3,754255,https://www.espn.com/soccer/match/_/gameId/754255/haiti-honduras,+270,+110,+200
+2654,Haiti,2024-11-19,Puerto Rico,home,3,0,702817,https://www.espn.com/soccer/match/_/gameId/702817/puerto-rico-haiti,-455,+850,+650
+2654,Haiti,2024-09-07,Puerto Rico,away,4,1,702740,https://www.espn.com/soccer/match/_/gameId/702740/haiti-puerto-rico,,,
+2654,Haiti,2025-09-06,Honduras,home,0,0,754239,https://www.espn.com/soccer/match/_/gameId/754239/honduras-haiti,,,
+2654,Haiti,2024-10-12,Aruba,away,3,1,702783,https://www.espn.com/soccer/match/_/gameId/702783/haiti-aruba,,,
+2654,Haiti,2024-11-15,Sint Maarten,away,8,0,702808,https://www.espn.com/soccer/match/_/gameId/702808/haiti-sint-maarten,,,
+469,Iran,2024-01-31,Syria,home,1,1,698049,https://www.espn.com/soccer/match/_/gameId/698049/syria-iran,,,
+469,Iran,2024-02-07,Qatar,home,2,3,698427,https://www.espn.com/soccer/match/_/gameId/698427/qatar-iran,+170,+155,+220
+469,Iran,2024-09-10,United Arab Emirates,away,1,0,710446,https://www.espn.com/soccer/match/_/gameId/710446/iran-united-arab-emirates,+500,-196,+320
+469,Iran,2024-10-15,Qatar,home,4,1,710467,https://www.espn.com/soccer/match/_/gameId/710467/qatar-iran,,,
+469,Iran,2025-10-14,Tanzania,home,2,0,759665,https://www.espn.com/soccer/match/_/gameId/759665/tanzania-iran,-323,+900,+400
+469,Iran,2024-11-19,Kyrgyz Republic,away,3,2,710481,https://www.espn.com/soccer/match/_/gameId/710481/iran-kyrgyz-republic,,,
+469,Iran,2025-11-18,Uzbekistan,away,0,0,761122,https://www.espn.com/soccer/match/_/gameId/761122/iran-uzbekistan,+130,+190,+200
+469,Iran,2026-03-31,Costa Rica,home,5,0,401861778,https://www.espn.com/soccer/match/_/gameId/401861778/costa-rica-iran,+250,+115,+220
+469,Iran,2024-03-26,Turkmenistan,away,1,0,687434,https://www.espn.com/soccer/match/_/gameId/687434/iran-turkmenistan,-1000,+2800,+850
+469,Iran,2025-03-25,Uzbekistan,home,2,2,710499,https://www.espn.com/soccer/match/_/gameId/710499/uzbekistan-iran,,,
+469,Iran,2024-06-11,Uzbekistan,home,0,0,687436,https://www.espn.com/soccer/match/_/gameId/687436/uzbekistan-iran,,,
+469,Iran,2025-06-10,North Korea,home,3,0,710515,https://www.espn.com/soccer/match/_/gameId/710515/north-korea-iran,-667,+1600,+675
+469,Iran,2024-01-23,United Arab Emirates,home,2,1,668947,https://www.espn.com/soccer/match/_/gameId/668947/united-arab-emirates-iran,,,
+469,Iran,2024-09-05,Kyrgyz Republic,home,1,0,710438,https://www.espn.com/soccer/match/_/gameId/710438/kyrgyz-republic-iran,,,
+469,Iran,2024-10-10,Uzbekistan,away,0,0,710454,https://www.espn.com/soccer/match/_/gameId/710454/iran-uzbekistan,,,
+469,Iran,2024-11-14,North Korea,away,3,2,710469,https://www.espn.com/soccer/match/_/gameId/710469/iran-north-korea,,,
+469,Iran,2025-11-13,Cape Verde,home,0,0,759987,https://www.espn.com/soccer/match/_/gameId/759987/cape-verde-iran,-105,+275,+200
+469,Iran,2024-03-21,Turkmenistan,home,5,0,687433,https://www.espn.com/soccer/match/_/gameId/687433/turkmenistan-iran,,,
+469,Iran,2025-03-20,United Arab Emirates,home,2,0,710489,https://www.espn.com/soccer/match/_/gameId/710489/united-arab-emirates-iran,,,
+469,Iran,2024-06-06,Hong Kong,away,4,2,687435,https://www.espn.com/soccer/match/_/gameId/687435/iran-hong-kong,-1000,+2000,+900
+469,Iran,2025-06-05,Qatar,away,0,1,710510,https://www.espn.com/soccer/match/_/gameId/710510/iran-qatar,,,
+469,Iran,2024-02-03,Japan,home,2,1,698279,https://www.espn.com/soccer/match/_/gameId/698279/japan-iran,+333,-110,+240
+469,Iran,2025-10-10,Russia,away,1,2,735086,https://www.espn.com/soccer/match/_/gameId/735086/iran-russia,,,
+469,Iran,2026-05-29,Gambia,home,0,0,401872547,https://www.espn.com/soccer/match/_/gameId/401872547/gambia-iran,-217,+575,+320
+469,Iran,2026-03-27,Nigeria,home,1,2,401861777,https://www.espn.com/soccer/match/_/gameId/401861777/nigeria-iran,+220,+115,+200
+4375,Iraq,2024-01-24,Vietnam,home,3,2,668949,https://www.espn.com/soccer/match/_/gameId/668949/vietnam-iraq,-263,+550,+425
+4375,Iraq,2024-12-25,Bahrain,away,0,2,727398,https://www.espn.com/soccer/match/_/gameId/727398/iraq-bahrain,,,
+4375,Iraq,2024-09-10,Kuwait,away,0,0,710442,https://www.espn.com/soccer/match/_/gameId/710442/iraq-kuwait,,,
+4375,Iraq,2024-10-15,South Korea,away,2,3,710461,https://www.espn.com/soccer/match/_/gameId/710461/iraq-south-korea,+110,+260,+210
+4375,Iraq,2025-10-14,Saudi Arabia,away,0,0,753696,https://www.espn.com/soccer/match/_/gameId/753696/iraq-saudi-arabia,,,
+4375,Iraq,2024-11-19,Oman,away,1,0,710480,https://www.espn.com/soccer/match/_/gameId/710480/iraq-oman,,,
+4375,Iraq,2025-11-18,United Arab Emirates,home,2,1,760046,https://www.espn.com/soccer/match/_/gameId/760046/united-arab-emirates-iraq,+140,+260,+175
+4375,Iraq,2026-04-01,Bolivia,home,2,1,761390,https://www.espn.com/soccer/match/_/gameId/761390/bolivia-iraq,+200,+130,+175
+4375,Iraq,2024-03-26,Philippines,away,5,0,687446,https://www.espn.com/soccer/match/_/gameId/687446/iraq-philippines,-333,+1000,+400
+4375,Iraq,2025-03-25,Palestine,away,1,2,710496,https://www.espn.com/soccer/match/_/gameId/710496/iraq-palestine,+110,+290,+195
+4375,Iraq,2024-06-11,Vietnam,home,3,1,687448,https://www.espn.com/soccer/match/_/gameId/687448/vietnam-iraq,,,
+4375,Iraq,2025-06-10,Jordan,away,1,0,710517,https://www.espn.com/soccer/match/_/gameId/710517/iraq-jordan,,,
+4375,Iraq,2024-09-05,Oman,home,1,0,710439,https://www.espn.com/soccer/match/_/gameId/710439/oman-iraq,,,
+4375,Iraq,2024-10-10,Palestine,home,1,0,710458,https://www.espn.com/soccer/match/_/gameId/710458/palestine-iraq,,,
+4375,Iraq,2024-11-14,Jordan,home,0,0,710476,https://www.espn.com/soccer/match/_/gameId/710476/jordan-iraq,,,
+4375,Iraq,2025-11-13,United Arab Emirates,away,1,1,760045,https://www.espn.com/soccer/match/_/gameId/760045/iraq-united-arab-emirates,,,
+4375,Iraq,2024-03-21,Philippines,home,1,0,687445,https://www.espn.com/soccer/match/_/gameId/687445/philippines-iraq,,,
+4375,Iraq,2025-03-20,Kuwait,home,2,2,710490,https://www.espn.com/soccer/match/_/gameId/710490/kuwait-iraq,,,
+4375,Iraq,2024-06-06,Indonesia,away,2,0,687447,https://www.espn.com/soccer/match/_/gameId/687447/iraq-indonesia,+310,-125,+270
+4375,Iraq,2025-06-05,South Korea,home,0,2,710507,https://www.espn.com/soccer/match/_/gameId/710507/south-korea-iraq,,,
+4375,Iraq,2024-12-22,Yemen,home,1,0,727393,https://www.espn.com/soccer/match/_/gameId/727393/yemen-iraq,,,
+4375,Iraq,2025-10-11,Indonesia,home,1,0,753693,https://www.espn.com/soccer/match/_/gameId/753693/indonesia-iraq,,,
+4375,Iraq,2024-12-28,Saudi Arabia,home,1,3,727401,https://www.espn.com/soccer/match/_/gameId/727401/saudi-arabia-iraq,,,
+4375,Iraq,2024-01-29,Jordan,home,2,3,698044,https://www.espn.com/soccer/match/_/gameId/698044/jordan-iraq,,,
+4375,Iraq,2026-05-29,Andorra,home,1,0,401871530,https://www.espn.com/soccer/match/_/gameId/401871530/andorra-iraq,-217,+675,+300
+4789,Ivory Coast,2025-12-31,Gabon,away,3,2,732167,https://www.espn.com/soccer/match/_/gameId/732167/ivory-coast-gabon,-161,+475,+280
+4789,Ivory Coast,2025-12-24,Mozambique,home,1,0,732144,https://www.espn.com/soccer/match/_/gameId/732144/mozambique-ivory-coast,-333,+1100,+400
+4789,Ivory Coast,2025-09-09,Gabon,away,0,0,687270,https://www.espn.com/soccer/match/_/gameId/687270/ivory-coast-gabon,,,
+4789,Ivory Coast,2024-09-10,Chad,away,2,0,715429,https://www.espn.com/soccer/match/_/gameId/715429/ivory-coast-chad,+2200,-1429,+900
+4789,Ivory Coast,2024-10-15,Sierra Leone,away,0,1,722080,https://www.espn.com/soccer/match/_/gameId/722080/ivory-coast-sierra-leone,,,
+4789,Ivory Coast,2025-10-14,Kenya,home,3,0,687272,https://www.espn.com/soccer/match/_/gameId/687272/kenya-ivory-coast,-714,+2000,+650
+4789,Ivory Coast,2024-11-19,Chad,home,4,0,722127,https://www.espn.com/soccer/match/_/gameId/722127/chad-ivory-coast,,,
+4789,Ivory Coast,2025-11-18,Oman,away,2,0,760409,https://www.espn.com/soccer/match/_/gameId/760409/ivory-coast-oman,-161,+450,+260
+4789,Ivory Coast,2026-03-31,Scotland,home,1,0,401859485,https://www.espn.com/soccer/match/_/gameId/401859485/scotland-ivory-coast,+200,+125,+230
+4789,Ivory Coast,2025-06-11,Canada,away,0,0,734941,https://www.espn.com/soccer/match/_/gameId/734941/ivory-coast-canada,+230,+110,+230
+4789,Ivory Coast,2026-01-06,Burkina Faso,home,3,0,732176,https://www.espn.com/soccer/match/_/gameId/732176/burkina-faso-ivory-coast,-102,+340,+195
+4789,Ivory Coast,2025-12-28,Cameroon,home,1,1,732155,https://www.espn.com/soccer/match/_/gameId/732155/cameroon-ivory-coast,+100,+400,+180
+4789,Ivory Coast,2024-12-22,Burkina Faso,home,2,0,722313,https://www.espn.com/soccer/match/_/gameId/722313/burkina-faso-ivory-coast,,,
+4789,Ivory Coast,2024-12-15,Guinea,home,4,1,725028,https://www.espn.com/soccer/match/_/gameId/725028/guinea-ivory-coast,-200,+575,+300
+4789,Ivory Coast,2026-03-28,South Korea,away,4,0,401860779,https://www.espn.com/soccer/match/_/gameId/401860779/ivory-coast-south-korea,+125,+190,+225
+4789,Ivory Coast,2025-06-07,New Zealand,home,0,1,734939,https://www.espn.com/soccer/match/_/gameId/734939/new-zealand-ivory-coast,+310,-114,+230
+4789,Ivory Coast,2026-01-10,Egypt,away,2,3,732179,https://www.espn.com/soccer/match/_/gameId/732179/ivory-coast-egypt,+135,+260,+175
+4789,Ivory Coast,2024-12-28,Burkina Faso,away,0,2,722314,https://www.espn.com/soccer/match/_/gameId/722314/ivory-coast-burkina-faso,,,
+4789,Ivory Coast,2025-03-24,Gambia,home,1,0,687268,https://www.espn.com/soccer/match/_/gameId/687268/gambia-ivory-coast,,,
+4789,Ivory Coast,2025-09-05,Burundi,home,1,0,687269,https://www.espn.com/soccer/match/_/gameId/687269/burundi-ivory-coast,-455,+1800,+450
+4789,Ivory Coast,2024-10-11,Sierra Leone,home,4,1,722054,https://www.espn.com/soccer/match/_/gameId/722054/sierra-leone-ivory-coast,,,
+4789,Ivory Coast,2025-10-10,Seychelles,away,7,0,687271,https://www.espn.com/soccer/match/_/gameId/687271/ivory-coast-seychelles,-10000,+5000,+2800
+4789,Ivory Coast,2024-11-15,Zambia,away,0,1,722089,https://www.espn.com/soccer/match/_/gameId/722089/ivory-coast-zambia,,,
+4789,Ivory Coast,2025-11-14,Saudi Arabia,away,0,1,760376,https://www.espn.com/soccer/match/_/gameId/760376/ivory-coast-saudi-arabia,-110,+290,+225
+4789,Ivory Coast,2025-03-21,Burundi,away,1,0,687267,https://www.espn.com/soccer/match/_/gameId/687267/ivory-coast-burundi,,,
+627,Japan,2024-01-31,Bahrain,away,3,1,698048,https://www.espn.com/soccer/match/_/gameId/698048/japan-bahrain,+1400,-714,+800
+627,Japan,2025-09-09,United States,away,0,2,735766,https://www.espn.com/soccer/match/_/gameId/735766/japan-united-states,+120,+180,+240
+627,Japan,2024-09-10,Bahrain,away,5,0,710447,https://www.espn.com/soccer/match/_/gameId/710447/japan-bahrain,,,
+627,Japan,2024-10-15,Australia,home,1,1,710466,https://www.espn.com/soccer/match/_/gameId/710466/australia-japan,+160,+175,+200
+627,Japan,2025-10-14,Brazil,home,3,2,757632,https://www.espn.com/soccer/match/_/gameId/757632/brazil-japan,+333,-159,+340
+627,Japan,2024-11-19,China,away,3,1,710485,https://www.espn.com/soccer/match/_/gameId/710485/japan-china,,,
+627,Japan,2025-11-18,Bolivia,home,3,0,758721,https://www.espn.com/soccer/match/_/gameId/758721/bolivia-japan,-769,+1200,+650
+627,Japan,2026-03-31,England,away,1,0,762554,https://www.espn.com/soccer/match/_/gameId/762554/japan-england,+425,-172,+300
+627,Japan,2024-03-26,North Korea,away,3,0,687398,https://www.espn.com/soccer/match/_/gameId/687398/japan-north-korea,,,
+627,Japan,2025-03-25,Saudi Arabia,home,0,0,710501,https://www.espn.com/soccer/match/_/gameId/710501/saudi-arabia-japan,-204,+550,+320
+627,Japan,2024-06-11,Syria,home,5,0,687400,https://www.espn.com/soccer/match/_/gameId/687400/syria-japan,-588,+1200,+700
+627,Japan,2025-06-10,Indonesia,home,6,0,710516,https://www.espn.com/soccer/match/_/gameId/710516/indonesia-japan,,,
+627,Japan,2024-09-05,China,home,7,0,710440,https://www.espn.com/soccer/match/_/gameId/710440/china-japan,,,
+627,Japan,2024-10-10,Saudi Arabia,away,2,0,710452,https://www.espn.com/soccer/match/_/gameId/710452/japan-saudi-arabia,,,
+627,Japan,2024-03-21,North Korea,home,1,0,687397,https://www.espn.com/soccer/match/_/gameId/687397/north-korea-japan,,,
+627,Japan,2025-03-20,Bahrain,home,2,0,710487,https://www.espn.com/soccer/match/_/gameId/710487/bahrain-japan,,,
+627,Japan,2024-06-06,Myanmar,away,5,0,687399,https://www.espn.com/soccer/match/_/gameId/687399/japan-myanmar,-10000,+6600,+2500
+627,Japan,2025-06-05,Australia,away,0,1,710513,https://www.espn.com/soccer/match/_/gameId/710513/japan-australia,,,
+627,Japan,2026-05-31,Iceland,home,1,0,401867618,https://www.espn.com/soccer/match/_/gameId/401867618/iceland-japan,-526,+1250,+600
+627,Japan,2025-09-07,Mexico,away,0,0,735773,https://www.espn.com/soccer/match/_/gameId/735773/japan-mexico,+155,+155,+230
+627,Japan,2026-03-28,Scotland,away,1,0,401856618,https://www.espn.com/soccer/match/_/gameId/401856618/japan-scotland,+130,+200,+220
+627,Japan,2024-02-03,Iran,away,1,2,698279,https://www.espn.com/soccer/match/_/gameId/698279/japan-iran,-110,+333,+240
+627,Japan,2025-10-10,Paraguay,home,2,2,739959,https://www.espn.com/soccer/match/_/gameId/739959/paraguay-japan,-159,+425,+260
+627,Japan,2024-11-15,Indonesia,away,4,0,710477,https://www.espn.com/soccer/match/_/gameId/710477/japan-indonesia,,,
+627,Japan,2025-11-14,Ghana,home,2,0,760050,https://www.espn.com/soccer/match/_/gameId/760050/ghana-japan,-217,+500,+360
+2917,Jordan,2025-09-09,Dominican Republic,home,3,0,758165,https://www.espn.com/soccer/match/_/gameId/758165/dominican-republic-jordan,-120,+300,+240
+2917,Jordan,2024-09-10,Palestine,away,3,1,710443,https://www.espn.com/soccer/match/_/gameId/710443/jordan-palestine,+550,-161,+250
+2917,Jordan,2024-10-15,Oman,home,4,0,710465,https://www.espn.com/soccer/match/_/gameId/710465/oman-jordan,+225,+135,+190
+2917,Jordan,2025-10-14,Albania,away,2,4,758681,https://www.espn.com/soccer/match/_/gameId/758681/jordan-albania,+350,-118,+210
+2917,Jordan,2024-11-19,Kuwait,away,1,1,710478,https://www.espn.com/soccer/match/_/gameId/710478/jordan-kuwait,,,
+2917,Jordan,2025-11-18,Mali,home,0,0,760899,https://www.espn.com/soccer/match/_/gameId/760899/mali-jordan,+290,-102,+220
+2917,Jordan,2026-03-31,Nigeria,home,2,2,401862040,https://www.espn.com/soccer/match/_/gameId/401862040/nigeria-jordan,+425,-164,+280
+2917,Jordan,2024-03-26,Pakistan,home,7,0,687463,https://www.espn.com/soccer/match/_/gameId/687463/pakistan-jordan,-5000,+6600,+1800
+2917,Jordan,2025-03-25,South Korea,away,1,1,710502,https://www.espn.com/soccer/match/_/gameId/710502/jordan-south-korea,+550,-204,+310
+2917,Jordan,2024-06-11,Saudi Arabia,away,2,1,687460,https://www.espn.com/soccer/match/_/gameId/687460/jordan-saudi-arabia,,,
+2917,Jordan,2025-06-10,Iraq,home,0,1,710517,https://www.espn.com/soccer/match/_/gameId/710517/iraq-jordan,,,
+2917,Jordan,2024-09-05,Kuwait,home,1,1,710441,https://www.espn.com/soccer/match/_/gameId/710441/kuwait-jordan,,,
+2917,Jordan,2025-09-04,Russia,away,0,0,755849,https://www.espn.com/soccer/match/_/gameId/755849/jordan-russia,,,
+2917,Jordan,2024-10-10,South Korea,home,0,2,710459,https://www.espn.com/soccer/match/_/gameId/710459/south-korea-jordan,,,
+2917,Jordan,2024-11-14,Iraq,away,0,0,710476,https://www.espn.com/soccer/match/_/gameId/710476/jordan-iraq,,,
+2917,Jordan,2024-03-21,Pakistan,away,3,0,687462,https://www.espn.com/soccer/match/_/gameId/687462/jordan-pakistan,,,
+2917,Jordan,2025-03-20,Palestine,home,3,1,710492,https://www.espn.com/soccer/match/_/gameId/710492/palestine-jordan,,,
+2917,Jordan,2024-06-06,Tajikistan,home,3,0,687464,https://www.espn.com/soccer/match/_/gameId/687464/tajikistan-jordan,-143,+400,+275
+2917,Jordan,2025-06-05,Oman,away,3,0,710509,https://www.espn.com/soccer/match/_/gameId/710509/jordan-oman,,,
+2917,Jordan,2026-05-31,Switzerland,away,1,4,401862319,https://www.espn.com/soccer/match/_/gameId/401862319/jordan-switzerland,+1250,-526,+575
+2917,Jordan,2025-10-10,Bolivia,home,0,1,758719,https://www.espn.com/soccer/match/_/gameId/758719/bolivia-jordan,+150,+140,+230
+2917,Jordan,2025-11-14,Tunisia,away,2,3,760186,https://www.espn.com/soccer/match/_/gameId/760186/jordan-tunisia,+450,-161,+230
+2917,Jordan,2025-05-30,Saudi Arabia,away,0,2,735762,https://www.espn.com/soccer/match/_/gameId/735762/jordan-saudi-arabia,,,
+2917,Jordan,2026-03-27,Costa Rica,home,2,2,401862038,https://www.espn.com/soccer/match/_/gameId/401862038/costa-rica-jordan,+170,+135,+225
+2917,Jordan,2025-03-14,North Korea,home,0,0,734504,https://www.espn.com/soccer/match/_/gameId/734504/north-korea-jordan,,,
+203,Mexico,2025-06-19,Suriname,away,2,0,735327,https://www.espn.com/soccer/match/_/gameId/735327/mexico-suriname,-556,+1300,+625
+203,Mexico,2025-07-03,Honduras,home,1,0,735347,https://www.espn.com/soccer/match/_/gameId/735347/honduras-mexico,-250,+675,+340
+203,Mexico,2026-02-26,Iceland,home,4,0,401842389,https://www.espn.com/soccer/match/_/gameId/401842389/iceland-mexico,-370,+850,+400
+203,Mexico,2025-09-10,South Korea,home,2,2,735774,https://www.espn.com/soccer/match/_/gameId/735774/south-korea-mexico,-125,+350,+240
+203,Mexico,2025-10-15,Ecuador,home,1,1,755899,https://www.espn.com/soccer/match/_/gameId/755899/ecuador-mexico,+110,+210,+220
+203,Mexico,2024-11-20,Honduras,home,4,0,721465,https://www.espn.com/soccer/match/_/gameId/721465/honduras-mexico,,,
+203,Mexico,2025-11-19,Paraguay,home,1,2,758974,https://www.espn.com/soccer/match/_/gameId/758974/paraguay-mexico,-118,+320,+240
+203,Mexico,2026-04-01,Belgium,home,1,1,762264,https://www.espn.com/soccer/match/_/gameId/762264/belgium-mexico,+250,-105,+250
+203,Mexico,2025-06-11,Türkiye,home,1,0,734176,https://www.espn.com/soccer/match/_/gameId/734176/turkiye-mexico,+120,+188,+270
+203,Mexico,2025-03-21,Canada,away,2,0,723670,https://www.espn.com/soccer/match/_/gameId/723670/mexico-canada,+130,+195,+185
+203,Mexico,2026-01-23,Panama,away,1,0,401842387,https://www.espn.com/soccer/match/_/gameId/401842387/mexico-panama,-154,+400,+270
+203,Mexico,2025-03-24,Panama,home,2,1,723672,https://www.espn.com/soccer/match/_/gameId/723672/panama-mexico,,,
+203,Mexico,2025-06-23,Costa Rica,home,0,0,735337,https://www.espn.com/soccer/match/_/gameId/735337/costa-rica-mexico,-147,+400,+270
+203,Mexico,2025-07-06,United States,away,2,1,735348,https://www.espn.com/soccer/match/_/gameId/735348/mexico-united-states,+150,+220,+180
+203,Mexico,2026-01-25,Bolivia,away,1,0,401842388,https://www.espn.com/soccer/match/_/gameId/401842388/mexico-bolivia,-114,+320,+230
+203,Mexico,2025-09-07,Japan,home,0,0,735773,https://www.espn.com/soccer/match/_/gameId/735773/japan-mexico,+155,+155,+230
+203,Mexico,2025-10-12,Colombia,home,0,4,751638,https://www.espn.com/soccer/match/_/gameId/751638/colombia-mexico,+250,+110,+220
+203,Mexico,2025-11-16,Uruguay,home,0,0,758718,https://www.espn.com/soccer/match/_/gameId/758718/uruguay-mexico,+175,+145,+225
+203,Mexico,2026-05-31,Australia,home,1,0,401861775,https://www.espn.com/soccer/match/_/gameId/401861775/australia-mexico,-141,+380,+260
+203,Mexico,2026-03-29,Portugal,home,0,0,762263,https://www.espn.com/soccer/match/_/gameId/762263/portugal-mexico,+300,-111,+260
+203,Mexico,2025-06-07,Switzerland,home,2,4,734177,https://www.espn.com/soccer/match/_/gameId/734177/switzerland-mexico,+115,+188,+240
+203,Mexico,2025-06-29,Saudi Arabia,home,2,0,735343,https://www.espn.com/soccer/match/_/gameId/735343/saudi-arabia-mexico,-189,+525,+290
+203,Mexico,2025-06-15,Dominican Republic,home,3,2,735318,https://www.espn.com/soccer/match/_/gameId/735318/dominican-republic-mexico,-667,+1600,+700
+203,Mexico,2024-11-16,Honduras,away,0,2,721463,https://www.espn.com/soccer/match/_/gameId/721463/mexico-honduras,,,
+203,Mexico,2026-05-23,Ghana,home,2,0,401861774,https://www.espn.com/soccer/match/_/gameId/401861774/ghana-mexico,-323,+825,+425
+2869,Morocco,2026-01-14,Nigeria,away,0,0,732182,https://www.espn.com/soccer/match/_/gameId/732182/morocco-nigeria,+115,+260,+195
+2869,Morocco,2025-10-14,Congo,home,1,0,687242,https://www.espn.com/soccer/match/_/gameId/687242/congo-morocco,-2500,+4000,+1200
+2869,Morocco,2025-11-18,Uganda,home,4,0,760375,https://www.espn.com/soccer/match/_/gameId/760375/uganda-morocco,-455,+1200,+350
+2869,Morocco,2026-05-26,Burundi,home,5,0,401872678,https://www.espn.com/soccer/match/_/gameId/401872678/burundi-morocco,-526,+1300,+600
+2869,Morocco,2026-03-31,Paraguay,home,2,1,401860937,https://www.espn.com/soccer/match/_/gameId/401860937/paraguay-morocco,-111,+280,+220
+2869,Morocco,2025-08-26,Senegal,away,1,1,757609,https://www.espn.com/soccer/match/_/gameId/757609/morocco-senegal,+120,+310,+180
+2869,Morocco,2025-10-09,Bahrain,home,1,0,758972,https://www.espn.com/soccer/match/_/gameId/758972/bahrain-morocco,-909,+2500,+800
+2869,Morocco,2025-08-14,Zambia,home,3,1,748085,https://www.espn.com/soccer/match/_/gameId/748085/zambia-morocco,+1250,-476,+525
+2869,Morocco,2026-01-04,Tanzania,home,1,0,732171,https://www.espn.com/soccer/match/_/gameId/732171/tanzania-morocco,-588,+1450,+625
+2869,Morocco,2026-01-18,Senegal,away,3,0,732184,https://www.espn.com/soccer/match/_/gameId/732184/morocco-senegal,,,
+2869,Morocco,2025-12-21,Comoros,home,2,0,732133,https://www.espn.com/soccer/match/_/gameId/732133/comoros-morocco,-667,+1600,+700
+2869,Morocco,2025-08-03,Angola,home,2,0,748063,https://www.espn.com/soccer/match/_/gameId/748063/angola-morocco,-110,+280,+200
+2869,Morocco,2025-08-17,Congo DR,away,3,1,748091,https://www.espn.com/soccer/match/_/gameId/748091/morocco-congo-dr,-120,+290,+220
+2869,Morocco,2025-08-10,Kenya,away,0,1,748077,https://www.espn.com/soccer/match/_/gameId/748077/morocco-kenya,-154,+375,+260
+2869,Morocco,2025-08-30,Madagascar,home,3,2,757630,https://www.espn.com/soccer/match/_/gameId/757630/madagascar-morocco,-1000,+2000,+850
+2869,Morocco,2025-09-08,Zambia,away,2,0,687240,https://www.espn.com/soccer/match/_/gameId/687240/morocco-zambia,,,
+2869,Morocco,2025-06-09,Benin,home,1,0,733165,https://www.espn.com/soccer/match/_/gameId/733165/benin-morocco,-556,+1550,+575
+2869,Morocco,2025-12-29,Zambia,away,3,0,732160,https://www.espn.com/soccer/match/_/gameId/732160/morocco-zambia,,,
+2869,Morocco,2025-09-05,Niger,home,5,0,687239,https://www.espn.com/soccer/match/_/gameId/687239/niger-morocco,,,
+2869,Morocco,2025-11-14,Mozambique,home,1,0,760374,https://www.espn.com/soccer/match/_/gameId/760374/mozambique-morocco,-909,+2500,+800
+2869,Morocco,2026-03-27,Ecuador,home,1,1,401860936,https://www.espn.com/soccer/match/_/gameId/401860936/ecuador-morocco,+145,+190,+180
+2869,Morocco,2025-06-06,Tunisia,home,2,0,733164,https://www.espn.com/soccer/match/_/gameId/733164/tunisia-morocco,-152,+450,+250
+2869,Morocco,2026-01-09,Cameroon,away,2,0,732178,https://www.espn.com/soccer/match/_/gameId/732178/morocco-cameroon,-208,+650,+300
+2869,Morocco,2025-12-26,Mali,home,1,1,732147,https://www.espn.com/soccer/match/_/gameId/732147/mali-morocco,-204,+600,+300
+2869,Morocco,2025-08-22,Tanzania,away,1,0,757052,https://www.espn.com/soccer/match/_/gameId/757052/morocco-tanzania,,,
+449,Netherlands,2024-07-10,England,home,1,2,703944,https://www.espn.com/soccer/match/_/gameId/703944/england-netherlands,+220,+163,+180
+449,Netherlands,2024-09-10,Germany,home,2,2,698930,https://www.espn.com/soccer/match/_/gameId/698930/germany-netherlands,,,
+449,Netherlands,2024-11-19,Bosnia-Herzegovina,away,1,1,699030,https://www.espn.com/soccer/match/_/gameId/699030/netherlands-bosnia-herzegovina,-303,+700,+450
+449,Netherlands,2026-03-31,Ecuador,home,1,1,762551,https://www.espn.com/soccer/match/_/gameId/762551/ecuador-netherlands,-175,+500,+280
+449,Netherlands,2026-06-07,Austria,home,2,3,690603,https://www.espn.com/soccer/match/_/gameId/690603/austria-netherlands,-133,+400,+260
+449,Netherlands,2025-06-10,Malta,home,8,0,724970,https://www.espn.com/soccer/match/_/gameId/724970/malta-netherlands,+4000,-1667,+1300
+449,Netherlands,2024-07-02,Romania,away,3,0,703937,https://www.espn.com/soccer/match/_/gameId/703937/netherlands-romania,-238,+700,+350
+449,Netherlands,2025-09-04,Poland,home,1,1,724978,https://www.espn.com/soccer/match/_/gameId/724978/poland-netherlands,+340,-125,+260
+449,Netherlands,2025-10-09,Malta,away,4,0,724833,https://www.espn.com/soccer/match/_/gameId/724833/netherlands-malta,,,
+449,Netherlands,2025-03-20,Spain,home,2,2,723707,https://www.espn.com/soccer/match/_/gameId/723707/spain-netherlands,-149,+400,+300
+449,Netherlands,2025-09-07,Lithuania,away,3,2,724995,https://www.espn.com/soccer/match/_/gameId/724995/netherlands-lithuania,+3000,-1667,+1600
+449,Netherlands,2025-10-12,Finland,home,4,0,724854,https://www.espn.com/soccer/match/_/gameId/724854/finland-netherlands,-769,+1700,+850
+449,Netherlands,2025-03-23,Spain,away,3,3,723708,https://www.espn.com/soccer/match/_/gameId/723708/netherlands-spain,,,
+449,Netherlands,2024-06-16,Poland,away,2,1,690579,https://www.espn.com/soccer/match/_/gameId/690579/netherlands-poland,,,
+449,Netherlands,2024-09-07,Bosnia-Herzegovina,home,5,2,698904,https://www.espn.com/soccer/match/_/gameId/698904/bosnia-herzegovina-netherlands,,,
+449,Netherlands,2024-11-16,Hungary,home,4,0,699010,https://www.espn.com/soccer/match/_/gameId/699010/hungary-netherlands,-263,+800,+375
+449,Netherlands,2025-06-07,Finland,away,2,0,724956,https://www.espn.com/soccer/match/_/gameId/724956/netherlands-finland,,,
+449,Netherlands,2024-07-06,Türkiye,home,2,1,703942,https://www.espn.com/soccer/match/_/gameId/703942/turkiye-netherlands,-175,+500,+300
+449,Netherlands,2024-10-14,Germany,away,0,1,698971,https://www.espn.com/soccer/match/_/gameId/698971/netherlands-germany,,,
+449,Netherlands,2025-11-17,Lithuania,home,4,0,724912,https://www.espn.com/soccer/match/_/gameId/724912/lithuania-netherlands,,,
+449,Netherlands,2024-06-10,Iceland,home,4,0,700291,https://www.espn.com/soccer/match/_/gameId/700291/iceland-netherlands,-588,+1400,+550
+449,Netherlands,2024-10-11,Hungary,away,1,1,698947,https://www.espn.com/soccer/match/_/gameId/698947/netherlands-hungary,,,
+449,Netherlands,2025-11-14,Poland,away,1,1,724886,https://www.espn.com/soccer/match/_/gameId/724886/netherlands-poland,,,
+449,Netherlands,2026-03-27,Norway,home,2,1,762549,https://www.espn.com/soccer/match/_/gameId/762549/norway-netherlands,-139,+320,+290
+449,Netherlands,2024-06-21,France,home,0,0,690592,https://www.espn.com/soccer/match/_/gameId/690592/france-netherlands,+200,+150,+210
+2666,New Zealand,2025-09-09,Australia,home,1,3,743813,https://www.espn.com/soccer/match/_/gameId/743813/australia-new-zealand,+210,+130,+220
+2666,New Zealand,2024-09-10,United States,away,1,1,707616,https://www.espn.com/soccer/match/_/gameId/707616/new-zealand-united-states,+650,-345,+400
+2666,New Zealand,2023-10-17,Australia,away,0,2,681654,https://www.espn.com/soccer/match/_/gameId/681654/new-zealand-australia,,,
+2666,New Zealand,2025-10-14,Norway,away,1,1,733153,https://www.espn.com/soccer/match/_/gameId/733153/new-zealand-norway,+700,-294,+400
+2666,New Zealand,2023-11-21,Republic of Ireland,away,1,1,686758,https://www.espn.com/soccer/match/_/gameId/686758/new-zealand-republic-of-ireland,,,
+2666,New Zealand,2025-11-19,Ecuador,away,0,2,758717,https://www.espn.com/soccer/match/_/gameId/758717/new-zealand-ecuador,+775,-278,+360
+2666,New Zealand,2024-03-26,Tunisia,home,0,0,701262,https://www.espn.com/soccer/match/_/gameId/701262/tunisia-new-zealand,+425,-149,+260
+2666,New Zealand,2025-06-10,Ukraine,home,1,2,734940,https://www.espn.com/soccer/match/_/gameId/734940/ukraine-new-zealand,+425,-147,+250
+2666,New Zealand,2025-10-09,Poland,away,0,1,756251,https://www.espn.com/soccer/match/_/gameId/756251/new-zealand-poland,+600,-244,+360
+2666,New Zealand,2024-10-11,Tahiti,home,3,0,720817,https://www.espn.com/soccer/match/_/gameId/720817/tahiti-new-zealand,-5000,+6600,+1800
+2666,New Zealand,2024-09-08,Mexico,away,0,3,701259,https://www.espn.com/soccer/match/_/gameId/701259/new-zealand-mexico,+700,-278,+400
+2666,New Zealand,2025-11-16,Colombia,away,1,2,758715,https://www.espn.com/soccer/match/_/gameId/758715/new-zealand-colombia,+1450,-588,+625
+2666,New Zealand,2025-06-07,Ivory Coast,away,1,0,734939,https://www.espn.com/soccer/match/_/gameId/734939/new-zealand-ivory-coast,-114,+310,+230
+2666,New Zealand,2024-10-14,Malaysia,home,4,0,722283,https://www.espn.com/soccer/match/_/gameId/722283/malaysia-new-zealand,-222,+475,+320
+2666,New Zealand,2024-11-18,Samoa,away,8,0,720826,https://www.espn.com/soccer/match/_/gameId/720826/new-zealand-samoa,+6600,,+6600
+2666,New Zealand,2026-03-30,Chile,home,4,1,401856420,https://www.espn.com/soccer/match/_/gameId/401856420/chile-new-zealand,+525,-182,+280
+2666,New Zealand,2025-03-24,New Caledonia,away,3,0,734945,https://www.espn.com/soccer/match/_/gameId/734945/new-zealand-new-caledonia,-5000,+4000,+1800
+2666,New Zealand,2025-09-05,Australia,away,0,1,743812,https://www.espn.com/soccer/match/_/gameId/743812/new-zealand-australia,,,
+2666,New Zealand,2023-10-13,Congo DR,home,1,1,688488,https://www.espn.com/soccer/match/_/gameId/688488/congo-dr-new-zealand,+250,-105,+225
+2666,New Zealand,2023-11-17,Greece,away,0,2,688123,https://www.espn.com/soccer/match/_/gameId/688123/new-zealand-greece,+650,-227,+333
+2666,New Zealand,2024-11-15,Vanuatu,home,8,1,720822,https://www.espn.com/soccer/match/_/gameId/720822/vanuatu-new-zealand,-5000,+5000,+2000
+2666,New Zealand,2026-03-27,Finland,home,0,2,401856601,https://www.espn.com/soccer/match/_/gameId/401856601/finland-new-zealand,+175,+150,+200
+2666,New Zealand,2024-03-22,Egypt,away,0,1,699076,https://www.espn.com/soccer/match/_/gameId/699076/new-zealand-egypt,-147,+340,+230
+2666,New Zealand,2025-03-21,Fiji,home,7,0,723664,https://www.espn.com/soccer/match/_/gameId/723664/fiji-new-zealand,-2500,+4000,+1600
+2666,New Zealand,2023-06-16,Sweden,away,1,4,666853,https://www.espn.com/soccer/match/_/gameId/666853/new-zealand-sweden,+850,-250,+275
+464,Norway,2024-06-05,Kosovo,home,3,0,698484,https://www.espn.com/soccer/match/_/gameId/698484/kosovo-norway,-238,+700,+320
+464,Norway,2025-09-09,Moldova,home,11,1,725008,https://www.espn.com/soccer/match/_/gameId/725008/moldova-norway,-1429,+3000,+1350
+464,Norway,2025-10-14,New Zealand,home,1,1,733153,https://www.espn.com/soccer/match/_/gameId/733153/new-zealand-norway,-294,+700,+400
+464,Norway,2026-03-31,Switzerland,home,0,0,762552,https://www.espn.com/soccer/match/_/gameId/762552/switzerland-norway,-108,+240,+275
+464,Norway,2024-03-26,Slovakia,home,1,1,694652,https://www.espn.com/soccer/match/_/gameId/694652/slovakia-norway,-333,+1000,+375
+464,Norway,2025-03-25,Israel,away,4,2,724942,https://www.espn.com/soccer/match/_/gameId/724942/norway-israel,+950,-435,+625
+464,Norway,2025-09-04,Finland,home,1,0,733152,https://www.espn.com/soccer/match/_/gameId/733152/finland-norway,-526,+1150,+600
+464,Norway,2024-10-10,Slovenia,home,3,0,698942,https://www.espn.com/soccer/match/_/gameId/698942/slovenia-norway,+175,+163,+220
+464,Norway,2023-11-16,Faroe Islands,home,2,0,664879,https://www.espn.com/soccer/match/_/gameId/664879/faroe-islands-norway,-714,+1800,+650
+464,Norway,2024-11-14,Slovenia,away,4,1,698993,https://www.espn.com/soccer/match/_/gameId/698993/norway-slovenia,,,
+464,Norway,2025-11-13,Estonia,home,4,1,724875,https://www.espn.com/soccer/match/_/gameId/724875/estonia-norway,-3333,+3300,+2200
+464,Norway,2024-10-13,Austria,away,1,5,698965,https://www.espn.com/soccer/match/_/gameId/698965/norway-austria,+300,-111,+240
+464,Norway,2023-11-19,Scotland,away,3,3,655459,https://www.espn.com/soccer/match/_/gameId/655459/norway-scotland,+210,+145,+210
+464,Norway,2024-11-17,Kazakhstan,home,5,0,699015,https://www.espn.com/soccer/match/_/gameId/699015/kazakhstan-norway,-1111,+2200,+900
+464,Norway,2025-11-16,Italy,away,4,1,724906,https://www.espn.com/soccer/match/_/gameId/724906/norway-italy,+230,+110,+270
+464,Norway,2025-10-11,Israel,home,5,0,724844,https://www.espn.com/soccer/match/_/gameId/724844/israel-norway,,,
+464,Norway,2025-03-22,Moldova,away,5,0,724930,https://www.espn.com/soccer/match/_/gameId/724930/norway-moldova,,,
+464,Norway,2024-06-08,Denmark,away,1,3,698482,https://www.espn.com/soccer/match/_/gameId/698482/norway-denmark,,,
+464,Norway,2024-09-09,Austria,home,2,1,698924,https://www.espn.com/soccer/match/_/gameId/698924/austria-norway,,,
+464,Norway,2025-06-09,Estonia,away,1,0,724960,https://www.espn.com/soccer/match/_/gameId/724960/norway-estonia,,,
+464,Norway,2026-06-01,Sweden,home,3,1,401864055,https://www.espn.com/soccer/match/_/gameId/401864055/sweden-norway,-147,+350,+290
+464,Norway,2024-09-06,Kazakhstan,away,0,0,698891,https://www.espn.com/soccer/match/_/gameId/698891/norway-kazakhstan,,,
+464,Norway,2026-03-27,Netherlands,away,1,2,762549,https://www.espn.com/soccer/match/_/gameId/762549/norway-netherlands,+320,-139,+290
+464,Norway,2024-03-22,Czechia,home,1,2,694651,https://www.espn.com/soccer/match/_/gameId/694651/czechia-norway,-125,+320,+275
+464,Norway,2025-06-06,Italy,home,3,0,724951,https://www.espn.com/soccer/match/_/gameId/724951/italy-norway,,,
+2659,Panama,2024-10-15,Canada,away,1,2,719859,https://www.espn.com/soccer/match/_/gameId/719859/panama-canada,+450,-200,+300
+2659,Panama,2025-10-15,Suriname,home,1,1,754257,https://www.espn.com/soccer/match/_/gameId/754257/suriname-panama,-200,+475,+310
+2659,Panama,2025-11-19,El Salvador,home,3,0,754266,https://www.espn.com/soccer/match/_/gameId/754266/el-salvador-panama,-769,+1600,+800
+2659,Panama,2026-03-31,South Africa,away,2,1,401860542,https://www.espn.com/soccer/match/_/gameId/401860542/panama-south-africa,+300,-111,+240
+2659,Panama,2025-06-24,Jamaica,home,4,1,735338,https://www.espn.com/soccer/match/_/gameId/735338/jamaica-panama,+135,+210,+210
+2659,Panama,2025-06-11,Nicaragua,home,3,0,698197,https://www.espn.com/soccer/match/_/gameId/698197/nicaragua-panama,-286,+750,+380
+2659,Panama,2025-09-04,Suriname,away,0,0,754236,https://www.espn.com/soccer/match/_/gameId/754236/panama-suriname,,,
+2659,Panama,2024-11-15,Costa Rica,away,1,0,721461,https://www.espn.com/soccer/match/_/gameId/721461/panama-costa-rica,+310,-110,+240
+2659,Panama,2025-11-14,Guatemala,away,3,2,754263,https://www.espn.com/soccer/match/_/gameId/754263/panama-guatemala,+120,+260,+195
+2659,Panama,2025-03-20,United States,away,1,0,723669,https://www.espn.com/soccer/match/_/gameId/723669/panama-united-states,+525,-208,+350
+2659,Panama,2026-01-23,Mexico,home,0,1,401842387,https://www.espn.com/soccer/match/_/gameId/401842387/mexico-panama,+400,-154,+270
+2659,Panama,2026-05-31,Brazil,away,2,6,401864003,https://www.espn.com/soccer/match/_/gameId/401864003/panama-brazil,+1550,-769,+800
+2659,Panama,2025-03-24,Mexico,away,1,2,723672,https://www.espn.com/soccer/match/_/gameId/723672/panama-mexico,,,
+2659,Panama,2026-01-18,Bolivia,away,1,1,762557,https://www.espn.com/soccer/match/_/gameId/762557/panama-bolivia,+400,-154,+275
+2659,Panama,2024-10-13,United States,away,0,2,707617,https://www.espn.com/soccer/match/_/gameId/707617/panama-united-states,,,
+2659,Panama,2025-06-08,Belize,away,2,0,698183,https://www.espn.com/soccer/match/_/gameId/698183/panama-belize,-2500,+3300,+1800
+2659,Panama,2025-06-28,Honduras,home,1,1,735345,https://www.espn.com/soccer/match/_/gameId/735345/honduras-panama,-120,+310,+250
+2659,Panama,2024-07-06,Colombia,away,0,5,703948,https://www.espn.com/soccer/match/_/gameId/703948/panama-colombia,+1000,-345,+450
+2659,Panama,2025-02-08,Chile,away,1,6,730104,https://www.espn.com/soccer/match/_/gameId/730104/panama-chile,+425,-189,+290
+2659,Panama,2025-09-09,Guatemala,home,1,1,754243,https://www.espn.com/soccer/match/_/gameId/754243/guatemala-panama,,,
+2659,Panama,2024-11-19,Costa Rica,home,2,2,721466,https://www.espn.com/soccer/match/_/gameId/721466/costa-rica-panama,,,
+2659,Panama,2025-06-16,Guadeloupe,home,5,2,735322,https://www.espn.com/soccer/match/_/gameId/735322/guadeloupe-panama,-154,+400,+280
+2659,Panama,2025-10-11,El Salvador,away,1,0,754252,https://www.espn.com/soccer/match/_/gameId/754252/panama-el-salvador,,,
+2659,Panama,2026-03-27,South Africa,away,1,1,401860541,https://www.espn.com/soccer/match/_/gameId/401860541/panama-south-africa,,,
+2659,Panama,2025-06-21,Guatemala,away,1,0,735331,https://www.espn.com/soccer/match/_/gameId/735331/panama-guatemala,,,
+210,Paraguay,2025-09-09,Peru,away,1,0,684666,https://www.espn.com/soccer/match/_/gameId/684666/paraguay-peru,+240,+120,+200
+210,Paraguay,2024-09-11,Brazil,home,1,0,684616,https://www.espn.com/soccer/match/_/gameId/684616/brazil-paraguay,-256,+725,+333
+210,Paraguay,2024-10-15,Venezuela,home,2,1,684626,https://www.espn.com/soccer/match/_/gameId/684626/venezuela-paraguay,-133,+400,+240
+210,Paraguay,2025-10-14,South Korea,away,0,2,739960,https://www.espn.com/soccer/match/_/gameId/739960/paraguay-south-korea,+170,+138,+250
+210,Paraguay,2023-11-21,Colombia,home,0,1,684605,https://www.espn.com/soccer/match/_/gameId/684605/colombia-paraguay,-222,+800,+290
+210,Paraguay,2024-11-19,Bolivia,away,2,2,684634,https://www.espn.com/soccer/match/_/gameId/684634/paraguay-bolivia,+310,+110,+190
+210,Paraguay,2025-11-19,Mexico,away,2,1,758974,https://www.espn.com/soccer/match/_/gameId/758974/paraguay-mexico,+320,-118,+240
+210,Paraguay,2026-03-31,Morocco,away,1,2,401860937,https://www.espn.com/soccer/match/_/gameId/401860937/paraguay-morocco,+280,-111,+220
+210,Paraguay,2025-03-26,Colombia,away,2,2,684646,https://www.espn.com/soccer/match/_/gameId/684646/paraguay-colombia,,,
+210,Paraguay,2024-06-12,Chile,away,0,3,701636,https://www.espn.com/soccer/match/_/gameId/701636/paraguay-chile,+350,-111,+210
+210,Paraguay,2025-06-11,Brazil,away,0,1,684655,https://www.espn.com/soccer/match/_/gameId/684655/paraguay-brazil,,,
+210,Paraguay,2024-07-03,Costa Rica,away,1,2,690727,https://www.espn.com/soccer/match/_/gameId/690727/paraguay-costa-rica,-120,+350,+250
+210,Paraguay,2025-09-04,Ecuador,home,0,0,684661,https://www.espn.com/soccer/match/_/gameId/684661/ecuador-paraguay,+130,+280,+160
+210,Paraguay,2024-10-10,Ecuador,away,0,0,684620,https://www.espn.com/soccer/match/_/gameId/684620/paraguay-ecuador,,,
+210,Paraguay,2024-11-14,Argentina,home,2,1,684628,https://www.espn.com/soccer/match/_/gameId/684628/argentina-paraguay,+425,-118,+210
+210,Paraguay,2025-03-20,Chile,home,1,0,684640,https://www.espn.com/soccer/match/_/gameId/684640/chile-paraguay,,,
+210,Paraguay,2025-06-05,Uruguay,home,2,0,684651,https://www.espn.com/soccer/match/_/gameId/684651/uruguay-paraguay,+170,+210,+160
+210,Paraguay,2024-06-16,Panama,away,1,0,701623,https://www.espn.com/soccer/match/_/gameId/701623/paraguay-panama,+130,+188,+200
+210,Paraguay,2025-11-15,United States,away,1,2,758376,https://www.espn.com/soccer/match/_/gameId/758376/paraguay-united-states,+300,-105,+240
+210,Paraguay,2024-06-24,Colombia,away,1,2,690711,https://www.espn.com/soccer/match/_/gameId/690711/paraguay-colombia,,,
+210,Paraguay,2024-09-06,Uruguay,away,0,0,684612,https://www.espn.com/soccer/match/_/gameId/684612/paraguay-uruguay,,,
+210,Paraguay,2025-10-10,Japan,away,2,2,739959,https://www.espn.com/soccer/match/_/gameId/739959/paraguay-japan,+425,-159,+260
+210,Paraguay,2026-03-27,Greece,away,1,0,401861598,https://www.espn.com/soccer/match/_/gameId/401861598/paraguay-greece,+275,-105,+240
+210,Paraguay,2024-06-08,Peru,away,0,0,701635,https://www.espn.com/soccer/match/_/gameId/701635/paraguay-peru,,,
+210,Paraguay,2024-06-29,Brazil,home,1,4,690719,https://www.espn.com/soccer/match/_/gameId/690719/brazil-paraguay,,,
+482,Portugal,2025-06-04,Germany,away,2,1,723735,https://www.espn.com/soccer/match/_/gameId/723735/portugal-germany,+280,-111,+275
+482,Portugal,2024-06-26,Georgia,away,0,2,690607,https://www.espn.com/soccer/match/_/gameId/690607/portugal-georgia,-303,+800,+425
+482,Portugal,2025-09-09,Hungary,away,3,2,725016,https://www.espn.com/soccer/match/_/gameId/725016/portugal-hungary,+1100,-435,+550
+482,Portugal,2024-10-15,Scotland,away,0,0,698982,https://www.espn.com/soccer/match/_/gameId/698982/portugal-scotland,-189,+500,+350
+482,Portugal,2025-10-14,Hungary,home,2,2,724867,https://www.espn.com/soccer/match/_/gameId/724867/hungary-portugal,,,
+482,Portugal,2026-03-31,United States,away,2,0,762259,https://www.espn.com/soccer/match/_/gameId/762259/portugal-united-states,-175,+380,+333
+482,Portugal,2024-06-18,Czechia,home,2,1,690584,https://www.espn.com/soccer/match/_/gameId/690584/czechia-portugal,-200,+500,+333
+482,Portugal,2024-06-11,Republic of Ireland,home,3,0,698536,https://www.espn.com/soccer/match/_/gameId/698536/republic-of-ireland-portugal,,,
+482,Portugal,2024-09-05,Croatia,home,2,1,698888,https://www.espn.com/soccer/match/_/gameId/698888/croatia-portugal,+135,+230,+210
+482,Portugal,2025-11-13,Republic of Ireland,away,0,2,724882,https://www.espn.com/soccer/match/_/gameId/724882/portugal-republic-of-ireland,,,
+482,Portugal,2025-03-20,Denmark,away,0,1,723711,https://www.espn.com/soccer/match/_/gameId/723711/portugal-denmark,,,
+482,Portugal,2024-09-08,Scotland,home,2,1,698916,https://www.espn.com/soccer/match/_/gameId/698916/scotland-portugal,,,
+482,Portugal,2025-11-16,Armenia,home,9,1,724900,https://www.espn.com/soccer/match/_/gameId/724900/armenia-portugal,-2500,+5500,+2000
+482,Portugal,2025-03-23,Denmark,home,5,2,723712,https://www.espn.com/soccer/match/_/gameId/723712/denmark-portugal,,,
+482,Portugal,2025-06-08,Spain,home,2,2,723738,https://www.espn.com/soccer/match/_/gameId/723738/spain-portugal,+290,-110,+260
+482,Portugal,2025-09-06,Armenia,away,5,0,724990,https://www.espn.com/soccer/match/_/gameId/724990/portugal-armenia,,,
+482,Portugal,2024-10-12,Poland,away,3,1,698958,https://www.espn.com/soccer/match/_/gameId/698958/portugal-poland,+1100,-400,+525
+482,Portugal,2025-10-11,Republic of Ireland,home,1,0,724849,https://www.espn.com/soccer/match/_/gameId/724849/republic-of-ireland-portugal,,,
+482,Portugal,2026-03-29,Mexico,away,0,0,762263,https://www.espn.com/soccer/match/_/gameId/762263/portugal-mexico,-111,+300,+260
+482,Portugal,2024-06-08,Croatia,home,1,2,698040,https://www.espn.com/soccer/match/_/gameId/698040/croatia-portugal,,,
+482,Portugal,2024-06-22,Türkiye,away,3,0,690595,https://www.espn.com/soccer/match/_/gameId/690595/portugal-turkiye,-175,+500,+310
+482,Portugal,2024-11-18,Croatia,away,1,1,699020,https://www.espn.com/soccer/match/_/gameId/699020/portugal-croatia,,,
+482,Portugal,2024-07-01,Slovenia,home,0,0,703936,https://www.espn.com/soccer/match/_/gameId/703936/slovenia-portugal,-278,+800,+400
+482,Portugal,2024-11-15,Poland,home,5,1,698998,https://www.espn.com/soccer/match/_/gameId/698998/poland-portugal,,,
+482,Portugal,2024-07-05,France,home,0,0,703940,https://www.espn.com/soccer/match/_/gameId/703940/france-portugal,+240,+140,+190
+4398,Qatar,2025-09-03,Bahrain,home,2,2,755868,https://www.espn.com/soccer/match/_/gameId/755868/bahrain-qatar,,,
+4398,Qatar,2025-10-08,Oman,away,0,0,753692,https://www.espn.com/soccer/match/_/gameId/753692/qatar-oman,-111,+375,+210
+4398,Qatar,2024-09-10,North Korea,away,2,2,710449,https://www.espn.com/soccer/match/_/gameId/710449/qatar-north-korea,+475,-175,+290
+4398,Qatar,2024-10-15,Iran,away,1,4,710467,https://www.espn.com/soccer/match/_/gameId/710467/qatar-iran,+155,+170,+220
+4398,Qatar,2025-10-14,United Arab Emirates,home,2,1,753695,https://www.espn.com/soccer/match/_/gameId/753695/united-arab-emirates-qatar,,,
+4398,Qatar,2024-11-19,United Arab Emirates,away,0,5,710482,https://www.espn.com/soccer/match/_/gameId/710482/qatar-united-arab-emirates,,,
+4398,Qatar,2024-03-26,Kuwait,away,2,1,687386,https://www.espn.com/soccer/match/_/gameId/687386/qatar-kuwait,,,
+4398,Qatar,2025-03-25,Kyrgyz Republic,away,1,3,710504,https://www.espn.com/soccer/match/_/gameId/710504/qatar-kyrgyz-republic,,,
+4398,Qatar,2024-06-11,India,home,2,1,687388,https://www.espn.com/soccer/match/_/gameId/687388/india-qatar,-167,+450,+290
+4398,Qatar,2025-06-10,Uzbekistan,away,0,3,710518,https://www.espn.com/soccer/match/_/gameId/710518/qatar-uzbekistan,+500,-172,+270
+4398,Qatar,2024-12-24,Oman,away,1,2,727395,https://www.espn.com/soccer/match/_/gameId/727395/qatar-oman,,,
+4398,Qatar,2024-09-05,United Arab Emirates,home,1,3,710433,https://www.espn.com/soccer/match/_/gameId/710433/united-arab-emirates-qatar,,,
+4398,Qatar,2024-10-10,Kyrgyz Republic,home,3,1,710451,https://www.espn.com/soccer/match/_/gameId/710451/kyrgyz-republic-qatar,,,
+4398,Qatar,2024-11-14,Uzbekistan,home,3,2,710473,https://www.espn.com/soccer/match/_/gameId/710473/uzbekistan-qatar,,,
+4398,Qatar,2026-05-28,Republic of Ireland,away,0,1,401860781,https://www.espn.com/soccer/match/_/gameId/401860781/qatar-republic-of-ireland,,,
+4398,Qatar,2024-03-21,Kuwait,home,3,0,687385,https://www.espn.com/soccer/match/_/gameId/687385/kuwait-qatar,,,
+4398,Qatar,2025-03-20,North Korea,home,5,1,710494,https://www.espn.com/soccer/match/_/gameId/710494/north-korea-qatar,,,
+4398,Qatar,2024-06-06,Afghanistan,away,0,0,687387,https://www.espn.com/soccer/match/_/gameId/687387/qatar-afghanistan,-278,+600,+450
+4398,Qatar,2025-06-05,Iran,home,1,0,710510,https://www.espn.com/soccer/match/_/gameId/710510/iran-qatar,,,
+4398,Qatar,2025-09-07,Russia,home,1,4,755869,https://www.espn.com/soccer/match/_/gameId/755869/russia-qatar,,,
+4398,Qatar,2025-08-24,Lebanon,home,0,1,755890,https://www.espn.com/soccer/match/_/gameId/755890/lebanon-qatar,-147,+400,+260
+4398,Qatar,2024-02-10,Jordan,away,3,1,698531,https://www.espn.com/soccer/match/_/gameId/698531/qatar-jordan,+130,+260,+200
+4398,Qatar,2024-12-21,United Arab Emirates,away,1,1,727391,https://www.espn.com/soccer/match/_/gameId/727391/qatar-united-arab-emirates,,,
+4398,Qatar,2025-11-17,Zimbabwe,home,1,2,760915,https://www.espn.com/soccer/match/_/gameId/760915/zimbabwe-qatar,-111,+280,+240
+4398,Qatar,2024-12-27,Kuwait,away,1,1,727399,https://www.espn.com/soccer/match/_/gameId/727399/qatar-kuwait,,,
+655,Saudi Arabia,2025-10-08,Indonesia,away,3,2,753691,https://www.espn.com/soccer/match/_/gameId/753691/saudi-arabia-indonesia,-189,+525,+320
+655,Saudi Arabia,2024-12-25,Yemen,away,3,2,727397,https://www.espn.com/soccer/match/_/gameId/727397/saudi-arabia-yemen,,,
+655,Saudi Arabia,2025-10-14,Iraq,home,0,0,753696,https://www.espn.com/soccer/match/_/gameId/753696/iraq-saudi-arabia,,,
+655,Saudi Arabia,2024-11-19,Indonesia,away,0,2,710483,https://www.espn.com/soccer/match/_/gameId/710483/saudi-arabia-indonesia,,,
+655,Saudi Arabia,2025-11-18,Algeria,home,0,2,760377,https://www.espn.com/soccer/match/_/gameId/760377/algeria-saudi-arabia,+240,+100,+240
+655,Saudi Arabia,2026-03-31,Serbia,away,1,2,401856619,https://www.espn.com/soccer/match/_/gameId/401856619/saudi-arabia-serbia,+775,-303,+400
+655,Saudi Arabia,2025-03-25,Japan,away,0,0,710501,https://www.espn.com/soccer/match/_/gameId/710501/saudi-arabia-japan,+550,-204,+320
+655,Saudi Arabia,2025-06-10,Australia,home,1,2,710521,https://www.espn.com/soccer/match/_/gameId/710521/australia-saudi-arabia,+100,+310,+220
+655,Saudi Arabia,2024-12-31,Oman,away,1,2,728859,https://www.espn.com/soccer/match/_/gameId/728859/saudi-arabia-oman,,,
+655,Saudi Arabia,2024-12-17,Trinidad and Tobago,home,3,1,724801,https://www.espn.com/soccer/match/_/gameId/724801/trinidad-and-tobago-saudi-arabia,-500,+1150,+575
+655,Saudi Arabia,2025-09-04,North Macedonia,home,2,1,755903,https://www.espn.com/soccer/match/_/gameId/755903/north-macedonia-saudi-arabia,+195,+155,+190
+655,Saudi Arabia,2024-11-14,Australia,away,0,0,710471,https://www.espn.com/soccer/match/_/gameId/710471/saudi-arabia-australia,,,
+655,Saudi Arabia,2025-03-20,China,home,1,0,710495,https://www.espn.com/soccer/match/_/gameId/710495/china-saudi-arabia,-250,+700,+350
+655,Saudi Arabia,2025-06-05,Bahrain,away,2,0,710512,https://www.espn.com/soccer/match/_/gameId/710512/saudi-arabia-bahrain,-105,+350,+200
+655,Saudi Arabia,2025-06-20,United States,home,0,1,735329,https://www.espn.com/soccer/match/_/gameId/735329/united-states-saudi-arabia,+450,-189,+310
+655,Saudi Arabia,2025-06-22,Trinidad and Tobago,home,1,1,735334,https://www.espn.com/soccer/match/_/gameId/735334/trinidad-and-tobago-saudi-arabia,,,
+655,Saudi Arabia,2025-06-16,Haiti,away,1,0,735320,https://www.espn.com/soccer/match/_/gameId/735320/saudi-arabia-haiti,-128,+320,+260
+655,Saudi Arabia,2024-12-22,Bahrain,home,2,3,727394,https://www.espn.com/soccer/match/_/gameId/727394/bahrain-saudi-arabia,,,
+655,Saudi Arabia,2026-05-30,Ecuador,away,1,2,401869431,https://www.espn.com/soccer/match/_/gameId/401869431/saudi-arabia-ecuador,+650,-208,+250
+655,Saudi Arabia,2025-06-29,Mexico,away,0,2,735343,https://www.espn.com/soccer/match/_/gameId/735343/saudi-arabia-mexico,+525,-189,+290
+655,Saudi Arabia,2024-12-28,Iraq,away,3,1,727401,https://www.espn.com/soccer/match/_/gameId/727401/saudi-arabia-iraq,,,
+655,Saudi Arabia,2025-09-08,Czechia,away,1,1,749810,https://www.espn.com/soccer/match/_/gameId/749810/saudi-arabia-czechia,+425,-167,+290
+655,Saudi Arabia,2025-11-14,Ivory Coast,home,1,0,760376,https://www.espn.com/soccer/match/_/gameId/760376/ivory-coast-saudi-arabia,+290,-110,+225
+655,Saudi Arabia,2025-05-30,Jordan,home,2,0,735762,https://www.espn.com/soccer/match/_/gameId/735762/jordan-saudi-arabia,,,
+655,Saudi Arabia,2026-03-27,Egypt,home,0,4,401854539,https://www.espn.com/soccer/match/_/gameId/401854539/egypt-saudi-arabia,+188,+125,+210
+580,Scotland,2024-06-19,Switzerland,home,1,1,690585,https://www.espn.com/soccer/match/_/gameId/690585/switzerland-scotland,,,
+580,Scotland,2024-10-15,Portugal,home,0,0,698982,https://www.espn.com/soccer/match/_/gameId/698982/portugal-scotland,+500,-189,+350
+580,Scotland,2025-11-18,Denmark,home,4,2,724921,https://www.espn.com/soccer/match/_/gameId/724921/denmark-scotland,+250,+110,+240
+580,Scotland,2026-03-31,Ivory Coast,away,0,1,401859485,https://www.espn.com/soccer/match/_/gameId/401859485/scotland-ivory-coast,+125,+210,+230
+580,Scotland,2024-03-26,Northern Ireland,home,0,1,690929,https://www.espn.com/soccer/match/_/gameId/690929/northern-ireland-scotland,-161,+475,+250
+580,Scotland,2024-09-05,Poland,home,2,3,698886,https://www.espn.com/soccer/match/_/gameId/698886/poland-scotland,+125,+225,+240
+580,Scotland,2025-10-09,Greece,home,3,1,724834,https://www.espn.com/soccer/match/_/gameId/724834/greece-scotland,+120,+240,+210
+580,Scotland,2025-03-20,Greece,away,1,0,723721,https://www.espn.com/soccer/match/_/gameId/723721/scotland-greece,,,
+580,Scotland,2024-09-08,Portugal,away,1,2,698916,https://www.espn.com/soccer/match/_/gameId/698916/scotland-portugal,,,
+580,Scotland,2025-10-12,Belarus,home,2,1,724853,https://www.espn.com/soccer/match/_/gameId/724853/belarus-scotland,-769,+1800,+750
+580,Scotland,2025-03-23,Greece,home,0,3,723722,https://www.espn.com/soccer/match/_/gameId/723722/greece-scotland,,,
+580,Scotland,2024-06-23,Hungary,home,0,1,690597,https://www.espn.com/soccer/match/_/gameId/690597/hungary-scotland,+130,+180,+290
+580,Scotland,2024-10-12,Croatia,away,1,2,698954,https://www.espn.com/soccer/match/_/gameId/698954/scotland-croatia,+115,+250,+230
+580,Scotland,2025-11-15,Greece,away,2,3,724898,https://www.espn.com/soccer/match/_/gameId/724898/scotland-greece,,,
+580,Scotland,2026-05-30,Curaçao,home,4,1,401856621,https://www.espn.com/soccer/match/_/gameId/401856621/curacao-scotland,-323,+800,+425
+580,Scotland,2026-03-28,Japan,home,0,1,401856618,https://www.espn.com/soccer/match/_/gameId/401856618/japan-scotland,+200,+130,+220
+580,Scotland,2025-09-08,Belarus,away,2,0,725003,https://www.espn.com/soccer/match/_/gameId/725003/scotland-belarus,,,
+580,Scotland,2024-11-18,Poland,away,2,1,699026,https://www.espn.com/soccer/match/_/gameId/699026/scotland-poland,,,
+580,Scotland,2025-06-09,Liechtenstein,away,4,0,731306,https://www.espn.com/soccer/match/_/gameId/731306/scotland-liechtenstein,-1250,+2800,+800
+580,Scotland,2024-06-03,Gibraltar,away,2,0,697146,https://www.espn.com/soccer/match/_/gameId/697146/scotland-gibraltar,+3300,-3333,+2000
+580,Scotland,2025-09-05,Denmark,away,0,0,724985,https://www.espn.com/soccer/match/_/gameId/724985/scotland-denmark,,,
+580,Scotland,2024-11-15,Croatia,home,1,0,699001,https://www.espn.com/soccer/match/_/gameId/699001/croatia-scotland,,,
+580,Scotland,2024-06-07,Finland,home,2,2,697147,https://www.espn.com/soccer/match/_/gameId/697147/finland-scotland,-208,+550,+320
+580,Scotland,2025-06-06,Iceland,home,1,3,731307,https://www.espn.com/soccer/match/_/gameId/731307/iceland-scotland,-130,+333,+260
+580,Scotland,2024-06-14,Germany,away,1,5,690573,https://www.espn.com/soccer/match/_/gameId/690573/scotland-germany,+900,-345,+475
+654,Senegal,2026-01-14,Egypt,home,1,0,732181,https://www.espn.com/soccer/match/_/gameId/732181/egypt-senegal,-105,+375,+200
+654,Senegal,2025-09-09,Congo DR,away,3,2,687150,https://www.espn.com/soccer/match/_/gameId/687150/senegal-congo-dr,+500,-154,+230
+654,Senegal,2025-10-14,Mauritania,home,4,0,687152,https://www.espn.com/soccer/match/_/gameId/687152/mauritania-senegal,-714,+2800,+600
+654,Senegal,2025-11-18,Kenya,home,8,0,760824,https://www.espn.com/soccer/match/_/gameId/760824/kenya-senegal,,,
+654,Senegal,2026-03-31,Gambia,home,3,1,401862000,https://www.espn.com/soccer/match/_/gameId/401862000/gambia-senegal,-625,+1600,+650
+654,Senegal,2025-12-30,Benin,away,3,0,732161,https://www.espn.com/soccer/match/_/gameId/732161/senegal-benin,-370,+1000,+425
+654,Senegal,2025-12-23,Botswana,home,3,0,732139,https://www.espn.com/soccer/match/_/gameId/732139/botswana-senegal,-833,+1900,+775
+654,Senegal,2025-08-05,Nigeria,home,1,0,748068,https://www.espn.com/soccer/match/_/gameId/748068/nigeria-senegal,+210,+130,+190
+654,Senegal,2025-08-26,Morocco,home,1,1,757609,https://www.espn.com/soccer/match/_/gameId/757609/morocco-senegal,+310,+120,+180
+654,Senegal,2025-08-19,Sudan,away,0,0,748096,https://www.espn.com/soccer/match/_/gameId/748096/senegal-sudan,,,
+654,Senegal,2025-08-12,Congo,home,1,1,748081,https://www.espn.com/soccer/match/_/gameId/748081/congo-senegal,-189,+600,+240
+654,Senegal,2025-07-24,Uganda,away,1,2,754178,https://www.espn.com/soccer/match/_/gameId/754178/senegal-uganda,+200,+188,+135
+654,Senegal,2026-05-31,United States,away,2,3,762592,https://www.espn.com/soccer/match/_/gameId/762592/senegal-united-states,+150,+175,+225
+654,Senegal,2025-07-27,Tanzania,away,1,2,753972,https://www.espn.com/soccer/match/_/gameId/753972/senegal-tanzania,,,
+654,Senegal,2026-01-18,Morocco,home,0,3,732184,https://www.espn.com/soccer/match/_/gameId/732184/morocco-senegal,,,
+654,Senegal,2025-11-15,Brazil,away,0,2,760051,https://www.espn.com/soccer/match/_/gameId/760051/senegal-brazil,+475,-222,+350
+654,Senegal,2026-03-28,Peru,home,2,0,401861999,https://www.espn.com/soccer/match/_/gameId/401861999/peru-senegal,-233,+650,+320
+654,Senegal,2026-01-03,Sudan,home,3,1,732170,https://www.espn.com/soccer/match/_/gameId/732170/sudan-senegal,,,
+654,Senegal,2025-12-27,Congo DR,home,1,1,732152,https://www.espn.com/soccer/match/_/gameId/732152/congo-dr-senegal,,,
+654,Senegal,2025-08-23,Uganda,away,1,0,757054,https://www.espn.com/soccer/match/_/gameId/757054/senegal-uganda,,,
+654,Senegal,2025-07-07,Guinea,home,1,0,751361,https://www.espn.com/soccer/match/_/gameId/751361/guinea-senegal,-133,+400,+230
+654,Senegal,2025-09-05,Sudan,home,2,0,687149,https://www.espn.com/soccer/match/_/gameId/687149/sudan-senegal,,,
+654,Senegal,2025-10-10,South Sudan,away,5,0,687151,https://www.espn.com/soccer/match/_/gameId/687151/senegal-south-sudan,-769,+2000,+700
+654,Senegal,2026-01-09,Mali,away,1,0,732177,https://www.espn.com/soccer/match/_/gameId/732177/senegal-mali,-125,+500,+210
+654,Senegal,2025-08-29,Sudan,home,1,1,757629,https://www.espn.com/soccer/match/_/gameId/757629/sudan-senegal,,,
+467,South Africa,2025-06-04,Mozambique,home,0,1,736439,https://www.espn.com/soccer/match/_/gameId/736439/mozambique-south-africa,,,
+467,South Africa,2025-09-09,Nigeria,home,1,1,687180,https://www.espn.com/soccer/match/_/gameId/687180/nigeria-south-africa,+155,+180,+210
+467,South Africa,2025-10-14,Rwanda,home,3,0,687190,https://www.espn.com/soccer/match/_/gameId/687190/rwanda-south-africa,-455,+1600,+475
+467,South Africa,2026-03-31,Panama,home,1,2,401860542,https://www.espn.com/soccer/match/_/gameId/401860542/panama-south-africa,-111,+300,+240
+467,South Africa,2025-06-10,Mozambique,home,2,0,736078,https://www.espn.com/soccer/match/_/gameId/736078/mozambique-south-africa,,,
+467,South Africa,2025-06-10,Mauritius,home,0,0,736452,https://www.espn.com/soccer/match/_/gameId/736452/mauritius-south-africa,,,
+467,South Africa,2025-05-11,Malawi,home,2,0,734421,https://www.espn.com/soccer/match/_/gameId/734421/malawi-south-africa,,,
+467,South Africa,2025-06-15,Angola,away,0,3,739303,https://www.espn.com/soccer/match/_/gameId/739303/south-africa-angola,+210,+188,+160
+467,South Africa,2026-01-04,Cameroon,home,1,2,732172,https://www.espn.com/soccer/match/_/gameId/732172/cameroon-south-africa,+230,+145,+170
+467,South Africa,2025-11-15,Zambia,home,3,1,760282,https://www.espn.com/soccer/match/_/gameId/760282/zambia-south-africa,-172,+525,+260
+467,South Africa,2025-05-03,Malawi,away,0,1,734420,https://www.espn.com/soccer/match/_/gameId/734420/south-africa-malawi,,,
+467,South Africa,2025-06-07,Zimbabwe,home,2,0,736445,https://www.espn.com/soccer/match/_/gameId/736445/zimbabwe-south-africa,+475,-149,+250
+467,South Africa,2025-12-29,Zimbabwe,away,3,2,732159,https://www.espn.com/soccer/match/_/gameId/732159/south-africa-zimbabwe,,,
+467,South Africa,2025-12-22,Angola,home,2,1,732136,https://www.espn.com/soccer/match/_/gameId/732136/angola-south-africa,,,
+467,South Africa,2025-08-18,Uganda,home,3,3,748094,https://www.espn.com/soccer/match/_/gameId/748094/uganda-south-africa,+130,+220,+175
+467,South Africa,2025-08-11,Guinea,home,2,1,748079,https://www.espn.com/soccer/match/_/gameId/748079/guinea-south-africa,,,
+467,South Africa,2025-09-05,Lesotho,away,3,0,687188,https://www.espn.com/soccer/match/_/gameId/687188/south-africa-lesotho,-417,+1550,+425
+467,South Africa,2025-10-10,Zimbabwe,away,0,0,687189,https://www.espn.com/soccer/match/_/gameId/687189/south-africa-zimbabwe,,,
+467,South Africa,2026-05-29,Nicaragua,home,0,0,401871131,https://www.espn.com/soccer/match/_/gameId/401871131/nicaragua-south-africa,-526,+1300,+575
+467,South Africa,2026-03-27,Panama,home,1,1,401860541,https://www.espn.com/soccer/match/_/gameId/401860541/panama-south-africa,,,
+467,South Africa,2025-06-06,Tanzania,home,0,0,735916,https://www.espn.com/soccer/match/_/gameId/735916/tanzania-south-africa,-152,+500,+230
+467,South Africa,2025-06-13,Comoros,home,3,1,738654,https://www.espn.com/soccer/match/_/gameId/738654/comoros-south-africa,,,
+467,South Africa,2025-12-26,Egypt,away,0,1,732146,https://www.espn.com/soccer/match/_/gameId/732146/south-africa-egypt,+320,-102,+200
+467,South Africa,2025-08-08,Algeria,away,1,1,748073,https://www.espn.com/soccer/match/_/gameId/748073/south-africa-algeria,,,
+467,South Africa,2025-08-15,Niger,away,0,0,748088,https://www.espn.com/soccer/match/_/gameId/748088/south-africa-niger,-189,+525,+225
+451,South Korea,2025-09-10,Mexico,away,2,2,735774,https://www.espn.com/soccer/match/_/gameId/735774/south-korea-mexico,+350,-125,+240
+451,South Korea,2024-09-10,Oman,away,3,1,710444,https://www.espn.com/soccer/match/_/gameId/710444/south-korea-oman,+1400,-455,+500
+451,South Korea,2024-10-15,Iraq,home,3,2,710461,https://www.espn.com/soccer/match/_/gameId/710461/iraq-south-korea,+260,+110,+210
+451,South Korea,2025-10-14,Paraguay,home,2,0,739960,https://www.espn.com/soccer/match/_/gameId/739960/paraguay-south-korea,+138,+170,+250
+451,South Korea,2024-11-19,Palestine,away,1,1,710479,https://www.espn.com/soccer/match/_/gameId/710479/south-korea-palestine,-345,+1100,+425
+451,South Korea,2025-11-18,Ghana,home,1,0,760052,https://www.espn.com/soccer/match/_/gameId/760052/ghana-south-korea,-152,+350,+290
+451,South Korea,2026-03-31,Austria,away,0,1,401856596,https://www.espn.com/soccer/match/_/gameId/401856596/south-korea-austria,+360,-152,+300
+451,South Korea,2024-03-26,Thailand,away,3,0,687410,https://www.espn.com/soccer/match/_/gameId/687410/south-korea-thailand,-250,+600,+400
+451,South Korea,2025-03-25,Jordan,home,1,1,710502,https://www.espn.com/soccer/match/_/gameId/710502/jordan-south-korea,-204,+550,+310
+451,South Korea,2024-06-11,China,home,1,0,687412,https://www.espn.com/soccer/match/_/gameId/687412/china-south-korea,,,
+451,South Korea,2025-06-10,Kuwait,home,4,0,710514,https://www.espn.com/soccer/match/_/gameId/710514/kuwait-south-korea,-714,+1600,+700
+451,South Korea,2024-02-06,Jordan,away,0,2,698417,https://www.espn.com/soccer/match/_/gameId/698417/south-korea-jordan,,,
+451,South Korea,2024-09-05,Palestine,home,0,0,710436,https://www.espn.com/soccer/match/_/gameId/710436/palestine-south-korea,,,
+451,South Korea,2024-10-10,Jordan,away,2,0,710459,https://www.espn.com/soccer/match/_/gameId/710459/south-korea-jordan,,,
+451,South Korea,2024-11-14,Kuwait,away,3,1,710475,https://www.espn.com/soccer/match/_/gameId/710475/south-korea-kuwait,,,
+451,South Korea,2024-03-21,Thailand,home,1,1,687409,https://www.espn.com/soccer/match/_/gameId/687409/thailand-south-korea,,,
+451,South Korea,2025-03-20,Oman,home,1,1,710493,https://www.espn.com/soccer/match/_/gameId/710493/oman-south-korea,,,
+451,South Korea,2024-06-06,Singapore,away,7,0,687411,https://www.espn.com/soccer/match/_/gameId/687411/south-korea-singapore,-2500,+3300,+1400
+451,South Korea,2025-06-05,Iraq,away,2,0,710507,https://www.espn.com/soccer/match/_/gameId/710507/south-korea-iraq,,,
+451,South Korea,2025-09-06,United States,away,2,0,735765,https://www.espn.com/soccer/match/_/gameId/735765/south-korea-united-states,+225,+115,+230
+451,South Korea,2026-05-31,Trinidad and Tobago,home,5,0,401872679,https://www.espn.com/soccer/match/_/gameId/401872679/trinidad-and-tobago-south-korea,-1250,+2200,+1200
+451,South Korea,2026-03-28,Ivory Coast,home,0,4,401860779,https://www.espn.com/soccer/match/_/gameId/401860779/ivory-coast-south-korea,+190,+125,+225
+451,South Korea,2025-10-10,Brazil,home,0,5,757631,https://www.espn.com/soccer/match/_/gameId/757631/brazil-south-korea,+475,-213,+375
+451,South Korea,2025-11-14,Bolivia,home,2,0,758720,https://www.espn.com/soccer/match/_/gameId/758720/bolivia-south-korea,-345,+825,+450
+451,South Korea,2024-02-02,Australia,away,2,1,698208,https://www.espn.com/soccer/match/_/gameId/698208/south-korea-australia,+130,+240,+200
+164,Spain,2024-10-15,Serbia,home,3,0,698984,https://www.espn.com/soccer/match/_/gameId/698984/serbia-spain,-556,+1150,+675
+164,Spain,2025-10-14,Bulgaria,home,4,0,724869,https://www.espn.com/soccer/match/_/gameId/724869/bulgaria-spain,-5000,+4500,+2200
+164,Spain,2025-11-18,Türkiye,home,2,2,724917,https://www.espn.com/soccer/match/_/gameId/724917/turkiye-spain,-500,+1100,+550
+164,Spain,2026-03-31,Egypt,home,0,0,401851847,https://www.espn.com/soccer/match/_/gameId/401851847/egypt-spain,-455,+850,+550
+164,Spain,2024-07-09,France,home,2,1,703943,https://www.espn.com/soccer/match/_/gameId/703943/france-spain,+140,+195,+225
+164,Spain,2024-09-05,Serbia,away,0,0,698885,https://www.espn.com/soccer/match/_/gameId/698885/spain-serbia,,,
+164,Spain,2025-09-04,Bulgaria,away,3,0,724973,https://www.espn.com/soccer/match/_/gameId/724973/spain-bulgaria,,,
+164,Spain,2025-03-20,Netherlands,away,2,2,723707,https://www.espn.com/soccer/match/_/gameId/723707/spain-netherlands,+400,-149,+300
+164,Spain,2025-06-05,France,home,5,4,723736,https://www.espn.com/soccer/match/_/gameId/723736/france-spain,,,
+164,Spain,2024-06-20,Italy,home,1,0,690588,https://www.espn.com/soccer/match/_/gameId/690588/italy-spain,+120,+270,+210
+164,Spain,2024-09-08,Switzerland,away,4,1,698913,https://www.espn.com/soccer/match/_/gameId/698913/spain-switzerland,+850,-370,+500
+164,Spain,2025-09-07,Türkiye,away,6,0,725002,https://www.espn.com/soccer/match/_/gameId/725002/spain-turkiye,,,
+164,Spain,2025-03-23,Netherlands,home,3,3,723708,https://www.espn.com/soccer/match/_/gameId/723708/netherlands-spain,,,
+164,Spain,2025-06-08,Portugal,away,2,2,723738,https://www.espn.com/soccer/match/_/gameId/723738/spain-portugal,-110,+290,+260
+164,Spain,2024-06-30,Georgia,home,4,1,703934,https://www.espn.com/soccer/match/_/gameId/703934/georgia-spain,+1000,-400,+525
+164,Spain,2024-07-14,England,home,2,1,703945,https://www.espn.com/soccer/match/_/gameId/703945/england-spain,,,
+164,Spain,2024-10-12,Denmark,home,1,0,698956,https://www.espn.com/soccer/match/_/gameId/698956/denmark-spain,+290,+110,+220
+164,Spain,2025-10-11,Georgia,home,2,0,724850,https://www.espn.com/soccer/match/_/gameId/724850/georgia-spain,,,
+164,Spain,2025-11-15,Georgia,away,4,0,724890,https://www.espn.com/soccer/match/_/gameId/724890/spain-georgia,,,
+164,Spain,2024-06-15,Croatia,home,3,0,690575,https://www.espn.com/soccer/match/_/gameId/690575/croatia-spain,,,
+164,Spain,2024-11-18,Switzerland,home,3,2,699023,https://www.espn.com/soccer/match/_/gameId/699023/switzerland-spain,,,
+164,Spain,2024-06-24,Albania,away,1,0,690600,https://www.espn.com/soccer/match/_/gameId/690600/spain-albania,-250,+700,+375
+164,Spain,2024-11-15,Denmark,away,2,1,698995,https://www.espn.com/soccer/match/_/gameId/698995/spain-denmark,,,
+164,Spain,2026-03-27,Serbia,home,3,0,401865041,https://www.espn.com/soccer/match/_/gameId/401865041/serbia-spain,,,
+164,Spain,2024-07-05,Germany,home,2,1,703939,https://www.espn.com/soccer/match/_/gameId/703939/germany-spain,+170,+180,+210
+466,Sweden,2024-06-05,Denmark,away,1,2,698439,https://www.espn.com/soccer/match/_/gameId/698439/sweden-denmark,+310,-111,+240
+466,Sweden,2024-11-19,Azerbaijan,home,6,0,699041,https://www.espn.com/soccer/match/_/gameId/699041/azerbaijan-sweden,-769,+1800,+800
+466,Sweden,2025-11-18,Slovenia,home,1,1,724919,https://www.espn.com/soccer/match/_/gameId/724919/slovenia-sweden,-147,+400,+280
+466,Sweden,2026-03-31,Poland,home,3,2,761954,https://www.espn.com/soccer/match/_/gameId/761954/poland-sweden,,,
+466,Sweden,2025-03-25,Northern Ireland,home,5,1,730105,https://www.espn.com/soccer/match/_/gameId/730105/northern-ireland-sweden,-167,+450,+280
+466,Sweden,2025-06-10,Algeria,home,4,3,735176,https://www.espn.com/soccer/match/_/gameId/735176/algeria-sweden,-110,+240,+240
+466,Sweden,2024-09-05,Azerbaijan,away,3,1,698882,https://www.espn.com/soccer/match/_/gameId/698882/sweden-azerbaijan,,,
+466,Sweden,2023-11-16,Azerbaijan,away,0,3,655432,https://www.espn.com/soccer/match/_/gameId/655432/sweden-azerbaijan,,,
+466,Sweden,2026-03-26,Ukraine,away,3,1,761384,https://www.espn.com/soccer/match/_/gameId/761384/sweden-ukraine,+120,+225,+230
+466,Sweden,2024-03-21,Portugal,away,2,5,690340,https://www.espn.com/soccer/match/_/gameId/690340/sweden-portugal,+550,-250,+375
+466,Sweden,2024-09-08,Estonia,home,3,0,698914,https://www.espn.com/soccer/match/_/gameId/698914/estonia-sweden,+1400,-500,+550
+466,Sweden,2023-11-19,Estonia,home,2,0,655457,https://www.espn.com/soccer/match/_/gameId/655457/estonia-sweden,,,
+466,Sweden,2024-11-16,Slovakia,home,2,1,699008,https://www.espn.com/soccer/match/_/gameId/699008/slovakia-sweden,-175,+450,+320
+466,Sweden,2025-11-15,Switzerland,away,1,4,724897,https://www.espn.com/soccer/match/_/gameId/724897/sweden-switzerland,+525,-189,+310
+466,Sweden,2025-03-22,Luxembourg,away,0,1,729806,https://www.espn.com/soccer/match/_/gameId/729806/sweden-luxembourg,-182,+400,+260
+466,Sweden,2024-06-08,Serbia,home,0,3,699072,https://www.espn.com/soccer/match/_/gameId/699072/serbia-sweden,+125,+200,+250
+466,Sweden,2025-09-08,Kosovo,away,0,2,725007,https://www.espn.com/soccer/match/_/gameId/725007/sweden-kosovo,+725,-294,+450
+466,Sweden,2024-10-14,Estonia,away,3,0,698972,https://www.espn.com/soccer/match/_/gameId/698972/sweden-estonia,,,
+466,Sweden,2025-10-13,Kosovo,home,0,1,724864,https://www.espn.com/soccer/match/_/gameId/724864/kosovo-sweden,,,
+466,Sweden,2024-03-25,Albania,home,1,0,698123,https://www.espn.com/soccer/match/_/gameId/698123/albania-sweden,-278,+600,+375
+466,Sweden,2026-06-01,Norway,away,1,3,401864055,https://www.espn.com/soccer/match/_/gameId/401864055/sweden-norway,+350,-147,+290
+466,Sweden,2025-09-05,Slovenia,away,2,2,724988,https://www.espn.com/soccer/match/_/gameId/724988/sweden-slovenia,,,
+466,Sweden,2024-10-11,Slovakia,away,2,2,698950,https://www.espn.com/soccer/match/_/gameId/698950/sweden-slovakia,,,
+466,Sweden,2025-10-10,Switzerland,home,0,2,724837,https://www.espn.com/soccer/match/_/gameId/724837/switzerland-sweden,,,
+466,Sweden,2025-06-06,Hungary,away,2,0,731575,https://www.espn.com/soccer/match/_/gameId/731575/sweden-hungary,+160,+150,+250
+466,Sweden,2024-01-12,Estonia,home,2,1,690688,https://www.espn.com/soccer/match/_/gameId/690688/estonia-sweden,,,
+475,Switzerland,2024-06-19,Scotland,away,1,1,690585,https://www.espn.com/soccer/match/_/gameId/690585/switzerland-scotland,,,
+475,Switzerland,2024-10-15,Denmark,home,2,2,698983,https://www.espn.com/soccer/match/_/gameId/698983/denmark-switzerland,+110,+250,+230
+475,Switzerland,2025-11-18,Kosovo,away,1,1,724922,https://www.espn.com/soccer/match/_/gameId/724922/switzerland-kosovo,-120,+375,+240
+475,Switzerland,2026-03-31,Norway,away,0,0,762552,https://www.espn.com/soccer/match/_/gameId/762552/switzerland-norway,+240,-108,+275
+475,Switzerland,2025-03-25,Luxembourg,home,3,1,730972,https://www.espn.com/soccer/match/_/gameId/730972/luxembourg-switzerland,-455,+1000,+525
+475,Switzerland,2025-06-11,United States,away,4,0,734220,https://www.espn.com/soccer/match/_/gameId/734220/switzerland-united-states,+115,+220,+240
+475,Switzerland,2024-09-05,Denmark,away,0,2,698884,https://www.espn.com/soccer/match/_/gameId/698884/switzerland-denmark,,,
+475,Switzerland,2024-09-08,Spain,home,1,4,698913,https://www.espn.com/soccer/match/_/gameId/698913/spain-switzerland,-370,+850,+500
+475,Switzerland,2026-05-31,Jordan,home,4,1,401862319,https://www.espn.com/soccer/match/_/gameId/401862319/jordan-switzerland,-526,+1250,+575
+475,Switzerland,2024-06-23,Germany,home,1,1,690598,https://www.espn.com/soccer/match/_/gameId/690598/germany-switzerland,+210,+115,+250
+475,Switzerland,2024-10-12,Serbia,away,0,2,698957,https://www.espn.com/soccer/match/_/gameId/698957/switzerland-serbia,+310,-125,+290
+475,Switzerland,2025-11-15,Sweden,home,4,1,724897,https://www.espn.com/soccer/match/_/gameId/724897/sweden-switzerland,-189,+525,+310
+475,Switzerland,2024-06-08,Austria,home,1,1,699061,https://www.espn.com/soccer/match/_/gameId/699061/austria-switzerland,-110,+270,+270
+475,Switzerland,2025-06-07,Mexico,away,4,2,734177,https://www.espn.com/soccer/match/_/gameId/734177/switzerland-mexico,+188,+115,+240
+475,Switzerland,2024-06-29,Italy,home,2,0,703931,https://www.espn.com/soccer/match/_/gameId/703931/italy-switzerland,+225,+155,+188
+475,Switzerland,2024-06-15,Hungary,away,3,1,690574,https://www.espn.com/soccer/match/_/gameId/690574/switzerland-hungary,+110,+300,+210
+475,Switzerland,2024-07-06,England,away,1,1,703941,https://www.espn.com/soccer/match/_/gameId/703941/switzerland-england,+300,+120,+188
+475,Switzerland,2025-09-08,Slovenia,home,3,0,725009,https://www.espn.com/soccer/match/_/gameId/725009/slovenia-switzerland,,,
+475,Switzerland,2025-10-13,Slovenia,away,0,0,724863,https://www.espn.com/soccer/match/_/gameId/724863/switzerland-slovenia,,,
+475,Switzerland,2024-11-18,Spain,away,2,3,699023,https://www.espn.com/soccer/match/_/gameId/699023/switzerland-spain,,,
+475,Switzerland,2025-09-05,Kosovo,home,4,0,724983,https://www.espn.com/soccer/match/_/gameId/724983/kosovo-switzerland,,,
+475,Switzerland,2025-10-10,Sweden,away,2,0,724837,https://www.espn.com/soccer/match/_/gameId/724837/switzerland-sweden,,,
+475,Switzerland,2024-11-15,Serbia,home,1,1,699002,https://www.espn.com/soccer/match/_/gameId/699002/serbia-switzerland,,,
+475,Switzerland,2026-03-27,Germany,home,3,4,762550,https://www.espn.com/soccer/match/_/gameId/762550/germany-switzerland,,,
+475,Switzerland,2025-03-21,Northern Ireland,away,1,1,732253,https://www.espn.com/soccer/match/_/gameId/732253/switzerland-northern-ireland,-110,+270,+225
+659,Tunisia,2025-11-12,Mauritania,home,1,1,760185,https://www.espn.com/soccer/match/_/gameId/760185/mauritania-tunisia,-270,+725,+360
+659,Tunisia,2025-03-19,Liberia,away,1,0,687327,https://www.espn.com/soccer/match/_/gameId/687327/tunisia-liberia,+1200,-370,+400
+659,Tunisia,2024-10-15,Comoros,away,1,1,722084,https://www.espn.com/soccer/match/_/gameId/722084/tunisia-comoros,,,
+659,Tunisia,2025-11-18,Brazil,away,1,1,760053,https://www.espn.com/soccer/match/_/gameId/760053/tunisia-brazil,+1700,-714,+725
+659,Tunisia,2026-04-01,Canada,away,0,0,401856639,https://www.espn.com/soccer/match/_/gameId/401856639/tunisia-canada,+400,-161,+290
+659,Tunisia,2025-12-30,Tanzania,away,1,1,732163,https://www.espn.com/soccer/match/_/gameId/732163/tunisia-tanzania,-175,+600,+260
+659,Tunisia,2025-12-23,Uganda,home,3,1,732140,https://www.espn.com/soccer/match/_/gameId/732140/uganda-tunisia,,,
+659,Tunisia,2024-09-05,Madagascar,home,1,0,715394,https://www.espn.com/soccer/match/_/gameId/715394/madagascar-tunisia,,,
+659,Tunisia,2025-09-04,Liberia,home,3,0,687329,https://www.espn.com/soccer/match/_/gameId/687329/liberia-tunisia,,,
+659,Tunisia,2024-11-14,Madagascar,away,3,2,722096,https://www.espn.com/soccer/match/_/gameId/722096/tunisia-madagascar,,,
+659,Tunisia,2025-12-18,Botswana,home,2,1,401842482,https://www.espn.com/soccer/match/_/gameId/401842482/botswana-tunisia,,,
+659,Tunisia,2024-09-08,Gambia,away,2,1,715417,https://www.espn.com/soccer/match/_/gameId/715417/tunisia-gambia,,,
+659,Tunisia,2026-03-29,Haiti,away,1,0,401856640,https://www.espn.com/soccer/match/_/gameId/401856640/tunisia-haiti,+105,+260,+225
+659,Tunisia,2026-01-03,Mali,away,1,1,732169,https://www.espn.com/soccer/match/_/gameId/732169/tunisia-mali,+225,+155,+170
+659,Tunisia,2025-12-27,Nigeria,away,2,3,732150,https://www.espn.com/soccer/match/_/gameId/732150/tunisia-nigeria,+333,+100,+200
+659,Tunisia,2025-09-08,Equatorial Guinea,away,1,0,687330,https://www.espn.com/soccer/match/_/gameId/687330/tunisia-equatorial-guinea,+115,+240,+210
+659,Tunisia,2025-10-13,Namibia,home,3,0,687332,https://www.espn.com/soccer/match/_/gameId/687332/namibia-tunisia,-256,+775,+333
+659,Tunisia,2024-11-18,Gambia,home,0,1,722111,https://www.espn.com/soccer/match/_/gameId/722111/gambia-tunisia,,,
+659,Tunisia,2025-03-24,Malawi,home,2,0,687328,https://www.espn.com/soccer/match/_/gameId/687328/malawi-tunisia,-333,+1050,+380
+659,Tunisia,2025-06-02,Burkina Faso,home,2,0,735836,https://www.espn.com/soccer/match/_/gameId/735836/burkina-faso-tunisia,+125,+210,+188
+659,Tunisia,2026-06-01,Austria,away,0,1,401856597,https://www.espn.com/soccer/match/_/gameId/401856597/tunisia-austria,+575,-227,+340
+659,Tunisia,2024-10-11,Comoros,home,0,1,722056,https://www.espn.com/soccer/match/_/gameId/722056/comoros-tunisia,,,
+659,Tunisia,2025-10-10,Sao Tome and Principe,away,6,0,687331,https://www.espn.com/soccer/match/_/gameId/687331/tunisia-sao-tome-and-principe,-2500,+3300,+1400
+659,Tunisia,2025-11-14,Jordan,home,3,2,760186,https://www.espn.com/soccer/match/_/gameId/760186/jordan-tunisia,-161,+450,+230
+659,Tunisia,2025-06-06,Morocco,away,0,2,733164,https://www.espn.com/soccer/match/_/gameId/733164/tunisia-morocco,+450,-152,+250
+465,Türkiye,2024-06-26,Czechia,away,2,1,690608,https://www.espn.com/soccer/match/_/gameId/690608/turkiye-czechia,+190,+145,+230
+465,Türkiye,2025-10-14,Georgia,home,4,1,724874,https://www.espn.com/soccer/match/_/gameId/724874/georgia-turkiye,-161,+400,+333
+465,Türkiye,2024-11-19,Montenegro,away,1,3,699046,https://www.espn.com/soccer/match/_/gameId/699046/turkiye-montenegro,-189,+475,+320
+465,Türkiye,2025-11-18,Spain,away,2,2,724917,https://www.espn.com/soccer/match/_/gameId/724917/turkiye-spain,+1100,-500,+550
+465,Türkiye,2026-03-31,Kosovo,away,1,0,761953,https://www.espn.com/soccer/match/_/gameId/761953/turkiye-kosovo,-110,+290,+250
+465,Türkiye,2024-06-18,Georgia,home,3,1,690583,https://www.espn.com/soccer/match/_/gameId/690583/georgia-turkiye,,,
+465,Türkiye,2025-06-11,Mexico,away,0,1,734176,https://www.espn.com/soccer/match/_/gameId/734176/turkiye-mexico,+190,+120,+250
+465,Türkiye,2024-07-02,Austria,away,2,1,703938,https://www.espn.com/soccer/match/_/gameId/703938/turkiye-austria,+320,-105,+230
+465,Türkiye,2025-09-04,Georgia,away,3,2,724972,https://www.espn.com/soccer/match/_/gameId/724972/turkiye-georgia,,,
+465,Türkiye,2026-03-26,Romania,home,1,0,761383,https://www.espn.com/soccer/match/_/gameId/761383/romania-turkiye,-217,+500,+400
+465,Türkiye,2025-03-20,Hungary,home,3,1,723715,https://www.espn.com/soccer/match/_/gameId/723715/hungary-turkiye,+110,+210,+250
+465,Türkiye,2025-09-07,Spain,home,0,6,725002,https://www.espn.com/soccer/match/_/gameId/725002/spain-turkiye,,,
+465,Türkiye,2025-03-23,Hungary,away,3,0,723716,https://www.espn.com/soccer/match/_/gameId/723716/turkiye-hungary,,,
+465,Türkiye,2025-10-11,Bulgaria,away,6,1,724847,https://www.espn.com/soccer/match/_/gameId/724847/turkiye-bulgaria,+1550,-714,+825
+465,Türkiye,2024-11-16,Wales,home,0,0,699005,https://www.espn.com/soccer/match/_/gameId/699005/wales-turkiye,-149,+425,+290
+465,Türkiye,2025-11-15,Bulgaria,home,2,0,724892,https://www.espn.com/soccer/match/_/gameId/724892/bulgaria-turkiye,,,
+465,Türkiye,2025-06-07,United States,away,2,1,734219,https://www.espn.com/soccer/match/_/gameId/734219/turkiye-united-states,+140,+155,+220
+465,Türkiye,2024-06-22,Portugal,home,0,3,690595,https://www.espn.com/soccer/match/_/gameId/690595/portugal-turkiye,+500,-175,+310
+465,Türkiye,2024-07-06,Netherlands,away,1,2,703942,https://www.espn.com/soccer/match/_/gameId/703942/turkiye-netherlands,+500,-175,+300
+465,Türkiye,2024-09-09,Iceland,home,3,1,698921,https://www.espn.com/soccer/match/_/gameId/698921/iceland-turkiye,+320,-120,+260
+465,Türkiye,2024-10-14,Iceland,away,4,2,698970,https://www.espn.com/soccer/match/_/gameId/698970/turkiye-iceland,,,
+465,Türkiye,2024-06-10,Poland,away,1,2,700703,https://www.espn.com/soccer/match/_/gameId/700703/turkiye-poland,+250,+110,+225
+465,Türkiye,2026-06-01,North Macedonia,home,4,0,401871359,https://www.espn.com/soccer/match/_/gameId/401871359/north-macedonia-turkiye,-435,+1050,+525
+465,Türkiye,2024-09-06,Wales,away,0,0,698892,https://www.espn.com/soccer/match/_/gameId/698892/turkiye-wales,,,
+465,Türkiye,2024-10-11,Montenegro,home,1,0,698949,https://www.espn.com/soccer/match/_/gameId/698949/montenegro-turkiye,,,
+660,United States,2025-07-02,Guatemala,home,2,1,735346,https://www.espn.com/soccer/match/_/gameId/735346/guatemala-united-states,-400,+1000,+475
+660,United States,2025-01-23,Costa Rica,home,3,0,724802,https://www.espn.com/soccer/match/_/gameId/724802/costa-rica-united-states,-175,+550,+260
+660,United States,2025-09-09,Japan,home,2,0,735766,https://www.espn.com/soccer/match/_/gameId/735766/japan-united-states,+180,+120,+240
+660,United States,2024-10-16,Mexico,away,0,2,719821,https://www.espn.com/soccer/match/_/gameId/719821/united-states-mexico,+150,+220,+180
+660,United States,2025-10-15,Australia,home,2,1,753162,https://www.espn.com/soccer/match/_/gameId/753162/australia-united-states,-143,+320,+230
+660,United States,2025-11-19,Uruguay,home,5,1,758377,https://www.espn.com/soccer/match/_/gameId/758377/uruguay-united-states,+220,+125,+210
+660,United States,2026-03-31,Portugal,home,0,2,762259,https://www.espn.com/soccer/match/_/gameId/762259/portugal-united-states,+380,-175,+333
+660,United States,2025-06-11,Switzerland,home,0,4,734220,https://www.espn.com/soccer/match/_/gameId/734220/switzerland-united-states,+220,+115,+240
+660,United States,2024-11-15,Jamaica,away,1,0,721462,https://www.espn.com/soccer/match/_/gameId/721462/united-states-jamaica,+650,-238,+333
+660,United States,2025-03-20,Panama,home,0,1,723669,https://www.espn.com/soccer/match/_/gameId/723669/panama-united-states,-208,+525,+350
+660,United States,2025-06-20,Saudi Arabia,away,1,0,735329,https://www.espn.com/soccer/match/_/gameId/735329/united-states-saudi-arabia,-189,+450,+310
+660,United States,2026-05-31,Senegal,home,3,2,762592,https://www.espn.com/soccer/match/_/gameId/762592/senegal-united-states,+175,+150,+225
+660,United States,2025-03-23,Canada,away,1,2,723671,https://www.espn.com/soccer/match/_/gameId/723671/united-states-canada,+130,+195,+225
+660,United States,2025-06-29,Costa Rica,home,2,2,735342,https://www.espn.com/soccer/match/_/gameId/735342/costa-rica-united-states,,,
+660,United States,2025-06-22,Haiti,home,2,1,735335,https://www.espn.com/soccer/match/_/gameId/735335/haiti-united-states,-200,+475,+340
+660,United States,2025-06-15,Trinidad and Tobago,home,5,0,735319,https://www.espn.com/soccer/match/_/gameId/735319/trinidad-and-tobago-united-states,-1429,+2500,+1200
+660,United States,2025-07-06,Mexico,home,1,2,735348,https://www.espn.com/soccer/match/_/gameId/735348/mexico-united-states,,,
+660,United States,2025-09-06,South Korea,home,0,2,735765,https://www.espn.com/soccer/match/_/gameId/735765/south-korea-united-states,+115,+225,+230
+660,United States,2024-10-13,Panama,home,2,0,707617,https://www.espn.com/soccer/match/_/gameId/707617/panama-united-states,,,
+660,United States,2025-11-15,Paraguay,home,2,1,758376,https://www.espn.com/soccer/match/_/gameId/758376/paraguay-united-states,-105,+300,+240
+660,United States,2026-03-28,Belgium,home,2,5,762258,https://www.espn.com/soccer/match/_/gameId/762258/belgium-united-states,+200,+110,+260
+660,United States,2025-06-07,Türkiye,home,1,2,734219,https://www.espn.com/soccer/match/_/gameId/734219/turkiye-united-states,+155,+140,+220
+660,United States,2025-01-18,Venezuela,home,3,1,723617,https://www.espn.com/soccer/match/_/gameId/723617/venezuela-united-states,-161,+425,+275
+660,United States,2024-11-19,Jamaica,home,4,2,721468,https://www.espn.com/soccer/match/_/gameId/721468/jamaica-united-states,,,
+660,United States,2025-10-11,Ecuador,home,1,1,753161,https://www.espn.com/soccer/match/_/gameId/753161/ecuador-united-states,+140,+195,+210
+212,Uruguay,2024-07-11,Colombia,home,0,1,703951,https://www.espn.com/soccer/match/_/gameId/703951/colombia-uruguay,+110,+250,+220
+212,Uruguay,2025-09-09,Chile,away,0,0,684664,https://www.espn.com/soccer/match/_/gameId/684664/uruguay-chile,-118,+350,+240
+212,Uruguay,2024-09-10,Venezuela,away,0,0,684617,https://www.espn.com/soccer/match/_/gameId/684617/uruguay-venezuela,+475,-159,+250
+212,Uruguay,2024-10-15,Ecuador,home,0,0,684627,https://www.espn.com/soccer/match/_/gameId/684627/ecuador-uruguay,-137,+475,+230
+212,Uruguay,2024-11-20,Brazil,away,1,1,684635,https://www.espn.com/soccer/match/_/gameId/684635/uruguay-brazil,+550,-161,+260
+212,Uruguay,2025-11-19,United States,away,1,5,758377,https://www.espn.com/soccer/match/_/gameId/758377/uruguay-united-states,+125,+220,+210
+212,Uruguay,2026-03-31,Algeria,away,0,0,401862321,https://www.espn.com/soccer/match/_/gameId/401862321/uruguay-algeria,-105,+260,+240
+212,Uruguay,2025-03-25,Bolivia,away,0,0,684644,https://www.espn.com/soccer/match/_/gameId/684644/uruguay-bolivia,+170,+170,+200
+212,Uruguay,2025-06-10,Venezuela,home,2,0,684657,https://www.espn.com/soccer/match/_/gameId/684657/venezuela-uruguay,,,
+212,Uruguay,2025-09-04,Peru,home,3,0,684662,https://www.espn.com/soccer/match/_/gameId/684662/peru-uruguay,-227,+725,+300
+212,Uruguay,2025-06-05,Paraguay,away,0,2,684651,https://www.espn.com/soccer/match/_/gameId/684651/uruguay-paraguay,+210,+170,+160
+212,Uruguay,2024-06-28,Bolivia,home,5,0,690718,https://www.espn.com/soccer/match/_/gameId/690718/bolivia-uruguay,,,
+212,Uruguay,2024-09-01,Guatemala,home,1,1,716795,https://www.espn.com/soccer/match/_/gameId/716795/guatemala-uruguay,+350,-175,+275
+212,Uruguay,2024-06-24,Panama,home,3,1,690710,https://www.espn.com/soccer/match/_/gameId/690710/panama-uruguay,-455,+1400,+500
+212,Uruguay,2025-11-16,Mexico,away,0,0,758718,https://www.espn.com/soccer/match/_/gameId/758718/uruguay-mexico,+145,+175,+225
+212,Uruguay,2024-07-07,Brazil,home,0,0,703949,https://www.espn.com/soccer/match/_/gameId/703949/brazil-uruguay,,,
+212,Uruguay,2024-07-14,Canada,away,2,2,703952,https://www.espn.com/soccer/match/_/gameId/703952/uruguay-canada,-222,+550,+350
+212,Uruguay,2025-10-13,Uzbekistan,away,2,1,758411,https://www.espn.com/soccer/match/_/gameId/758411/uruguay-uzbekistan,-137,+375,+250
+212,Uruguay,2024-07-02,United States,away,1,0,690725,https://www.espn.com/soccer/match/_/gameId/690725/uruguay-united-states,,,
+212,Uruguay,2024-09-06,Paraguay,home,0,0,684612,https://www.espn.com/soccer/match/_/gameId/684612/paraguay-uruguay,,,
+212,Uruguay,2024-10-12,Peru,away,0,1,684621,https://www.espn.com/soccer/match/_/gameId/684621/uruguay-peru,,,
+212,Uruguay,2025-10-10,Dominican Republic,home,1,0,758400,https://www.espn.com/soccer/match/_/gameId/758400/dominican-republic-uruguay,-303,+700,+450
+212,Uruguay,2024-11-16,Colombia,home,3,2,684630,https://www.espn.com/soccer/match/_/gameId/684630/colombia-uruguay,,,
+212,Uruguay,2026-03-27,England,away,1,1,762553,https://www.espn.com/soccer/match/_/gameId/762553/uruguay-england,+475,-182,+320
+212,Uruguay,2025-03-21,Argentina,home,0,1,684642,https://www.espn.com/soccer/match/_/gameId/684642/argentina-uruguay,+160,+195,+185
+2570,Uzbekistan,2024-09-10,Kyrgyz Republic,away,3,2,710445,https://www.espn.com/soccer/match/_/gameId/710445/uzbekistan-kyrgyz-republic,,,
+2570,Uzbekistan,2024-10-15,United Arab Emirates,home,1,0,710464,https://www.espn.com/soccer/match/_/gameId/710464/united-arab-emirates-uzbekistan,+170,+165,+200
+2570,Uzbekistan,2024-11-19,North Korea,away,1,0,710484,https://www.espn.com/soccer/match/_/gameId/710484/uzbekistan-north-korea,,,
+2570,Uzbekistan,2025-11-18,Iran,home,0,0,761122,https://www.espn.com/soccer/match/_/gameId/761122/iran-uzbekistan,+190,+130,+200
+2570,Uzbekistan,2024-03-26,Hong Kong,home,3,0,687439,https://www.espn.com/soccer/match/_/gameId/687439/hong-kong-uzbekistan,-1667,+2800,+1400
+2570,Uzbekistan,2025-03-25,Iran,away,2,2,710499,https://www.espn.com/soccer/match/_/gameId/710499/uzbekistan-iran,,,
+2570,Uzbekistan,2024-06-11,Iran,away,0,0,687436,https://www.espn.com/soccer/match/_/gameId/687436/uzbekistan-iran,,,
+2570,Uzbekistan,2025-06-10,Qatar,home,3,0,710518,https://www.espn.com/soccer/match/_/gameId/710518/qatar-uzbekistan,-172,+500,+270
+2570,Uzbekistan,2024-01-30,Thailand,home,2,1,698046,https://www.espn.com/soccer/match/_/gameId/698046/thailand-uzbekistan,-154,+475,+260
+2570,Uzbekistan,2024-01-23,Australia,away,1,1,668945,https://www.espn.com/soccer/match/_/gameId/668945/uzbekistan-australia,+240,+138,+190
+2570,Uzbekistan,2024-09-05,North Korea,home,1,0,710435,https://www.espn.com/soccer/match/_/gameId/710435/north-korea-uzbekistan,,,
+2570,Uzbekistan,2024-10-10,Iran,home,0,0,710454,https://www.espn.com/soccer/match/_/gameId/710454/iran-uzbekistan,,,
+2570,Uzbekistan,2024-11-14,Qatar,away,2,3,710473,https://www.espn.com/soccer/match/_/gameId/710473/uzbekistan-qatar,,,
+2570,Uzbekistan,2024-03-21,Hong Kong,away,2,0,687438,https://www.espn.com/soccer/match/_/gameId/687438/uzbekistan-hong-kong,,,
+2570,Uzbekistan,2025-03-20,Kyrgyz Republic,home,1,0,710491,https://www.espn.com/soccer/match/_/gameId/710491/kyrgyz-republic-uzbekistan,,,
+2570,Uzbekistan,2024-06-06,Turkmenistan,home,3,1,687440,https://www.espn.com/soccer/match/_/gameId/687440/turkmenistan-uzbekistan,,,
+2570,Uzbekistan,2025-06-05,United Arab Emirates,away,0,0,710511,https://www.espn.com/soccer/match/_/gameId/710511/uzbekistan-united-arab-emirates,,,
+2570,Uzbekistan,2024-01-18,India,away,3,0,668934,https://www.espn.com/soccer/match/_/gameId/668934/uzbekistan-india,-500,+1400,+500
+2570,Uzbekistan,2024-02-03,Qatar,away,1,1,698209,https://www.espn.com/soccer/match/_/gameId/698209/uzbekistan-qatar,,,
+2570,Uzbekistan,2025-10-13,Uruguay,home,1,2,758411,https://www.espn.com/soccer/match/_/gameId/758411/uruguay-uzbekistan,+375,-137,+250
+2570,Uzbekistan,2026-03-30,Venezuela,home,0,0,401861040,https://www.espn.com/soccer/match/_/gameId/401861040/venezuela-uzbekistan,+120,+180,+225
+2570,Uzbekistan,2026-06-02,Canada,away,0,2,401853575,https://www.espn.com/soccer/match/_/gameId/401853575/uzbekistan-canada,+475,-175,+250
+2570,Uzbekistan,2026-01-26,China,home,2,2,401857718,https://www.espn.com/soccer/match/_/gameId/401857718/china-uzbekistan,,,
+2570,Uzbekistan,2025-11-14,Egypt,away,2,0,759988,https://www.espn.com/soccer/match/_/gameId/759988/uzbekistan-egypt,+110,+220,+210
+2570,Uzbekistan,2026-03-27,Gabon,home,3,1,401866483,https://www.espn.com/soccer/match/_/gameId/401866483/gabon-uzbekistan,-175,+475,+290

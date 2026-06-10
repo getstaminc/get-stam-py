@@ -16,6 +16,7 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   nhl: "icehockey_nhl",
   ncaaf: "americanfootball_ncaaf",
   ncaab: "basketball_ncaab",
+  worldcup: "soccer_fifa_world_cup",
   epl: "soccer_epl",
   laliga: "soccer_spain_la_liga",
   bundesliga: "soccer_germany_bundesliga",
@@ -27,11 +28,12 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
 // Map API sport key to database sport key
 const API_SPORT_TO_DB_SPORT: { [key: string]: string } = {
   americanfootball_nfl: "nfl",
-  baseball_mlb: "mlb", 
+  baseball_mlb: "mlb",
   basketball_nba: "nba",
   icehockey_nhl: "nhl",
   americanfootball_ncaaf: "ncaaf",
   basketball_ncaab: "ncaab",
+  soccer_fifa_world_cup: "worldcup",
   soccer_epl: "epl",
   americanfootball_nfl_preseason: "nfl",
 };
@@ -60,9 +62,9 @@ const getSoccerLeague = (sportKey: string): string => {
   }
 };
 
-// Helper function to check if sport is soccer
+// Helper function to check if sport is soccer (excludes worldcup which has its own endpoints)
 const isSoccerSport = (sportKey: string): boolean => {
-  return sportKey.startsWith('soccer_') || sportKey === 'epl';
+  return (sportKey.startsWith('soccer_') || sportKey === 'epl') && sportKey !== 'soccer_fifa_world_cup';
 };
 
 // Get API base URL from env, fallback to prod or dev

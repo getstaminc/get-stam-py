@@ -31,8 +31,9 @@ def get_odds_data(sport, date):
     print(f"Scores URL: {scores_url}")
     if date_str:
         scores_url += f"&date={date_str}&dateFormat=iso"
-    # Use 'bovada' for soccer_epl, otherwise 'draftkings'
-    bookmaker = "bovada" if sport_key == "soccer_epl" else "draftkings"
+    # Use 'bovada' for all soccer (matches seed jobs — bovada carries spreads/totals for soccer)
+    # Use 'draftkings' for all other sports
+    bookmaker = "bovada" if sport_key.startswith("soccer_") else "draftkings"
     odds_url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&bookmakers={bookmaker}&markets=h2h,spreads,totals&oddsFormat=american"
 
     try:

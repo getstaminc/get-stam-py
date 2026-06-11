@@ -84,7 +84,6 @@ def get_historical_odds(date_str, retries=3, delay=1):
     url = (
         f"https://api.the-odds-api.com/v4/historical/sports/{SPORT_KEY}/odds"
         f"?apiKey={ODDS_API_KEY}"
-        f"&regions=us,uk,eu"
         f"&bookmakers=bovada"
         f"&markets=h2h,spreads,totals"
         f"&oddsFormat=american"
@@ -195,6 +194,30 @@ def seed_yesterdays_intl_soccer_games():
             ).mappings()
         }
         print(f"Found {len(teams_dict)} INTL_SOCCER teams in database")
+
+        # Auto-insert any teams not yet in the DB
+        all_team_names = set()
+        for game in games:
+            all_team_names.add(_db_name(game['home_team']))
+            all_team_names.add(_db_name(game['away_team']))
+
+        new_teams = all_team_names - set(teams_dict.keys())
+        for team_name in sorted(new_teams):
+            conn.execute(
+                text("INSERT INTO teams (team_name, sport) VALUES (:name, 'INTL_SOCCER')"),
+                {'name': team_name}
+            )
+            print(f"  Auto-inserted new team: {team_name}")
+
+        if new_teams:
+            conn.commit()
+            # Reload teams dict to pick up new IDs
+            teams_dict = {
+                row['team_name']: row['team_id']
+                for row in conn.execute(
+                    text("SELECT team_id, team_name FROM teams WHERE sport = 'INTL_SOCCER'")
+                ).mappings()
+            }
 
         inserted = 0
 

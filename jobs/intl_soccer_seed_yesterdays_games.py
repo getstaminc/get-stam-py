@@ -10,7 +10,8 @@ import os
 import sys
 import requests
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,8 +51,6 @@ def get_yesterdays_scores(retries=3, delay=1):
         f"?daysFrom=3&apiKey={ODDS_API_KEY}"
     )
 
-    yesterday = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
-
     for attempt in range(retries):
         try:
             response = requests.get(url, timeout=15)
@@ -61,10 +60,9 @@ def get_yesterdays_scores(retries=3, delay=1):
             yesterday_games = [
                 g for g in games
                 if g.get('completed') and g.get('scores')
-                and g['commence_time'][:10] == yesterday
             ]
 
-            print(f"Found {len(yesterday_games)} completed international games from yesterday ({yesterday})")
+            print(f"Found {len(yesterday_games)} completed international games (last 3 days)")
             return yesterday_games
 
         except requests.exceptions.RequestException as e:
@@ -175,16 +173,15 @@ def seed_yesterdays_intl_soccer_games():
             print("No completed international games found for yesterday.")
             return
 
-        yesterday = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
-        odds_data = get_historical_odds(yesterday)
-
-        # Build odds lookup keyed by both home_team_away_team orderings
+        # Collect unique dates from game commence_times and fetch odds for each
+        unique_dates = sorted({g['commence_time'][:10] for g in games})
         odds_lookup = {}
-        for g in odds_data:
-            ht = g['home_team']
-            at = g['away_team']
-            odds_lookup[f"{ht}_{at}"] = g
-            odds_lookup[f"{at}_{ht}"] = g
+        for date_str in unique_dates:
+            for g in get_historical_odds(date_str):
+                ht = g['home_team']
+                at = g['away_team']
+                odds_lookup[f"{ht}_{at}"] = g
+                odds_lookup[f"{at}_{ht}"] = g
 
         # Load all INTL_SOCCER teams from DB
         teams_dict = {
@@ -255,9 +252,10 @@ def seed_yesterdays_intl_soccer_games():
 
             total_goals = home_goals + away_goals
 
-            commence_time = datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00'))
-            game_date = commence_time.date()
-            start_time = commence_time.time()
+            commence_time_utc = datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00'))
+            commence_time_et = commence_time_utc.astimezone(ZoneInfo("America/New_York"))
+            game_date = commence_time_et.date()
+            start_time = commence_time_et.time()
 
             # Idempotency check
             existing = conn.execute(text("""

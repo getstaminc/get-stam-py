@@ -36,7 +36,7 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
 };
 
 // Map URL sport to historical API sport type
-type HistoricalSportType = 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' | 'nba' | 'ncaab';
+type HistoricalSportType = 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' | 'nba' | 'ncaab' | 'worldcup';
 const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   nfl: "nfl",
   mlb: "mlb",
@@ -50,6 +50,7 @@ const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   nfl_preseason: "nfl", // Map preseason to nfl,
   nhl: "nhl",
   ncaab: "ncaab",
+  worldcup: "worldcup",
 };
 
 // Map URL sport to the league identifier we send to the backend soccer endpoints

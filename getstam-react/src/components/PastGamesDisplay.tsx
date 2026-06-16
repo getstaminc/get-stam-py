@@ -78,6 +78,8 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
         // Use provided leagueKey (e.g. 'EPL', 'BUNDESLIGA', etc.) when available
         const leagueParam = leagueKey || 'epl';
         return `${baseUrl}/soccer/games?league=${encodeURIComponent(leagueParam)}&start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
+      case 'worldcup':
+        return `${baseUrl}/worldcup/games?start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
       default:
         return `${baseUrl}/${sportType}/games?start_date=${formattedDate}&end_date=${formattedDate}&limit=100`;
     }
@@ -86,7 +88,8 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
   const getScoreLabel = () => {
     switch (sportType) {
       case 'mlb': return 'Runs';
-      case 'soccer': return 'Goals';
+      case 'soccer':
+      case 'worldcup': return 'Goals';
       default: return 'Points';
     }
   };
@@ -96,6 +99,7 @@ const PastGamesDisplay: React.FC<PastGamesDisplayProps> = ({
       case 'mlb':
         return isHome ? game.home_runs : game.away_runs;
       case 'soccer':
+      case 'worldcup':
         return isHome ? game.home_goals : game.away_goals;
       default:
         return isHome ? game.home_points : game.away_points;

@@ -20,6 +20,32 @@ def check_api_key():
         abort(401)
 
 
+@worldcup_historical_bp.route('/api/historical/worldcup/games', methods=['GET'])
+def get_worldcup_games():
+    """Get World Cup historical games from database."""
+    limit = request.args.get('limit', 50, type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    team = request.args.get('team')
+
+    games, error = WorldcupService.get_games(limit, start_date, end_date, team)
+
+    if error:
+        return jsonify({'error': error}), 500
+
+    return jsonify({
+        'games': games,
+        'count': len(games) if games else 0,
+        'sport': 'World Cup',
+        'filters': {
+            'limit': limit,
+            'start_date': start_date,
+            'end_date': end_date,
+            'team': team,
+        }
+    })
+
+
 @worldcup_historical_bp.route('/api/historical/worldcup/teams/<team_name>/games', methods=['GET'])
 def get_worldcup_team_games(team_name):
     """Get games for a specific World Cup team."""

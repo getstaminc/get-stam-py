@@ -38,6 +38,24 @@ SPORTS_CONFIG = [
 ]
 
 
+def _extract_ml(odds_game: dict, home_full: str) -> tuple:
+    """
+    Pull (home_ml, away_ml) from an Odds API game dict.
+    Returns (None, None) if h2h market isn't available.
+    """
+    for bookmaker in odds_game.get('bookmakers', []):
+        for market in bookmaker.get('markets', []):
+            if market.get('key') == 'h2h':
+                home_ml = away_ml = None
+                for outcome in market.get('outcomes', []):
+                    if outcome.get('name') == home_full:
+                        home_ml = outcome.get('price')
+                    else:
+                        away_ml = outcome.get('price')
+                return home_ml, away_ml
+    return None, None
+
+
 def _encode_game_id(hex_id):
     """Convert Odds API hex game ID to URL-safe base64, matching encodeGameId() in the frontend."""
     try:
@@ -120,8 +138,24 @@ def _build_markdown(today_str, sport_results):
                     for t in trends:
                         desc = t['description']
                         if h2h_mode:
+                            if h2h_mode == "home_h2h":
+                                # Focal team is always the home team
+                                today_ml_ctx = game.get("home_ml")
+                                today_team_ctx = home
+                            else:
+                                # gen_h2h: identify today's favorite to name them
+                                hml = game.get("home_ml")
+                                aml = game.get("away_ml")
+                                if hml is not None and hml < 0:
+                                    today_ml_ctx, today_team_ctx = hml, home
+                                elif aml is not None and aml < 0:
+                                    today_ml_ctx, today_team_ctx = aml, away
+                                else:
+                                    today_ml_ctx, today_team_ctx = hml, home
                             context = get_streak_context(
-                                sport_key_lower, t['type'], t['count'], h2h_mode
+                                sport_key_lower, t['type'], t['count'], h2h_mode,
+                                today_ml=today_ml_ctx,
+                                today_team=today_team_ctx,
                             )
                             if context:
                                 desc = f"{desc} — {context}"
@@ -214,7 +248,7 @@ def run():
         display = cfg["display"]
 
         try:
-            scores, _ = get_odds_data(sport, None)
+            scores, odds_data = get_odds_data(sport, None)
             if not scores:
                 print(f"[digest] {display}: no scores data, skipping")
                 continue
@@ -226,6 +260,9 @@ def run():
 
             print(f"[digest] {display}: {len(today_games_raw)} games today")
 
+            # Build a lookup from game ID → odds game dict for ML extraction
+            odds_by_id = {g['id']: g for g in (odds_data or []) if g.get('id')}
+
             # Convert full team names → short DB names for trends service
             games_for_trends = []
             for g in today_games_raw:
@@ -233,11 +270,15 @@ def run():
                 away_full = g.get("away_team", "")
                 home_short = convert_team_name(home_full)
                 away_short = convert_team_name(away_full)
+                odds_game = odds_by_id.get(g.get("id", ""))
+                home_ml, away_ml = _extract_ml(odds_game, home_full) if odds_game else (None, None)
                 games_for_trends.append({
                     "home_team_name": home_short,
                     "away_team_name": away_short,
                     "game_id": _encode_game_id(g.get("id", "")),
                     "sport": sport,
+                    "home_ml": home_ml,
+                    "away_ml": away_ml,
                 })
 
             trends_cls = cfg["trends_cls"]

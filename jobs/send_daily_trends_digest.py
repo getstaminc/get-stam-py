@@ -25,6 +25,7 @@ from api.services.historical.nhl_trends_service import NHLTrendsService
 from api.services.historical.nba_trends_service import NBATrendsService
 from api.services.blog_service import BlogService
 from api.services.email_service import EmailService
+from api.services.historical.trend_context_service import get_streak_context
 
 eastern_tz = pytz.timezone('US/Eastern')
 
@@ -35,6 +36,24 @@ SPORTS_CONFIG = [
     {"sport": "nhl", "sport_key": "icehockey_nhl", "display": "NHL", "trends_cls": NHLTrendsService, "min_trend_length": 3},
     {"sport": "nba", "sport_key": "basketball_nba", "display": "NBA", "trends_cls": NBATrendsService, "min_trend_length": 3},
 ]
+
+
+def _extract_ml(odds_game: dict, home_full: str) -> tuple:
+    """
+    Pull (home_ml, away_ml) from an Odds API game dict.
+    Returns (None, None) if h2h market isn't available.
+    """
+    for bookmaker in odds_game.get('bookmakers', []):
+        for market in bookmaker.get('markets', []):
+            if market.get('key') == 'h2h':
+                home_ml = away_ml = None
+                for outcome in market.get('outcomes', []):
+                    if outcome.get('name') == home_full:
+                        home_ml = outcome.get('price')
+                    else:
+                        away_ml = outcome.get('price')
+                return home_ml, away_ml
+    return None, None
 
 
 def _encode_game_id(hex_id):
@@ -87,7 +106,7 @@ def _build_markdown(today_str, sport_results):
         "Today's strongest trends across MLB, NHL, and NBA.",
         "",
     ]
-    for sport_display, game_trends_list in sport_results:
+    for sport_display, sport_key_lower, game_trends_list in sport_results:
         lines.append(f"## {sport_display}")
         lines.append("")
         for entry in game_trends_list:
@@ -95,29 +114,52 @@ def _build_markdown(today_str, sport_results):
             home = game.get("home_team_name", "")
             away = game.get("away_team_name", "")
             trend_keys = [
-                ("homeTeamTrends", home),
-                ("awayTeamTrends", away),
-                ("homeTeamHomeTrends", f"{home} (at home)"),
-                ("awayTeamAwayTrends", f"{away} (away)"),
-                ("headToHeadTrends", "H2H"),
-                ("homeAtHomeH2HTrends", f"{home} (home H2H)"),
+                ("homeTeamTrends",     home,                       None),
+                ("awayTeamTrends",     away,                       None),
+                ("homeTeamHomeTrends", f"{home} (at home)",        None),
+                ("awayTeamAwayTrends", f"{away} (away)",           None),
+                ("headToHeadTrends",   "H2H",                      "gen_h2h"),
+                ("homeAtHomeH2HTrends", f"{home} (home H2H)",      "home_h2h"),
             ]
             # Skip games that have no renderable trends
-            if not any(entry.get(key) for key, _ in trend_keys):
+            if not any(entry.get(key) for key, _, _ in trend_keys):
                 continue
             lines.append(f"### {away} @ {home}")
             lines.append("")
             game_id = game.get("game_id", "")
-            sport_key = game.get("sport", "")
-            if game_id and sport_key:
-                lines.append(f"[View Game →](/game-details/{sport_key}?game_id={game_id})")
+            sport_route_key = game.get("sport", "")
+            if game_id and sport_route_key:
+                lines.append(f"[View Game →](/game-details/{sport_route_key}?game_id={game_id})")
                 lines.append("")
-            for trend_key, label in trend_keys:
+            for trend_key, label, h2h_mode in trend_keys:
                 trends = entry.get(trend_key, [])
                 if trends:
                     lines.append(f"**{label}**:")
                     for t in trends:
-                        lines.append(f"- {t['description']}")
+                        desc = t['description']
+                        if h2h_mode:
+                            if h2h_mode == "home_h2h":
+                                # Focal team is always the home team
+                                today_ml_ctx = game.get("home_ml")
+                                today_team_ctx = home
+                            else:
+                                # gen_h2h: identify today's favorite to name them
+                                hml = game.get("home_ml")
+                                aml = game.get("away_ml")
+                                if hml is not None and hml < 0:
+                                    today_ml_ctx, today_team_ctx = hml, home
+                                elif aml is not None and aml < 0:
+                                    today_ml_ctx, today_team_ctx = aml, away
+                                else:
+                                    today_ml_ctx, today_team_ctx = hml, home
+                            context = get_streak_context(
+                                sport_key_lower, t['type'], t['count'], h2h_mode,
+                                today_ml=today_ml_ctx,
+                                today_team=today_team_ctx,
+                            )
+                            if context:
+                                desc = f"{desc} — {context}"
+                        lines.append(f"- {desc}")
                     lines.append("")
         lines.append("")
     return "\n".join(lines)
@@ -129,7 +171,7 @@ def _build_html_email(today_str, highest_trend, highest_team, sport_results, pos
     encoded_email = base64.urlsafe_b64encode(recipient_email.encode()).rstrip(b"=").decode("ascii")
     unsubscribe_url = f"{SITE_BASE_URL}/api/unsubscribe?e={urllib.parse.quote(encoded_email)}"
 
-    sports_with_trends = [display for display, entries in sport_results if entries]
+    sports_with_trends = [display for display, _sk, entries in sport_results if entries]
     sports_line = ", ".join(sports_with_trends) if sports_with_trends else "MLB, NHL, NBA"
 
     hero_text = f"<strong>{highest_team}</strong>: {highest_trend['description']}" if highest_team else highest_trend['description']
@@ -198,7 +240,7 @@ def run():
 
     # --- Step 1: Collect trends for each sport ---
     all_trends_flat = []   # list of {team, trend, sport_display}
-    sport_results = []     # list of (sport_display, game_trends_list)
+    sport_results = []     # list of (sport_display, sport_key, game_trends_list)
 
     for cfg in SPORTS_CONFIG:
         sport = cfg["sport"]
@@ -206,7 +248,7 @@ def run():
         display = cfg["display"]
 
         try:
-            scores, _ = get_odds_data(sport, None)
+            scores, odds_data = get_odds_data(sport, None)
             if not scores:
                 print(f"[digest] {display}: no scores data, skipping")
                 continue
@@ -218,6 +260,9 @@ def run():
 
             print(f"[digest] {display}: {len(today_games_raw)} games today")
 
+            # Build a lookup from game ID → odds game dict for ML extraction
+            odds_by_id = {g['id']: g for g in (odds_data or []) if g.get('id')}
+
             # Convert full team names → short DB names for trends service
             games_for_trends = []
             for g in today_games_raw:
@@ -225,11 +270,15 @@ def run():
                 away_full = g.get("away_team", "")
                 home_short = convert_team_name(home_full)
                 away_short = convert_team_name(away_full)
+                odds_game = odds_by_id.get(g.get("id", ""))
+                home_ml, away_ml = _extract_ml(odds_game, home_full) if odds_game else (None, None)
                 games_for_trends.append({
                     "home_team_name": home_short,
                     "away_team_name": away_short,
                     "game_id": _encode_game_id(g.get("id", "")),
                     "sport": sport,
+                    "home_ml": home_ml,
+                    "away_ml": away_ml,
                 })
 
             trends_cls = cfg["trends_cls"]
@@ -247,7 +296,7 @@ def run():
                 continue
 
             print(f"[digest] {display}: {len(games_with_trends)} games with trends")
-            sport_results.append((display, games_with_trends))
+            sport_results.append((display, sport, games_with_trends))
 
             # Flatten all trends for highest-trend selection
             for entry in games_with_trends:

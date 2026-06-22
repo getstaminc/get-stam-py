@@ -376,25 +376,53 @@ def get_streak_context(
             return ''
 
         sport_label = sport.upper()
-        outcome_word = _outcome_word(trend_type)
         sample_note = ' (small sample)' if total <= 3 else ''
-        matchup_label = 'home matchup' if h2h_mode == 'home_h2h' else 'H2H matchup'
+        location = "home H2H matchups" if h2h_mode == 'home_h2h' else "H2H matchups"
 
-        # Base string with percentage
-        if continued == 0:
-            base = f"{outcome_word} never continued in {total} similar {sport_label} {matchup_label}s{sample_note}"
-        elif continued == total:
-            base = f"{outcome_word} continued 100% in similar {sport_label} {matchup_label}s ({total} cases){sample_note}"
+        # Descriptive base string — self-contained so it makes sense without the trend description
+        if trend_type in ('over_streak', 'under_streak'):
+            direction = 'OVER' if trend_type == 'over_streak' else 'UNDER'
+            condition = f"when the {direction} hits {streak_length} straight in {sport_label} {location}"
+            if continued == 0:
+                base = f"historically {condition}, it has never continued{sample_note}"
+            elif continued == total:
+                base = f"historically {condition}, it has always continued{sample_note}"
+            else:
+                base = f"historically {condition}, it continues {_pct(continued, total)} of the time{sample_note}"
+        else:  # win_streak / loss_streak
+            direction = 'wins' if trend_type == 'win_streak' else 'losses'
+            condition = f"when a team hits {streak_length} straight {direction} in {sport_label} {location}"
+            if continued == 0:
+                base = f"historically {condition}, the streak has never extended{sample_note}"
+            elif continued == total:
+                base = f"historically {condition}, the streak has always extended{sample_note}"
+            else:
+                base = f"historically {condition}, the streak extends {_pct(continued, total)} of the time{sample_note}"
+
+        # For win/loss: integrate ML split inline with team name in the applicable bucket
+        if ml_stats and trend_type in ('win_streak', 'loss_streak'):
+            fav_c, fav_t = ml_stats['fav']
+            dog_c, dog_t = ml_stats['dog']
+
+            fav_str = f"{_pct(fav_c, fav_t)} when favored" if fav_t >= 2 else None
+            dog_str = f"{_pct(dog_c, dog_t)} as the underdog" if dog_t >= 2 else None
+
+            # Inline team name with the matching bucket
+            if today_team and today_ml is not None:
+                if today_ml < 0 and fav_str:
+                    fav_str = f"{_pct(fav_c, fav_t)} when favored ({today_team} today)"
+                elif today_ml >= 0 and dog_str:
+                    dog_str = f"{_pct(dog_c, dog_t)} as the underdog ({today_team} today)"
+
+            parts = [p for p in [fav_str, dog_str] if p]
+            result = f"{base} — {', '.join(parts)}" if parts else base
+
+        # For over/under: no ML split; just append team role if known
         else:
-            base = f"{outcome_word} continued {_pct(continued, total)} in similar {sport_label} {matchup_label}s{sample_note}"
-
-        ml_note = _ml_breakdown(ml_stats, today_ml)
-        result = f"{base} {ml_note}" if ml_note else base
-
-        # Append team role note if we know today's ML
-        if today_team and today_ml is not None:
-            role = "the favorite" if today_ml < 0 else "the underdog"
-            result = f"{result} — {today_team} are {role}"
+            result = base
+            if today_team and today_ml is not None:
+                role = "the favorite" if today_ml < 0 else "the underdog"
+                result = f"{result} — {today_team} are {role}"
 
         return result
 

@@ -231,6 +231,7 @@ const GamesPage = () => {
 
   const [nextGameDate, setNextGameDate] = useState<string | null>(null);
   const [digestBanner, setDigestBanner] = useState<{ excerpt: string; slug: string } | null>(null);
+  const [dataSinceYear, setDataSinceYear] = useState<number | null>(null);
 
   // Check if selected date is in the past
   const isHistoricalDate = isPastDate(selectedDate);
@@ -269,6 +270,20 @@ const GamesPage = () => {
       setPitcherData({});
     }
   }, [sportKey]);
+
+  // Fetch "data since" year for sports with historical data
+  useEffect(() => {
+    if (!historicalSportType) {
+      setDataSinceYear(null);
+      return;
+    }
+    fetch(`${API_BASE_URL}/api/historical/${historicalSportType}/meta`, {
+      headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setDataSinceYear(data?.data_since_year ?? null))
+      .catch(() => setDataSinceYear(null));
+  }, [historicalSportType]);
 
   // Fetch daily trends banner (MLB/NHL/NBA only, today only)
   useEffect(() => {
@@ -451,7 +466,7 @@ const GamesPage = () => {
           align="center"
           sx={{
             fontWeight: 700,
-            mb: 1,
+            mb: 0.5,
             color: "#1976d2",
           }}
         >
@@ -460,13 +475,12 @@ const GamesPage = () => {
         <Typography
           variant="body2"
           align="center"
-          sx={{
-            mb: 3,
-            color: "#757575",
-            fontStyle: "italic",
-          }}
+          sx={{ mb: 3, color: "#9e9e9e" }}
         >
-          * Only games with betting odds data will display
+          {!isHistoricalDate && games.length > 0 && `${games.length} games today`}
+          {!isHistoricalDate && games.length > 0 && dataSinceYear && " · "}
+          {dataSinceYear && `Data since ${dataSinceYear}`}
+          {!dataSinceYear && !isHistoricalDate && "* Only games with betting odds data will display"}
         </Typography>
         <Box
           sx={{

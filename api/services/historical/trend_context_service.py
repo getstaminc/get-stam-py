@@ -6,7 +6,7 @@ E.g. "Total went OVER 6 straight at home vs Mariners — OVER in 3 of 4 similar 
 """
 
 import os
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -17,9 +17,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SPORT_CONFIG: Dict[str, Dict[str, str]] = {
-    'mlb': {'table': 'mlb_games',   'home_score': 'home_runs',   'away_score': 'away_runs',   'total_col': 'total'},
+    'mlb': {'table': 'mlb_games',   'home_score': 'home_runs',   'away_score': 'away_runs',   'total_col': 'total', 'time_col': 'start_time'},
     'nhl': {'table': 'nhl_games',   'home_score': 'home_goals',  'away_score': 'away_goals',  'total_col': 'total'},
-    'nba': {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total'},
+    'nba': {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time'},
 }
 
 # Module-level cache: sport → loaded context dict
@@ -153,7 +153,7 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
                    away_money_line    AS aml
             FROM {cfg['table']}
             WHERE {cfg['home_score']} IS NOT NULL AND {cfg['away_score']} IS NOT NULL
-            ORDER BY game_date ASC
+            ORDER BY game_date ASC{', ' + cfg['time_col'] + ' ASC NULLS LAST' if cfg.get('time_col') else ''}, game_id ASC
         """
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(query)
@@ -294,39 +294,6 @@ def _pct(c: int, t: int) -> str:
     return f"{round(c / t * 100)}%"
 
 
-def _ml_breakdown(ml_stats: Optional[Dict[str, Tuple[int, int]]], today_ml: Optional[int] = None) -> str:
-    """
-    Build a parenthetical ML split string using percentages.
-    If today_ml is provided, labels the matching bucket "today (fav/dog)" and puts it first.
-    Only includes a bucket if it has >= 2 instances. Returns '' if nothing to show.
-    Examples:
-        "(today (dog): 40%, favs: 59%)"   — team is underdog today
-        "(favs: 59%, dogs: 40%)"           — no today_ml provided
-    """
-    if not ml_stats:
-        return ''
-    fav_c, fav_t = ml_stats['fav']
-    dog_c, dog_t = ml_stats['dog']
-
-    if today_ml is not None:
-        today_is_fav = today_ml < 0
-        fav_label = "today (fav)" if today_is_fav else "favs"
-        dog_label = "today (dog)" if not today_is_fav else "dogs"
-    else:
-        fav_label, dog_label = "favs", "dogs"
-
-    fav_str = f"{fav_label}: {_pct(fav_c, fav_t)}" if fav_t >= 2 else None
-    dog_str = f"{dog_label}: {_pct(dog_c, dog_t)}" if dog_t >= 2 else None
-
-    # Put the "today" bucket first
-    if today_ml is not None and today_ml >= 0:
-        ordered = [dog_str, fav_str]
-    else:
-        ordered = [fav_str, dog_str]
-
-    parts = [p for p in ordered if p]
-    return f"({', '.join(parts)})" if parts else ''
-
 
 def get_streak_context(
     sport: str,
@@ -431,10 +398,3 @@ def get_streak_context(
         return ''
 
 
-def _outcome_word(trend_type: str) -> str:
-    return {
-        'over_streak':  'OVER',
-        'under_streak': 'UNDER',
-        'win_streak':   'Win',
-        'loss_streak':  'Loss',
-    }.get(trend_type, 'Streak')

@@ -4,7 +4,7 @@ import { Box, Button, Chip, CircularProgress, Container, Typography } from "@mui
 import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
-import TrendInsightCard from "../components/TrendInsightCard";
+import TrendInsightCard, { getConfidenceScore } from "../components/TrendInsightCard";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 
@@ -142,7 +142,16 @@ function SportSection({
         </Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
-        {gamesWithTrends.map((gwt) => {
+        {[...gamesWithTrends].sort((a, b) => {
+          const allOf = (gwt: GameWithTrends): TrendResult[] => [
+            ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]),
+            ...(gwt.homeTeamHomeTrends||[]), ...(gwt.awayTeamAwayTrends||[]),
+            ...(gwt.homeTeamTrends||[]), ...(gwt.awayTeamTrends||[]),
+          ];
+          const scoreA = Math.max(0, ...allOf(a).map(t => getConfidenceScore(t)));
+          const scoreB = Math.max(0, ...allOf(b).map(t => getConfidenceScore(t)));
+          return scoreB - scoreA;
+        }).map((gwt) => {
           const { game } = gwt;
           const allTrends: TrendResult[] = [
             ...(gwt.headToHeadTrends || []),
@@ -151,7 +160,7 @@ function SportSection({
             ...(gwt.awayTeamAwayTrends || []),
             ...(gwt.homeTeamTrends || []),
             ...(gwt.awayTeamTrends || []),
-          ].sort((a, b) => b.count - a.count);
+          ].sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);
           if (allTrends.length === 0) return null;
           return (
             <TrendInsightCard

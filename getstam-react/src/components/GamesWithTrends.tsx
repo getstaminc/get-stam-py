@@ -3,7 +3,7 @@ import { Box, Typography, FormControl, InputLabel, Select, MenuItem } from "@mui
 import { useLocation } from "react-router-dom";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 import { encodeGameId } from "../utils/gameIdCrypto";
-import TrendInsightCard from "./TrendInsightCard";
+import TrendInsightCard, { getConfidenceScore } from "./TrendInsightCard";
 
 interface GamesWithTrendsProps {
   gamesWithTrends: GameWithTrends[];
@@ -81,6 +81,20 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
     );
   }
 
+  const getTopTrends = (gwt: GameWithTrends) => [
+    ...(gwt.headToHeadTrends || []),
+    ...(gwt.homeAtHomeH2HTrends || []),
+    ...(gwt.homeTeamHomeTrends || []),
+    ...(gwt.awayTeamAwayTrends || []),
+    ...(gwt.homeTeamTrends || []),
+    ...(gwt.awayTeamTrends || []),
+  ].sort((a, b) => b.count - a.count);
+
+  const gameScore = (gwt: GameWithTrends) =>
+    Math.max(0, ...getTopTrends(gwt).map(t => getConfidenceScore(t)));
+
+  const sorted = [...filtered].sort((a, b) => gameScore(b) - gameScore(a));
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
@@ -91,7 +105,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
-        {filtered.map((gwt) => {
+        {sorted.map((gwt) => {
           const { game } = gwt;
           const allTrends = [
             ...(gwt.headToHeadTrends || []),
@@ -100,7 +114,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
             ...(gwt.awayTeamAwayTrends || []),
             ...(gwt.homeTeamTrends || []),
             ...(gwt.awayTeamTrends || []),
-          ].sort((a, b) => b.count - a.count);
+          ].sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);
 
           if (allTrends.length === 0) return null;
 

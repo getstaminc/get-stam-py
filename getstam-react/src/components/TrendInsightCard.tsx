@@ -44,6 +44,20 @@ const parseDescription = (description: string) => {
   return { title, context };
 };
 
+export const getConfidenceScore = (trend: TrendResult): number => {
+  const { continuation_rate, sample_size = 0, count } = trend;
+  if (continuation_rate != null && sample_size >= 5) {
+    const deviation = Math.abs(continuation_rate - 0.5);
+    if (deviation >= 0.15 && sample_size >= 10) return 4;
+    if (deviation >= 0.08 && sample_size >= 5)  return 3;
+    if (deviation >= 0.04)                       return 2;
+    return 1;
+  }
+  if (count >= 7) return 1;
+  if (count >= 5) return 0.5;
+  return 0;
+};
+
 const getConfidence = (trend: TrendResult): { label: string; color: string } | null => {
   const { continuation_rate, sample_size = 0, count } = trend;
 

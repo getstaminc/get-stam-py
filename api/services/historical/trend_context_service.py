@@ -163,6 +163,7 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
 
         home_h2h_games: Dict[Tuple[str, str], List[Dict]] = defaultdict(list)
         gen_h2h_games: Dict[Tuple[str, str], List[Dict]] = defaultdict(list)
+        team_games: Dict[str, List[Dict]] = defaultdict(list)
 
         for row in rows:
             ht, at = row['home_team_name'], row['away_team_name']
@@ -170,6 +171,15 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
                  'hml': row['hml'], 'aml': row['aml']}
             home_h2h_games[(ht, at)].append(g)
             gen_h2h_games[(min(ht, at), max(ht, at))].append(g)
+            # Team-perspective: each team's own score first, their own ML as hml
+            team_games[ht].append({
+                'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'],
+                'game_date': row['game_date'], 'hml': row['hml'],
+            })
+            team_games[at].append({
+                'hs': row['aw'], 'aw': row['hs'], 'tl': row['tl'],
+                'game_date': row['game_date'], 'hml': row['aml'],
+            })
 
         TREND_TYPES = ('over_streak', 'under_streak', 'win_streak', 'loss_streak')
 
@@ -200,12 +210,14 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
             'gen_h2h_games':  dict(gen_h2h_games),
             'home_h2h_max':   home_h2h_max,
             'gen_h2h_max':    gen_h2h_max,
+            'team_games':     dict(team_games),
         }
         _context_cache[sport] = context
         print(
             f"[context] {sport.upper()}: "
             f"{len(home_h2h_games)} home matchup pairs, "
-            f"{len(gen_h2h_games)} H2H pairs cached"
+            f"{len(gen_h2h_games)} H2H pairs, "
+            f"{len(team_games)} teams cached"
         )
         return context
 
@@ -286,6 +298,51 @@ def _continuation_stats(
     return continued, total, ml_stats
 
 
+def _continuation_stats_team(
+    team_games: Dict[str, List[Dict]],
+    trend_type: str,
+    target_length: int,
+) -> Tuple[int, int, Optional[Dict[str, Tuple[int, int]]]]:
+    """
+    Scan every team's chronological game sequence.
+    Every time the running streak hits exactly `target_length`, record what happened next.
+    Games are stored from each team's own perspective (their score as hs, opp as aw, own ML as hml).
+    """
+    continued = 0
+    total = 0
+    track_ml = trend_type in ('win_streak', 'loss_streak')
+    fav_c = fav_t = dog_c = dog_t = 0
+
+    for _team, games in team_games.items():
+        paired = _game_results_with_ml(games, trend_type)
+        current = 0
+        for i, (r, ml) in enumerate(paired):
+            if r:
+                current += 1
+                if current == target_length and i + 1 < len(paired):
+                    total += 1
+                    next_r = paired[i + 1][0]
+                    if next_r:
+                        continued += 1
+                    if track_ml and ml is not None:
+                        if ml < 0:
+                            fav_t += 1
+                            if next_r:
+                                fav_c += 1
+                        else:
+                            dog_t += 1
+                            if next_r:
+                                dog_c += 1
+            else:
+                current = 0
+
+    ml_stats: Optional[Dict[str, Tuple[int, int]]] = None
+    if track_ml and (fav_t + dog_t) > 0:
+        ml_stats = {'fav': (fav_c, fav_t), 'dog': (dog_c, dog_t)}
+
+    return continued, total, ml_stats
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -329,27 +386,37 @@ def get_streak_context(
         if not ctx:
             return ''
 
-        games_key = 'home_h2h_games' if h2h_mode == 'home_h2h' else 'gen_h2h_games'
-        all_pair_games = ctx.get(games_key, {})
-        if not all_pair_games:
-            return ''
-
-        continued, total, ml_stats = _continuation_stats(
-            all_pair_games, trend_type, streak_length,
-            gen_h2h=(h2h_mode == 'gen_h2h'),
-        )
+        if h2h_mode == 'team':
+            all_team_games = ctx.get('team_games', {})
+            if not all_team_games:
+                return ''
+            continued, total, ml_stats = _continuation_stats_team(
+                all_team_games, trend_type, streak_length,
+            )
+        else:
+            games_key = 'home_h2h_games' if h2h_mode == 'home_h2h' else 'gen_h2h_games'
+            all_pair_games = ctx.get(games_key, {})
+            if not all_pair_games:
+                return ''
+            continued, total, ml_stats = _continuation_stats(
+                all_pair_games, trend_type, streak_length,
+                gen_h2h=(h2h_mode == 'gen_h2h'),
+            )
 
         if total == 0:
             return ''
 
         sport_label = sport.upper()
         sample_note = ' (small sample)' if total <= 3 else ''
-        location = "home H2H matchups" if h2h_mode == 'home_h2h' else "H2H matchups"
+        location = {'home_h2h': 'home H2H matchups', 'gen_h2h': 'H2H matchups', 'team': 'games'}.get(h2h_mode, 'games')
 
         # Descriptive base string — self-contained so it makes sense without the trend description
         if trend_type in ('over_streak', 'under_streak'):
             direction = 'OVER' if trend_type == 'over_streak' else 'UNDER'
-            condition = f"when the {direction} hits {streak_length} straight in {sport_label} {location}"
+            if h2h_mode == 'team':
+                condition = f"when the {direction} hits {streak_length} straight"
+            else:
+                condition = f"when the {direction} hits {streak_length} straight in {sport_label} {location}"
             if continued == 0:
                 base = f"historically {condition}, it has never continued{sample_note}"
             elif continued == total:
@@ -358,13 +425,16 @@ def get_streak_context(
                 base = f"historically {condition}, it continues {_pct(continued, total)} of the time{sample_note}"
         else:  # win_streak / loss_streak
             direction = 'wins' if trend_type == 'win_streak' else 'losses'
-            condition = f"when a team hits {streak_length} straight {direction} in {sport_label} {location}"
-            if continued == 0:
-                base = f"historically {condition}, the streak has never extended{sample_note}"
-            elif continued == total:
-                base = f"historically {condition}, the streak has always extended{sample_note}"
+            if h2h_mode == 'team':
+                condition = f"when a team hits {streak_length} straight {direction}"
             else:
-                base = f"historically {condition}, the streak extends {_pct(continued, total)} of the time{sample_note}"
+                condition = f"when a team hits {streak_length} straight {direction} in {sport_label} {location}"
+            if continued == 0:
+                base = f"historically {condition}, the streak has never continued{sample_note}"
+            elif continued == total:
+                base = f"historically {condition}, the streak has always continued{sample_note}"
+            else:
+                base = f"historically {condition}, the streak continues {_pct(continued, total)} of the time{sample_note}"
 
         # For win/loss: integrate ML split inline with team name in the applicable bucket
         if ml_stats and trend_type in ('win_streak', 'loss_streak'):

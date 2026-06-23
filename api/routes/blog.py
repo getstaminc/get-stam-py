@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, abort
 from dotenv import load_dotenv
 
 from ..services.blog_service import BlogService
+from cache import cache
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
@@ -35,9 +36,15 @@ def get_posts():
 
 @blog_bp.route("/api/blog/posts/<slug>", methods=["GET"])
 def get_post(slug):
+    cache_key = f"blog_post_{slug}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
     post, err = BlogService.get_post_by_slug(slug)
     if err:
         return jsonify({"error": err}), 500
     if not post:
         return jsonify({"error": "Not found"}), 404
-    return jsonify(post)
+    response = jsonify(post)
+    cache.set(cache_key, response, timeout=43200)
+    return response

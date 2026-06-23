@@ -84,6 +84,7 @@ class GameService:
             "game_id": match['id'],
             "commence_time": commence_time_formatted,
             "isToday": is_today(match.get('commence_time'), selected_date_start),
+            "completed": match.get('completed', False),
             "totals": totals,
             "home": {
                 "team": home_team,

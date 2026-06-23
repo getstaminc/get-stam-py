@@ -6,7 +6,7 @@ E.g. "Total went OVER 6 straight at home vs Mariners — OVER in 3 of 4 similar 
 """
 
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -350,6 +350,40 @@ def _continuation_stats_team(
 def _pct(c: int, t: int) -> str:
     return f"{round(c / t * 100)}%"
 
+
+def get_streak_stats(
+    sport: str,
+    trend_type: str,
+    streak_length: int,
+    h2h_mode: str = 'home_h2h',
+) -> Optional[Dict[str, Any]]:
+    """Return {'rate': float, 'sample_size': int} for the given streak, or None if no data.
+
+    rate is the historical continuation probability (continued / total).
+    sample_size is the number of instances where the streak hit exactly streak_length.
+    """
+    try:
+        ctx = _load_sport_context(sport)
+        if not ctx:
+            return None
+
+        if h2h_mode == 'team':
+            continued, total, _ = _continuation_stats_team(
+                ctx.get('team_games', {}), trend_type, streak_length
+            )
+        else:
+            games_key = 'home_h2h_games' if h2h_mode == 'home_h2h' else 'gen_h2h_games'
+            continued, total, _ = _continuation_stats(
+                ctx.get(games_key, {}), trend_type, streak_length,
+                gen_h2h=(h2h_mode == 'gen_h2h'),
+            )
+
+        if total == 0:
+            return None
+        return {'rate': continued / total, 'sample_size': total}
+    except Exception as e:
+        print(f"[context] get_streak_stats error: {e}")
+        return None
 
 
 def get_streak_context(

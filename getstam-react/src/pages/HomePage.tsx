@@ -1,20 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Navigate, Link } from "react-router-dom";
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Container,
-  Stack,
-  Typography,
-} from "@mui/material";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import { Box, Button, Chip, CircularProgress, Container, Typography } from "@mui/material";
 import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
-import GameOdds from "../components/GameOdds";
+import TrendInsightCard from "../components/TrendInsightCard";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 
@@ -77,42 +67,6 @@ async function fetchTrends(
 }
 
 
-const getTrendColor = (type: string): "success" | "error" | "info" => {
-  if (["win_streak", "cover_streak", "over_streak"].includes(type)) return "success";
-  if (["loss_streak", "no_cover_streak", "under_streak"].includes(type)) return "error";
-  return "info";
-};
-
-const getTrendIcon = (type: string): React.ReactElement | undefined => {
-  if (["win_streak", "cover_streak", "over_streak"].includes(type))
-    return <TrendingUpIcon fontSize="small" />;
-  if (["loss_streak", "no_cover_streak", "under_streak"].includes(type))
-    return <TrendingDownIcon fontSize="small" />;
-  return undefined;
-};
-
-function TrendChip({ trend }: { trend: TrendResult }) {
-  const sepIdx = trend.description.indexOf(" — ");
-  const label = sepIdx >= 0 ? trend.description.slice(0, sepIdx) : trend.description;
-  const context = sepIdx >= 0 ? trend.description.slice(sepIdx + 3) : "";
-  return (
-    <Box>
-      <Chip
-        icon={getTrendIcon(trend.type)}
-        label={label}
-        color={getTrendColor(trend.type)}
-        size="small"
-        variant="outlined"
-        sx={{ fontSize: "0.75rem" }}
-      />
-      {context && (
-        <Typography sx={{ fontSize: "0.78rem", color: "#555", mt: 0.5, pl: 0.5, lineHeight: 1.45 }}>
-          {context.charAt(0).toUpperCase() + context.slice(1)}
-        </Typography>
-      )}
-    </Box>
-  );
-}
 
 interface SportSectionProps {
   name: string;
@@ -133,7 +87,6 @@ function SportSection({
 }: SportSectionProps) {
   const [loading, setLoading] = useState(true);
   const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
-  const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const dateStr = formatDate(new Date());
@@ -200,73 +153,14 @@ function SportSection({
             ...(gwt.awayTeamTrends || []),
           ].sort((a, b) => b.count - a.count);
           if (allTrends.length === 0) return null;
-          const isExpanded = expandedGames.has(game.game_id);
-          const visibleTrends = isExpanded ? allTrends : allTrends.slice(0, 2);
-          const hiddenCount = allTrends.length - 2;
           return (
-            <Box
+            <TrendInsightCard
               key={game.game_id}
-              sx={{
-                background: "#fff",
-                border: "1px solid rgba(220,227,234,0.95)",
-                borderRadius: "18px",
-                boxShadow: "0 14px 34px rgba(28,42,31,.08)",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <Box sx={{ p: 2 }}>
-                <GameOdds
-                  game={{ home: game.home, away: game.away, totals: game.totals }}
-                  sport={urlKey}
-                  sx={{ border: "none", boxShadow: "none", borderRadius: 0, p: 0, background: "transparent" }}
-                />
-              </Box>
-              <Box
-                sx={{
-                  borderTop: "1px solid #dce3ea",
-                  background: "linear-gradient(90deg, #e3f2fd, #fff 78%)",
-                  px: 2,
-                  py: 1.5,
-                  mt: "auto",
-                }}
-              >
-                <Stack direction="column" gap={1} sx={{ mb: 1.5 }}>
-                  {visibleTrends.map((trend, i) => (
-                    <TrendChip key={i} trend={trend} />
-                  ))}
-                  {!isExpanded && hiddenCount > 0 && (
-                    <Typography
-                      onClick={() => setExpandedGames(prev => { const next = new Set(prev); next.add(game.game_id); return next; })}
-                      sx={{ fontSize: "0.78rem", color: "#1976d2", fontWeight: 600, pl: 0.5, cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
-                    >
-                      +{hiddenCount} more
-                    </Typography>
-                  )}
-                </Stack>
-                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Button
-                    component={Link}
-                    to={`/game-details/${urlKey}?game_id=${encodeGameId(game.game_id)}`}
-                    sx={{
-                      height: 34,
-                      px: "13px",
-                      borderRadius: "999px",
-                      background: "#1976d2",
-                      color: "#fff",
-                      fontSize: "0.8125rem",
-                      fontWeight: 700,
-                      textTransform: "none",
-                      whiteSpace: "nowrap",
-                      "&:hover": { background: "#1565c0" },
-                    }}
-                  >
-                    Game Details
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
+              game={{ home: game.home, away: game.away, totals: game.totals }}
+              trends={allTrends}
+              detailsLink={`/game-details/${urlKey}?game_id=${encodeGameId(game.game_id)}`}
+              sport={urlKey}
+            />
           );
         })}
       </Box>

@@ -6,7 +6,7 @@ in jobs/send_daily_trends_digest.py so the live trends endpoint can produce
 the same rich format.
 """
 
-from .trend_context_service import get_streak_context
+from .trend_context_service import get_streak_context, get_streak_stats
 
 
 def _enrich_desc(t: dict, team: str, venue: str) -> str:
@@ -54,6 +54,7 @@ def enrich_game_trends(results: list, sport: str) -> list:
         for key, focal_team, h2h_mode, today_ml, venue in trend_keys:
             trends = game_trends.get(key) or []
             for t in trends:
+                stat_mode = 'team' if h2h_mode is None else h2h_mode
                 if h2h_mode is None:
                     desc = _enrich_desc(t, focal_team, venue)
                     ctx = get_streak_context(
@@ -64,7 +65,6 @@ def enrich_game_trends(results: list, sport: str) -> list:
                 else:
                     desc = t['description']
                     if h2h_mode == 'gen_h2h':
-                        # Identify today's favorite for context label
                         if home_ml is not None and home_ml < 0:
                             ctx_ml, ctx_team = home_ml, home
                         elif away_ml is not None and away_ml < 0:
@@ -81,5 +81,11 @@ def enrich_game_trends(results: list, sport: str) -> list:
                 if ctx:
                     desc = f"{desc} — {ctx}"
                 t['description'] = desc
+
+                # Attach structured stats for confidence scoring
+                stats = get_streak_stats(sport, t['type'], t['count'], stat_mode)
+                if stats:
+                    t['continuation_rate'] = stats['rate']
+                    t['sample_size'] = stats['sample_size']
 
     return results

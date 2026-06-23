@@ -169,7 +169,8 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     games: games,
     sportKey: sportKey,
     limit: 20,
-    minTrendLength: minTrendLength
+    minTrendLength: minTrendLength,
+    enrich: true,
   };
   
   try {

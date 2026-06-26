@@ -58,15 +58,16 @@ export const getConfidenceScore = (trend: TrendResult): number => {
   return 0;
 };
 
-const getConfidence = (trend: TrendResult): { label: string; color: string } | null => {
+export const getConfidence = (trend: TrendResult): { label: string; color: string } | null => {
   const { continuation_rate, sample_size = 0, count } = trend;
 
   if (continuation_rate != null && sample_size >= 5) {
-    const deviation = Math.abs(continuation_rate - 0.5);
+    if (continuation_rate < 0.5) return null; // below 50% = likely to break; percentage shows it
+    const deviation = continuation_rate - 0.5;
     if (deviation >= 0.15 && sample_size >= 10) return { label: "High Confidence", color: "#d97706" };
     if (deviation >= 0.08 && sample_size >= 5)  return { label: "Good Confidence", color: "#16a34a" };
     if (deviation >= 0.04)                       return { label: "Moderate",        color: "#64748b" };
-    return null; // near 50% — not meaningful
+    return null;
   }
 
   // Fallback to streak length when no stats available

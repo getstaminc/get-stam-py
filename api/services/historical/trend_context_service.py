@@ -475,15 +475,15 @@ def get_streak_context(
             fav_c, fav_t = ml_stats['fav']
             dog_c, dog_t = ml_stats['dog']
 
-            fav_str = f"{_pct(fav_c, fav_t)} when favored" if fav_t >= 2 else None
-            dog_str = f"{_pct(dog_c, dog_t)} as the underdog" if dog_t >= 2 else None
+            fav_str = f"{_pct(fav_c, fav_t)} when favored ({fav_c}/{fav_t})" if fav_t >= 2 else None
+            dog_str = f"{_pct(dog_c, dog_t)} as the underdog ({dog_c}/{dog_t})" if dog_t >= 2 else None
 
             # Inline team name with the matching bucket
             if today_team and today_ml is not None:
                 if today_ml < 0 and fav_str:
-                    fav_str = f"{_pct(fav_c, fav_t)} when favored ({today_team} today)"
+                    fav_str = f"{_pct(fav_c, fav_t)} when favored ({fav_c}/{fav_t}, {today_team} today)"
                 elif today_ml >= 0 and dog_str:
-                    dog_str = f"{_pct(dog_c, dog_t)} as the underdog ({today_team} today)"
+                    dog_str = f"{_pct(dog_c, dog_t)} as the underdog ({dog_c}/{dog_t}, {today_team} today)"
 
             parts = [p for p in [fav_str, dog_str] if p]
             result = f"{base} — {', '.join(parts)}" if parts else base

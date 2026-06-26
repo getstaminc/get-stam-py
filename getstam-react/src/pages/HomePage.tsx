@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { Box, Button, Chip, CircularProgress, Container, Typography } from "@mui/material";
 import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
-import TrendInsightCard, { getConfidenceScore } from "../components/TrendInsightCard";
+import TrendInsightCard, { getConfidenceScore, getConfidence } from "../components/TrendInsightCard";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 
@@ -74,7 +74,7 @@ interface SportSectionProps {
   apiKey: string;
   historicalKey: string;
   minTrendLength: number;
-  onReport: (hasActiveGames: boolean) => void;
+  onReport: (hasActiveGames: boolean, maxScore: number) => void;
 }
 
 function SportSection({
@@ -87,6 +87,8 @@ function SportSection({
 }: SportSectionProps) {
   const [loading, setLoading] = useState(true);
   const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
+  const onReportRef = useRef(onReport);
+  onReportRef.current = onReport;
 
   useEffect(() => {
     const dateStr = formatDate(new Date());
@@ -95,24 +97,30 @@ function SportSection({
     (async () => {
       try {
         const games = await fetchGames(apiKey, dateStr);
-        // Send all games to trends endpoint for a stable cache key;
-        // filter completed games from display after.
         const trends = await fetchTrends(games, apiKey, historicalKey, minTrendLength);
         if (cancelled) return;
         const active = trends.filter((gwt) => !gwt.game.completed && gwt.hasTrends);
         setGamesWithTrends(active);
-        onReport(active.length > 0);
+        const allOf = (gwt: GameWithTrends): TrendResult[] => [
+          ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]),
+          ...(gwt.homeTeamHomeTrends||[]), ...(gwt.awayTeamAwayTrends||[]),
+          ...(gwt.homeTeamTrends||[]), ...(gwt.awayTeamTrends||[]),
+        ];
+        const maxScore = active.length > 0
+          ? Math.max(0, ...active.flatMap(gwt => allOf(gwt).map(t => getConfidenceScore(t))))
+          : 0;
+        onReportRef.current(active.length > 0, maxScore);
       } catch {
-        if (!cancelled) onReport(false);
+        if (!cancelled) onReportRef.current(false, 0);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [apiKey, historicalKey, minTrendLength, onReport]);
+    return () => { cancelled = true; };
+  // onReport intentionally omitted — held in ref to avoid re-triggering the fetch
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, historicalKey, minTrendLength]);
 
   if (loading) {
     return (
@@ -148,8 +156,16 @@ function SportSection({
             ...(gwt.homeTeamHomeTrends||[]), ...(gwt.awayTeamAwayTrends||[]),
             ...(gwt.homeTeamTrends||[]), ...(gwt.awayTeamTrends||[]),
           ];
-          const scoreA = Math.max(0, ...allOf(a).map(t => getConfidenceScore(t)));
-          const scoreB = Math.max(0, ...allOf(b).map(t => getConfidenceScore(t)));
+          const badgeScore = (t: TrendResult): number => {
+            const c = getConfidence(t);
+            if (!c) return 0;
+            if (c.label === "High Confidence") return 3;
+            if (c.label === "Good Confidence") return 2;
+            if (c.label === "Moderate") return 1;
+            return 0;
+          };
+          const scoreA = Math.max(0, ...allOf(a).map(badgeScore));
+          const scoreB = Math.max(0, ...allOf(b).map(badgeScore));
           return scoreB - scoreA;
         }).map((gwt) => {
           const { game } = gwt;
@@ -190,14 +206,20 @@ export default function HomePage() {
 
   const [reportedCount, setReportedCount] = useState(0);
   const [hasAnyActiveGames, setHasAnyActiveGames] = useState(false);
+  const [sectionScores, setSectionScores] = useState<Record<string, number>>({});
 
-  const handleSectionReport = useCallback((hasGames: boolean) => {
+  const handleSectionReport = useCallback((sportName: string, hasGames: boolean, maxScore: number) => {
     setReportedCount((prev) => prev + 1);
     if (hasGames) setHasAnyActiveGames(true);
+    setSectionScores((prev) => ({ ...prev, [sportName]: maxScore }));
   }, []);
 
   const allLoaded =
     inSeasonSports.length > 0 && reportedCount >= inSeasonSports.length;
+
+  const sortedSports = allLoaded
+    ? [...inSeasonSports].sort((a, b) => (sectionScores[b.name] ?? 0) - (sectionScores[a.name] ?? 0))
+    : inSeasonSports;
 
   const now = new Date();
   const shortDate = [
@@ -310,12 +332,12 @@ export default function HomePage() {
           </Box>
         </Box>
 
-        {/* Sport sections — stacked, one per in-season sport */}
-        {inSeasonSports.map((sport) => (
+        {/* Sport sections — sorted by max confidence score once all have loaded */}
+        {sortedSports.map((sport) => (
           <SportSection
             key={sport.name}
             {...sport}
-            onReport={handleSectionReport}
+            onReport={(hasGames, maxScore) => handleSectionReport(sport.name, hasGames, maxScore)}
           />
         ))}
 

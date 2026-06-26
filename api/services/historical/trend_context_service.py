@@ -441,7 +441,7 @@ def get_streak_context(
             return ''
 
         sport_label = sport.upper()
-        sample_note = ' (small sample)' if total <= 3 else ''
+        sample_note = f' ({continued} of {total} instances)' if total <= 3 else ''
         location = {'home_h2h': 'home H2H matchups', 'gen_h2h': 'H2H matchups', 'team': 'games'}.get(h2h_mode, 'games')
 
         # Descriptive base string — self-contained so it makes sense without the trend description
@@ -452,11 +452,11 @@ def get_streak_context(
             else:
                 condition = f"when the {direction} hits {streak_length} straight in {sport_label} {location}"
             if continued == 0:
-                base = f"historically {condition}, it has never continued{sample_note}"
+                base = f"Historically {condition}, it has never continued{sample_note}"
             elif continued == total:
-                base = f"historically {condition}, it has always continued{sample_note}"
+                base = f"Historically {condition}, it has always continued{sample_note}"
             else:
-                base = f"historically {condition}, it continues {_pct(continued, total)} of the time{sample_note}"
+                base = f"Historically {condition}, it continues {_pct(continued, total)} of the time{sample_note}"
         else:  # win_streak / loss_streak
             direction = 'wins' if trend_type == 'win_streak' else 'losses'
             if h2h_mode == 'team':
@@ -464,11 +464,11 @@ def get_streak_context(
             else:
                 condition = f"when a team hits {streak_length} straight {direction} in {sport_label} {location}"
             if continued == 0:
-                base = f"historically {condition}, the streak has never continued{sample_note}"
+                base = f"Historically {condition}, the streak has never continued{sample_note}"
             elif continued == total:
-                base = f"historically {condition}, the streak has always continued{sample_note}"
+                base = f"Historically {condition}, the streak has always continued{sample_note}"
             else:
-                base = f"historically {condition}, the streak continues {_pct(continued, total)} of the time{sample_note}"
+                base = f"Historically {condition}, the streak continues {_pct(continued, total)} of the time{sample_note}"
 
         # For win/loss: show ML split breakdown, then team role as a separate statement
         if ml_stats and trend_type in ('win_streak', 'loss_streak'):

@@ -395,7 +395,7 @@ Return ONLY valid JSON (no markdown code fences) with these exact keys:
 
             message = client.messages.create(
                 model="claude-opus-4-6",
-                max_tokens=4096,
+                max_tokens=8192,
                 messages=[{"role": "user", "content": prompt}],
             )
             text = message.content[0].text

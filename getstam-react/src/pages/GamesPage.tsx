@@ -169,7 +169,8 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     games: games,
     sportKey: sportKey,
     limit: 20,
-    minTrendLength: minTrendLength
+    minTrendLength: minTrendLength,
+    enrich: true,
   };
   
   try {
@@ -221,7 +222,8 @@ const GamesPage = () => {
   const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [gamesLoading, setGamesLoading] = useState(false);
-  const [minTrendLength, setMinTrendLength] = useState<number>(3);
+  const defaultMinTrendLength = urlSport === "mlb" ? 5 : 3;
+  const [minTrendLength, setMinTrendLength] = useState<number>(defaultMinTrendLength);
   const [pitcherData, setPitcherData] = useState<any>({});
 
   // Get pitcher data for a specific game using shared utility
@@ -259,6 +261,11 @@ const GamesPage = () => {
   setSelectedDate(new Date(newDate));
     // eslint-disable-next-line
   }, [location.search]);
+
+  // Reset minTrendLength when sport changes
+  useEffect(() => {
+    setMinTrendLength(urlSport === "mlb" ? 5 : 3);
+  }, [urlSport]);
 
   // Fetch pitcher data when sport is MLB
   useEffect(() => {

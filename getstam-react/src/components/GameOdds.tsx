@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, SxProps, Theme } from "@mui/material";
 import { GameWithDraw } from "../types/gameTypes";
 import { getTeamPageLink } from "../utils/teamSlugUtils";
 
@@ -15,9 +15,10 @@ interface GameOddsProps {
   detailsLink?: string;
   onViewDetails?: () => void;
   sport?: string;
+  sx?: SxProps<Theme>;
 }
 
-const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onViewDetails, sport }) => {
+const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onViewDetails, sport, sx }) => {
   const { home, away, totals, draw } = game as GameWithDraw;
 
   const allOddsNull = (
@@ -62,6 +63,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
         display: "flex",
         flexDirection: "column",
         gap: 1.5,
+        ...sx as object,
       }}
     >
       {/* Card header: Home | Status | Away */}

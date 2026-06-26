@@ -17,12 +17,12 @@ import {
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
 import { Link } from "react-router-dom";
 import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import HistoricalGames from "../components/HistoricalGames";
 import { encodeGameId } from "../utils/gameIdCrypto";
+import DailyDigestContent from "../components/DailyDigestContent";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
@@ -60,224 +60,6 @@ interface BlogPost {
   away_team?: string;
   odds_event_id?: string;
   game_data?: GameData | null;
-}
-
-// ---------------------------------------------------------------------------
-// Daily Digest content parser + renderer
-// ---------------------------------------------------------------------------
-
-interface TrendItem { description: string }
-interface TeamSection { label: string; trends: TrendItem[] }
-interface GameCard { matchup: string; gameUrl?: string; teams: TeamSection[] }
-interface SportSection { name: string; games: GameCard[] }
-
-function parseDailyDigest(markdown: string): { intro: string; sports: SportSection[] } {
-  const lines = markdown.split("\n");
-  let intro = "";
-  const sports: SportSection[] = [];
-  let currentSport: SportSection | null = null;
-  let currentGame: GameCard | null = null;
-  let currentTeam: TeamSection | null = null;
-
-  const flushTeam = () => {
-    if (currentTeam && currentGame) { currentGame.teams.push(currentTeam); currentTeam = null; }
-  };
-  const flushGame = () => {
-    flushTeam();
-    if (currentGame && currentSport) { currentSport.games.push(currentGame); currentGame = null; }
-  };
-  const flushSport = () => {
-    flushGame();
-    if (currentSport) { sports.push(currentSport); currentSport = null; }
-  };
-
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    if (line.startsWith("# ")) continue;
-    if (line.startsWith("## ")) {
-      flushSport();
-      currentSport = { name: line.slice(3).trim(), games: [] };
-    } else if (line.startsWith("### ")) {
-      flushGame();
-      currentGame = { matchup: line.slice(4).trim(), teams: [] };
-    } else if (/^\[.*\]\(\/game-details\/[^)]+\)$/.test(line) && currentGame) {
-      const urlMatch = line.match(/\]\(([^)]+)\)/);
-      if (urlMatch) currentGame.gameUrl = urlMatch[1];
-    } else if (/^\*\*[^*]+\*\*:/.test(line)) {
-      flushTeam();
-      const label = line.match(/^\*\*([^*]+)\*\*:/)?.[1] || "";
-      currentTeam = { label, trends: [] };
-    } else if (line.startsWith("- ") && currentTeam) {
-      currentTeam.trends.push({ description: line.slice(2).trim() });
-    } else if (!currentSport && line.trim() && !line.startsWith("#")) {
-      intro = intro ? intro + " " + line.trim() : line.trim();
-    }
-  }
-  flushSport();
-  return { intro, sports };
-}
-
-const SPORT_COLORS: Record<string, { bg: string; text: string; light: string }> = {
-  MLB: { bg: "#1565c0", text: "#fff", light: "#e3f2fd" },
-  NHL: { bg: "#00695c", text: "#fff", light: "#e0f2f1" },
-  NBA: { bg: "#bf360c", text: "#fff", light: "#fbe9e7" },
-};
-
-function getTrendStyle(description: string) {
-  const d = description.toLowerCase();
-  if (d.includes("won") || d.includes("win")) return { bg: "#e8f5e9", color: "#2e7d32", border: "#a5d6a7", icon: <TrendingUpIcon sx={{ fontSize: 14 }} /> };
-  if (d.includes("lost") || d.includes("loss")) return { bg: "#ffebee", color: "#c62828", border: "#ef9a9a", icon: <TrendingDownIcon sx={{ fontSize: 14 }} /> };
-  if (d.includes("over")) return { bg: "#e8f5e9", color: "#2e7d32", border: "#a5d6a7", icon: <TrendingUpIcon sx={{ fontSize: 14 }} /> };
-  if (d.includes("under")) return { bg: "#ffebee", color: "#c62828", border: "#ef9a9a", icon: <TrendingDownIcon sx={{ fontSize: 14 }} /> };
-  return { bg: "#f5f5f5", color: "#424242", border: "#e0e0e0", icon: undefined };
-}
-
-function TrendPill({ trend }: { trend: TrendItem }) {
-  const style = getTrendStyle(trend.description);
-  return (
-    <Box
-      sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 0.5,
-        px: 1.5,
-        py: 0.5,
-        borderRadius: 4,
-        fontSize: "0.78rem",
-        fontWeight: 600,
-        bgcolor: style.bg,
-        color: style.color,
-        border: `1px solid ${style.border}`,
-        lineHeight: 1.4,
-      }}
-    >
-      {style.icon}
-      {trend.description}
-    </Box>
-  );
-}
-
-function DailyDigestContent({ content }: { content: string }) {
-  const { intro, sports } = parseDailyDigest(content);
-
-  return (
-    <Box>
-      {intro && (
-        <Typography variant="body1" sx={{ mb: 3, color: "text.secondary", fontSize: "1.05rem" }}>
-          {intro}
-        </Typography>
-      )}
-
-      <Stack spacing={3}>
-        {sports.map((sport) => {
-          const colors = SPORT_COLORS[sport.name] || { bg: "#37474f", text: "#fff", light: "#eceff1" };
-          return (
-            <Box key={sport.name}>
-              {/* Sport header */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  px: 2.5,
-                  py: 1.5,
-                  bgcolor: colors.bg,
-                  borderRadius: "10px 10px 0 0",
-                }}
-              >
-                <Typography variant="h6" sx={{ color: colors.text, fontWeight: 800, letterSpacing: 1 }}>
-                  {sport.name}
-                </Typography>
-                <Chip
-                  label={`${sport.games.length} game${sport.games.length !== 1 ? "s" : ""}`}
-                  size="small"
-                  sx={{ bgcolor: "rgba(255,255,255,0.2)", color: colors.text, fontWeight: 600, fontSize: "0.72rem" }}
-                />
-              </Box>
-
-              {/* Games */}
-              <Box
-                sx={{
-                  border: `2px solid ${colors.bg}`,
-                  borderTop: "none",
-                  borderRadius: "0 0 10px 10px",
-                  overflow: "hidden",
-                }}
-              >
-                {sport.games.map((game, gi) => (
-                  <Box
-                    key={gi}
-                    sx={{
-                      p: 2.5,
-                      borderTop: gi > 0 ? "1px solid #f0f0f0" : "none",
-                      bgcolor: gi % 2 === 0 ? "#fff" : "#fafafa",
-                    }}
-                  >
-                    {/* Matchup header */}
-                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1.5 }}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Box sx={{ width: 4, height: 20, bgcolor: colors.bg, borderRadius: 1 }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a1a1a" }}>
-                          {game.matchup}
-                        </Typography>
-                      </Box>
-                      {game.gameUrl && (
-                        <Button
-                          component={Link}
-                          to={game.gameUrl}
-                          size="small"
-                          variant="outlined"
-                          sx={{
-                            fontSize: "0.7rem",
-                            py: 0.25,
-                            px: 1,
-                            borderRadius: 2,
-                            whiteSpace: "nowrap",
-                            borderColor: colors.bg,
-                            color: colors.bg,
-                            "&:hover": { bgcolor: colors.light },
-                          }}
-                        >
-                          View Game →
-                        </Button>
-                      )}
-                    </Box>
-
-                    {/* Team trends */}
-                    <Stack spacing={1.5}>
-                      {game.teams.map((team, ti) => (
-                        <Box key={ti}>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: "block",
-                              fontWeight: 700,
-                              color: colors.bg,
-                              textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                              mb: 0.75,
-                              fontSize: "0.7rem",
-                            }}
-                          >
-                            {team.label}
-                          </Typography>
-                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-                            {team.trends.map((t, trendIdx) => (
-                              <TrendPill key={trendIdx} trend={t} />
-                            ))}
-                          </Box>
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          );
-        })}
-      </Stack>
-    </Box>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -573,7 +355,7 @@ export default function BlogPostPage() {
               📬 Get your daily trends every morning
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              The strongest MLB, NHL &amp; NBA streaks delivered to your inbox before game time.
+              The strongest betting streaks delivered to your inbox before game time.
             </Typography>
           </Box>
           <Box sx={{ minWidth: { sm: 280 }, width: { xs: "100%", sm: "auto" } }}>

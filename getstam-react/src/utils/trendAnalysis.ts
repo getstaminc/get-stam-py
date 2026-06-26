@@ -7,6 +7,8 @@ export interface TrendResult {
   type: TrendType;
   count: number;
   description: string;
+  continuation_rate?: number;
+  sample_size?: number;
 }
 
 export interface GameWithTrends {

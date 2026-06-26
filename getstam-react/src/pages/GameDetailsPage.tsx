@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
+import TrendAnalysisSection from "../components/TrendAnalysisSection";
 import { useGame } from "../contexts/GameContext";
 import { convertTeamNameBySport, convertSportKeyForDatabase } from "../utils/teamNameConverter";
 import { decodeGameId } from "../utils/gameIdCrypto";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 import SEO from "../components/SEO";
+import { GameWithTrends } from "../utils/trendAnalysis";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -111,6 +113,9 @@ const GameDetailsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [gamesLimit, setGamesLimit] = useState<number>(5);
   const [pitcherData, setPitcherData] = useState<any>({});
+  const [gameTrends, setGameTrends] = useState<GameWithTrends | null>(null);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [dataSinceYear, setDataSinceYear] = useState<number | null>(null);
 
   // Convert URL sport to API sport key
   const sportKey = sport ? SPORT_URL_TO_API_KEY[sport] || sport : null;
@@ -381,6 +386,50 @@ const GameDetailsPage: React.FC = () => {
     }
   }, [sportKey, gameId, currentGame, gamesLimit]);
 
+  const SPORT_TO_TRENDS_ENDPOINT: { [key: string]: string } = {
+    baseball_mlb: "mlb",
+    icehockey_nhl: "nhl",
+    basketball_nba: "nba",
+    americanfootball_nfl: "nfl",
+    americanfootball_ncaaf: "ncaaf",
+    basketball_ncaab: "ncaab",
+  };
+
+  const minTrendLength = sportKey === "baseball_mlb" ? 5 : 3;
+
+  // Fetch trends for this specific game
+  useEffect(() => {
+    if (!gameData || !sportKey) return;
+    const endpoint = SPORT_TO_TRENDS_ENDPOINT[sportKey];
+    if (!endpoint) return;
+
+    setTrendsLoading(true);
+    fetch(`${API_BASE_URL}/api/historical/trends/${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+      body: JSON.stringify({ games: [gameData], sportKey, limit: 20, minTrendLength, enrich: true }),
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setGameTrends(data?.data?.[0] ?? null))
+      .catch(() => setGameTrends(null))
+      .finally(() => setTrendsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameData, sportKey]);
+
+  // Fetch data-since year for the "X out of Y instances since YEAR" label
+  useEffect(() => {
+    if (!sportKey) return;
+    const endpoint = SPORT_TO_TRENDS_ENDPOINT[sportKey];
+    if (!endpoint) return;
+    fetch(`${API_BASE_URL}/api/historical/${endpoint}/meta`, {
+      headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setDataSinceYear(data?.data_since_year ?? null))
+      .catch(() => setDataSinceYear(null));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sportKey]);
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
@@ -426,8 +475,15 @@ const GameDetailsPage: React.FC = () => {
         description={seoDescription}
         canonicalPath={`/game-details/${sport}?game_id=${encodedGameId}`}
       />
+      <TrendAnalysisSection
+        gameTrends={gameTrends}
+        loading={trendsLoading}
+        game={gameData}
+        minTrendLength={minTrendLength}
+        dataSinceYear={dataSinceYear}
+      />
       <GameDetails
-        game={gameData} 
+        game={gameData}
         homeTeamHistory={homeTeamHistory}
         awayTeamHistory={awayTeamHistory}
         headToHeadHistory={headToHeadHistory}

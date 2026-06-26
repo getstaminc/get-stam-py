@@ -3,7 +3,11 @@
     "allow": [
       "mcp__ide__getDiagnostics",
       "Bash(source:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://127.0.0.1:5000/clear-cache)",
+      "Bash(TMPDIR=/tmp npm run build)"
     ]
   }
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TabsNavigation from "./components/TabsNavigation";
@@ -26,6 +26,7 @@ import TeamPage from "./pages/TeamPage";
 import BlogListPage from "./pages/BlogListPage";
 import BlogPostPage from "./pages/BlogPostPage";
 import BlogAdminPage from "./pages/BlogAdminPage";
+import HomePage from "./pages/HomePage";
 
 function AppContent() {
   usePageView();
@@ -54,7 +55,7 @@ function AppContent() {
       <TabsNavigation />
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Routes>
-          <Route path="/" element={<Navigate to="/mlb" replace />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/nfl" element={<GamesPage />} />
           <Route path="/nfl/trends" element={<GamesPage />} />
           <Route path="/mlb" element={<GamesPage />} />

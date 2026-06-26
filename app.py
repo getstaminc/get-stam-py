@@ -221,7 +221,10 @@ def _get_page_meta(path):
     parts = [p for p in path.strip('/').split('/') if p]
 
     if not parts:
-        return 'GetSTAM', 'Get stats that actually matter for all sports'
+        return (
+            'GetSTAM — Today\'s Betting Trends',
+            'Today\'s strongest betting trends. Win streaks, H2H patterns, and historical probabilities updated every morning.',
+        )
 
     slug = parts[0]
 
@@ -289,7 +292,9 @@ def _inject_meta(html, title, description):
 #Route to clear the cache
 @app.route('/clear-cache')
 def clear_cache():
+    global _index_html_content
     cache.clear()
+    _index_html_content = None
     logging.info("Cache cleared")
     return "Cache cleared", 200
 
@@ -309,6 +314,7 @@ def sitemap():
         ('bundesliga', '0.7'), ('ligue1', '0.7'), ('seriea', '0.7'),
     ]
     static_pages = [
+        ('https://www.getstam.com/',              'daily',   '1.0', today),
         ('https://www.getstam.com/about-us',      'monthly', '0.5', '2025-01-01'),
         ('https://www.getstam.com/betting-guide',  'monthly', '0.6', '2025-01-01'),
         ('https://www.getstam.com/contact-us',     'monthly', '0.4', '2025-01-01'),

@@ -154,7 +154,7 @@ export default function BlogListPage() {
           Get Daily Trends in Your Inbox
         </Typography>
         <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
-          Every morning we send the strongest betting streaks across MLB, NHL, and NBA.
+          Every morning we send the strongest betting streaks across all active sports.
         </Typography>
         <EmailSubscribeForm compact={true} />
       </Paper>

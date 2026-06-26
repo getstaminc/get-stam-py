@@ -30,11 +30,14 @@ const TabsNavigation: React.FC = () => {
   const inSeasonSports = sports.filter((sport) => sport.inSeason);
   const offSeasonSports = sports.filter((sport) => !sport.inSeason);
 
-  const currentTab = inSeasonSports.findIndex((sport) => {
+  const isHome = location.pathname === "/";
+  const sportTabIndex = inSeasonSports.findIndex((sport) => {
     if (location.pathname === sport.path) return true;
     if (sport.leagues && sport.leagues.some((l) => location.pathname === l.path)) return true;
     return false;
   });
+  // HOME is index 0; sport tabs start at index 1
+  const currentTab = isHome ? 0 : sportTabIndex === -1 ? false : sportTabIndex + 1;
 
   // suppression flag to prevent Tabs onChange navigation when a Tab is clicked to open a menu
   const [suppressNextChange, setSuppressNextChange] = React.useState(false);
@@ -62,12 +65,17 @@ const TabsNavigation: React.FC = () => {
       return;
     }
 
-    const sport = inSeasonSports[newValue];
+    // Index 0 is always HOME
+    if (newValue === 0) {
+      navigate("/");
+      return;
+    }
+
+    const sport = inSeasonSports[newValue - 1];
     if (!sport) return;
 
     const native = (event as React.SyntheticEvent)?.nativeEvent as any;
 
-    // If the sport has child leagues, only navigate on keyboard Enter/Space to the first league
     if (sport.leagues && sport.leagues.length > 0) {
       if (native && (native.key === "Enter" || native.key === " ")) {
         navigate(sport.leagues[0].path);
@@ -75,7 +83,6 @@ const TabsNavigation: React.FC = () => {
       return;
     }
 
-    // Only navigate when a path is defined (path is optional for group headers)
     if (sport.path) {
       navigate(sport.path);
     }
@@ -101,31 +108,42 @@ const TabsNavigation: React.FC = () => {
       <Box sx={{ flex: 1 }}>
         {isMobile ? (
           <>
-            <Button
-              variant="outlined"
-              color="inherit"
-              disableRipple
-              aria-label="more-sports"
-              onClick={toggleDrawer(true)}
-              sx={{
-                ml: 1,
-                mt: 1,
-                mb: 1,
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                px: 2,
-                color: '#333', // dark text for contrast
-                borderColor: '#e0e0e0', // lighter grey border
-                bgcolor: 'transparent',
-                '&:hover': {
-                  bgcolor: '#f5f5f5', // subtle light grey on hover
-                  borderColor: '#bdbdbd', // slightly darker on hover
-                },
-              }}
-            >
-              MORE SPORTS
-            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Button
+                onClick={() => navigate('/')}
+                disableRipple
+                sx={{
+                  ml: 1,
+                  textTransform: 'none',
+                  fontWeight: isHome ? 700 : 500,
+                  color: isHome ? 'primary.main' : 'text.secondary',
+                  borderBottom: '2px solid',
+                  borderColor: isHome ? 'primary.main' : 'transparent',
+                  borderRadius: 0,
+                  py: 1.5,
+                  px: 1.5,
+                  minWidth: 0,
+                }}
+              >
+                HOME
+              </Button>
+              <Button
+                onClick={toggleDrawer(true)}
+                disableRipple
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  color: 'text.secondary',
+                  borderBottom: '2px solid transparent',
+                  borderRadius: 0,
+                  py: 1.5,
+                  px: 1.5,
+                  minWidth: 0,
+                }}
+              >
+                MORE SPORTS
+              </Button>
+            </Box>
             <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
               <Box sx={{ width: 260, pt:3, px:1 }} role="presentation">
                 <List>
@@ -167,7 +185,8 @@ const TabsNavigation: React.FC = () => {
           </>
         ) : (
           <>
-            <Tabs value={currentTab === -1 ? false : currentTab} onChange={(e,v) => handleTabChange(e as any, v as number)} textColor="primary" indicatorColor="primary">
+            <Tabs value={currentTab} onChange={(e,v) => handleTabChange(e as any, v as number)} textColor="primary" indicatorColor="primary">
+              <Tab label="Home" onClick={() => navigate("/")} />
               {inSeasonSports.map((sport) => (
                 sport.leagues && sport.leagues.length > 0 ? (
                   <Tab key={sport.name} label={sport.name} onMouseDown={() => setSuppressNextChange(true)} onClick={(e) => { setAnchorEl(e.currentTarget as HTMLElement); setAnchorSport(sport.name); }} />

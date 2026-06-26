@@ -98,12 +98,32 @@ def _check_existing_post(slug):
         return None
 
 
+def _enrich_desc(t: dict, team: str, venue: str) -> str:
+    """Build a descriptive trend sentence with team name and optional venue context."""
+    tt, n = t['type'], t['count']
+    venue_suffix = f" {venue}" if venue else ""
+    if tt == 'win_streak':
+        return f"{team} won {n} straight{venue_suffix}"
+    if tt == 'loss_streak':
+        return f"{team} lost {n} straight{venue_suffix}"
+    if tt in ('over_streak', 'under_streak'):
+        direction = 'OVER' if tt == 'over_streak' else 'UNDER'
+        if venue:
+            return f"Total went {direction} {n} straight {venue} ({team})"
+        return f"Total went {direction} {n} straight ({team})"
+    if tt == 'cover_streak':
+        return f"{team} covered {n} straight spreads{venue_suffix}"
+    if tt == 'no_cover_streak':
+        return f"{team} failed to cover {n} straight spreads{venue_suffix}"
+    return t['description']
+
+
 def _build_markdown(today_str, sport_results):
     """Build Markdown content for the blog post."""
     lines = [
         f"# Daily Trends Digest — {today_str}",
         "",
-        "Today's strongest trends across MLB, NHL, and NBA.",
+        "Today's strongest betting trends.",
         "",
     ]
     for sport_display, sport_key_lower, game_trends_list in sport_results:
@@ -113,16 +133,17 @@ def _build_markdown(today_str, sport_results):
             game = entry["game"]
             home = game.get("home_team_name", "")
             away = game.get("away_team_name", "")
+            # (trend_key, label, h2h_mode, focal_team, focal_ml_key, venue)
             trend_keys = [
-                ("homeTeamTrends",     home,                       None),
-                ("awayTeamTrends",     away,                       None),
-                ("homeTeamHomeTrends", f"{home} (at home)",        None),
-                ("awayTeamAwayTrends", f"{away} (away)",           None),
-                ("headToHeadTrends",   "H2H",                      "gen_h2h"),
-                ("homeAtHomeH2HTrends", f"{home} (home H2H)",      "home_h2h"),
+                ("homeTeamTrends",      home,                  None,         home, "home_ml",  ""),
+                ("awayTeamTrends",      away,                  None,         away, "away_ml",  ""),
+                ("homeTeamHomeTrends",  f"{home} (at home)",   None,         home, "home_ml",  "at home"),
+                ("awayTeamAwayTrends",  f"{away} (away)",      None,         away, "away_ml",  "away"),
+                ("headToHeadTrends",    "H2H",                 "gen_h2h",    None, None,       None),
+                ("homeAtHomeH2HTrends", f"{home} (home H2H)",  "home_h2h",   home, "home_ml",  None),
             ]
             # Skip games that have no renderable trends
-            if not any(entry.get(key) for key, _, _ in trend_keys):
+            if not any(entry.get(key) for key, _, _, _, _, _ in trend_keys):
                 continue
             lines.append(f"### {away} @ {home}")
             lines.append("")
@@ -131,15 +152,16 @@ def _build_markdown(today_str, sport_results):
             if game_id and sport_route_key:
                 lines.append(f"[View Game →](/game-details/{sport_route_key}?game_id={game_id})")
                 lines.append("")
-            for trend_key, label, h2h_mode in trend_keys:
+            for trend_key, label, h2h_mode, focal_team, focal_ml_key, venue in trend_keys:
                 trends = entry.get(trend_key, [])
                 if trends:
                     lines.append(f"**{label}**:")
                     for t in trends:
-                        desc = t['description']
+                        # H2H descriptions are already built with team/venue by base_service
+                        # Non-H2H descriptions need enriching since services emit generic text
+                        desc = t['description'] if h2h_mode else _enrich_desc(t, focal_team, venue)
                         if h2h_mode:
                             if h2h_mode == "home_h2h":
-                                # Focal team is always the home team
                                 today_ml_ctx = game.get("home_ml")
                                 today_team_ctx = home
                             else:
@@ -157,8 +179,16 @@ def _build_markdown(today_str, sport_results):
                                 today_ml=today_ml_ctx,
                                 today_team=today_team_ctx,
                             )
-                            if context:
-                                desc = f"{desc} — {context}"
+                        else:
+                            # Team streak context — look across all historical games
+                            today_ml_ctx = game.get(focal_ml_key) if focal_ml_key else None
+                            context = get_streak_context(
+                                sport_key_lower, t['type'], t['count'], 'team',
+                                today_ml=today_ml_ctx,
+                                today_team=focal_team,
+                            )
+                        if context:
+                            desc = f"{desc} — {context}"
                         lines.append(f"- {desc}")
                     lines.append("")
         lines.append("")
@@ -339,7 +369,7 @@ def run():
         print(f"[digest] Post already exists (id={post_id}, status={existing['status']}), skipping creation")
     else:
         content_md = _build_markdown(today_str, sport_results)
-        excerpt = f"Today's strongest trends: {team_prefix}{highest_trend['description']} and more across MLB, NHL, and NBA."
+        excerpt = f"Today's strongest trends: {team_prefix}{highest_trend['description']} and more."
         post_data = {
             "title": f"Daily Trends Digest — {today_str}",
             "slug": post_slug,

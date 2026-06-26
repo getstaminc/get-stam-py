@@ -470,23 +470,21 @@ def get_streak_context(
             else:
                 base = f"historically {condition}, the streak continues {_pct(continued, total)} of the time{sample_note}"
 
-        # For win/loss: integrate ML split inline with team name in the applicable bucket
+        # For win/loss: show ML split breakdown, then team role as a separate statement
         if ml_stats and trend_type in ('win_streak', 'loss_streak'):
             fav_c, fav_t = ml_stats['fav']
             dog_c, dog_t = ml_stats['dog']
 
             fav_str = f"{_pct(fav_c, fav_t)} when favored ({fav_c}/{fav_t})" if fav_t >= 2 else None
-            dog_str = f"{_pct(dog_c, dog_t)} as the underdog ({dog_c}/{dog_t})" if dog_t >= 2 else None
-
-            # Inline team name with the matching bucket
-            if today_team and today_ml is not None:
-                if today_ml < 0 and fav_str:
-                    fav_str = f"{_pct(fav_c, fav_t)} when favored ({fav_c}/{fav_t}, {today_team} today)"
-                elif today_ml >= 0 and dog_str:
-                    dog_str = f"{_pct(dog_c, dog_t)} as the underdog ({dog_c}/{dog_t}, {today_team} today)"
+            dog_str = f"{_pct(dog_c, dog_t)} as underdog ({dog_c}/{dog_t})" if dog_t >= 2 else None
 
             parts = [p for p in [fav_str, dog_str] if p]
             result = f"{base} — {', '.join(parts)}" if parts else base
+
+            # Team role as a clear, separate concluding statement
+            if today_team and today_ml is not None:
+                role = "today's favorite" if today_ml < 0 else "today's underdog"
+                result = f"{result} — {today_team} are {role}"
 
         # For over/under: no ML split; just append team role if known
         else:

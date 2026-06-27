@@ -307,7 +307,7 @@ export default function HomePage() {
               mb: 2,
             }}
           >
-            Today's Betting Trends
+            Today's Trends
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             {inSeasonSports.map((sport) => (

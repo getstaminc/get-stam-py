@@ -214,6 +214,15 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
             </Box>
           );
         })}
+
+        {playerStreaks && playerStreaks.length > 0 && (
+          <Box sx={{ pt: 0.5 }}>
+            <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", mb: 0.75 }}>
+              Player Streaks
+            </Typography>
+            <PlayerStreaksStrip streaks={playerStreaks} />
+          </Box>
+        )}
       </Box>
 
       {/* Divider + Odds */}
@@ -236,11 +245,6 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
             right={totals?.under_point != null ? `Under ${fmtOdds(totals.under_point, totals.under_price)}` : "N/A"}
           />
         </Box>
-      )}
-
-      {/* Player Streaks */}
-      {playerStreaks && playerStreaks.length > 0 && (
-        <PlayerStreaksStrip streaks={playerStreaks} />
       )}
 
       {/* Button */}

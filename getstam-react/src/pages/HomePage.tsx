@@ -124,7 +124,7 @@ function SportSection({
 
         // For MLB, fetch player streaks using the Odds API full team names
         if (name === "MLB" && games.length > 0) {
-          const teamNames = games.flatMap((g: any) => [g.home_team, g.away_team]).filter(Boolean);
+          const teamNames = games.flatMap((g: any) => [g.home?.team, g.away?.team]).filter(Boolean);
           const streaks = await fetchPlayerStreaks(teamNames);
           if (!cancelled) setPlayerStreaksByTeam(streaks);
         }

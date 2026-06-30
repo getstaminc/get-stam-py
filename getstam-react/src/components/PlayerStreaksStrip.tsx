@@ -34,29 +34,12 @@ const PlayerStreaksStrip: React.FC<PlayerStreaksStripProps> = ({ streaks }) => {
   return (
     <Box
       sx={{
-        borderTop: "1px solid #e2e8f0",
-        bgcolor: "#f8f9fa",
-        px: 2,
-        py: 1,
         display: "flex",
         flexWrap: "wrap",
         gap: 0.75,
         alignItems: "center",
       }}
     >
-      <Typography
-        sx={{
-          fontSize: "0.68rem",
-          fontWeight: 800,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "#94a3b8",
-          mr: 0.5,
-          whiteSpace: "nowrap",
-        }}
-      >
-        Player Streaks
-      </Typography>
       {shown.map((s, i) => {
         const emoji = STAT_EMOJI[s.stat] ?? "";
         const label = STAT_LABEL[s.stat] ?? s.stat;

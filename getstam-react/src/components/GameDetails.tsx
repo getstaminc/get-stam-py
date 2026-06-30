@@ -317,17 +317,6 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
-      <Paper elevation={0} sx={{
-        p: { xs: 2, sm: 3 },
-        mt: 4,
-        maxWidth: 900,
-        mx: { xs: 1, sm: "auto" },
-        backgroundColor: "transparent"
-      }}>
-        {/* Odds section */}
-        <GameOdds game={game} pitcherData={pitcherData} sport={teamPageSport} />
-      </Paper>
-
       {/* MLB Player Streaks */}
       {sportKey === 'baseball_mlb' && (
         (() => {
@@ -336,8 +325,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           const allStreaks = [...homeStreaks, ...awayStreaks];
           if (allStreaks.length === 0) return null;
           return (
-            <Box sx={{ maxWidth: 900, mx: "auto", mt: 2, px: { xs: 1, sm: 0 } }}>
-              <Typography variant="h6" sx={{ mb: 1, px: { xs: 1, sm: 0 } }}>Player Streaks</Typography>
+            <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
               {homeStreaks.length > 0 && (
                 <Box sx={{ mb: 1 }}>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", px: 0.5 }}>
@@ -358,6 +347,17 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           );
         })()
       )}
+
+      <Paper elevation={0} sx={{
+        p: { xs: 2, sm: 3 },
+        mt: 4,
+        maxWidth: 900,
+        mx: { xs: 1, sm: "auto" },
+        backgroundColor: "transparent"
+      }}>
+        {/* Odds section */}
+        <GameOdds game={game} pitcherData={pitcherData} sport={teamPageSport} />
+      </Paper>
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>

@@ -28,7 +28,7 @@ function getStatLabel(stat: string, line?: number): string {
   return stat;
 }
 
-const MAX_SHOWN = 6;
+const MAX_SHOWN = 1;
 
 interface PlayerStreaksStripProps {
   streaks: PlayerStreak[];
@@ -73,6 +73,14 @@ const PlayerStreaksStrip: React.FC<PlayerStreaksStripProps> = ({ streaks }) => {
           label={`+${extra} more`}
           size="small"
           onClick={() => setExpanded(true)}
+          sx={{ fontSize: "0.7rem", height: 22, bgcolor: "#e2e8f0", color: "#64748b", cursor: "pointer" }}
+        />
+      )}
+      {expanded && (
+        <Chip
+          label="Show less"
+          size="small"
+          onClick={() => setExpanded(false)}
           sx={{ fontSize: "0.7rem", height: 22, bgcolor: "#e2e8f0", color: "#64748b", cursor: "pointer" }}
         />
       )}

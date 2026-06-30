@@ -5,7 +5,7 @@ import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
 import TrendInsightCard, { getConfidenceScore, getConfidence } from "../components/TrendInsightCard";
-import { PlayerStreak } from "../components/PlayerStreaksStrip";
+import { PlayerStreak, TeamStreaks } from "../components/PlayerStreaksStrip";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 
@@ -205,11 +205,11 @@ function SportSection({
             ...(gwt.awayTeamTrends || []),
           ].sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);
           if (allTrends.length === 0) return null;
-          const streaks = name === "MLB"
+          const streaks: TeamStreaks[] = name === "MLB"
             ? [
-                ...(playerStreaksByTeam[game.home?.team] ?? []),
-                ...(playerStreaksByTeam[game.away?.team] ?? []),
-              ]
+                { team: game.home?.team ?? "", streaks: playerStreaksByTeam[game.home?.team] ?? [] },
+                { team: game.away?.team ?? "", streaks: playerStreaksByTeam[game.away?.team] ?? [] },
+              ].filter(g => g.team && g.streaks.length > 0)
             : [];
           return (
             <TrendInsightCard

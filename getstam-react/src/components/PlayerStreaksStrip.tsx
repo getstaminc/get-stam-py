@@ -1,11 +1,16 @@
 import React, { useState } from "react";
-import { Box, Chip } from "@mui/material";
+import { Box, Chip, Typography } from "@mui/material";
 
 export interface PlayerStreak {
   player_name: string;
   stat: "hits" | "hr" | "rbi" | "hits_cover" | "hr_cover" | "rbi_cover";
   streak_count: number;
   line?: number;
+}
+
+export interface TeamStreaks {
+  team: string;
+  streaks: PlayerStreak[];
 }
 
 const STAT_EMOJI: Record<string, string> = {
@@ -28,62 +33,73 @@ function getStatLabel(stat: string, line?: number): string {
   return stat;
 }
 
-const MAX_SHOWN = 1;
-
-interface PlayerStreaksStripProps {
-  streaks: PlayerStreak[];
+function StreakPill({ s }: { s: PlayerStreak }) {
+  const emoji = STAT_EMOJI[s.stat] ?? "";
+  const label = getStatLabel(s.stat, s.line);
+  const isCover = s.stat.endsWith("_cover");
+  return (
+    <Box sx={{
+      fontSize: "0.78rem",
+      color: "#334155",
+      bgcolor: isCover ? "#f0fdf4" : "#fff",
+      border: `1px solid ${isCover ? "#bbf7d0" : "#e2e8f0"}`,
+      borderRadius: "999px",
+      px: 1.25,
+      py: 0.3,
+      whiteSpace: "nowrap",
+    }}>
+      {emoji} <strong>{s.player_name}</strong>:{" "}
+      <span style={{ color: "#64748b" }}>{s.streak_count} straight {label}</span>
+    </Box>
+  );
 }
 
-const PlayerStreaksStrip: React.FC<PlayerStreaksStripProps> = ({ streaks }) => {
-  const [expanded, setExpanded] = useState(false);
-  if (!streaks || streaks.length === 0) return null;
+interface PlayerStreaksStripProps {
+  groups: TeamStreaks[];
+}
 
-  const shown = expanded ? streaks : streaks.slice(0, MAX_SHOWN);
-  const extra = streaks.length - MAX_SHOWN;
+const PlayerStreaksStrip: React.FC<PlayerStreaksStripProps> = ({ groups }) => {
+  const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
+
+  const nonEmpty = groups.filter(g => g.streaks.length > 0);
+  if (nonEmpty.length === 0) return null;
+
+  const toggle = (team: string) =>
+    setExpandedTeams(prev => ({ ...prev, [team]: !prev[team] }));
 
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
-      {shown.map((s, i) => {
-        const emoji = STAT_EMOJI[s.stat] ?? "";
-        const label = getStatLabel(s.stat, s.line);
-        const isCover = s.stat.endsWith("_cover");
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      {nonEmpty.map(({ team, streaks }) => {
+        const expanded = expandedTeams[team] ?? false;
+        const shown = expanded ? streaks : streaks.slice(0, 1);
+        const extra = streaks.length - 1;
         return (
-          <Box
-            key={i}
-            sx={{
-              fontSize: "0.78rem",
-              color: "#334155",
-              bgcolor: isCover ? "#f0fdf4" : "#fff",
-              border: `1px solid ${isCover ? "#bbf7d0" : "#e2e8f0"}`,
-              borderRadius: "999px",
-              px: 1.25,
-              py: 0.3,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {emoji} <strong>{s.player_name}</strong>:{" "}
-            <span style={{ color: "#64748b" }}>
-              {s.streak_count} straight {label}
-            </span>
+          <Box key={team}>
+            <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color: "#94a3b8", mb: 0.5 }}>
+              {team}
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
+              {shown.map((s, i) => <StreakPill key={i} s={s} />)}
+              {!expanded && extra > 0 && (
+                <Chip
+                  label={`+${extra} more`}
+                  size="small"
+                  onClick={() => toggle(team)}
+                  sx={{ fontSize: "0.7rem", height: 22, bgcolor: "#e2e8f0", color: "#64748b", cursor: "pointer" }}
+                />
+              )}
+              {expanded && (
+                <Chip
+                  label="Show less"
+                  size="small"
+                  onClick={() => toggle(team)}
+                  sx={{ fontSize: "0.7rem", height: 22, bgcolor: "#e2e8f0", color: "#64748b", cursor: "pointer" }}
+                />
+              )}
+            </Box>
           </Box>
         );
       })}
-      {!expanded && extra > 0 && (
-        <Chip
-          label={`+${extra} more`}
-          size="small"
-          onClick={() => setExpanded(true)}
-          sx={{ fontSize: "0.7rem", height: 22, bgcolor: "#e2e8f0", color: "#64748b", cursor: "pointer" }}
-        />
-      )}
-      {expanded && (
-        <Chip
-          label="Show less"
-          size="small"
-          onClick={() => setExpanded(false)}
-          sx={{ fontSize: "0.7rem", height: 22, bgcolor: "#e2e8f0", color: "#64748b", cursor: "pointer" }}
-        />
-      )}
     </Box>
   );
 };

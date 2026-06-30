@@ -5,7 +5,7 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { TrendResult } from "../utils/trendAnalysis";
 import { getTeamPageLink } from "../utils/teamSlugUtils";
-import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
+import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
 
 export interface TrendInsightCardProps {
   game: any;
@@ -19,7 +19,7 @@ export interface TrendInsightCardProps {
   detailsLink: string;
   sport: string;
   onViewDetails?: () => void;
-  playerStreaks?: PlayerStreak[];
+  playerStreaks?: TeamStreaks[];
 }
 
 const POSITIVE_TYPES = new Set(["win_streak", "cover_streak", "over_streak"]);
@@ -215,12 +215,12 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
           );
         })}
 
-        {playerStreaks && playerStreaks.length > 0 && (
+        {playerStreaks && playerStreaks.some(g => g.streaks.length > 0) && (
           <Box sx={{ pt: 0.5 }}>
             <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", mb: 0.75 }}>
               Player Streaks
             </Typography>
-            <PlayerStreaksStrip streaks={playerStreaks} />
+            <PlayerStreaksStrip groups={playerStreaks} />
           </Box>
         )}
       </Box>

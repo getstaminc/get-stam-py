@@ -320,29 +320,17 @@ const GameDetails: React.FC<GameDetailsProps> = ({
       {/* MLB Player Streaks */}
       {sportKey === 'baseball_mlb' && (
         (() => {
-          const homeStreaks = playerStreaksByTeam[home.team || (game as any).home_team_name] ?? [];
-          const awayStreaks = playerStreaksByTeam[away.team || (game as any).away_team_name] ?? [];
-          const allStreaks = [...homeStreaks, ...awayStreaks];
-          if (allStreaks.length === 0) return null;
+          const homeTeam = home.team || (game as any).home_team_name || "";
+          const awayTeam = away.team || (game as any).away_team_name || "";
+          const groups = [
+            { team: homeTeam, streaks: playerStreaksByTeam[homeTeam] ?? [] },
+            { team: awayTeam, streaks: playerStreaksByTeam[awayTeam] ?? [] },
+          ].filter(g => g.team && g.streaks.length > 0);
+          if (groups.length === 0) return null;
           return (
             <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
-              {homeStreaks.length > 0 && (
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", px: 0.5 }}>
-                    {home.team || homeTeamName}
-                  </Typography>
-                  <PlayerStreaksStrip streaks={homeStreaks} />
-                </Box>
-              )}
-              {awayStreaks.length > 0 && (
-                <Box>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", px: 0.5 }}>
-                    {away.team || awayTeamName}
-                  </Typography>
-                  <PlayerStreaksStrip streaks={awayStreaks} />
-                </Box>
-              )}
+              <PlayerStreaksStrip groups={groups} />
             </Box>
           );
         })()

@@ -5,6 +5,7 @@ import sys
 from collections import defaultdict
 from flask import Blueprint, request, jsonify
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
 
 # Add project root to sys.path so jobs module can be imported
@@ -181,10 +182,41 @@ def get_candidates(player_id):
             "espn_display_name": display_name,
             "similarity_score": round(score, 3),
             "espn_event_id": espn_event_id,
+            "source": "boxscore",
         })
 
     candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
     candidates = candidates[:8]
+
+    # If boxscore gave us nothing useful, fall back to searching mlb_players by name tokens
+    if not candidates or all(c["similarity_score"] == 0.0 for c in candidates):
+        tokens = [t for t in normalized_odds.split() if len(t) > 2]
+        if tokens:
+            conditions = " OR ".join([f"normalized_name LIKE :tok{i}" for i in range(len(tokens))])
+            params = {f"tok{i}": f"%{tok}%" for i, tok in enumerate(tokens)}
+            with engine.connect() as conn:
+                rows = conn.execute(text(f"""
+                    SELECT espn_player_id, player_name, normalized_name
+                    FROM mlb_players
+                    WHERE espn_player_id IS NOT NULL
+                      AND ({conditions})
+                    ORDER BY normalized_name
+                    LIMIT 20
+                """), params).fetchall()
+
+            db_candidates = []
+            for row in rows:
+                espn_pid, display_name, norm_name = row
+                score = score_candidate(normalized_odds, norm_name)
+                db_candidates.append({
+                    "espn_player_id": espn_pid,
+                    "espn_display_name": display_name,
+                    "similarity_score": round(score, 3),
+                    "espn_event_id": espn_event_id,
+                    "source": "db_search",
+                })
+            db_candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
+            candidates = db_candidates[:8]
 
     return jsonify({
         "player_id": player_id,
@@ -264,6 +296,193 @@ def resolve_mismatch(player_id):
     return jsonify({
         "espn_player_id_set": True,
         "espn_name": espn_name,
+        "dates_processed": dates_processed,
+        "dates_skipped": dates_skipped,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Placeholder players — mlb_players with espn_player_id IS NULL
+# ---------------------------------------------------------------------------
+
+@mlb_mismatch_bp.route("/api/internal/mlb/placeholders", methods=["GET"])
+def get_placeholder_players():
+    engine = _get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT p.id, p.normalized_name,
+                   COUNT(DISTINCT bp.id) AS batter_count,
+                   COUNT(DISTINCT pp.id) AS pitcher_count,
+                   MIN(COALESCE(bp.game_date, pp.game_date)) AS first_game,
+                   MAX(COALESCE(bp.game_date, pp.game_date)) AS last_game
+            FROM mlb_players p
+            LEFT JOIN mlb_batter_props bp ON bp.player_id = p.id
+            LEFT JOIN mlb_pitcher_props pp ON pp.player_id = p.id
+            WHERE p.espn_player_id IS NULL
+            GROUP BY p.id, p.normalized_name
+            HAVING COUNT(DISTINCT bp.id) + COUNT(DISTINCT pp.id) > 0
+            ORDER BY p.normalized_name
+        """)).fetchall()
+
+    result = []
+    for row in rows:
+        player_id, normalized_name, batter_count, pitcher_count, first_game, last_game = row
+        result.append({
+            "player_id": player_id,
+            "normalized_name": normalized_name,
+            "batter_props": batter_count,
+            "pitcher_props": pitcher_count,
+            "total_props": batter_count + pitcher_count,
+            "first_game": _date_str(first_game) if first_game else None,
+            "last_game": _date_str(last_game) if last_game else None,
+        })
+
+    return jsonify(result)
+
+
+@mlb_mismatch_bp.route("/api/internal/mlb/placeholders/<int:player_id>/candidates", methods=["GET"])
+def get_placeholder_candidates(player_id):
+    engine = _get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT normalized_name FROM mlb_players
+            WHERE id = :player_id AND espn_player_id IS NULL
+        """), {"player_id": player_id}).fetchone()
+
+    if not row:
+        return jsonify({"error": "Placeholder player not found"}), 404
+
+    normalized_odds = row[0]
+    tokens = [t for t in normalized_odds.split() if len(t) > 2]
+
+    if not tokens:
+        return jsonify({"player_id": player_id, "odds_name": normalized_odds, "candidates": []})
+
+    conditions = " OR ".join([f"normalized_name LIKE :tok{i}" for i in range(len(tokens))])
+    params = {f"tok{i}": f"%{tok}%" for i, tok in enumerate(tokens)}
+    params["player_id"] = player_id
+
+    with engine.connect() as conn:
+        rows = conn.execute(text(f"""
+            SELECT espn_player_id, player_name, normalized_name
+            FROM mlb_players
+            WHERE espn_player_id IS NOT NULL
+              AND id != :player_id
+              AND ({conditions})
+            ORDER BY normalized_name
+            LIMIT 20
+        """), params).fetchall()
+
+    candidates = []
+    for r in rows:
+        espn_pid, display_name, norm_name = r
+        score = score_candidate(normalized_odds, norm_name)
+        candidates.append({
+            "espn_player_id": espn_pid,
+            "espn_display_name": display_name,
+            "similarity_score": round(score, 3),
+            "source": "db_search",
+        })
+    candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
+
+    return jsonify({
+        "player_id": player_id,
+        "odds_name": normalized_odds,
+        "candidates": candidates[:8],
+    })
+
+
+@mlb_mismatch_bp.route("/api/internal/mlb/placeholders/<int:player_id>/resolve", methods=["POST"])
+def resolve_placeholder(player_id):
+    body = request.get_json()
+    if not body or "espn_player_id" not in body:
+        return jsonify({"error": "Missing espn_player_id in request body"}), 400
+
+    espn_player_id = str(body["espn_player_id"])
+    espn_name = body.get("espn_name", "")
+
+    engine = _get_engine()
+
+    # Step 1: set espn_player_id on the placeholder.
+    # If another player already has this ESPN ID, merge the placeholder into that player.
+    merged_from = None
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("""
+                UPDATE mlb_players SET espn_player_id = :espn_player_id
+                WHERE id = :player_id AND espn_player_id IS NULL
+            """), {"espn_player_id": espn_player_id, "player_id": player_id})
+            conn.commit()
+            target_player_id = player_id
+        except IntegrityError:
+            conn.rollback()
+            # Find the existing player that owns this ESPN ID
+            row = conn.execute(text("""
+                SELECT id, normalized_name FROM mlb_players WHERE espn_player_id = :espn_player_id
+            """), {"espn_player_id": espn_player_id}).fetchone()
+            if not row:
+                return jsonify({"error": "Duplicate ESPN ID but existing player not found"}), 500
+            target_player_id, target_name = row[0], row[1]
+            merged_from = player_id
+
+            # Move batter_props from placeholder → existing player (skip any that conflict)
+            conn.execute(text("""
+                UPDATE mlb_batter_props SET player_id = :target_id
+                WHERE player_id = :src_id
+                  AND odds_event_id NOT IN (
+                      SELECT odds_event_id FROM mlb_batter_props WHERE player_id = :target_id
+                  )
+            """), {"target_id": target_player_id, "src_id": player_id})
+            conn.execute(text("DELETE FROM mlb_batter_props WHERE player_id = :src_id"), {"src_id": player_id})
+
+            # Move pitcher_props from placeholder → existing player (skip any that conflict)
+            conn.execute(text("""
+                UPDATE mlb_pitcher_props SET player_id = :target_id
+                WHERE player_id = :src_id
+                  AND odds_event_id NOT IN (
+                      SELECT odds_event_id FROM mlb_pitcher_props WHERE player_id = :target_id
+                  )
+            """), {"target_id": target_player_id, "src_id": player_id})
+            conn.execute(text("DELETE FROM mlb_pitcher_props WHERE player_id = :src_id"), {"src_id": player_id})
+
+            # Remove the duplicate placeholder
+            conn.execute(text("DELETE FROM mlb_players WHERE id = :player_id"), {"player_id": player_id})
+            conn.commit()
+
+    # Step 2: find all espn_event_ids already linked to the target player's prop records
+    with engine.connect() as conn:
+        event_rows = conn.execute(text("""
+            SELECT DISTINCT espn_event_id, game_date FROM (
+                SELECT espn_event_id, game_date FROM mlb_batter_props
+                WHERE player_id = :player_id AND espn_event_id IS NOT NULL
+                UNION
+                SELECT espn_event_id, game_date FROM mlb_pitcher_props
+                WHERE player_id = :player_id AND espn_event_id IS NOT NULL
+            ) sub
+            ORDER BY game_date
+        """), {"player_id": target_player_id}).fetchall()
+        event_data = [tuple(r) for r in event_rows]
+
+    # Step 3: backfill actuals for each linked game
+    dates_processed = []
+    dates_skipped = []
+
+    for eid, game_date in event_data:
+        date_str = _date_str(game_date)
+        with engine.connect() as conn:
+            try:
+                process_game_reverse(conn, eid, game_date)
+                conn.commit()
+                dates_processed.append(date_str)
+            except Exception as e:
+                conn.rollback()
+                print(f"Error processing game {eid} for date {date_str}: {e}")
+                dates_skipped.append(date_str)
+
+    return jsonify({
+        "espn_player_id_set": True,
+        "espn_name": espn_name,
+        "merged_placeholder_id": merged_from,
         "dates_processed": dates_processed,
         "dates_skipped": dates_skipped,
     })

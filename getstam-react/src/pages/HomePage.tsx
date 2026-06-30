@@ -5,6 +5,7 @@ import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
 import TrendInsightCard, { getConfidenceScore, getConfidence } from "../components/TrendInsightCard";
+import { PlayerStreak } from "../components/PlayerStreaksStrip";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 
@@ -42,6 +43,24 @@ async function fetchGames(apiKey: string, dateStr: string): Promise<any[]> {
     return data.games || [];
   } catch {
     return [];
+  }
+}
+
+async function fetchPlayerStreaks(
+  teamNames: string[],
+): Promise<Record<string, PlayerStreak[]>> {
+  if (teamNames.length === 0) return {};
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/historical/player-trends/mlb`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-KEY": API_KEY },
+      body: JSON.stringify({ team_names: teamNames, min_streak: 5 }),
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data.data || {};
+  } catch {
+    return {};
   }
 }
 
@@ -87,6 +106,7 @@ function SportSection({
 }: SportSectionProps) {
   const [loading, setLoading] = useState(true);
   const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
+  const [playerStreaksByTeam, setPlayerStreaksByTeam] = useState<Record<string, PlayerStreak[]>>({});
   const onReportRef = useRef(onReport);
   onReportRef.current = onReport;
 
@@ -101,6 +121,13 @@ function SportSection({
         if (cancelled) return;
         const active = trends.filter((gwt) => !gwt.game.completed && gwt.hasTrends);
         setGamesWithTrends(active);
+
+        // For MLB, fetch player streaks using the Odds API full team names
+        if (name === "MLB" && games.length > 0) {
+          const teamNames = games.flatMap((g: any) => [g.home_team, g.away_team]).filter(Boolean);
+          const streaks = await fetchPlayerStreaks(teamNames);
+          if (!cancelled) setPlayerStreaksByTeam(streaks);
+        }
         const allOf = (gwt: GameWithTrends): TrendResult[] => [
           ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]),
           ...(gwt.homeTeamHomeTrends||[]), ...(gwt.awayTeamAwayTrends||[]),
@@ -178,6 +205,12 @@ function SportSection({
             ...(gwt.awayTeamTrends || []),
           ].sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);
           if (allTrends.length === 0) return null;
+          const streaks = name === "MLB"
+            ? [
+                ...(playerStreaksByTeam[game.home?.team] ?? []),
+                ...(playerStreaksByTeam[game.away?.team] ?? []),
+              ]
+            : [];
           return (
             <TrendInsightCard
               key={game.game_id}
@@ -185,6 +218,7 @@ function SportSection({
               trends={allTrends}
               detailsLink={`/game-details/${urlKey}?game_id=${encodeGameId(game.game_id)}`}
               sport={urlKey}
+              playerStreaks={streaks}
             />
           );
         })}

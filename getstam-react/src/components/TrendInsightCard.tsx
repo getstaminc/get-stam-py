@@ -5,6 +5,7 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { TrendResult } from "../utils/trendAnalysis";
 import { getTeamPageLink } from "../utils/teamSlugUtils";
+import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
 
 export interface TrendInsightCardProps {
   game: any;
@@ -18,6 +19,7 @@ export interface TrendInsightCardProps {
   detailsLink: string;
   sport: string;
   onViewDetails?: () => void;
+  playerStreaks?: PlayerStreak[];
 }
 
 const POSITIVE_TYPES = new Set(["win_streak", "cover_streak", "over_streak"]);
@@ -101,7 +103,7 @@ const OddsRow: React.FC<{ left: string; label: string; right: string; sub?: stri
   </Box>
 );
 
-const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitcherData, detailsLink, sport, onViewDetails }) => {
+const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitcherData, detailsLink, sport, onViewDetails, playerStreaks }) => {
   const { home, away, totals, draw } = game;
   if (trends.length === 0) return null;
 
@@ -234,6 +236,11 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
             right={totals?.under_point != null ? `Under ${fmtOdds(totals.under_point, totals.under_price)}` : "N/A"}
           />
         </Box>
+      )}
+
+      {/* Player Streaks */}
+      {playerStreaks && playerStreaks.length > 0 && (
+        <PlayerStreaksStrip streaks={playerStreaks} />
       )}
 
       {/* Button */}

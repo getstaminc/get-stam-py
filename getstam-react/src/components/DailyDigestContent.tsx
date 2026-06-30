@@ -24,13 +24,19 @@ export interface SportSection {
   games: GameCard[];
 }
 
-export function parseDailyDigest(markdown: string): { intro: string; sports: SportSection[] } {
+export interface PlayerStreakItem {
+  text: string;
+}
+
+export function parseDailyDigest(markdown: string): { intro: string; sports: SportSection[]; playerStreaks: PlayerStreakItem[] } {
   const lines = markdown.split("\n");
   let intro = "";
   const sports: SportSection[] = [];
+  const playerStreaks: PlayerStreakItem[] = [];
   let currentSport: SportSection | null = null;
   let currentGame: GameCard | null = null;
   let currentTeam: TeamSection | null = null;
+  let inPlayerStreaks = false;
 
   const flushTeam = () => {
     if (currentTeam && currentGame) { currentGame.teams.push(currentTeam); currentTeam = null; }
@@ -47,6 +53,22 @@ export function parseDailyDigest(markdown: string): { intro: string; sports: Spo
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (line.startsWith("# ")) continue;
+    if (line.startsWith("### Player Streaks")) {
+      flushGame();
+      inPlayerStreaks = true;
+      continue;
+    }
+    if (inPlayerStreaks) {
+      if (line.startsWith("•")) {
+        playerStreaks.push({ text: line.slice(1).trim() });
+      } else if (line.startsWith("## ")) {
+        // new sport section resets player streaks mode
+        inPlayerStreaks = false;
+        flushSport();
+        currentSport = { name: line.slice(3).trim(), games: [] };
+      }
+      continue;
+    }
     if (line.startsWith("## ")) {
       flushSport();
       currentSport = { name: line.slice(3).trim(), games: [] };
@@ -67,7 +89,7 @@ export function parseDailyDigest(markdown: string): { intro: string; sports: Spo
     }
   }
   flushSport();
-  return { intro, sports };
+  return { intro, sports, playerStreaks };
 }
 
 export const SPORT_COLORS: Record<string, { bg: string; text: string; light: string }> = {
@@ -128,7 +150,7 @@ export function TrendPill({ trend }: { trend: TrendItem }) {
 }
 
 export default function DailyDigestContent({ content }: { content: string }) {
-  const { intro, sports } = parseDailyDigest(content);
+  const { intro, sports, playerStreaks } = parseDailyDigest(content);
 
   return (
     <Box>
@@ -136,6 +158,37 @@ export default function DailyDigestContent({ content }: { content: string }) {
         <Typography variant="body1" sx={{ mb: 3, color: "text.secondary", fontSize: "1.05rem" }}>
           {intro}
         </Typography>
+      )}
+
+      {playerStreaks.length > 0 && (
+        <Box sx={{ mb: 3, p: 2, bgcolor: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px" }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#15803d", mb: 1.5, letterSpacing: 0.5 }}>
+            MLB Player Streaks
+          </Typography>
+          <Stack spacing={0.75}>
+            {playerStreaks.map((item, i) => (
+              <Box
+                key={i}
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 4,
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  bgcolor: "#dcfce7",
+                  color: "#15803d",
+                  border: "1px solid #a5d6a7",
+                  width: "fit-content",
+                }}
+              >
+                {item.text}
+              </Box>
+            ))}
+          </Stack>
+        </Box>
       )}
 
       <Stack spacing={3}>

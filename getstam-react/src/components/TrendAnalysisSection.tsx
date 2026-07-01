@@ -130,14 +130,16 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({ gameTrends,
 
   const { home, away, totals } = game;
 
-  // Collect all trends, filter by minTrendLength, sort by confidence
+  // Collect all trends, dedup venue-specific vs general (prefer venue-specific)
+  const homeSpecificTypes = new Set((gameTrends.homeTeamHomeTrends || []).map(t => t.type));
+  const awaySpecificTypes = new Set((gameTrends.awayTeamAwayTrends || []).map(t => t.type));
   const allTrends: TrendResult[] = [
     ...(gameTrends.headToHeadTrends || []),
     ...(gameTrends.homeAtHomeH2HTrends || []),
     ...(gameTrends.homeTeamHomeTrends || []),
     ...(gameTrends.awayTeamAwayTrends || []),
-    ...(gameTrends.homeTeamTrends || []),
-    ...(gameTrends.awayTeamTrends || []),
+    ...(gameTrends.homeTeamTrends || []).filter(t => !homeSpecificTypes.has(t.type)),
+    ...(gameTrends.awayTeamTrends || []).filter(t => !awaySpecificTypes.has(t.type)),
   ]
     .filter(t => t.count >= minTrendLength)
     .sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);

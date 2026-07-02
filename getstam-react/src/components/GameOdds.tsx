@@ -33,6 +33,8 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
 
   const isGameOver = hasScore && allOddsNull;
 
+  if (allOddsNull) return null;
+
   const formatOdds = (point: number | null, price: number | null) => {
     if (point === null && price === null) return "N/A";
     if (point === null) return price !== null ? `${price > 0 ? "+" : ""}${price}` : "N/A";

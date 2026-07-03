@@ -113,6 +113,9 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
     (!away.odds || (away.odds.h2h == null && away.odds.spread_point == null)) &&
     (!totals || (totals.over_point == null && totals.under_point == null));
   const isGameOver = hasScore && noOdds;
+
+  if (noOdds) return null;
+
   const statusLabel = hasScore ? `${home.score} - ${away.score}` : "Scheduled";
 
   return (

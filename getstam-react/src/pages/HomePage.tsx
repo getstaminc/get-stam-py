@@ -196,13 +196,15 @@ function SportSection({
           return scoreB - scoreA;
         }).map((gwt) => {
           const { game } = gwt;
+          const homeSpecificTypes = new Set((gwt.homeTeamHomeTrends || []).map(t => t.type));
+          const awaySpecificTypes = new Set((gwt.awayTeamAwayTrends || []).map(t => t.type));
           const allTrends: TrendResult[] = [
             ...(gwt.headToHeadTrends || []),
             ...(gwt.homeAtHomeH2HTrends || []),
             ...(gwt.homeTeamHomeTrends || []),
             ...(gwt.awayTeamAwayTrends || []),
-            ...(gwt.homeTeamTrends || []),
-            ...(gwt.awayTeamTrends || []),
+            ...(gwt.homeTeamTrends || []).filter(t => !homeSpecificTypes.has(t.type)),
+            ...(gwt.awayTeamTrends || []).filter(t => !awaySpecificTypes.has(t.type)),
           ].sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);
           if (allTrends.length === 0) return null;
           const streaks: TeamStreaks[] = name === "MLB"

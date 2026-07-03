@@ -330,7 +330,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           return (
             <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
-              <PlayerStreaksStrip groups={groups} />
+              <PlayerStreaksStrip groups={groups} showAll />
             </Box>
           );
         })()

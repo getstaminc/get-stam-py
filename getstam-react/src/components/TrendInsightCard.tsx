@@ -117,6 +117,12 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
   if (noOdds) return null;
 
   const statusLabel = hasScore ? `${home.score} - ${away.score}` : "Scheduled";
+  const gameTime = !hasScore && game.commence_time
+    ? new Date(game.commence_time).toLocaleString("en-US", {
+        month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+        timeZone: "America/New_York", timeZoneName: "short",
+      })
+    : null;
 
   return (
     <Box sx={{ background: "#fff", border: "1px solid rgba(220,227,234,0.95)", borderRadius: "18px", boxShadow: "0 8px 24px rgba(15,23,42,0.07)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -145,6 +151,9 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
           </Box>
           {isGameOver && (
             <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.08em", color: "#94a3b8", mt: 0.25 }}>FINAL</Typography>
+          )}
+          {gameTime && (
+            <Typography sx={{ fontSize: "0.7rem", color: "#94a3b8", mt: 0.25, whiteSpace: "nowrap" }}>{gameTime}</Typography>
           )}
         </Box>
 

@@ -4,7 +4,7 @@ import { Box, Button, Chip, CircularProgress, Container, Typography } from "@mui
 import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
-import TrendInsightCard, { getConfidenceScore, getConfidence } from "../components/TrendInsightCard";
+import TrendInsightCard, { getConfidenceScore } from "../components/TrendInsightCard";
 import { PlayerStreak, TeamStreaks } from "../components/PlayerStreaksStrip";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
@@ -177,24 +177,7 @@ function SportSection({
         </Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
-        {[...gamesWithTrends].sort((a, b) => {
-          const allOf = (gwt: GameWithTrends): TrendResult[] => [
-            ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]),
-            ...(gwt.homeTeamHomeTrends||[]), ...(gwt.awayTeamAwayTrends||[]),
-            ...(gwt.homeTeamTrends||[]), ...(gwt.awayTeamTrends||[]),
-          ];
-          const badgeScore = (t: TrendResult): number => {
-            const c = getConfidence(t);
-            if (!c) return 0;
-            if (c.label === "High Confidence") return 3;
-            if (c.label === "Good Confidence") return 2;
-            if (c.label === "Moderate") return 1;
-            return 0;
-          };
-          const scoreA = Math.max(0, ...allOf(a).map(badgeScore));
-          const scoreB = Math.max(0, ...allOf(b).map(badgeScore));
-          return scoreB - scoreA;
-        }).map((gwt) => {
+        {gamesWithTrends.map((gwt) => {
           const { game } = gwt;
           const homeSpecificTypes = new Set((gwt.homeTeamHomeTrends || []).map(t => t.type));
           const awaySpecificTypes = new Set((gwt.awayTeamAwayTrends || []).map(t => t.type));
@@ -206,7 +189,13 @@ function SportSection({
             ...(gwt.homeTeamTrends || []).filter(t => !homeSpecificTypes.has(t.type)),
             ...(gwt.awayTeamTrends || []).filter(t => !awaySpecificTypes.has(t.type)),
           ].sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);
-          if (allTrends.length === 0) return null;
+          return { gwt, game, allTrends };
+        }).filter(({ allTrends }) => allTrends.length > 0)
+          .sort((a, b) => {
+            const scoreA = Math.max(0, ...a.allTrends.map(getConfidenceScore));
+            const scoreB = Math.max(0, ...b.allTrends.map(getConfidenceScore));
+            return scoreB - scoreA;
+          }).map(({ gwt, game, allTrends }) => {
           const streaks: TeamStreaks[] = name === "MLB"
             ? [
                 { team: game.home?.team ?? "", streaks: playerStreaksByTeam[game.home?.team] ?? [] },
@@ -216,7 +205,7 @@ function SportSection({
           return (
             <TrendInsightCard
               key={game.game_id}
-              game={{ home: game.home, away: game.away, totals: game.totals }}
+              game={{ home: game.home, away: game.away, totals: game.totals, commence_time: game.commence_time }}
               trends={allTrends}
               detailsLink={`/game-details/${urlKey}?game_id=${encodeGameId(game.game_id)}`}
               sport={urlKey}

@@ -9,6 +9,7 @@ import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 import PlayerPropsTable from "./PlayerPropsTable";
 import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
 import { decodeGameId } from "../utils/gameIdCrypto";
+import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
 
 type Game = {
   home: TeamData;
@@ -110,6 +111,9 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const [hasLoadedPlayerProps, setHasLoadedPlayerProps] = useState<boolean>(false);
   const [loadedTeamTabs, setLoadedTeamTabs] = useState<Set<number>>(new Set()); // Track which team tabs have been loaded
 
+  // MLB player streaks state
+  const [playerStreaksByTeam, setPlayerStreaksByTeam] = useState<Record<string, PlayerStreak[]>>({});
+
   // MLB player props state
   const [mlbPlayerPropsData, setMlbPlayerPropsData] = useState<any>(null);
   const [mlbPlayerPropsLoading, setMlbPlayerPropsLoading] = useState<boolean>(false);
@@ -155,6 +159,27 @@ const GameDetails: React.FC<GameDetailsProps> = ({
       fetchMLBPlayerProps();
     }
   }, [playerPropsLimit]);
+
+  // MLB: fetch player streaks on mount
+  useEffect(() => {
+    if (sportKey !== 'baseball_mlb') return;
+    const homeTeam = home.team || (game as any).home_team_name;
+    const awayTeam = away.team || (game as any).away_team_name;
+    if (!homeTeam && !awayTeam) return;
+    const teamNames = [homeTeam, awayTeam].filter(Boolean);
+    fetch('/api/historical/player-trends/mlb', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': process.env.REACT_APP_API_KEY || '',
+      },
+      body: JSON.stringify({ team_names: teamNames, min_streak: 5 }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data?.data) setPlayerStreaksByTeam(data.data); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sportKey, home.team, away.team]);
 
   const fetchPlayerProps = async (teamTab: number) => {
     setPlayerPropsLoading(true);
@@ -292,6 +317,25 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
+      {/* MLB Player Streaks */}
+      {sportKey === 'baseball_mlb' && (
+        (() => {
+          const homeTeam = home.team || (game as any).home_team_name || "";
+          const awayTeam = away.team || (game as any).away_team_name || "";
+          const groups = [
+            { team: homeTeam, streaks: playerStreaksByTeam[homeTeam] ?? [] },
+            { team: awayTeam, streaks: playerStreaksByTeam[awayTeam] ?? [] },
+          ].filter(g => g.team && g.streaks.length > 0);
+          if (groups.length === 0) return null;
+          return (
+            <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
+              <PlayerStreaksStrip groups={groups} showAll />
+            </Box>
+          );
+        })()
+      )}
+
       <Paper elevation={0} sx={{
         p: { xs: 2, sm: 3 },
         mt: 4,

@@ -5,6 +5,7 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { TrendResult } from "../utils/trendAnalysis";
 import { getTeamPageLink } from "../utils/teamSlugUtils";
+import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
 
 export interface TrendInsightCardProps {
   game: any;
@@ -18,6 +19,7 @@ export interface TrendInsightCardProps {
   detailsLink: string;
   sport: string;
   onViewDetails?: () => void;
+  playerStreaks?: TeamStreaks[];
 }
 
 const POSITIVE_TYPES = new Set(["win_streak", "cover_streak", "over_streak"]);
@@ -101,7 +103,7 @@ const OddsRow: React.FC<{ left: string; label: string; right: string; sub?: stri
   </Box>
 );
 
-const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitcherData, detailsLink, sport, onViewDetails }) => {
+const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitcherData, detailsLink, sport, onViewDetails, playerStreaks }) => {
   const { home, away, totals, draw } = game;
   if (trends.length === 0) return null;
 
@@ -215,6 +217,15 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
             </Box>
           );
         })}
+
+        {playerStreaks && playerStreaks.some(g => g.streaks.length > 0) && (
+          <Box sx={{ pt: 0.5 }}>
+            <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", mb: 0.75 }}>
+              Player Streaks
+            </Typography>
+            <PlayerStreaksStrip groups={playerStreaks} />
+          </Box>
+        )}
       </Box>
 
       {/* Divider + Odds */}

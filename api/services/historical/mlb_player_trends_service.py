@@ -149,7 +149,13 @@ class MLBPlayerTrendsService(BaseHistoricalService):
             result[meta["team_name"]].append(entry)
 
         for team_name in result:
-            result[team_name].sort(key=lambda x: x["streak_count"], reverse=True)
+            result[team_name].sort(
+                key=lambda x: (
+                    -x["streak_count"],
+                    x["continuation_rate"] is None,   # None rates last
+                    -(x["continuation_rate"] or 0),
+                )
+            )
 
         return dict(result)
 

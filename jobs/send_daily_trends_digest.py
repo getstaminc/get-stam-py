@@ -23,6 +23,7 @@ from shared_utils import convert_team_name
 from api.services.historical.mlb_trends_service import MLBTrendsService
 from api.services.historical.nhl_trends_service import NHLTrendsService
 from api.services.historical.nba_trends_service import NBATrendsService
+from api.services.historical.mlb_player_trends_service import MLBPlayerTrendsService
 from api.services.blog_service import BlogService
 from api.services.email_service import EmailService
 from api.services.historical.trend_context_service import get_streak_context
@@ -118,7 +119,7 @@ def _enrich_desc(t: dict, team: str, venue: str) -> str:
     return t['description']
 
 
-def _build_markdown(today_str, sport_results):
+def _build_markdown(today_str, sport_results, player_streaks_by_team=None):
     """Build Markdown content for the blog post."""
     lines = [
         f"# Daily Trends Digest — {today_str}",
@@ -192,6 +193,21 @@ def _build_markdown(today_str, sport_results):
                         lines.append(f"- {desc}")
                     lines.append("")
         lines.append("")
+
+    # Append Player Streaks section (MLB only, sourced from mlb_batter_props)
+    if player_streaks_by_team:
+        stat_labels = {"hits": "Hit", "hr": "HR", "rbi": "RBI"}
+        lines.append("### Player Streaks")
+        lines.append("")
+        for team_name, streaks in player_streaks_by_team.items():
+            for streak in streaks:
+                label = stat_labels.get(streak["stat"], streak["stat"].upper())
+                lines.append(
+                    f"• {streak['player_name']} ({team_name}): "
+                    f"{streak['streak_count']} straight games with 1+ {label}"
+                )
+        lines.append("")
+
     return "\n".join(lines)
 
 
@@ -354,6 +370,40 @@ def run():
         print("[digest] No trends found across any sport. Exiting without creating post or sending email.")
         return
 
+    # --- Step 1b: Fetch MLB player streaks ---
+    player_streaks_by_team = {}
+    # Collect all MLB team names from today's games
+    all_mlb_team_names = []
+    for display, sport_key_lower, game_trends_list in sport_results:
+        if sport_key_lower == "mlb":
+            for entry in game_trends_list:
+                game = entry["game"]
+                # game dict has short names (DB names); we need Odds API full names
+                # player_team_name in batter_props uses Odds API full names, so
+                # we re-collect them from the raw scores processed earlier.
+                pass  # handled below using stored full names
+
+    # Re-collect Odds API full team names for MLB
+    try:
+        mlb_cfg = next((c for c in SPORTS_CONFIG if c["sport"] == "mlb"), None)
+        if mlb_cfg:
+            mlb_scores, _ = get_odds_data(mlb_cfg["sport"], None)
+            mlb_today = _get_todays_games_from_scores(mlb_scores or [])
+            all_mlb_team_names = []
+            for g in mlb_today:
+                all_mlb_team_names.append(g.get("home_team", ""))
+                all_mlb_team_names.append(g.get("away_team", ""))
+            all_mlb_team_names = [t for t in all_mlb_team_names if t]
+
+        if all_mlb_team_names:
+            player_streaks_by_team = MLBPlayerTrendsService().get_batter_streaks(
+                team_names=all_mlb_team_names, min_streak=5
+            )
+            total_streaks = sum(len(v) for v in player_streaks_by_team.values())
+            print(f"[digest] MLB player streaks: {total_streaks} streaks across {len(player_streaks_by_team)} teams")
+    except Exception as e:
+        print(f"[digest] MLB player streaks error (non-fatal): {e}")
+
     # --- Step 2: Find highest trend ---
     best_entry = max(all_trends_flat, key=lambda x: x["trend"]["count"])
     highest_trend = best_entry["trend"]
@@ -368,7 +418,7 @@ def run():
         post_id = existing["id"]
         print(f"[digest] Post already exists (id={post_id}, status={existing['status']}), skipping creation")
     else:
-        content_md = _build_markdown(today_str, sport_results)
+        content_md = _build_markdown(today_str, sport_results, player_streaks_by_team)
         excerpt = f"Today's strongest trends: {team_prefix}{highest_trend['description']} and more."
         post_data = {
             "title": f"Daily Trends Digest — {today_str}",

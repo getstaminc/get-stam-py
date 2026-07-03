@@ -9,5 +9,20 @@
       "Bash(curl -s http://127.0.0.1:5000/clear-cache)",
       "Bash(TMPDIR=/tmp npm run build)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(jq -r '.tool_input.file_path // empty'); echo \"$file\" | grep -q 'getstam-react/src/' && cd /Users/stephaniegillen/Projects/get-stam-py/getstam-react && npm run build 2>&1 | tail -5 || true",
+            "async": true,
+            "statusMessage": "Building React app..."
+          }
+        ]
+      }
+    ]
   }
 }

@@ -3,6 +3,7 @@ import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { Link } from "react-router-dom";
+import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
 
 export interface TrendItem {
   description: string;
@@ -17,6 +18,7 @@ export interface GameCard {
   matchup: string;
   gameUrl?: string;
   teams: TeamSection[];
+  playerStreaks?: TeamStreaks[];
 }
 
 export interface SportSection {
@@ -24,19 +26,15 @@ export interface SportSection {
   games: GameCard[];
 }
 
-export interface PlayerStreakItem {
-  text: string;
-}
+const PLAYER_STREAKS_PREFIX = "<!--PLAYER_STREAKS:";
 
-export function parseDailyDigest(markdown: string): { intro: string; sports: SportSection[]; playerStreaks: PlayerStreakItem[] } {
+export function parseDailyDigest(markdown: string): { intro: string; sports: SportSection[] } {
   const lines = markdown.split("\n");
   let intro = "";
   const sports: SportSection[] = [];
-  const playerStreaks: PlayerStreakItem[] = [];
   let currentSport: SportSection | null = null;
   let currentGame: GameCard | null = null;
   let currentTeam: TeamSection | null = null;
-  let inPlayerStreaks = false;
 
   const flushTeam = () => {
     if (currentTeam && currentGame) { currentGame.teams.push(currentTeam); currentTeam = null; }
@@ -53,19 +51,12 @@ export function parseDailyDigest(markdown: string): { intro: string; sports: Spo
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (line.startsWith("# ")) continue;
-    if (line.startsWith("### Player Streaks")) {
-      flushGame();
-      inPlayerStreaks = true;
-      continue;
-    }
-    if (inPlayerStreaks) {
-      if (line.startsWith("•")) {
-        playerStreaks.push({ text: line.slice(1).trim() });
-      } else if (line.startsWith("## ")) {
-        // new sport section resets player streaks mode
-        inPlayerStreaks = false;
-        flushSport();
-        currentSport = { name: line.slice(3).trim(), games: [] };
+    if (line.startsWith(PLAYER_STREAKS_PREFIX) && currentGame) {
+      const jsonStr = line.slice(PLAYER_STREAKS_PREFIX.length, line.lastIndexOf("-->"));
+      try {
+        currentGame.playerStreaks = JSON.parse(jsonStr);
+      } catch {
+        // malformed comment, skip silently
       }
       continue;
     }
@@ -89,7 +80,7 @@ export function parseDailyDigest(markdown: string): { intro: string; sports: Spo
     }
   }
   flushSport();
-  return { intro, sports, playerStreaks };
+  return { intro, sports };
 }
 
 export const SPORT_COLORS: Record<string, { bg: string; text: string; light: string }> = {
@@ -150,7 +141,7 @@ export function TrendPill({ trend }: { trend: TrendItem }) {
 }
 
 export default function DailyDigestContent({ content }: { content: string }) {
-  const { intro, sports, playerStreaks } = parseDailyDigest(content);
+  const { intro, sports } = parseDailyDigest(content);
 
   return (
     <Box>
@@ -158,37 +149,6 @@ export default function DailyDigestContent({ content }: { content: string }) {
         <Typography variant="body1" sx={{ mb: 3, color: "text.secondary", fontSize: "1.05rem" }}>
           {intro}
         </Typography>
-      )}
-
-      {playerStreaks.length > 0 && (
-        <Box sx={{ mb: 3, p: 2, bgcolor: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px" }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#15803d", mb: 1.5, letterSpacing: 0.5 }}>
-            MLB Player Streaks
-          </Typography>
-          <Stack spacing={0.75}>
-            {playerStreaks.map((item, i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 4,
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  bgcolor: "#dcfce7",
-                  color: "#15803d",
-                  border: "1px solid #a5d6a7",
-                  width: "fit-content",
-                }}
-              >
-                {item.text}
-              </Box>
-            ))}
-          </Stack>
-        </Box>
       )}
 
       <Stack spacing={3}>
@@ -292,6 +252,18 @@ export default function DailyDigestContent({ content }: { content: string }) {
                         </Box>
                       ))}
                     </Stack>
+
+                    {game.playerStreaks && game.playerStreaks.some(g => g.streaks.length > 0) && (
+                      <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid #f0f0f0" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ display: "block", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5, mb: 0.75, fontSize: "0.7rem" }}
+                        >
+                          Player Streaks
+                        </Typography>
+                        <PlayerStreaksStrip groups={game.playerStreaks} />
+                      </Box>
+                    )}
                   </Box>
                 ))}
               </Box>

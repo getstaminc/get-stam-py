@@ -121,7 +121,9 @@ class MLBPlayerTrendsService(BaseHistoricalService):
                             current_line = line
                     else:
                         break
-                if streak >= MIN_COVER_STREAK:
+                # Skip cover streaks with a sub-1 line: "actual > line" is then
+                # identical to the plain "1+" streak above and adds no new info.
+                if streak >= MIN_COVER_STREAK and current_line is not None and current_line >= 1:
                     active_streaks.append((player_id, f"{stat}_cover", streak, current_line))
 
         if not active_streaks:

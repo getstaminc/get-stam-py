@@ -8,6 +8,7 @@ import os
 import sys
 import base64
 import binascii
+import json
 import urllib.parse
 from datetime import datetime
 import pytz
@@ -192,20 +193,19 @@ def _build_markdown(today_str, sport_results, player_streaks_by_team=None):
                             desc = f"{desc} — {context}"
                         lines.append(f"- {desc}")
                     lines.append("")
-        lines.append("")
 
-    # Append Player Streaks section (MLB only, sourced from mlb_batter_props)
-    if player_streaks_by_team:
-        stat_labels = {"hits": "Hit", "hr": "HR", "rbi": "RBI"}
-        lines.append("### Player Streaks")
-        lines.append("")
-        for team_name, streaks in player_streaks_by_team.items():
-            for streak in streaks:
-                label = stat_labels.get(streak["stat"], streak["stat"].upper())
-                lines.append(
-                    f"• {streak['player_name']} ({team_name}): "
-                    f"{streak['streak_count']} straight games with 1+ {label}"
-                )
+            # Per-game player streaks (MLB only), embedded as a JSON comment so the
+            # frontend can render them with the same PlayerStreaksStrip used on the
+            # game-details page (grouped by team, one shown + expandable).
+            if player_streaks_by_team:
+                game_streaks = []
+                for team_name in (home, away):
+                    team_streaks = player_streaks_by_team.get(team_name, [])
+                    if team_streaks:
+                        game_streaks.append({"team": team_name, "streaks": team_streaks})
+                if game_streaks:
+                    lines.append(f"<!--PLAYER_STREAKS:{json.dumps(game_streaks)}-->")
+                    lines.append("")
         lines.append("")
 
     return "\n".join(lines)
@@ -396,9 +396,15 @@ def run():
             all_mlb_team_names = [t for t in all_mlb_team_names if t]
 
         if all_mlb_team_names:
-            player_streaks_by_team = MLBPlayerTrendsService().get_batter_streaks(
+            raw_streaks_by_team = MLBPlayerTrendsService().get_batter_streaks(
                 team_names=all_mlb_team_names, min_streak=5
             )
+            # Re-key from Odds API full team names to short DB names so games
+            # (which use short names) can look streaks up per-team.
+            player_streaks_by_team = {
+                convert_team_name(full_name): streaks
+                for full_name, streaks in raw_streaks_by_team.items()
+            }
             total_streaks = sum(len(v) for v in player_streaks_by_team.values())
             print(f"[digest] MLB player streaks: {total_streaks} streaks across {len(player_streaks_by_team)} teams")
     except Exception as e:

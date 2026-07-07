@@ -6,8 +6,11 @@ from flask import Flask, jsonify, Blueprint, send_from_directory, make_response
 from datetime import datetime
 import pytz
 import re
+import html
+import json
 
 from cache import cache, init_cache
+from api.services.blog_service import BlogService
 import logging
 from api.routes.games import games_bp
 from api.routes.odds import odds_bp
@@ -114,6 +117,17 @@ _SPORT_DISPLAY = {
     'ligue1': 'Ligue 1', 'seriea': 'Serie A',
 }
 
+BASE_URL = 'https://www.getstam.com'
+DEFAULT_OG_IMAGE = f'{BASE_URL}/logo192.png'
+
+_ORG_WEBSITE_JSON_LD = {
+    "@context": "https://schema.org",
+    "@graph": [
+        {"@type": "Organization", "name": "GetSTAM", "url": BASE_URL, "logo": f'{BASE_URL}/logo192.png'},
+        {"@type": "WebSite", "name": "GetSTAM", "url": BASE_URL},
+    ],
+}
+
 def _team_slug(name):
     return re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
 
@@ -210,65 +224,118 @@ _SPORT_TEAMS = {
 }
 
 _STATIC_PAGE_META = {
-    'about': ('About GetSTAM', 'Learn about GetSTAM and our sports analytics platform.'),
-    'contact': ('Contact Us | GetSTAM', 'Get in touch with the GetSTAM team.'),
+    'about-us': ('About GetSTAM', 'Learn about GetSTAM and our sports analytics platform.'),
+    'contact-us': ('Contact Us | GetSTAM', 'Get in touch with the GetSTAM team.'),
     'betting-guide': ('Betting Guide | GetSTAM', 'Learn how to read betting odds and use trends to your advantage.'),
     'privacy-policy': ('Privacy Policy | GetSTAM', 'GetSTAM privacy policy.'),
     'feature-requests': ('Feature Requests | GetSTAM', 'Request new features for GetSTAM.'),
     'blog': ('Blog | GetSTAM', 'Sports betting analysis and tips.'),
 }
 
+_BLOG_META_NOT_FOUND = '__not_found__'
+
+
+def _get_blog_post_for_meta(slug):
+    """Cached lookup of a published blog post for SSR meta/JSON-LD, mirroring the
+    cache pattern used by api/routes/blog.py:get_post."""
+    cache_key = f'ssr_blog_meta:{slug}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return None if cached == _BLOG_META_NOT_FOUND else cached
+    post, _err = BlogService.get_post_by_slug(slug)
+    cache.set(cache_key, post if post else _BLOG_META_NOT_FOUND, timeout=43200)
+    return post
+
+
+def _article_json_ld(post, canonical_path, og_image):
+    published_at = post.get('published_at')
+    updated_at = post.get('updated_at') or published_at
+    node = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": post.get('title') or '',
+        "image": [og_image],
+        "datePublished": published_at.isoformat() if published_at else None,
+        "dateModified": updated_at.isoformat() if updated_at else None,
+        "author": {"@type": "Organization", "name": "GetSTAM"},
+        "publisher": {
+            "@type": "Organization",
+            "name": "GetSTAM",
+            "logo": {"@type": "ImageObject", "url": f'{BASE_URL}/logo192.png'},
+        },
+        "mainEntityOfPage": {"@type": "WebPage", "@id": f'{BASE_URL}{canonical_path}'},
+    }
+    return {k: v for k, v in node.items() if v is not None}
+
+
 def _get_page_meta(path):
-    """Return (title, description) for a given URL path."""
+    """Return a metadata dict for a given URL path:
+    {title, description, canonical_path, og_image, json_ld}."""
     parts = [p for p in path.strip('/').split('/') if p]
+    canonical_path = '/' + '/'.join(parts) if parts else '/'
+    meta = {
+        'title': 'GetSTAM',
+        'description': 'Get stats that actually matter for all sports',
+        'canonical_path': canonical_path,
+        'og_image': DEFAULT_OG_IMAGE,
+        'json_ld': [_ORG_WEBSITE_JSON_LD],
+    }
 
     if not parts:
-        return (
-            'GetSTAM — Today\'s Betting Trends',
-            'Today\'s strongest betting trends. Win streaks, H2H patterns, and historical probabilities updated every morning.',
-        )
+        meta['title'] = 'GetSTAM — Today\'s Betting Trends'
+        meta['description'] = ('Today\'s strongest betting trends. Win streaks, H2H patterns, '
+                                'and historical probabilities updated every morning.')
+        return meta
 
     slug = parts[0]
 
     if slug == 'team' and len(parts) >= 3:
         sport_display = _SPORT_DISPLAY.get(parts[1], parts[1].upper())
         team_name = parts[2].replace('-', ' ').title()
-        return (
-            f'{team_name} {sport_display} Odds & Stats | GetSTAM',
-            f'{team_name} betting odds, ATS records, and recent game results.',
-        )
+        meta['title'] = f'{team_name} {sport_display} Odds & Stats | GetSTAM'
+        meta['description'] = f'{team_name} betting odds, ATS records, and recent game results.'
+        return meta
 
     if slug == 'game-details' and len(parts) >= 2:
         sport_name = _SPORT_DISPLAY.get(parts[1], parts[1].upper())
-        return (
-            f'{sport_name} Game Details | GetSTAM',
-            f'Betting odds, trends, and head-to-head stats for this {sport_name} matchup.',
-        )
+        meta['title'] = f'{sport_name} Game Details | GetSTAM'
+        meta['description'] = f'Betting odds, trends, and head-to-head stats for this {sport_name} matchup.'
+        return meta
 
     sport_name = _SPORT_DISPLAY.get(slug)
     if sport_name:
         if len(parts) >= 2 and parts[1] == 'trends':
-            return (
-                f'{sport_name} Trends | GetSTAM',
-                f'{sport_name} ATS trends, over/under records, and historical betting patterns to find today\'s best matchups.',
-            )
-        return (
-            f'{sport_name} Games & Odds | GetSTAM',
-            f"Today's {sport_name} odds, point spreads, over/under lines, and ATS records for every matchup.",
-        )
+            meta['title'] = f'{sport_name} Trends | GetSTAM'
+            meta['description'] = (f'{sport_name} ATS trends, over/under records, and historical '
+                                    'betting patterns to find today\'s best matchups.')
+        else:
+            meta['title'] = f'{sport_name} Games & Odds | GetSTAM'
+            meta['description'] = (f"Today's {sport_name} odds, point spreads, over/under lines, "
+                                    "and ATS records for every matchup.")
+        return meta
 
     if slug == 'blog':
         if len(parts) >= 2:
-            return (
-                f'{parts[1].replace("-", " ").title()} | GetSTAM Blog',
-                'Sports betting insights from GetSTAM.',
-            )
-        return _STATIC_PAGE_META['blog']
+            post_slug = parts[1]
+            post = _get_blog_post_for_meta(post_slug)
+            if post:
+                meta['title'] = f"{post['title']} | GetSTAM Blog"
+                meta['description'] = post.get('meta_description') or post.get('excerpt') or 'Sports betting insights from GetSTAM.'
+                meta['og_image'] = post.get('og_image_url') or post.get('youtube_thumbnail_url') or DEFAULT_OG_IMAGE
+                meta['json_ld'] = [_ORG_WEBSITE_JSON_LD, _article_json_ld(post, canonical_path, meta['og_image'])]
+                return meta
+            # not found / draft / unpublished / bad slug — fall back to generic behavior
+            meta['title'] = f'{post_slug.replace("-", " ").title()} | GetSTAM Blog'
+            meta['description'] = 'Sports betting insights from GetSTAM.'
+            return meta
+        meta['title'], meta['description'] = _STATIC_PAGE_META['blog']
+        return meta
 
     if slug in _STATIC_PAGE_META:
-        return _STATIC_PAGE_META[slug]
+        meta['title'], meta['description'] = _STATIC_PAGE_META[slug]
+        return meta
 
-    return 'GetSTAM', 'Get stats that actually matter for all sports'
+    return meta
 
 
 _index_html_content = None
@@ -281,14 +348,50 @@ def _get_index_html():
     return _index_html_content
 
 
-def _inject_meta(html, title, description):
-    html = re.sub(r'<title>[^<]*</title>', f'<title>{title}</title>', html)
-    html = re.sub(
+def _inject_meta(page_html, meta):
+    title = html.escape(meta['title'])
+    description = html.escape(meta['description'])
+    og_image = html.escape(meta['og_image'])
+    canonical_url = html.escape(f"{BASE_URL}{meta['canonical_path']}")
+
+    page_html = re.sub(r'<title>[^<]*</title>', f'<title>{title}</title>', page_html)
+    page_html = re.sub(
         r'<meta\s+name="description"\s+content="[^"]*"\s*/?>',
         f'<meta name="description" content="{description}" />',
-        html,
+        page_html,
     )
-    return html
+    page_html = re.sub(
+        r'<meta\s+property="og:title"\s+content="[^"]*"\s*/?>',
+        f'<meta property="og:title" content="{title}" />',
+        page_html,
+    )
+    page_html = re.sub(
+        r'<meta\s+property="og:description"\s+content="[^"]*"\s*/?>',
+        f'<meta property="og:description" content="{description}" />',
+        page_html,
+    )
+    page_html = re.sub(
+        r'<meta\s+property="og:image"\s+content="[^"]*"\s*/?>',
+        f'<meta property="og:image" content="{og_image}" />',
+        page_html,
+    )
+
+    extra_tags = (
+        f'<meta property="og:url" content="{canonical_url}" />'
+        f'<link rel="canonical" href="{canonical_url}" />'
+        f'<meta name="twitter:card" content="summary" />'
+        f'<meta name="twitter:title" content="{title}" />'
+        f'<meta name="twitter:description" content="{description}" />'
+        f'<meta name="twitter:image" content="{og_image}" />'
+    )
+    json_ld_tags = ''.join(
+        '<script type="application/ld+json">'
+        + json.dumps(block).replace('<', '\\u003c')
+        + '</script>'
+        for block in meta['json_ld']
+    )
+
+    return page_html.replace('</head>', extra_tags + json_ld_tags + '</head>', 1)
 
 
 #Route to clear the cache
@@ -377,9 +480,9 @@ def serve(path):
     if os.path.exists(static_file_path) and os.path.isfile(static_file_path):
         return send_from_directory(app.static_folder, path)
     # Serve index.html with injected meta tags for crawler-friendly SSR
-    title, description = _get_page_meta(path)
-    html = _inject_meta(_get_index_html(), title, description)
-    response = make_response(html)
+    meta = _get_page_meta(path)
+    html_out = _inject_meta(_get_index_html(), meta)
+    response = make_response(html_out)
     response.headers['Content-Type'] = 'text/html'
     return response
 

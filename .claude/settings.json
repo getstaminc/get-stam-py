@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -v http://localhost:5000/)",
+      "Bash(curl -s -4 http://127.0.0.1:5000/ -o /tmp/home.html -w \"status: %{http_code}\\\\n\")"
+    ]
+  }
+}

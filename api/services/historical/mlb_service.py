@@ -133,7 +133,52 @@ class MLBService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
-    def get_team_games_by_id(team_id: int, limit: int = 50, start_date: Optional[str] = None, 
+    def get_games_by_matchup(home_team_name: str, away_team_name: str, game_date: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """Exact match on home+away+date, ordered by start_time (supports doubleheaders)."""
+        try:
+            conn = MLBService._get_connection()
+            if not conn:
+                return None, "Database connection failed"
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT
+                        game_id, game_date, away_team_name, home_team_name, away_runs, home_runs,
+                        home_line, away_line, home_inning_runs, away_inning_runs,
+                        home_starting_pitcher, away_starting_pitcher, playoffs,
+                        start_time, total, created_date, modified_date
+                    FROM mlb_games
+                    WHERE home_team_name = %s AND away_team_name = %s AND game_date = %s
+                    ORDER BY start_time ASC NULLS LAST
+                """, (home_team_name, away_team_name, game_date))
+
+                games = cursor.fetchall()
+                games_list = []
+                for game in games:
+                    game_dict = dict(game)
+                    if game_dict.get('home_inning_runs'):
+                        try:
+                            game_dict['home_inning_runs'] = json.loads(game_dict['home_inning_runs'])
+                        except (json.JSONDecodeError, TypeError):
+                            game_dict['home_inning_runs'] = []
+                    if game_dict.get('away_inning_runs'):
+                        try:
+                            game_dict['away_inning_runs'] = json.loads(game_dict['away_inning_runs'])
+                        except (json.JSONDecodeError, TypeError):
+                            game_dict['away_inning_runs'] = []
+                    games_list.append(game_dict)
+
+                processed_games = MLBService._process_games_list(games_list)
+                return processed_games, None
+
+        except Exception as e:
+            return None, f"Error fetching MLB matchup games: {str(e)}"
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_team_games_by_id(team_id: int, limit: int = 50, start_date: Optional[str] = None,
                             end_date: Optional[str] = None, playoffs: Optional[bool] = None, 
                             venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get historical games for a specific MLB team by ID."""

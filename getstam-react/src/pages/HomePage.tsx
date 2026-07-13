@@ -8,6 +8,7 @@ import TrendInsightCard, { getConfidenceScore } from "../components/TrendInsight
 import { PlayerStreak, TeamStreaks } from "../components/PlayerStreaksStrip";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
+import { getMatchupPageLink } from "../utils/teamSlugUtils";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
@@ -202,12 +203,16 @@ function SportSection({
                 { team: game.away?.team ?? "", streaks: playerStreaksByTeam[game.away?.team] ?? [] },
               ].filter(g => g.team && g.streaks.length > 0)
             : [];
+          const detailsLink =
+            game.home?.team && game.away?.team && game.commence_time
+              ? getMatchupPageLink(urlKey, game.away.team, game.home.team, game.commence_time)
+              : `/game-details/${urlKey}?game_id=${encodeGameId(game.game_id)}`;
           return (
             <TrendInsightCard
               key={game.game_id}
               game={{ home: game.home, away: game.away, totals: game.totals, commence_time: game.commence_time }}
               trends={allTrends}
-              detailsLink={`/game-details/${urlKey}?game_id=${encodeGameId(game.game_id)}`}
+              detailsLink={detailsLink}
               sport={urlKey}
               playerStreaks={streaks}
             />
@@ -356,6 +361,12 @@ export default function HomePage() {
             ))}
           </Box>
         </Box>
+
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          GetStam helps sports fans analyze historical betting trends, head-to-head
+          records, moneyline performance, against-the-spread results, over/under trends, and
+          historical odds across MLB, NFL, NBA, NHL, and soccer.
+        </Typography>
 
         {/* Sport sections — sorted by max confidence score once all have loaded */}
         {sortedSports.map((sport) => (

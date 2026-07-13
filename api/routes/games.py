@@ -2,7 +2,11 @@ import os
 from flask import Blueprint, request, jsonify, abort
 from dotenv import load_dotenv
 
+from cache import cache
 from ..services.database_service import DatabaseService
+from ..services.game_service import GameService
+from ..utils.team_slugs import resolve_team_slug
+from ..external_requests.odds_api import convert_sport_url_to_api_key
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
@@ -93,6 +97,27 @@ def get_head_to_head_games(sport_key, team_id, opponent_id):
         'opponent_id': opponent_id,
         'limit': limit
     })
+
+@games_bp.route('/api/games/resolve/<sport>/<away_slug>/<home_slug>/<date>', methods=['GET'])
+@cache.cached(timeout=120, query_string=True)
+def resolve_matchup(sport, away_slug, home_slug, date):
+    """Resolve a matchup-page slug (sport + away/home team slugs + ET date, optional
+    ?n=<occurrence> for doubleheaders) to a game identity, for the crawlable
+    /game-details/<sport>/<slug> route. Tries live odds data first, falls back to the
+    sport's historical DB table for aged-out games."""
+    occurrence = request.args.get('n', 1, type=int)
+
+    away_name = resolve_team_slug(sport, away_slug)
+    home_name = resolve_team_slug(sport, home_slug)
+    if not away_name or not home_name:
+        return jsonify({'error': 'Unknown team slug for this sport'}), 404
+
+    sport_key = convert_sport_url_to_api_key(sport)
+    result, error = GameService.resolve_matchup(sport_key, away_name, home_name, date, occurrence)
+    if error or not result:
+        return jsonify({'error': error or 'Game not found'}), 404
+
+    return jsonify(result)
 
 @games_bp.route('/api/games/<sport_key>/team/<string:home_team>/vs/<string:away_team>', methods=['GET'])
 def get_head_to_head_games_by_name(sport_key, home_team, away_team):

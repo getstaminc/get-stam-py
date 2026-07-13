@@ -84,6 +84,31 @@ class NHLService(BaseHistoricalService):
             return None, str(e)
 
     @staticmethod
+    def get_games_by_matchup(home_team_name: str, away_team_name: str, game_date: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """Exact match on home+away+date, ordered by start_time (supports same-day rematches)."""
+        try:
+            conn = NHLService._get_connection()
+            if not conn:
+                return None, "Database connection failed"
+            query = """
+                SELECT * FROM nhl_games
+                WHERE home_team_name = %s AND away_team_name = %s AND game_date = %s
+                ORDER BY start_time ASC NULLS LAST
+            """
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (home_team_name, away_team_name, game_date))
+                games = cursor.fetchall()
+            for g in games:
+                if 'game_date' in g and g['game_date']:
+                    g['game_date'] = str(g['game_date'])
+            return games, None
+        except Exception as e:
+            return None, str(e)
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
     def get_game_by_id(game_id: int) -> Tuple[Optional[Dict], Optional[str]]:
         try:
             conn = NHLService._get_connection()

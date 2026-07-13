@@ -3,12 +3,14 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
 import TrendAnalysisSection from "../components/TrendAnalysisSection";
+import GameFAQSection from "../components/GameFAQSection";
 import { useGame } from "../contexts/GameContext";
 import { convertTeamNameBySport, convertSportKeyForDatabase } from "../utils/teamNameConverter";
 import { decodeGameId } from "../utils/gameIdCrypto";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 import SEO from "../components/SEO";
 import { GameWithTrends } from "../utils/trendAnalysis";
+import { buildMatchupSlug, parseMatchupSlug } from "../utils/teamSlugUtils";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -92,11 +94,18 @@ async function fetchSingleGameData(sport: string, gameId: string) {
 }
 
 const GameDetailsPage: React.FC = () => {
-  const { sport } = useParams<{ sport: string }>();
+  const { sport, slug } = useParams<{ sport: string; slug?: string }>();
   const [searchParams] = useSearchParams();
   const encodedGameId = searchParams.get('game_id') || '';
-  const gameId = decodeGameId(encodedGameId);
+  const legacyGameId = decodeGameId(encodedGameId);
   const { currentGame } = useGame();
+  // Slug-route resolution: /game-details/:sport/:slug resolves to a game_id (and,
+  // for aged-out DB-fallback games, a fully-formatted game object) before the
+  // rest of this page's existing fetch logic runs unchanged.
+  const [resolvedGameId, setResolvedGameId] = useState<string | null>(null);
+  const [resolvedDbGame, setResolvedDbGame] = useState<any>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const gameId = slug ? (resolvedGameId || '') : legacyGameId;
   const [gameData, setGameData] = useState<any>(null);
   const [homeTeamHistory, setHomeTeamHistory] = useState<any>(null);
   const [awayTeamHistory, setAwayTeamHistory] = useState<any>(null);
@@ -332,7 +341,48 @@ const GameDetailsPage: React.FC = () => {
     }
   };
 
+  // Resolve /game-details/:sport/:slug URLs to a game_id before the fetch effect below
+  // runs. For live/recent games this just yields the same Odds-API game_id the legacy
+  // ?game_id= route already uses. For games that have aged out of the Odds API window,
+  // the backend returns a fully-formatted game object inline (source: "db") since there's
+  // no ID the existing /api/odds/<sport>/<id> flow could resolve for most sports.
   useEffect(() => {
+    if (!slug || !sport || !sportKey) return;
+    const parsed = parseMatchupSlug(slug);
+    if (!parsed) {
+      setResolveError('Invalid matchup URL');
+      return;
+    }
+    // Show the loading spinner immediately rather than letting the "No game data
+    // available" state flash while this resolve request is in flight.
+    setLoading(true);
+    let cancelled = false;
+    const qs = parsed.occurrence > 1 ? `?n=${parsed.occurrence}` : '';
+    fetch(
+      `${API_BASE_URL}/api/games/resolve/${sport}/${parsed.awaySlug}/${parsed.homeSlug}/${parsed.date}${qs}`,
+      { headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" } }
+    )
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data) => {
+        if (cancelled) return;
+        if (data.source === 'db' && data.game) {
+          setResolvedDbGame(data.game);
+        }
+        setResolvedGameId(data.game_id);
+      })
+      .catch(() => {
+        if (!cancelled) setResolveError('Game not found');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, sport, sportKey]);
+
+  useEffect(() => {
+    // On the slug route, wait for resolution (success or failure) before deciding
+    // anything below — gameId is empty until resolvedGameId comes back.
+    if (slug && !resolvedGameId && !resolveError) return;
+
     // Fetch pitcher data for MLB games
     if (sportKey === "baseball_mlb") {
       fetchPitcherData().then((data) => {
@@ -340,14 +390,23 @@ const GameDetailsPage: React.FC = () => {
       });
     }
 
-    // If we have game data from context and the game_id matches, use it
-    if (currentGame && currentGame.game_id === gameId) {
-      setGameData(currentGame);
+    // If we have game data from context (or from a slug-route DB-fallback resolve)
+    // and the game_id matches, use it directly instead of re-fetching.
+    const matchedGame =
+      currentGame && currentGame.game_id === gameId
+        ? currentGame
+        : resolvedDbGame && resolvedDbGame.game_id === gameId
+        ? resolvedDbGame
+        : null;
+    if (matchedGame) {
+      setGameData(matchedGame);
+      setError(null);
+      setLoading(false);
 
       // Also fetch historical data for context game
-      if (sportKey && currentGame.home?.team && currentGame.away?.team) {
-        const endDate = (currentGame as any).from_db ? currentGame.commence_time?.split('T')[0] : undefined;
-        fetchAllHistoricalData(sportKey, currentGame.home.team, currentGame.away.team, gamesLimit, endDate);
+      if (sportKey && matchedGame.home?.team && matchedGame.away?.team) {
+        const endDate = (matchedGame as any).from_db ? matchedGame.commence_time?.split('T')[0] : undefined;
+        fetchAllHistoricalData(sportKey, matchedGame.home.team, matchedGame.away.team, gamesLimit, endDate);
       }
       return;
     }
@@ -381,10 +440,14 @@ const GameDetailsPage: React.FC = () => {
         .finally(() => {
           setLoading(false);
         });
+    } else if (slug && resolveError) {
+      setError(resolveError);
+      setLoading(false);
     } else {
       setError("Missing sport or game ID");
+      setLoading(false);
     }
-  }, [sportKey, gameId, currentGame, gamesLimit]);
+  }, [sportKey, gameId, currentGame, resolvedDbGame, resolveError, slug, gamesLimit]);
 
   const SPORT_TO_TRENDS_ENDPOINT: { [key: string]: string } = {
     baseball_mlb: "mlb",
@@ -468,12 +531,23 @@ const GameDetailsPage: React.FC = () => {
     ? `${awayTeam} vs ${homeTeam} odds, ATS records, over/under trends, and head-to-head history.`
     : "Point spreads, over/under lines, ATS records, and head-to-head history for this matchup.";
 
+  // Always self-report the new slug-based URL as canonical, even when this page was
+  // reached via the legacy ?game_id= route — this consolidates SEO ranking signal onto
+  // the crawlable URL without breaking any already-published links to the old one.
+  const canonicalSlug =
+    slug || (sport && homeTeam && awayTeam && gameData.commence_time
+      ? buildMatchupSlug(awayTeam, homeTeam, gameData.commence_time as string)
+      : null);
+  const canonicalPath = canonicalSlug
+    ? `/game-details/${sport}/${canonicalSlug}`
+    : `/game-details/${sport}?game_id=${encodedGameId}`;
+
   return (
     <div>
       <SEO
         title={seoTitle}
         description={seoDescription}
-        canonicalPath={`/game-details/${sport}?game_id=${encodedGameId}`}
+        canonicalPath={canonicalPath}
       />
       <TrendAnalysisSection
         gameTrends={gameTrends}
@@ -499,6 +573,15 @@ const GameDetailsPage: React.FC = () => {
         rankingsLoading={rankingsLoading}
         pitcherData={getGamePitcherData(gameData)}
       />
+      {sportKey && sport && (
+        <GameFAQSection
+          sportKey={sportKey}
+          sport={sport}
+          homeTeam={homeTeam}
+          awayTeam={awayTeam}
+          headToHeadHistory={headToHeadHistory}
+        />
+      )}
     </div>
   );
 };

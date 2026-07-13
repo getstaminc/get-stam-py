@@ -116,9 +116,40 @@ class NFLService(BaseHistoricalService):
                 games_list = [dict(game) for game in games]
                 processed_games = NFLService._process_games_list(games_list)
                 return processed_games, None
-                
+
         except Exception as e:
             return None, f"Error fetching team games: {str(e)}"
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_games_by_matchup(home_team_name: str, away_team_name: str, game_date: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """Exact match on home+away+date, ordered by start_time (supports same-day rematches)."""
+        try:
+            conn = NFLService._get_connection()
+            if not conn:
+                return None, "Database connection failed"
+
+            query = """
+                SELECT
+                    game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
+                    home_points, away_points, total_points, home_line, away_line,
+                    home_money_line, away_money_line, start_time, total
+                FROM nfl_games
+                WHERE home_team_name = %s AND away_team_name = %s AND game_date = %s
+                ORDER BY start_time ASC NULLS LAST
+            """
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (home_team_name, away_team_name, game_date))
+                games = cursor.fetchall()
+
+                games_list = [dict(game) for game in games]
+                processed_games = NFLService._process_games_list(games_list)
+                return processed_games, None
+
+        except Exception as e:
+            return None, f"Error fetching NFL matchup games: {str(e)}"
         finally:
             if conn:
                 conn.close()

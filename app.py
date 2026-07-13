@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)  # Must run before any other imports that read env vars
 
 from flask import Flask, jsonify, Blueprint, send_from_directory, make_response
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import re
 import html
@@ -11,6 +11,9 @@ import json
 
 from cache import cache, init_cache
 from api.services.blog_service import BlogService
+from api.utils.team_slugs import team_slug as _team_slug, SPORT_TEAMS as _SPORT_TEAMS, resolve_team_slug
+from api.services.game_service import GameService
+from api.external_requests.odds_api import convert_sport_url_to_api_key
 import logging
 from api.routes.games import games_bp
 from api.routes.odds import odds_bp
@@ -128,101 +131,6 @@ _ORG_WEBSITE_JSON_LD = {
     ],
 }
 
-def _team_slug(name):
-    return re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
-
-# oddsApiNames for each sport — mirrors teamSlugUtils.ts
-_SPORT_TEAMS = {
-    'nba': [
-        'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets',
-        'Chicago Bulls', 'Cleveland Cavaliers', 'Dallas Mavericks', 'Denver Nuggets',
-        'Detroit Pistons', 'Golden State Warriors', 'Houston Rockets', 'Indiana Pacers',
-        'Los Angeles Clippers', 'Los Angeles Lakers', 'Memphis Grizzlies', 'Miami Heat',
-        'Milwaukee Bucks', 'Minnesota Timberwolves', 'New Orleans Pelicans', 'New York Knicks',
-        'Oklahoma City Thunder', 'Orlando Magic', 'Philadelphia 76ers', 'Phoenix Suns',
-        'Portland Trail Blazers', 'Sacramento Kings', 'San Antonio Spurs', 'Toronto Raptors',
-        'Utah Jazz', 'Washington Wizards',
-    ],
-    'nfl': [
-        'Arizona Cardinals', 'Atlanta Falcons', 'Baltimore Ravens', 'Buffalo Bills',
-        'Carolina Panthers', 'Chicago Bears', 'Cincinnati Bengals', 'Cleveland Browns',
-        'Dallas Cowboys', 'Denver Broncos', 'Detroit Lions', 'Green Bay Packers',
-        'Houston Texans', 'Indianapolis Colts', 'Jacksonville Jaguars', 'Kansas City Chiefs',
-        'Las Vegas Raiders', 'Los Angeles Chargers', 'Los Angeles Rams', 'Miami Dolphins',
-        'Minnesota Vikings', 'New England Patriots', 'New Orleans Saints', 'New York Giants',
-        'New York Jets', 'Philadelphia Eagles', 'Pittsburgh Steelers', 'San Francisco 49ers',
-        'Seattle Seahawks', 'Tampa Bay Buccaneers', 'Tennessee Titans', 'Washington Commanders',
-    ],
-    'mlb': [
-        'Arizona Diamondbacks', 'Atlanta Braves', 'Baltimore Orioles', 'Boston Red Sox',
-        'Chicago Cubs', 'Chicago White Sox', 'Cincinnati Reds', 'Cleveland Guardians',
-        'Colorado Rockies', 'Detroit Tigers', 'Houston Astros', 'Kansas City Royals',
-        'Los Angeles Angels', 'Los Angeles Dodgers', 'Miami Marlins', 'Milwaukee Brewers',
-        'Minnesota Twins', 'New York Mets', 'New York Yankees', 'Oakland Athletics',
-        'Philadelphia Phillies', 'Pittsburgh Pirates', 'San Diego Padres', 'San Francisco Giants',
-        'Seattle Mariners', 'St. Louis Cardinals', 'Tampa Bay Rays', 'Texas Rangers',
-        'Toronto Blue Jays', 'Washington Nationals',
-    ],
-    'nhl': [
-        'Anaheim Ducks', 'Arizona Coyotes', 'Boston Bruins', 'Buffalo Sabres',
-        'Calgary Flames', 'Carolina Hurricanes', 'Chicago Blackhawks', 'Colorado Avalanche',
-        'Columbus Blue Jackets', 'Dallas Stars', 'Detroit Red Wings', 'Edmonton Oilers',
-        'Florida Panthers', 'Los Angeles Kings', 'Minnesota Wild', 'Montr\u00e9al Canadiens',
-        'Nashville Predators', 'New Jersey Devils', 'New York Islanders', 'New York Rangers',
-        'Ottawa Senators', 'Philadelphia Flyers', 'Pittsburgh Penguins', 'San Jose Sharks',
-        'Seattle Kraken', 'St Louis Blues', 'Tampa Bay Lightning', 'Toronto Maple Leafs',
-        'Utah Mammoth', 'Vancouver Canucks', 'Vegas Golden Knights', 'Washington Capitals',
-        'Winnipeg Jets',
-    ],
-    'ncaaf': [
-        'Alabama Crimson Tide', 'Appalachian State Mountaineers', 'Arizona Wildcats',
-        'Arizona State Sun Devils', 'Arkansas Razorbacks', 'Auburn Tigers', 'Baylor Bears',
-        'Boise State Broncos', 'Boston College Eagles', 'BYU Cougars', 'California Golden Bears',
-        'Cincinnati Bearcats', 'Clemson Tigers', 'Colorado Buffaloes', 'Florida Gators',
-        'Florida State Seminoles', 'Fresno State Bulldogs', 'Georgia Bulldogs',
-        'Georgia Tech Yellow Jackets', 'Houston Cougars', 'Illinois Fighting Illini',
-        'Indiana Hoosiers', 'Iowa Hawkeyes', 'Iowa State Cyclones', 'Kansas Jayhawks',
-        'Kansas State Wildcats', 'Kentucky Wildcats', 'Louisiana Ragin\' Cajuns', 'LSU Tigers',
-        'Louisville Cardinals', 'Maryland Terrapins', 'Memphis Tigers', 'Miami Hurricanes',
-        'Michigan Wolverines', 'Michigan State Spartans', 'Minnesota Golden Gophers',
-        'Mississippi State Bulldogs', 'Missouri Tigers', 'NC State Wolfpack', 'Nebraska Cornhuskers',
-        'Nevada Wolf Pack', 'North Carolina Tar Heels', 'Northwestern Wildcats',
-        'Notre Dame Fighting Irish', 'Ohio State Buckeyes', 'Oklahoma Sooners',
-        'Oklahoma State Cowboys', 'Ole Miss Rebels', 'Oregon Ducks', 'Oregon State Beavers',
-        'Penn State Nittany Lions', 'Pittsburgh Panthers', 'Purdue Boilermakers',
-        'Rutgers Scarlet Knights', 'San Diego State Aztecs', 'SMU Mustangs',
-        'South Carolina Gamecocks', 'Stanford Cardinal', 'Syracuse Orange', 'TCU Horned Frogs',
-        'Tennessee Volunteers', 'Texas Longhorns', 'Texas A&M Aggies', 'Texas Tech Red Raiders',
-        'Toledo Rockets', 'Tulane Green Wave', 'UCF Knights', 'UCLA Bruins', 'UNLV Rebels',
-        'USC Trojans', 'Utah Utes', 'Utah State Aggies', 'Vanderbilt Commodores',
-        'Virginia Cavaliers', 'Virginia Tech Hokies', 'Wake Forest Demon Deacons',
-        'Washington Huskies', 'Washington State Cougars', 'West Virginia Mountaineers',
-        'Wisconsin Badgers', 'Wyoming Cowboys',
-    ],
-    'ncaab': [
-        'Alabama Crimson Tide', 'Arizona Wildcats', 'Arizona State Sun Devils',
-        'Arkansas Razorbacks', 'Auburn Tigers', 'Baylor Bears', 'BYU Cougars',
-        'California Golden Bears', 'Cincinnati Bearcats', 'Clemson Tigers', 'Colorado Buffaloes',
-        'Colorado State Rams', 'UConn Huskies', 'Creighton Bluejays', 'Dayton Flyers',
-        'Duke Blue Devils', 'Florida Gators', 'Florida State Seminoles', 'Gonzaga Bulldogs',
-        'Georgia Bulldogs', 'Houston Cougars', 'Illinois Fighting Illini', 'Indiana Hoosiers',
-        'Iowa Hawkeyes', 'Iowa State Cyclones', 'Kansas Jayhawks', 'Kansas State Wildcats',
-        'Kentucky Wildcats', 'LSU Tigers', 'Maryland Terrapins', 'Memphis Tigers',
-        'Michigan Wolverines', 'Michigan State Spartans', 'Missouri Tigers', 'Nebraska Cornhuskers',
-        'North Carolina Tar Heels', 'NC State Wolfpack', 'Notre Dame Fighting Irish',
-        'Ohio State Buckeyes', 'Oklahoma Sooners', 'Oklahoma State Cowboys', 'Ole Miss Rebels',
-        'Oregon Ducks', 'Oregon State Beavers', 'Penn State Nittany Lions', 'Pittsburgh Panthers',
-        'Purdue Boilermakers', 'Rutgers Scarlet Knights', 'San Diego State Aztecs',
-        'SMU Mustangs', 'South Carolina Gamecocks', "St. John's Red Storm", 'Stanford Cardinal',
-        'Syracuse Orange', 'TCU Horned Frogs', 'Tennessee Volunteers', 'Texas Longhorns',
-        'Texas A&M Aggies', 'Texas Tech Red Raiders', 'UCLA Bruins', 'UNLV Rebels',
-        'USC Trojans', 'Utah Utes', 'Utah State Aggies', 'Vanderbilt Commodores', 'VCU Rams',
-        'Villanova Wildcats', 'Virginia Cavaliers', 'Virginia Tech Hokies',
-        'Wake Forest Demon Deacons', 'Washington Huskies', 'West Virginia Mountaineers',
-        'Wisconsin Badgers', 'Xavier Musketeers',
-    ],
-}
-
 _STATIC_PAGE_META = {
     'about-us': ('About GetSTAM', 'Learn about GetSTAM and our sports analytics platform.'),
     'contact-us': ('Contact Us | GetSTAM', 'Get in touch with the GetSTAM team.'),
@@ -268,6 +176,74 @@ def _article_json_ld(post, canonical_path, og_image):
     return {k: v for k, v in node.items() if v is not None}
 
 
+_MATCHUP_SLUG_RE = re.compile(
+    r'^(?P<away>[a-z0-9-]+?)-vs-(?P<home>[a-z0-9-]+)-(?P<date>\d{4}-\d{2}-\d{2})(?:-(?P<n>\d+))?$'
+)
+_MATCHUP_META_NOT_FOUND = '__not_found__'
+
+
+def _breadcrumb_json_ld(names, paths):
+    return {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": i + 1,
+                "name": name,
+                "item": f'{BASE_URL}{path}',
+            }
+            for i, (name, path) in enumerate(zip(names, paths))
+        ],
+    }
+
+
+def _sports_event_json_ld(matchup, canonical_path):
+    node = {
+        "@context": "https://schema.org",
+        "@type": "SportsEvent",
+        "name": f"{matchup['away_team']} vs {matchup['home_team']}",
+        "homeTeam": {"@type": "SportsTeam", "name": matchup['home_team']},
+        "awayTeam": {"@type": "SportsTeam", "name": matchup['away_team']},
+        "startDate": matchup.get('commence_time'),
+        "url": f'{BASE_URL}{canonical_path}',
+    }
+    return {k: v for k, v in node.items() if v is not None}
+
+
+def _get_matchup_for_meta(sport, slug):
+    """Cached resolver for matchup-page SSR meta: parses the slug, reverse-resolves team
+    slugs, and calls GameService.resolve_matchup in-process (mirrors _get_blog_post_for_meta).
+    Cached for 20 min (much shorter than blog's 43200s — unlike blog content, odds/scores
+    for a game genuinely change), keyed by sport+slug."""
+    m = _MATCHUP_SLUG_RE.match(slug)
+    if not m:
+        return None
+
+    cache_key = f'ssr_matchup_meta:{sport}:{slug}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return None if cached == _MATCHUP_META_NOT_FOUND else cached
+
+    away_name = resolve_team_slug(sport, m.group('away'))
+    home_name = resolve_team_slug(sport, m.group('home'))
+    matchup = None
+    if away_name and home_name:
+        occurrence = int(m.group('n')) if m.group('n') else 1
+        sport_key = convert_sport_url_to_api_key(sport)
+        result, _err = GameService.resolve_matchup(sport_key, away_name, home_name, m.group('date'), occurrence)
+        if result:
+            game = result.get('game') or {}
+            matchup = {
+                'away_team': game.get('away', {}).get('team') or away_name,
+                'home_team': game.get('home', {}).get('team') or home_name,
+                'commence_time': game.get('commence_time'),
+            }
+
+    cache.set(cache_key, matchup if matchup else _MATCHUP_META_NOT_FOUND, timeout=1200)
+    return matchup
+
+
 def _get_page_meta(path):
     """Return a metadata dict for a given URL path:
     {title, description, canonical_path, og_image, json_ld}."""
@@ -298,6 +274,23 @@ def _get_page_meta(path):
 
     if slug == 'game-details' and len(parts) >= 2:
         sport_name = _SPORT_DISPLAY.get(parts[1], parts[1].upper())
+        if len(parts) >= 3:
+            matchup = _get_matchup_for_meta(parts[1], parts[2])
+            if matchup:
+                away, home = matchup['away_team'], matchup['home_team']
+                meta['title'] = f'{away} vs {home} {sport_name} Odds & Trends | GetSTAM'
+                meta['description'] = (f'{away} vs {home} betting odds, ATS records, over/under trends, '
+                                        'and head-to-head history.')
+                meta['json_ld'] = [
+                    _ORG_WEBSITE_JSON_LD,
+                    _sports_event_json_ld(matchup, canonical_path),
+                    _breadcrumb_json_ld(
+                        ['Home', sport_name, f'{away} vs {home}'],
+                        ['/', f'/{parts[1]}', canonical_path],
+                    ),
+                ]
+                return meta
+            # not found / aged out beyond the DB window / bad slug — fall through below
         meta['title'] = f'{sport_name} Game Details | GetSTAM'
         meta['description'] = f'Betting odds, trends, and head-to-head stats for this {sport_name} matchup.'
         return meta
@@ -450,6 +443,30 @@ def sitemap():
             urls.append(f'  <url><loc>https://www.getstam.com/blog/{post_slug}</loc><lastmod>{today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>')
     except Exception:
         pass
+
+    # Matchup pages — today + tomorrow only, for the 6 sports with team-slug infrastructure.
+    # Doubleheader "-2" URLs are intentionally omitted (low value; still reachable via
+    # internal links, just not proactively submitted).
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+    matchup_sport_keys = {
+        'nba': 'basketball_nba', 'nfl': 'americanfootball_nfl', 'mlb': 'baseball_mlb',
+        'nhl': 'icehockey_nhl', 'ncaaf': 'americanfootball_ncaaf', 'ncaab': 'basketball_ncaab',
+    }
+    for date_str in (today, tomorrow):
+        for sport, sport_key in matchup_sport_keys.items():
+            try:
+                result, err = GameService.get_games_for_date(sport_key, date_str)
+                if err or not result:
+                    continue
+                for g in result['games']:
+                    away_slug = _team_slug(g['away']['team'])
+                    home_slug = _team_slug(g['home']['team'])
+                    urls.append(
+                        f'  <url><loc>https://www.getstam.com/game-details/{sport}/{away_slug}-vs-{home_slug}-{date_str}</loc>'
+                        f'<lastmod>{today}</lastmod><changefreq>hourly</changefreq><priority>0.75</priority></url>'
+                    )
+            except Exception:
+                continue
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     xml += '\n'.join(urls)

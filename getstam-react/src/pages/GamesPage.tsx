@@ -17,6 +17,7 @@ import { GameWithTrends } from "../utils/trendAnalysis";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 import SEO from "../components/SEO";
 import { encodeGameId } from "../utils/gameIdCrypto";
+import { getMatchupPageLink, MATCHUP_SLUG_SPORTS } from "../utils/teamSlugUtils";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -591,21 +592,27 @@ const GamesPage = () => {
         )}
 
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
-          {!isHistoricalDate && activeView === "all" && games.map((match) => (
-            <GameOdds
-              key={match.game_id}
-              game={{
-                home: match.home,
-                away: match.away,
-                totals: match.totals,
-                ...(match.draw ? { draw: match.draw } : {})
-              }}
-              pitcherData={getGamePitcherData(match)}
-              detailsLink={`/game-details/${urlSport}?game_id=${encodeGameId(match.game_id)}`}
-              onViewDetails={() => setCurrentGame(match)}
-              sport={urlSport}
-            />
-          ))}
+          {!isHistoricalDate && activeView === "all" && games.map((match) => {
+            const detailsLink =
+              MATCHUP_SLUG_SPORTS.has(urlSport) && match.home?.team && match.away?.team && match.commence_time
+                ? getMatchupPageLink(urlSport, match.away.team, match.home.team, match.commence_time)
+                : `/game-details/${urlSport}?game_id=${encodeGameId(match.game_id)}`;
+            return (
+              <GameOdds
+                key={match.game_id}
+                game={{
+                  home: match.home,
+                  away: match.away,
+                  totals: match.totals,
+                  ...(match.draw ? { draw: match.draw } : {})
+                }}
+                pitcherData={getGamePitcherData(match)}
+                detailsLink={detailsLink}
+                onViewDetails={() => setCurrentGame(match)}
+                sport={urlSport}
+              />
+            );
+          })}
         </Box>
 
         {!isHistoricalDate && activeView === "trends" && gamesLoading && (

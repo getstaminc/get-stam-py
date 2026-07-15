@@ -30,7 +30,7 @@ export function hasNoOdds(game: GameWithDraw): boolean {
   );
 }
 
-export function hasFinalScore(game: GameWithDraw): boolean {
+function hasScore(game: GameWithDraw): boolean {
   const { home, away } = game;
   return (
     home.score !== null && home.score !== undefined &&
@@ -38,18 +38,28 @@ export function hasFinalScore(game: GameWithDraw): boolean {
   );
 }
 
+export function hasFinalScore(game: GameWithDraw): boolean {
+  return game.completed === true && hasScore(game);
+}
+
+// A game that has started (has a score) but isn't marked completed yet.
+export function hasLiveScore(game: GameWithDraw): boolean {
+  return game.completed !== true && hasScore(game);
+}
+
 // Single source of truth for "will GameOdds render this game" — exported so list
 // pages (e.g. GamesPage) can filter/count consistently with what actually renders,
 // instead of fetching N games, silently rendering nothing for some of them, and
 // showing a misleading "N games today" count with a blank grid underneath.
 export function shouldDisplayGame(game: GameWithDraw): boolean {
-  return hasFinalScore(game) || !hasNoOdds(game);
+  return hasFinalScore(game) || hasLiveScore(game) || !hasNoOdds(game);
 }
 
 const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onViewDetails, sport, sx }) => {
   const { home, away, totals, draw } = game as GameWithDraw;
 
   const isGameOver = hasFinalScore(game as GameWithDraw);
+  const isLive = hasLiveScore(game as GameWithDraw);
 
   if (!shouldDisplayGame(game as GameWithDraw)) return null;
 
@@ -66,7 +76,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
     return `${h2h > 0 ? "+" : ""}${h2h}`;
   };
 
-  const statusLabel = isGameOver ? `${home.score} - ${away.score}` : "Scheduled";
+  const statusLabel = (isGameOver || isLive) ? `${home.score} - ${away.score}` : "Scheduled";
 
   return (
     <Box
@@ -134,6 +144,11 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               FINAL
             </Typography>
           )}
+          {isLive && (
+            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.06em", color: "#d32f2f" }}>
+              LIVE
+            </Typography>
+          )}
           {game.from_db && game.commence_time && (
             <Typography sx={{ fontSize: "0.72rem", color: "#64748b", mt: 0.25 }}>
               {(() => {
@@ -177,7 +192,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
       </Box>
 
       {/* Odds rows */}
-      {!isGameOver && (
+      {!isGameOver && !isLive && (
         <Box sx={{ display: "grid", gap: 1 }}>
           {/* H2H */}
           <Box

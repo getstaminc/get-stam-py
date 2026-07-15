@@ -117,7 +117,8 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
     (!home.odds || (home.odds.h2h == null && home.odds.spread_point == null)) &&
     (!away.odds || (away.odds.h2h == null && away.odds.spread_point == null)) &&
     (!totals || (totals.over_point == null && totals.under_point == null));
-  const isGameOver = hasScore;
+  const isGameOver = hasScore && game.completed === true;
+  const isLive = hasScore && game.completed !== true;
 
   // Hide only games with neither a final score nor any posted odds — nothing useful
   // to show. A completed game (has a score) still displays even after odds clear.
@@ -164,6 +165,9 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
           </Box>
           {isGameOver && (
             <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.08em", color: "#94a3b8", mt: 0.25 }}>FINAL</Typography>
+          )}
+          {isLive && (
+            <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.08em", color: "#d32f2f", mt: 0.25 }}>LIVE</Typography>
           )}
           {gameTime && (
             <Typography sx={{ fontSize: "0.7rem", color: "#94a3b8", mt: 0.25, whiteSpace: "nowrap" }}>{gameTime}</Typography>

@@ -7,6 +7,11 @@ import { TrendResult } from "../utils/trendAnalysis";
 import { getTeamPageLink } from "../utils/teamSlugUtils";
 import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
 
+// Sports with a team-page slug map (see teamSlugUtils.ts's SPORT_MAPS) — soccer/
+// international sports (e.g. World Cup) don't have one yet, so avoid linking to a
+// team page that doesn't exist for them.
+const TEAM_PAGE_SPORTS = new Set(["nba", "nfl", "mlb", "nhl", "ncaaf", "ncaab"]);
+
 export interface TrendInsightCardProps {
   game: any;
   trends: TrendResult[]; // pre-sorted descending by count
@@ -112,9 +117,11 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
     (!home.odds || (home.odds.h2h == null && home.odds.spread_point == null)) &&
     (!away.odds || (away.odds.h2h == null && away.odds.spread_point == null)) &&
     (!totals || (totals.over_point == null && totals.under_point == null));
-  const isGameOver = hasScore && noOdds;
+  const isGameOver = hasScore;
 
-  if (noOdds) return null;
+  // Hide only games with neither a final score nor any posted odds — nothing useful
+  // to show. A completed game (has a score) still displays even after odds clear.
+  if (!hasScore && noOdds) return null;
 
   const statusLabel = hasScore ? `${home.score} - ${away.score}` : "Scheduled";
   const gameTime = !hasScore && game.commence_time
@@ -131,11 +138,17 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
       <Box sx={{ px: 2, pt: 2, pb: 1.5, display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 1, alignItems: "start" }}>
         {/* Home */}
         <Box>
-          <Link to={getTeamPageLink(sport, home.team)} style={{ textDecoration: "none", color: "inherit" }}>
-            <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
+          {TEAM_PAGE_SPORTS.has(sport) ? (
+            <Link to={getTeamPageLink(sport, home.team)} style={{ textDecoration: "none", color: "inherit" }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
+                {home.team}
+              </Typography>
+            </Link>
+          ) : (
+            <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2 }}>
               {home.team}
             </Typography>
-          </Link>
+          )}
           {pitcherData?.home_pitcher && (
             <Typography sx={{ fontSize: "0.8rem", color: "#5b7cff", fontStyle: "italic", mt: 0.25 }}>
               {pitcherData.home_pitcher}{pitcherData.home_pitcher_stats ? ` · ${pitcherData.home_pitcher_stats}` : ""}
@@ -159,11 +172,17 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
 
         {/* Away */}
         <Box sx={{ textAlign: "right" }}>
-          <Link to={getTeamPageLink(sport, away.team)} style={{ textDecoration: "none", color: "inherit" }}>
-            <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
+          {TEAM_PAGE_SPORTS.has(sport) ? (
+            <Link to={getTeamPageLink(sport, away.team)} style={{ textDecoration: "none", color: "inherit" }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
+                {away.team}
+              </Typography>
+            </Link>
+          ) : (
+            <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2 }}>
               {away.team}
             </Typography>
-          </Link>
+          )}
           {pitcherData?.away_pitcher && (
             <Typography sx={{ fontSize: "0.8rem", color: "#5b7cff", fontStyle: "italic", mt: 0.25, textAlign: "right" }}>
               {pitcherData.away_pitcher}{pitcherData.away_pitcher_stats ? ` · ${pitcherData.away_pitcher_stats}` : ""}

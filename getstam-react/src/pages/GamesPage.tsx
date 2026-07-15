@@ -10,7 +10,7 @@ import {
   ToggleButton,
 } from "@mui/material";
 import { useGame } from "../contexts/GameContext";
-import GameOdds from "../components/GameOdds";
+import GameOdds, { shouldDisplayGame } from "../components/GameOdds";
 import GamesWithTrends from "../components/GamesWithTrends";
 import PastGamesDisplay from "../components/PastGamesDisplay";
 import { GameWithTrends } from "../utils/trendAnalysis";
@@ -219,6 +219,11 @@ const GamesPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [activeView, setActiveView] = useState<"all" | "trends">(isTrends ? "trends" : "all");
   const [games, setGames] = useState<any[]>([]);
+  // Games with no posted odds AND no final score (e.g. scheduled a day or more out)
+  // render nothing in GameOdds — derive the visible subset here so the count/empty-
+  // state/grid all agree, instead of "N games today" with a silently blank grid
+  // underneath. Completed games still count as visible even once odds clear.
+  const visibleGames = games.filter(shouldDisplayGame);
   const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [gamesLoading, setGamesLoading] = useState(false);
@@ -484,8 +489,8 @@ const GamesPage = () => {
           align="center"
           sx={{ mb: 3, color: "#9e9e9e" }}
         >
-          {!isHistoricalDate && games.length > 0 && `${games.length} games today`}
-          {!isHistoricalDate && games.length > 0 && dataSinceYear && " · "}
+          {!isHistoricalDate && visibleGames.length > 0 && `${visibleGames.length} games today`}
+          {!isHistoricalDate && visibleGames.length > 0 && dataSinceYear && " · "}
           {dataSinceYear && `Data since ${dataSinceYear}`}
           {!dataSinceYear && !isHistoricalDate && "* Only games with betting odds data will display"}
         </Typography>
@@ -590,8 +595,14 @@ const GamesPage = () => {
           </Typography>
         )}
 
+        {!isHistoricalDate && activeView === "all" && !gamesLoading && games.length > 0 && visibleGames.length === 0 && (
+          <Typography align="center" sx={{ mt: 4, mb: 2 }}>
+            {games.length === 1 ? "1 game is" : `${games.length} games are`} scheduled for this date, but odds haven't been posted yet. Check back closer to game time.
+          </Typography>
+        )}
+
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
-          {!isHistoricalDate && activeView === "all" && games.map((match) => (
+          {!isHistoricalDate && activeView === "all" && visibleGames.map((match) => (
             <GameOdds
               key={match.game_id}
               game={{

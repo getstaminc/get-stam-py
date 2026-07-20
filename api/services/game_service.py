@@ -103,6 +103,107 @@ class GameService:
         return game_obj
 
     @staticmethod
+    def _get_matchup_db_service(sport_key):
+        """Lazily import the per-sport historical service (avoids importing all 6 at
+        module load time) and return (ServiceClass, away_score_field, home_score_field)."""
+        if sport_key == 'baseball_mlb':
+            from .historical.mlb_service import MLBService
+            return MLBService, 'away_runs', 'home_runs'
+        if sport_key == 'basketball_nba':
+            from .historical.nba_service import NBAService
+            return NBAService, 'away_points', 'home_points'
+        if sport_key == 'americanfootball_nfl':
+            from .historical.nfl_service import NFLService
+            return NFLService, 'away_points', 'home_points'
+        if sport_key == 'icehockey_nhl':
+            from .historical.nhl_service import NHLService
+            return NHLService, 'away_goals', 'home_goals'
+        if sport_key == 'americanfootball_ncaaf':
+            from .historical.ncaaf_service import NCAAFService
+            return NCAAFService, 'away_points', 'home_points'
+        if sport_key == 'basketball_ncaab':
+            from .historical.ncaab_service import NCAABService
+            return NCAABService, 'away_points', 'home_points'
+        return None, None, None
+
+    @staticmethod
+    def resolve_matchup(sport_key, away_odds_name, home_odds_name, date_str, occurrence=1):
+        """Resolve (sport, away team, home team, ET date, occurrence) -> game identity.
+        Tries live Odds API data first, then falls back to the sport's historical DB table
+        (for games that have aged out of the Odds API's lookback window).
+        Returns ({"game_id":..., "source": "live"|"db", "game": {...}}, None) or (None, error)."""
+        # Live path: reuse the existing today/date games flow, filter by team names.
+        result, err = GameService.get_games_for_date(sport_key, date_str)
+        if not err and result:
+            matches = [
+                g for g in result['games']
+                if g['away']['team'] == away_odds_name and g['home']['team'] == home_odds_name
+            ]
+            matches.sort(key=lambda g: g.get('commence_time') or '')
+            if len(matches) >= occurrence:
+                game = matches[occurrence - 1]
+                return {"game_id": game['game_id'], "source": "live", "game": game}, None
+
+        # DB fallback: exact match by team names + date against the sport's historical table.
+        # The *_games tables store short/abbreviated names (e.g. "Yankees", "IND"), not the
+        # full Odds-API names used everywhere else in this flow — convert before querying.
+        service_cls, away_score_field, home_score_field = GameService._get_matchup_db_service(sport_key)
+        if not service_cls:
+            return None, 'Sport not supported'
+
+        from shared_utils import convert_team_name, convert_team_name_ncaab
+        if sport_key == 'basketball_ncaab':
+            db_home_name = convert_team_name_ncaab(home_odds_name)
+            db_away_name = convert_team_name_ncaab(away_odds_name)
+        else:
+            db_home_name = convert_team_name(home_odds_name)
+            db_away_name = convert_team_name(away_odds_name)
+
+        games, db_err = service_cls.get_games_by_matchup(db_home_name, db_away_name, date_str)
+        if db_err or not games or len(games) < occurrence:
+            return None, 'Game not found'
+
+        row = games[occurrence - 1]
+        # Stringify to match the top-level "game_id" below (str(row.get('game_id')))
+        # and the live-path shape, where both fields carry the identical value —
+        # the frontend compares this nested id against the top-level one with ===.
+        db_game_id = str(row.get('game_id'))
+        formatted_game = {
+            "game_id": db_game_id,
+            "commence_time": row.get('game_date'),
+            "isToday": False,
+            "completed": True,
+            "from_db": True,
+            "home": {
+                # Use the full Odds-API name passed in, not the DB's short name, so this
+                # matches the shape/values of the live-path response.
+                "team": home_odds_name,
+                "score": row.get(home_score_field),
+                "odds": {
+                    "h2h": row.get('home_money_line'),
+                    "spread_point": row.get('home_line'),
+                    "spread_price": None,
+                },
+            },
+            "away": {
+                "team": away_odds_name,
+                "score": row.get(away_score_field),
+                "odds": {
+                    "h2h": row.get('away_money_line'),
+                    "spread_point": row.get('away_line'),
+                    "spread_price": None,
+                },
+            },
+            "totals": {
+                "over_point": row.get('total'),
+                "under_point": row.get('total'),
+                "over_price": None,
+                "under_price": None,
+            },
+        }
+        return {"game_id": db_game_id, "source": "db", "game": formatted_game}, None
+
+    @staticmethod
     def get_single_game_from_db(sport_key, odds_event_id):
         """Fallback for expired games: query DB by odds_event_id. MLB only."""
         if sport_key != 'baseball_mlb':

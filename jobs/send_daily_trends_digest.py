@@ -67,6 +67,15 @@ def _encode_game_id(hex_id):
         return hex_id
 
 
+def _build_matchup_slug(away_full, home_full, date_str):
+    """Mirror app.py's _team_slug / teamSlugUtils.ts's buildMatchupSlug for crawlable
+    game-details links generated going forward. Already-sent emails are unaffected."""
+    import re as _re
+    def _slug(name):
+        return _re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
+    return f"{_slug(away_full)}-vs-{_slug(home_full)}-{date_str}"
+
+
 def _get_todays_games_from_scores(scores):
     """Filter Odds API scores list to games starting today ET."""
     today_et = datetime.now(eastern_tz).date()
@@ -151,7 +160,14 @@ def _build_markdown(today_str, sport_results, player_streaks_by_team=None):
             lines.append("")
             game_id = game.get("game_id", "")
             sport_route_key = game.get("sport", "")
-            if game_id and sport_route_key:
+            home_full = game.get("home_team_full", "")
+            away_full = game.get("away_team_full", "")
+            game_date = game.get("game_date", "")
+            if sport_route_key and home_full and away_full and game_date:
+                matchup_slug = _build_matchup_slug(away_full, home_full, game_date)
+                lines.append(f"[View Game →](/game-details/{sport_route_key}/{matchup_slug})")
+                lines.append("")
+            elif game_id and sport_route_key:
                 lines.append(f"[View Game →](/game-details/{sport_route_key}?game_id={game_id})")
                 lines.append("")
             for trend_key, label, h2h_mode, focal_team, focal_ml_key, venue in trend_keys:
@@ -318,9 +334,24 @@ def run():
                 away_short = convert_team_name(away_full)
                 odds_game = odds_by_id.get(g.get("id", ""))
                 home_ml, away_ml = _extract_ml(odds_game, home_full) if odds_game else (None, None)
+                commence_time = g.get("commence_time") or ""
+                # ET calendar date, not the UTC one commence_time is stored in — a naive
+                # split("T")[0] puts night games (common past ~8pm ET) on the wrong day.
+                game_date_et = ""
+                if commence_time:
+                    try:
+                        game_date_et = str(
+                            datetime.fromisoformat(commence_time.replace("Z", "+00:00"))
+                            .astimezone(eastern_tz).date()
+                        )
+                    except Exception:
+                        game_date_et = commence_time.split("T")[0]
                 games_for_trends.append({
                     "home_team_name": home_short,
                     "away_team_name": away_short,
+                    "home_team_full": home_full,
+                    "away_team_full": away_full,
+                    "game_date": game_date_et,
                     "game_id": _encode_game_id(g.get("id", "")),
                     "sport": sport,
                     "home_ml": home_ml,

@@ -89,7 +89,7 @@ const MLB_TEAMS: Record<string, string> = {
   'Minnesota Twins': 'Twins',
   'New York Mets': 'Mets',
   'New York Yankees': 'Yankees',
-  'Oakland Athletics': 'Athletics',
+  'Athletics': 'Athletics',
   'Philadelphia Phillies': 'Phillies',
   'Pittsburgh Pirates': 'Pirates',
   'San Diego Padres': 'Padres',
@@ -372,6 +372,10 @@ const SPORT_MAPS: Record<string, Record<string, string>> = {
   ncaab: NCAAB_TEAMS,
 };
 
+// Sports with team-slug infrastructure (and thus matchup-page support) — soccer isn't
+// included here yet, so callers should fall back to the legacy ?game_id= link for it.
+export const MATCHUP_SLUG_SPORTS = new Set(Object.keys(SPORT_MAPS));
+
 // Core slugify: "Los Angeles Lakers" → "los-angeles-lakers"
 export function oddsApiNameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -409,4 +413,60 @@ export function dbNameToSlug(dbName: string, sport: string): string | null {
     }
   }
   return null;
+}
+
+// Convert a game's commence_time to the Eastern-time calendar date (YYYY-MM-DD)
+// used in matchup slugs/URLs — the date fans think of the game as being "on",
+// not the UTC date the backend stores it in. Games starting after ~8pm ET land
+// on the next UTC calendar day, so a naive commenceTime.split('T')[0] is wrong
+// for a large share of night games.
+//
+// DB-fallback games (source: "db") carry a bare date with no time component
+// (e.g. "2026-06-14", no "T") — that's already the correct calendar date as
+// seeded, so it's returned unchanged rather than run through a timezone
+// conversion that would shift it a day earlier.
+export function getEasternDateStr(commenceTime: string): string {
+  if (!commenceTime.includes('T')) return commenceTime;
+  return new Date(commenceTime).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+}
+
+// Matchup slugs: "<away-slug>-vs-<home-slug>-<YYYY-MM-DD>", optional "-2" suffix
+// for same-day rematches (MLB doubleheaders in practice).
+export function buildMatchupSlug(
+  awayName: string,
+  homeName: string,
+  commenceTime: string,
+  occurrence: number = 1
+): string {
+  const dateStr = getEasternDateStr(commenceTime);
+  const base = `${oddsApiNameToSlug(awayName)}-vs-${oddsApiNameToSlug(homeName)}-${dateStr}`;
+  return occurrence > 1 ? `${base}-${occurrence}` : base;
+}
+
+export function getMatchupPageLink(
+  sport: string,
+  awayName: string,
+  homeName: string,
+  commenceTime: string,
+  occurrence: number = 1
+): string {
+  return `/game-details/${sport}/${buildMatchupSlug(awayName, homeName, commenceTime, occurrence)}`;
+}
+
+export interface ParsedMatchupSlug {
+  awaySlug: string;
+  homeSlug: string;
+  date: string;
+  occurrence: number;
+}
+
+export function parseMatchupSlug(slug: string): ParsedMatchupSlug | null {
+  const m = slug.match(/^([a-z0-9-]+?)-vs-([a-z0-9-]+)-(\d{4}-\d{2}-\d{2})(?:-(\d+))?$/);
+  if (!m) return null;
+  return {
+    awaySlug: m[1],
+    homeSlug: m[2],
+    date: m[3],
+    occurrence: m[4] ? parseInt(m[4], 10) : 1,
+  };
 }

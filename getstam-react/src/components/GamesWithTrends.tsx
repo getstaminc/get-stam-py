@@ -3,6 +3,7 @@ import { Box, Typography, FormControl, InputLabel, Select, MenuItem } from "@mui
 import { useLocation } from "react-router-dom";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 import { encodeGameId } from "../utils/gameIdCrypto";
+import { getMatchupPageLink, MATCHUP_SLUG_SPORTS } from "../utils/teamSlugUtils";
 import TrendInsightCard, { getConfidenceScore } from "./TrendInsightCard";
 
 interface GamesWithTrendsProps {
@@ -118,13 +119,18 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
 
           if (allTrends.length === 0) return null;
 
+          const detailsLink =
+            MATCHUP_SLUG_SPORTS.has(urlSport) && game.home?.team && game.away?.team && game.commence_time
+              ? getMatchupPageLink(urlSport, game.away.team, game.home.team, game.commence_time)
+              : `/game-details/${urlSport}?game_id=${encodeGameId(game.game_id)}`;
+
           return (
             <TrendInsightCard
               key={game.game_id}
               game={{ home: game.home, away: game.away, totals: game.totals, ...(game.draw ? { draw: game.draw } : {}) }}
               trends={allTrends}
               pitcherData={getPitcherDataForGame?.(game)}
-              detailsLink={`/game-details/${urlSport}?game_id=${encodeGameId(game.game_id)}`}
+              detailsLink={detailsLink}
               sport={urlSport}
               onViewDetails={() => onViewDetails(game)}
             />

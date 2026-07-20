@@ -58,6 +58,35 @@ class NCAABService(BaseHistoricalService):
                 conn.close()
 
     @staticmethod
+    def get_games_by_matchup(home_team_name: str, away_team_name: str, game_date: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
+        """Exact match on home+away+date, ordered by start_time (supports same-day rematches)."""
+        try:
+            conn = NCAABService._get_connection()
+            if not conn:
+                return None, "Database connection failed"
+
+            query = """
+                SELECT
+                    game_id, game_date, home_team_name, home_team_id, away_team_name, away_team_id,
+                    home_points, away_points, total_points, total, start_time, home_line, away_line,
+                    home_money_line, away_money_line
+                FROM ncaab_games
+                WHERE home_team_name = %s AND away_team_name = %s AND game_date = %s
+                ORDER BY start_time ASC NULLS LAST
+            """
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (home_team_name, away_team_name, game_date))
+                games = cursor.fetchall()
+                games_list = [dict(game) for game in games]
+                processed_games = NCAABService._process_games_list(games_list)
+                return processed_games, None
+        except Exception as e:
+            return None, f"Error fetching NCAAB matchup games: {str(e)}"
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
     def get_team_games_by_id(team_id: int, limit: int = 10, venue: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
         """Get historical games for a specific NCAAB team by ID."""
         try:

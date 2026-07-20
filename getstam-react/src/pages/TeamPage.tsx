@@ -4,7 +4,7 @@ import { Box, Typography, CircularProgress, Divider } from "@mui/material";
 import SEO from "../components/SEO";
 import GameOdds from "../components/GameOdds";
 import HistoricalGames from "../components/HistoricalGames";
-import { getTeamBySlug } from "../utils/teamSlugUtils";
+import { getTeamBySlug, getMatchupPageLink } from "../utils/teamSlugUtils";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { HistoricalGame, SportType, GameWithDraw } from "../types/gameTypes";
 
@@ -162,7 +162,12 @@ const TeamPage: React.FC = () => {
             <GameOdds
               game={oddsGame}
               sport={sport}
-              detailsLink={`/game-details/${sport}?game_id=${encodeGameId((oddsGame as any).game_id)}`}
+              detailsLink={(() => {
+                const g = oddsGame as any;
+                return g.home?.team && g.away?.team && g.commence_time
+                  ? getMatchupPageLink(sport, g.away.team, g.home.team, g.commence_time)
+                  : `/game-details/${sport}?game_id=${encodeGameId(g.game_id)}`;
+              })()}
             />
           ) : (
             <Typography color="text.secondary">No game today</Typography>

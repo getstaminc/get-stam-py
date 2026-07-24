@@ -2,18 +2,21 @@ export interface Sport {
   name: string;
   path?: string;
   inSeason: boolean;
+  // Set to false to hide a sport from nav/homepage without deleting its code (e.g. World Cup between tournaments)
+  enabled?: boolean;
   // Optional child leagues for grouped sports (e.g., Soccer)
   leagues?: { name: string; path: string }[];
 }
 
-export const sports: Sport[] = [
+const allSports: Sport[] = [
   { name: "MLB", path: "/mlb", inSeason: true },
   { name: "NBA", path: "/nba", inSeason: false },
   { name: "NCAAB", path: "/ncaab", inSeason: false },
   { name: "NHL", path: "/nhl", inSeason: false },
   { name: "NFL", path: "/nfl", inSeason: false },
   { name: "NCAAF", path: "/ncaaf", inSeason: false },
-  { name: "WORLD CUP", path: "/worldcup", inSeason: true },
+  // Next World Cup is 2030 — flip `enabled` to true to bring it back
+  { name: "WORLD CUP", path: "/worldcup", inSeason: true, enabled: false },
   // Group soccer leagues under a single Soccer nav item to reduce clutter
   {
     name: "SOCCER",
@@ -27,4 +30,6 @@ export const sports: Sport[] = [
     ],
   },
 ];
+
+export const sports: Sport[] = allSports.filter((s) => s.enabled !== false);
 

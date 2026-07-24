@@ -7,9 +7,8 @@ import { TrendResult } from "../utils/trendAnalysis";
 import { getTeamPageLink } from "../utils/teamSlugUtils";
 import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
 
-// Sports with a team-page slug map (see teamSlugUtils.ts's SPORT_MAPS) — soccer/
-// international sports (e.g. World Cup) don't have one yet, so avoid linking to a
-// team page that doesn't exist for them.
+// Sports with a team-page slug map (see teamSlugUtils.ts's SPORT_MAPS) — soccer
+// doesn't have one yet, so avoid linking to a team page that doesn't exist for it.
 const TEAM_PAGE_SPORTS = new Set(["nba", "nfl", "mlb", "nhl", "ncaaf", "ncaab"]);
 
 export interface TrendInsightCardProps {

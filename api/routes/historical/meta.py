@@ -11,7 +11,7 @@ API_KEY = os.getenv("API_KEY")
 
 historical_meta_bp = Blueprint('historical_meta', __name__)
 
-VALID_SPORTS = {'mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaab', 'soccer', 'worldcup'}
+VALID_SPORTS = {'mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaab', 'soccer'}
 
 @historical_meta_bp.before_request
 def check_api_key():

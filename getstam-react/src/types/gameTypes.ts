@@ -113,7 +113,7 @@ export interface GameData {
   away_spread?: number;
 }
 
-export type SportType = 'nfl' | 'ncaaf' | 'mlb' | 'soccer' | 'worldcup' | 'nba' | 'nhl' | 'ncaab';
+export type SportType = 'nfl' | 'ncaaf' | 'mlb' | 'soccer' | 'nba' | 'nhl' | 'ncaab';
 
 export type HistoricalGamesProps = {
   title: string;
@@ -134,7 +134,6 @@ export const getSportType = (sportKey: string): SportType => {
     'basketball_ncaab': 'ncaab',
     'baseball_mlb': 'mlb',
     'icehockey_nhl': 'nhl',
-    'soccer_fifa_world_cup': 'worldcup',
     'soccer_epl': 'soccer',
     'soccer_spain_la_liga': 'soccer',
     'soccer_germany_bundesliga': 'soccer',
@@ -147,7 +146,6 @@ export const getSportType = (sportKey: string): SportType => {
     'ncaab': 'ncaab',
     'mlb': 'mlb',
     'nhl': 'nhl',
-    'worldcup': 'worldcup',
     'soccer': 'soccer',
     'epl': 'soccer',
     'laliga': 'soccer',

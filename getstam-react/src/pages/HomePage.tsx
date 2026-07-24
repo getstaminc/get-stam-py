@@ -28,7 +28,6 @@ const SPORT_CONFIG: Record<
   NFL:   { apiKey: "americanfootball_nfl",   historicalKey: "nfl",   minTrendLength: 3 },
   NCAAF: { apiKey: "americanfootball_ncaaf", historicalKey: "ncaaf", minTrendLength: 3 },
   NCAAB: { apiKey: "basketball_ncaab",       historicalKey: "ncaab", minTrendLength: 3 },
-  "WORLD CUP": { apiKey: "soccer_fifa_world_cup", historicalKey: "worldcup", minTrendLength: 3 },
 };
 
 const SKIP_SPORTS = new Set(["SOCCER"]);
@@ -74,11 +73,7 @@ async function fetchTrends(
 ): Promise<GameWithTrends[]> {
   if (games.length === 0) return [];
   try {
-    // World Cup lives under the soccer trends blueprint's per-league route, not the
-    // generic /api/historical/trends/<sport> path the other sports use.
-    const url = historicalKey === "worldcup"
-      ? `${API_BASE_URL}/api/historical/trends/soccer/worldcup`
-      : `${API_BASE_URL}/api/historical/trends/${historicalKey}`;
+    const url = `${API_BASE_URL}/api/historical/trends/${historicalKey}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-API-KEY": API_KEY },

@@ -22,7 +22,6 @@ from api.routes.rankings import rankings_bp
 from api.routes.historical.nhl_games import nhl_historical_bp
 from api.routes.historical.mlb_games import mlb_historical_bp
 from api.routes.historical.soccer_games import soccer_historical_bp
-from api.routes.historical.worldcup_games import worldcup_historical_bp
 from api.routes.historical.nfl_games import nfl_historical_bp
 from api.routes.historical.ncaab_games import ncaab_historical_bp
 from api.routes.historical.ncaaf_games import ncaaf_historical_bp
@@ -90,7 +89,6 @@ app.register_blueprint(rankings_bp)
 # Register historical data blueprints
 app.register_blueprint(mlb_historical_bp)
 app.register_blueprint(soccer_historical_bp)
-app.register_blueprint(worldcup_historical_bp)
 app.register_blueprint(nfl_historical_bp)
 app.register_blueprint(nba_historical_bp)
 app.register_blueprint(ncaab_historical_bp)

@@ -127,37 +127,6 @@ def analyze_soccer_trends_by_league(league_slug: str):
         limit = data.get('limit', 5)
         min_trend_length = data.get('min_trend_length', data.get('minTrendLength', 3))
 
-        # World Cup uses a separate table — handle before the regular slug map
-        if league_slug.lower() == 'worldcup':
-            from ...services.historical.worldcup_trends_service import WorldcupTrendsService
-            from ...services.historical.worldcup_service import WorldcupService as _WCS
-            if not games:
-                date_param = data.get('date') or request.args.get('date')
-                if not date_param:
-                    return jsonify({'error': 'Either a games array in the POST body or a date is required'}), 400
-                if len(date_param) == 8 and date_param.isdigit():
-                    game_date = f"{date_param[0:4]}-{date_param[4:6]}-{date_param[6:8]}"
-                else:
-                    game_date = date_param
-                games, err = _WCS.get_games(limit=1000, start_date=game_date, end_date=game_date)
-                if err:
-                    return jsonify({'error': err}), 500
-            results, error = WorldcupTrendsService.analyze_multiple_games_trends(
-                games or [], limit, min_trend_length, 'soccer_fifa_world_cup'
-            )
-            if error:
-                return jsonify({'error': error}), 500
-            return jsonify({
-                'success': True,
-                'data': results,
-                'meta': {
-                    'league': 'INTL',
-                    'games_analyzed': len(games or []),
-                    'limit': limit,
-                    'min_trend_length': min_trend_length,
-                }
-            })
-
         # Map league slug to DB league name and optional sport_key the trends service understands
         slug_to_db_league = {
             'epl': 'EPL',

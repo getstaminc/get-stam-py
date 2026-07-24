@@ -105,6 +105,7 @@ const HistoricalGames: React.FC<HistoricalGamesExtendedProps> = ({
           awayMoneyLine: nhlGame.away_money_line
         };
 
+      case 'worldcup':
       case 'soccer':
         const soccerGame = game as SoccerGame;
         return {

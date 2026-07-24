@@ -78,6 +78,8 @@ function AppContent() {
           <Route path="/seriea/trends" element={<GamesPage />} />
           <Route path="/epl" element={<GamesPage />} />
           <Route path="/epl/trends" element={<GamesPage />} />
+          <Route path="/worldcup" element={<GamesPage />} />
+          <Route path="/worldcup/trends" element={<GamesPage />} />
           <Route path="/game-details/:sport" element={<GameDetailsPage />} />
           <Route path="/game-details/:sport/:slug" element={<GameDetailsPage />} />
           <Route path="/about-us" element={<AboutUsPage />} />

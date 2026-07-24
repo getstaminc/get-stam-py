@@ -116,7 +116,7 @@ const PlayerStreaksStrip: React.FC<PlayerStreaksStripProps> = ({ groups, showAll
       })}
       {showAll && hasRates && (
         <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25 }}>
-          * Continuation rate calculated from each player's own historical game records (data from 2024–present).
+          * Continuation rate calculated from each player's own historical game records (data from 2015–present).
         </Typography>
       )}
     </Box>

@@ -27,6 +27,7 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
   nhl: "icehockey_nhl",
   ncaaf: "americanfootball_ncaaf",
   ncaab: "basketball_ncaab",
+  worldcup: "soccer_fifa_world_cup",
   epl: "soccer_epl",
   laliga: "soccer_spain_la_liga",
   bundesliga: "soccer_germany_bundesliga",
@@ -36,7 +37,7 @@ const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
 };
 
 // Map URL sport to historical API sport type
-type HistoricalSportType = 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' | 'nba' | 'ncaab';
+type HistoricalSportType = 'mlb' | 'nfl' | 'ncaaf' | 'soccer' | 'nhl' | 'nba' | 'ncaab' | 'worldcup';
 const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   nfl: "nfl",
   mlb: "mlb",
@@ -50,6 +51,7 @@ const SPORT_URL_TO_HISTORICAL: { [key: string]: HistoricalSportType } = {
   nfl_preseason: "nfl", // Map preseason to nfl,
   nhl: "nhl",
   ncaab: "ncaab",
+  worldcup: "worldcup",
 };
 
 // Map URL sport to the league identifier we send to the backend soccer endpoints
@@ -75,6 +77,7 @@ const SPORT_API_KEY_TO_DISPLAY: { [key: string]: string } = {
   soccer_germany_bundesliga: "BUNDESLIGA",
   soccer_france_ligue_one: "LIGUE 1",
   soccer_italy_serie_a: "SERIE A",
+  soccer_fifa_world_cup: "World Cup",
 };
 
 const formatDate = (date: Date) => {
@@ -138,6 +141,7 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
     'soccer_epl': 'soccer',
     'soccer_uefa_champs_league': 'soccer',
     'soccer_uefa_europa_league': 'soccer',
+    'soccer_fifa_world_cup': 'soccer',
     'soccer_uefa_nations_league': 'soccer',
     'icehockey_nhl': 'nhl',
     'basketball_ncaab': 'ncaab',

@@ -8,7 +8,6 @@ import { convertTeamNameBySport } from "../utils/teamNameConverter";
 import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 import PlayerPropsTable from "./PlayerPropsTable";
 import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
-import { decodeGameId } from "../utils/gameIdCrypto";
 import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
 
 type Game = {
@@ -183,9 +182,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   const fetchPlayerProps = async (teamTab: number) => {
     setPlayerPropsLoading(true);
-    const urlParams = new URLSearchParams(window.location.search);
-    const gameId = decodeGameId(urlParams.get('game_id') || '');
-    
+    const gameId = (game as any).game_id || '';
+
     if (gameId) {
       try {
         if (teamTab === 0) {
@@ -244,8 +242,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   const fetchMLBPlayerProps = async () => {
     setMlbPlayerPropsLoading(true);
-    const urlParams = new URLSearchParams(window.location.search);
-    const gameId = decodeGameId(urlParams.get('game_id') || '');
+    const gameId = (game as any).game_id || '';
     if (gameId) {
       try {
         const res = await fetch(`/api/odds/mlb/player-props/${gameId}?limit=${playerPropsLimit}`, {

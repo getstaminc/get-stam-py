@@ -10,7 +10,11 @@ from .mlb_player_name_mismatch import MLBPlayerNameMismatch
 from .mlb_batter_prop import MLBBatterProp
 from .mlb_pitcher_prop import MLBPitcherProp
 from .mlb_game import MLBGame
+from .nfl_player import NFLPlayer
+from .nfl_player_alias import NFLPlayerAlias
+from .nfl_player_name_mismatch import NFLPlayerNameMismatch
+from .nfl_player_prop import NFLPlayerProp
 from .team import Team
 from .blog_post import BlogPost
 
-__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'Team', 'BlogPost']
+__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'NFLPlayer', 'NFLPlayerAlias', 'NFLPlayerNameMismatch', 'NFLPlayerProp', 'Team', 'BlogPost']

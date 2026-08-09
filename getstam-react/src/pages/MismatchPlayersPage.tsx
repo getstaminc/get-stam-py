@@ -17,7 +17,11 @@ import {
   TableRow,
   TextField,
   Chip,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
+
+type Sport = "mlb" | "nfl";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
@@ -28,8 +32,8 @@ const API_BASE_URL =
 interface PlaceholderGroup {
   player_id: number;
   normalized_name: string;
-  batter_props: number;
-  pitcher_props: number;
+  batter_props?: number;
+  pitcher_props?: number;
   total_props: number;
   first_game: string | null;
   last_game: string | null;
@@ -40,9 +44,10 @@ interface MismatchRecord {
   game_date: string;
   odds_home_team: string;
   odds_away_team: string;
-  player_type: "batter" | "pitcher";
-  batter_props_id: number | null;
-  pitcher_props_id: number | null;
+  player_type?: "batter" | "pitcher";
+  batter_props_id?: number | null;
+  pitcher_props_id?: number | null;
+  nfl_player_props_id?: number | null;
 }
 
 interface PlayerGroup {
@@ -96,6 +101,8 @@ export default function MismatchPlayersPage() {
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
 
+  const [sport, setSport] = useState<Sport>("mlb");
+
   const [groups, setGroups] = useState<PlayerGroup[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [groupsError, setGroupsError] = useState("");
@@ -108,19 +115,19 @@ export default function MismatchPlayersPage() {
 
   const isAuthenticated = !!password;
 
-  // Load mismatches + placeholders once authenticated
+  // Load mismatches + placeholders once authenticated, and whenever the sport toggle changes
   useEffect(() => {
     if (!isAuthenticated) return;
     loadMismatches();
     loadPlaceholders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, sport]);
 
   async function loadMismatches() {
     setLoadingGroups(true);
     setGroupsError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/internal/mlb/mismatches`, {
+      const res = await fetch(`${API_BASE_URL}/api/internal/${sport}/mismatches`, {
         headers: { "X-Internal-Password": password },
       });
       if (!res.ok) {
@@ -147,7 +154,7 @@ export default function MismatchPlayersPage() {
     setLoadingPlaceholders(true);
     setPlaceholdersError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/internal/mlb/placeholders`, {
+      const res = await fetch(`${API_BASE_URL}/api/internal/${sport}/placeholders`, {
         headers: { "X-Internal-Password": password },
       });
       if (!res.ok) {
@@ -171,7 +178,7 @@ export default function MismatchPlayersPage() {
     setAuthLoading(true);
     setAuthError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/internal/mlb/mismatches`, {
+      const res = await fetch(`${API_BASE_URL}/api/internal/${sport}/mismatches`, {
         headers: { "X-Internal-Password": passwordInput },
       });
       if (res.status === 401) {
@@ -209,7 +216,7 @@ export default function MismatchPlayersPage() {
     });
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/internal/mlb/mismatches/${playerId}/candidates`,
+        `${API_BASE_URL}/api/internal/${sport}/mismatches/${playerId}/candidates`,
         { headers: { "X-Internal-Password": password } }
       );
       const data = await res.json();
@@ -237,7 +244,7 @@ export default function MismatchPlayersPage() {
     updateCardState(group.player_id, { resolving: true, resolveSuccess: null, resolveError: null });
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/internal/mlb/mismatches/${group.player_id}/resolve`,
+        `${API_BASE_URL}/api/internal/${sport}/mismatches/${group.player_id}/resolve`,
         {
           method: "POST",
           headers: {
@@ -278,7 +285,7 @@ export default function MismatchPlayersPage() {
     updateCardState(group.player_id, { resolving: true, resolveSuccess: null, resolveError: null });
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/internal/mlb/mismatches/${group.player_id}/resolve`,
+        `${API_BASE_URL}/api/internal/${sport}/mismatches/${group.player_id}/resolve`,
         {
           method: "POST",
           headers: {
@@ -329,7 +336,7 @@ export default function MismatchPlayersPage() {
     });
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/internal/mlb/placeholders/${playerId}/candidates`,
+        `${API_BASE_URL}/api/internal/${sport}/placeholders/${playerId}/candidates`,
         { headers: { "X-Internal-Password": password } }
       );
       const data = await res.json();
@@ -354,7 +361,7 @@ export default function MismatchPlayersPage() {
     updatePlaceholderCardState(group.player_id, { resolving: true, resolveSuccess: null, resolveError: null });
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/internal/mlb/placeholders/${group.player_id}/resolve`,
+        `${API_BASE_URL}/api/internal/${sport}/placeholders/${group.player_id}/resolve`,
         {
           method: "POST",
           headers: { "X-Internal-Password": password, "Content-Type": "application/json" },
@@ -388,7 +395,7 @@ export default function MismatchPlayersPage() {
     updatePlaceholderCardState(group.player_id, { resolving: true, resolveSuccess: null, resolveError: null });
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/internal/mlb/placeholders/${group.player_id}/resolve`,
+        `${API_BASE_URL}/api/internal/${sport}/placeholders/${group.player_id}/resolve`,
         {
           method: "POST",
           headers: { "X-Internal-Password": password, "Content-Type": "application/json" },
@@ -456,10 +463,24 @@ export default function MismatchPlayersPage() {
   // --- Main UI ---
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", px: 2, py: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
         <Typography variant="h5" fontWeight={700}>
-          MLB Player Mismatch Resolution
+          {sport.toUpperCase()} Player Mismatch Resolution
         </Typography>
+        <ToggleButtonGroup
+          value={sport}
+          exclusive
+          size="small"
+          onChange={(_e, next) => {
+            if (next) setSport(next);
+          }}
+        >
+          <ToggleButton value="mlb">MLB</ToggleButton>
+          <ToggleButton value="nfl">NFL</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
         {!loadingGroups && (
           <Chip
             label={`${groups.length} unresolved`}
@@ -506,7 +527,7 @@ export default function MismatchPlayersPage() {
                     <TableCell>Date</TableCell>
                     <TableCell>Home</TableCell>
                     <TableCell>Away</TableCell>
-                    <TableCell>Type</TableCell>
+                    {sport === "mlb" && <TableCell>Type</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -515,7 +536,9 @@ export default function MismatchPlayersPage() {
                       <TableCell>{rec.game_date}</TableCell>
                       <TableCell>{rec.odds_home_team}</TableCell>
                       <TableCell>{rec.odds_away_team}</TableCell>
-                      <TableCell>{rec.player_type === "batter" ? "B" : "P"}</TableCell>
+                      {sport === "mlb" && (
+                        <TableCell>{rec.player_type === "batter" ? "B" : "P"}</TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -666,7 +689,7 @@ export default function MismatchPlayersPage() {
         </Button>
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Players in <code>mlb_players</code> with no ESPN ID — accent issues, hyphenated names, Jr. suffixes, etc.
+        Players in <code>{sport}_players</code> with no ESPN ID — accent issues, hyphenated names, Jr. suffixes, etc.
       </Typography>
 
       {loadingPlaceholders && <CircularProgress />}
@@ -689,8 +712,12 @@ export default function MismatchPlayersPage() {
                   {group.normalized_name}
                 </Typography>
                 <Chip label={`${group.total_props} props`} size="small" />
-                {group.batter_props > 0 && <Chip label={`${group.batter_props}B`} size="small" variant="outlined" />}
-                {group.pitcher_props > 0 && <Chip label={`${group.pitcher_props}P`} size="small" variant="outlined" />}
+                {!!group.batter_props && group.batter_props > 0 && (
+                  <Chip label={`${group.batter_props}B`} size="small" variant="outlined" />
+                )}
+                {!!group.pitcher_props && group.pitcher_props > 0 && (
+                  <Chip label={`${group.pitcher_props}P`} size="small" variant="outlined" />
+                )}
                 <Typography variant="body2" color="text.secondary">
                   player_id: {group.player_id}
                 </Typography>

@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import the historical import functions
 from jobs.nfl_historical_player_odds_import import import_historical_odds_date_range
 from jobs.nfl_historical_player_actuals_import_reverse import import_historical_actuals_date_range_reverse
+from jobs.nfl_historical_defense_actuals_import_reverse import import_historical_defense_actuals_date_range_reverse
 
 # Load environment variables
 load_dotenv()
@@ -104,6 +105,7 @@ def main():
         print("  1. Import historical odds from Odds API (DraftKings)")
         print("  2. Import actual game stats from ESPN (using optimized reverse approach)")
         print("  3. Match players and update records in nfl_player_props")
+        print("  4. Import team D/ST actual stats from ESPN and update nfl_defense_props")
 
         print("\n" + "=" * 80)
         print("STEP 1: Importing Historical Odds")
@@ -128,11 +130,23 @@ def main():
             raise
 
         print("\n" + "=" * 80)
+        print("STEP 3: Importing Historical Defense (D/ST) Actuals")
+        print("=" * 80)
+
+        try:
+            import_historical_defense_actuals_date_range_reverse(start_date, end_date)
+            print("\n✅ Historical defense actuals import completed successfully")
+        except Exception as e:
+            print(f"\n❌ Error during defense actuals import: {e}")
+            raise
+
+        print("\n" + "=" * 80)
         print("🎉 Historical Data Import Complete!")
         print("=" * 80)
         print(f"\nDate range: {start_date} to {end_date}")
         print("\nYou can now query nfl_player_props for analysis.")
         print("Records include both odds and actual stats for players in games during this period.")
+        print("Team D/ST anytime-TD props (with actual stats) live in nfl_defense_props.")
 
     except ValueError as e:
         print(f"\n❌ Error: {e}")

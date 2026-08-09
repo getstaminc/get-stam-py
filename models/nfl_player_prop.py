@@ -43,6 +43,10 @@ class NFLPlayerProp(Base):
     actual_player_rushing_td = Column(Integer)
     actual_player_receiving_td = Column(Integer)
     actual_player_anytime_td = Column(Boolean)
+    # TDs that never appear in the boxscore's per-athlete passing/rushing/receiving
+    # stats - kickoff/punt return, fumble return, INT return, blocked kick return
+    # TDs - parsed from the ESPN scoringPlays free-text feed instead.
+    actual_misc_td = Column(Integer, server_default='0')
 
     # Team info
     player_team_name = Column(String(100))

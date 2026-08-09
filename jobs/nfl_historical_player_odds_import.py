@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
 import os
+import re
 import sys
 import requests
 import time
 import pytz
 from datetime import datetime, date, timedelta
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
@@ -16,6 +17,22 @@ DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 NFL_MARKETS = "player_pass_yds,player_pass_tds,player_rush_yds,player_reception_yds,player_receptions,player_anytime_td"
+
+# The player_anytime_td market includes team D/ST as a valid entrant (e.g.
+# "Arizona Cardinals D/ST") alongside skill-position players. Those route to
+# nfl_defense_props instead of nfl_player_props.
+DEFENSE_SUFFIX_RE = re.compile(r'\s+D/ST$', re.IGNORECASE)
+
+
+def parse_defense_team_name(description: str) -> Optional[str]:
+    """Return the bare team name if this outcome description is a team D/ST
+    entry (e.g. "Arizona Cardinals D/ST" -> "Arizona Cardinals"), else None."""
+    if not description:
+        return None
+    match = DEFENSE_SUFFIX_RE.search(description)
+    if not match:
+        return None
+    return description[:match.start()].strip()
 
 
 def get_historical_nfl_events(target_date: date, retries=3, delay=2) -> List[Dict]:
@@ -130,7 +147,7 @@ def get_historical_player_odds(event_id: str, target_date: date, retries=3, dela
     return None
 
 
-def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[Dict]:
+def parse_historical_player_props(odds_data: Dict, commence_time: str) -> Tuple[List[Dict], List[Dict]]:
     """
     Parse historical NFL player props from odds data.
 
@@ -140,16 +157,20 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
 
     player_anytime_td is a binary Yes/No market with no 'point' - we store a fixed
     0.5 sentinel line and only populate the 'over' price slot (there is no 'under'
-    column for this market).
+    column for this market). Team D/ST entries in this market are split out into a
+    separate return list rather than mixed into the player props.
+
+    Returns (props, defense_props).
     """
     game_start = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
     eastern = pytz.timezone('US/Eastern')
     game_start_et = game_start.astimezone(eastern)
     game_date = game_start_et.date()
     props = []
+    defense_props = []
 
     if not odds_data.get('bookmakers'):
-        return props
+        return props, defense_props
 
     draftkings_data = None
     for bookmaker in odds_data['bookmakers']:
@@ -158,7 +179,7 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
             break
 
     if not draftkings_data or not draftkings_data.get('markets'):
-        return props
+        return props, defense_props
 
     event_id = odds_data['id']
     home_team = odds_data.get('home_team', '')
@@ -177,14 +198,28 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
             # Binary Yes/No market - no point, only a "Yes" price
             for outcome in outcomes:
                 bet_side = (outcome.get('name') or '').strip().lower()
-                player_name = outcome.get('description', '')
+                description = outcome.get('description', '')
                 price = outcome.get('price')
 
-                if not player_name or bet_side != 'yes' or price is None:
+                if not description or bet_side != 'yes' or price is None:
+                    continue
+
+                defense_team_name = parse_defense_team_name(description)
+                if defense_team_name:
+                    defense_props.append({
+                        'team_name': defense_team_name,
+                        'event_id': event_id,
+                        'game_date': game_date,
+                        'home_team': home_team,
+                        'away_team': away_team,
+                        'bookmaker': 'draftkings',
+                        'line': 0.5,
+                        'over_price': price,
+                    })
                     continue
 
                 props.append({
-                    'player_name': player_name,
+                    'player_name': description,
                     'event_id': event_id,
                     'game_date': game_date,
                     'home_team': home_team,
@@ -237,7 +272,7 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
             if player_record['over_price'] is not None:
                 props.append(player_record)
 
-    return props
+    return props, defense_props
 
 
 def normalize_name_simple(name: str) -> str:
@@ -447,6 +482,100 @@ def insert_historical_props_to_db(conn, props_data: List[Dict]) -> int:
     return inserted_count
 
 
+def insert_historical_defense_props_to_db(conn, defense_props_data: List[Dict]) -> int:
+    """
+    Insert historical NFL team D/ST anytime-TD props to nfl_defense_props.
+    """
+    inserted_count = 0
+
+    for prop in defense_props_data:
+        try:
+            team_id = resolve_team_id_from_odds_api(conn, prop['team_name'])
+
+            if not team_id:
+                print(f"    Skipping D/ST {prop['team_name']} - could not resolve team")
+                continue
+
+            home_team_id = resolve_team_id_from_odds_api(conn, prop['home_team'])
+            away_team_id = resolve_team_id_from_odds_api(conn, prop['away_team'])
+
+            is_home = prop['team_name'] == prop['home_team']
+            opponent_team_name = prop['away_team'] if is_home else prop['home_team']
+            opponent_team_id = away_team_id if is_home else home_team_id
+
+            existing = conn.execute(text("""
+                SELECT id FROM nfl_defense_props
+                WHERE team_id = :team_id AND odds_event_id = :odds_event_id
+            """), {
+                'team_id': team_id,
+                'odds_event_id': prop['event_id']
+            }).fetchone()
+
+            if existing:
+                conn.execute(text("""
+                    UPDATE nfl_defense_props
+                    SET odds_anytime_td = :line,
+                        odds_anytime_td_over_price = :over_price,
+                        team_name = :team_name,
+                        opponent_team_name = :opponent_team_name,
+                        opponent_team_id = :opponent_team_id,
+                        odds_home_team = :odds_home_team,
+                        odds_away_team = :odds_away_team,
+                        odds_home_team_id = :odds_home_team_id,
+                        odds_away_team_id = :odds_away_team_id,
+                        updated_at = NOW()
+                    WHERE id = :record_id
+                """), {
+                    'line': prop['line'],
+                    'over_price': prop['over_price'],
+                    'team_name': prop['team_name'],
+                    'opponent_team_name': opponent_team_name,
+                    'opponent_team_id': opponent_team_id,
+                    'odds_home_team': prop['home_team'],
+                    'odds_away_team': prop['away_team'],
+                    'odds_home_team_id': home_team_id,
+                    'odds_away_team_id': away_team_id,
+                    'record_id': existing[0]
+                })
+            else:
+                conn.execute(text("""
+                    INSERT INTO nfl_defense_props (
+                        team_id, team_name, odds_event_id, game_date, bookmaker, odds_source,
+                        odds_home_team, odds_away_team, odds_home_team_id, odds_away_team_id,
+                        opponent_team_name, opponent_team_id,
+                        odds_anytime_td, odds_anytime_td_over_price
+                    ) VALUES (
+                        :team_id, :team_name, :odds_event_id, :game_date, :bookmaker, :odds_source,
+                        :odds_home_team, :odds_away_team, :odds_home_team_id, :odds_away_team_id,
+                        :opponent_team_name, :opponent_team_id,
+                        :line, :over_price
+                    )
+                """), {
+                    'team_id': team_id,
+                    'team_name': prop['team_name'],
+                    'odds_event_id': prop['event_id'],
+                    'game_date': prop['game_date'],
+                    'bookmaker': prop['bookmaker'],
+                    'odds_source': 'odds_api',
+                    'odds_home_team': prop['home_team'],
+                    'odds_away_team': prop['away_team'],
+                    'odds_home_team_id': home_team_id,
+                    'odds_away_team_id': away_team_id,
+                    'opponent_team_name': opponent_team_name,
+                    'opponent_team_id': opponent_team_id,
+                    'line': prop['line'],
+                    'over_price': prop['over_price'],
+                })
+
+                inserted_count += 1
+
+        except Exception as e:
+            print(f"    Error processing D/ST {prop.get('team_name', 'unknown')}: {e}")
+            continue
+
+    return inserted_count
+
+
 def import_historical_player_odds_for_date(target_date: date, conn) -> int:
     """
     Import all historical NFL player odds for a specific date.
@@ -495,17 +624,18 @@ def import_historical_player_odds_for_date(target_date: date, conn) -> int:
             if not odds_data:
                 continue
 
-            props_data = parse_historical_player_props(odds_data, commence_time)
+            props_data, defense_props_data = parse_historical_player_props(odds_data, commence_time)
 
-            if not props_data:
+            if not props_data and not defense_props_data:
                 print(f"    No player props found for event {event_id}")
                 continue
 
-            print(f"    Found {len(props_data)} player props")
+            print(f"    Found {len(props_data)} player props, {len(defense_props_data)} D/ST props")
 
             inserted = insert_historical_props_to_db(conn, props_data)
+            defense_inserted = insert_historical_defense_props_to_db(conn, defense_props_data)
 
-            total_props_imported += inserted
+            total_props_imported += inserted + defense_inserted
 
             if i < len(filtered_events):
                 time.sleep(3)

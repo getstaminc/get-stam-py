@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import re
 import sys
 import requests
 import time as _time
@@ -16,6 +17,38 @@ DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
 
 # NFL boxscore stat groups we care about, keyed by their ESPN 'name' field
 RELEVANT_STAT_GROUPS = {'passing', 'rushing', 'receiving'}
+
+# ESPN scoringPlays type.id values for touchdowns that never appear in the
+# boxscore's per-athlete passing/rushing/receiving stats: Blocked FG Return,
+# Kickoff Return, Punt Return, Interception Return, Blocked Punt, Fumble
+# Return, and Sack+Opponent-Fumble-Recovery touchdowns. Found by sampling
+# scoringPlays across ~110 games from the 2025 season.
+MISC_TD_TYPE_IDS = {'18', '32', '34', '36', '37', '39', '80'}
+
+# Matches the trailing "<Name> <N> Yd" (or "yd.") segment that precedes the
+# return/recovery description in ESPN's scoringPlays text, e.g. "Tyler
+# Lockett 0 Yd Fumble Recovery (...)" or "DaRon Bland 68 Yd Interception
+# Return (...)". The LAST match in the text is used, since a few plays
+# mention the scorer twice (e.g. "Blocked Kick Recovered by X (PHI) X 61 Yd
+# Touchdown Return").
+_MISC_TD_NAME_YARDS_RE = re.compile(r"([A-Z][A-Za-z'.\-]+(?:\s[A-Z][A-Za-z'.\-]+){0,3})\s+(\d+)\s*[Yy]d\.?\s")
+
+# Fallback for the rare play with no yardage in the text (e.g. "George Holani
+# Recovered Kickoff in End Zone for a Touchdown") - just the leading run of
+# capitalized words.
+_MISC_TD_NAME_FALLBACK_RE = re.compile(r"([A-Z][A-Za-z'.\-]+(?:\s[A-Z][A-Za-z'.\-]+){1,2})")
+
+
+def parse_misc_td_scorer_name(play_text: str) -> Optional[str]:
+    """Best-effort extraction of the scoring player's name from a scoringPlays
+    'text' field. Returns None if nothing plausible is found."""
+    if not play_text:
+        return None
+    matches = _MISC_TD_NAME_YARDS_RE.findall(play_text)
+    if matches:
+        return matches[-1][0].strip()
+    fallback = _MISC_TD_NAME_FALLBACK_RE.match(play_text)
+    return fallback.group(1).strip() if fallback else None
 
 
 def get_nfl_games_for_date(target_date: date, retries=3, delay=2) -> List[Dict]:
@@ -436,6 +469,98 @@ def find_player_in_lookup(normalized_name: str, lookup: Dict, conn, player_id: i
     return None
 
 
+def apply_misc_touchdowns(
+    conn,
+    boxscore_data: Dict,
+    game_date: date,
+    espn_team_id_1: str,
+    espn_team_id_2: str,
+    team1_id: int,
+    team2_id: int,
+) -> int:
+    """
+    Parse ESPN's scoringPlays feed for TD types the boxscore's per-athlete stats
+    never capture (return/recovery TDs - see MISC_TD_TYPE_IDS), match the scorer
+    against this game's existing nfl_player_props rows, and set actual_misc_td /
+    actual_player_anytime_td on the matched row.
+
+    Only touches players who already have a prop row for this game (i.e. had an
+    odds line) - a scorer with no prop row has nothing to correct, so they're
+    skipped and logged rather than backfilled.
+
+    Recomputes a total count per player rather than incrementing, so this is
+    safe to re-run for the same game without double-counting.
+    """
+    scoring_plays = boxscore_data.get('scoringPlays', [])
+    misc_td_plays = [p for p in scoring_plays if (p.get('type') or {}).get('id') in MISC_TD_TYPE_IDS]
+
+    if not misc_td_plays:
+        return 0
+
+    prop_rows = conn.execute(text("""
+        SELECT id, normalized_name, player_team_id
+        FROM nfl_player_props
+        WHERE game_date = :game_date
+          AND ((odds_home_team_id = :team1_id AND odds_away_team_id = :team2_id)
+               OR (odds_home_team_id = :team2_id AND odds_away_team_id = :team1_id))
+    """), {
+        'game_date': game_date,
+        'team1_id': team1_id,
+        'team2_id': team2_id,
+    }).fetchall()
+
+    # Tally misc TD counts per matched record_id first, so a re-run SETs the
+    # correct total instead of incrementing on top of a prior run's value.
+    counts_by_record_id: Dict[int, int] = {}
+
+    for play in misc_td_plays:
+        play_type_text = (play.get('type') or {}).get('text', 'Misc TD')
+        play_text = play.get('text', '')
+        scoring_espn_team_id = str((play.get('team') or {}).get('id', ''))
+
+        if scoring_espn_team_id == espn_team_id_1:
+            scoring_team_id = team1_id
+        elif scoring_espn_team_id == espn_team_id_2:
+            scoring_team_id = team2_id
+        else:
+            print(f"      ⚠️  Misc TD play team {scoring_espn_team_id} not in this game: {play_text}")
+            continue
+
+        scorer_name = parse_misc_td_scorer_name(play_text)
+        if not scorer_name:
+            print(f"      ⚠️  Could not parse scorer name from misc TD play: {play_text}")
+            continue
+
+        normalized_scorer = normalize_player_name(scorer_name)
+
+        record_id = None
+        for row in prop_rows:
+            if row.player_team_id and row.player_team_id != scoring_team_id:
+                continue
+            if row.normalized_name == normalized_scorer or names_match_strict(normalized_scorer, row.normalized_name):
+                record_id = row.id
+                break
+
+        if record_id is None:
+            print(f"      ℹ️  No existing prop row for misc TD scorer (skipped): "
+                  f"{scorer_name} ({play_type_text})")
+            continue
+
+        counts_by_record_id[record_id] = counts_by_record_id.get(record_id, 0) + 1
+        print(f"      ✅ Misc TD matched: {scorer_name} - {play_type_text}")
+
+    for record_id, count in counts_by_record_id.items():
+        conn.execute(text("""
+            UPDATE nfl_player_props
+            SET actual_misc_td = :count,
+                actual_player_anytime_td = true,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :record_id
+        """), {'count': count, 'record_id': record_id})
+
+    return len(counts_by_record_id)
+
+
 def process_game_reverse(conn, game_id: str, game_date: date) -> int:
     """
     Process a single NFL game using the reverse approach.
@@ -671,6 +796,13 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
             continue
 
     print(f"    Successfully updated {updated_count} prop records")
+
+    misc_td_updated = apply_misc_touchdowns(
+        conn, boxscore_data, game_date, espn_team_id_1, espn_team_id_2, team1_id, team2_id
+    )
+    if misc_td_updated:
+        print(f"    Applied misc TDs to {misc_td_updated} prop records")
+
     return updated_count
 
 

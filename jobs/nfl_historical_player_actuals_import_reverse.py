@@ -408,6 +408,7 @@ def resolve_internal_team_ids(conn, espn_team_id_1: str, espn_team_id_2: str) ->
             team1_id = result[0]
     except Exception as e:
         print(f"    ❌ Error resolving team {espn_team_id_1}: {e}")
+        conn.rollback()
 
     try:
         result = conn.execute(text("""
@@ -419,6 +420,7 @@ def resolve_internal_team_ids(conn, espn_team_id_1: str, espn_team_id_2: str) ->
             team2_id = result[0]
     except Exception as e:
         print(f"    ❌ Error resolving team {espn_team_id_2}: {e}")
+        conn.rollback()
 
     return team1_id, team2_id
 
@@ -460,6 +462,7 @@ def find_player_in_lookup(normalized_name: str, lookup: Dict, conn, player_id: i
 
     except Exception as e:
         print(f"      Error checking aliases: {e}")
+        conn.rollback()
 
     for espn_name, stats in lookup.items():
         if names_match_strict(normalized_name, espn_name):
@@ -603,6 +606,7 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
             team_info['id'] = result[0] if result else None
         except Exception as e:
             print(f"    ❌ Error resolving team {team_info['name']}: {e}")
+            conn.rollback()
             team_info['id'] = None
 
     print(f"    Built lookup for {len(player_lookup)} players from ESPN")
@@ -833,6 +837,7 @@ def import_historical_actuals_for_date_reverse(target_date: date, conn) -> int:
 
         except Exception as e:
             print(f"    ❌ Error processing game {game_id}: {e}")
+            conn.rollback()
             continue
 
     return total_updated

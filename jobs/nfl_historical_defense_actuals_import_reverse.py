@@ -158,7 +158,7 @@ def process_game_defense_reverse(conn, game_id: str, game_date: date) -> int:
 
     team_defense_lookup = build_team_defense_stats_lookup(boxscore_data)
 
-    defense_records = conn.execute(text("""
+    existing_records = conn.execute(text("""
         SELECT id, team_id
         FROM nfl_defense_props
         WHERE game_date = :game_date
@@ -168,14 +168,11 @@ def process_game_defense_reverse(conn, game_id: str, game_date: date) -> int:
         'team1_id': team1_id,
         'team2_id': team2_id
     }).fetchall()
-
-    if not defense_records:
-        print(f"    No D/ST prop records found for these teams on {game_date}")
-        return 0
+    existing_by_team_id = {team_id: record_id for record_id, team_id in existing_records}
 
     updated_count = 0
 
-    for record_id, team_id in defense_records:
+    for team_id in (team1_id, team2_id):
         espn_team_id = espn_by_internal_id.get(team_id)
         stats = team_defense_lookup.get(espn_team_id)
 
@@ -195,64 +192,118 @@ def process_game_defense_reverse(conn, game_id: str, game_date: date) -> int:
             + (stats['actual_punt_return_touchdowns'] or 0)
         ) > 0
 
+        params = {
+            'total_tackles': stats['actual_total_tackles'],
+            'solo_tackles': stats['actual_solo_tackles'],
+            'sacks': stats['actual_sacks'],
+            'tackles_for_loss': stats['actual_tackles_for_loss'],
+            'passes_defended': stats['actual_passes_defended'],
+            'qb_hits': stats['actual_qb_hits'],
+            'defensive_touchdowns': stats['actual_defensive_touchdowns'],
+            'interceptions': stats['actual_interceptions'],
+            'interception_yards': stats['actual_interception_yards'],
+            'interception_touchdowns': stats['actual_interception_touchdowns'],
+            'kick_returns': stats['actual_kick_returns'],
+            'kick_return_yards': stats['actual_kick_return_yards'],
+            'yards_per_kick_return': stats['actual_yards_per_kick_return'],
+            'long_kick_return': stats['actual_long_kick_return'],
+            'kick_return_touchdowns': stats['actual_kick_return_touchdowns'],
+            'punt_returns': stats['actual_punt_returns'],
+            'punt_return_yards': stats['actual_punt_return_yards'],
+            'yards_per_punt_return': stats['actual_yards_per_punt_return'],
+            'long_punt_return': stats['actual_long_punt_return'],
+            'punt_return_touchdowns': stats['actual_punt_return_touchdowns'],
+            'anytime_td': anytime_td,
+            'team_name': stats['team_name'],
+            'opponent_team_name': opponent_team_name,
+            'opponent_team_id': opponent_team_id,
+            'espn_event_id': game_id,
+        }
+
         try:
-            conn.execute(text("""
-                UPDATE nfl_defense_props
-                SET actual_total_tackles = :total_tackles,
-                    actual_solo_tackles = :solo_tackles,
-                    actual_sacks = :sacks,
-                    actual_tackles_for_loss = :tackles_for_loss,
-                    actual_passes_defended = :passes_defended,
-                    actual_qb_hits = :qb_hits,
-                    actual_defensive_touchdowns = :defensive_touchdowns,
-                    actual_interceptions = :interceptions,
-                    actual_interception_yards = :interception_yards,
-                    actual_interception_touchdowns = :interception_touchdowns,
-                    actual_kick_returns = :kick_returns,
-                    actual_kick_return_yards = :kick_return_yards,
-                    actual_yards_per_kick_return = :yards_per_kick_return,
-                    actual_long_kick_return = :long_kick_return,
-                    actual_kick_return_touchdowns = :kick_return_touchdowns,
-                    actual_punt_returns = :punt_returns,
-                    actual_punt_return_yards = :punt_return_yards,
-                    actual_yards_per_punt_return = :yards_per_punt_return,
-                    actual_long_punt_return = :long_punt_return,
-                    actual_punt_return_touchdowns = :punt_return_touchdowns,
-                    actual_anytime_td = :anytime_td,
-                    team_name = :team_name,
-                    opponent_team_name = :opponent_team_name,
-                    opponent_team_id = :opponent_team_id,
-                    espn_event_id = :espn_event_id,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :record_id
-            """), {
-                'total_tackles': stats['actual_total_tackles'],
-                'solo_tackles': stats['actual_solo_tackles'],
-                'sacks': stats['actual_sacks'],
-                'tackles_for_loss': stats['actual_tackles_for_loss'],
-                'passes_defended': stats['actual_passes_defended'],
-                'qb_hits': stats['actual_qb_hits'],
-                'defensive_touchdowns': stats['actual_defensive_touchdowns'],
-                'interceptions': stats['actual_interceptions'],
-                'interception_yards': stats['actual_interception_yards'],
-                'interception_touchdowns': stats['actual_interception_touchdowns'],
-                'kick_returns': stats['actual_kick_returns'],
-                'kick_return_yards': stats['actual_kick_return_yards'],
-                'yards_per_kick_return': stats['actual_yards_per_kick_return'],
-                'long_kick_return': stats['actual_long_kick_return'],
-                'kick_return_touchdowns': stats['actual_kick_return_touchdowns'],
-                'punt_returns': stats['actual_punt_returns'],
-                'punt_return_yards': stats['actual_punt_return_yards'],
-                'yards_per_punt_return': stats['actual_yards_per_punt_return'],
-                'long_punt_return': stats['actual_long_punt_return'],
-                'punt_return_touchdowns': stats['actual_punt_return_touchdowns'],
-                'anytime_td': anytime_td,
-                'team_name': stats['team_name'],
-                'opponent_team_name': opponent_team_name,
-                'opponent_team_id': opponent_team_id,
-                'espn_event_id': game_id,
-                'record_id': record_id,
-            })
+            record_id = existing_by_team_id.get(team_id)
+
+            if record_id:
+                conn.execute(text("""
+                    UPDATE nfl_defense_props
+                    SET actual_total_tackles = :total_tackles,
+                        actual_solo_tackles = :solo_tackles,
+                        actual_sacks = :sacks,
+                        actual_tackles_for_loss = :tackles_for_loss,
+                        actual_passes_defended = :passes_defended,
+                        actual_qb_hits = :qb_hits,
+                        actual_defensive_touchdowns = :defensive_touchdowns,
+                        actual_interceptions = :interceptions,
+                        actual_interception_yards = :interception_yards,
+                        actual_interception_touchdowns = :interception_touchdowns,
+                        actual_kick_returns = :kick_returns,
+                        actual_kick_return_yards = :kick_return_yards,
+                        actual_yards_per_kick_return = :yards_per_kick_return,
+                        actual_long_kick_return = :long_kick_return,
+                        actual_kick_return_touchdowns = :kick_return_touchdowns,
+                        actual_punt_returns = :punt_returns,
+                        actual_punt_return_yards = :punt_return_yards,
+                        actual_yards_per_punt_return = :yards_per_punt_return,
+                        actual_long_punt_return = :long_punt_return,
+                        actual_punt_return_touchdowns = :punt_return_touchdowns,
+                        actual_anytime_td = :anytime_td,
+                        team_name = :team_name,
+                        opponent_team_name = :opponent_team_name,
+                        opponent_team_id = :opponent_team_id,
+                        espn_event_id = :espn_event_id,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :record_id
+                """), {**params, 'record_id': record_id})
+            else:
+                # No odds line ever existed for this team/game (DraftKings didn't
+                # post a D/ST anytime-TD entry) - insert a stats-only row anyway,
+                # so real defense data isn't thrown away just because there was
+                # nothing to bet on. Tag it with the game's odds_event_id (shared
+                # by every player prop from this game) if one exists, purely for
+                # cross-referencing - it's not required for dedup, game_date +
+                # team_id already is.
+                sibling_odds_event_id = conn.execute(text("""
+                    SELECT odds_event_id FROM nfl_player_props
+                    WHERE game_date = :game_date
+                    AND (odds_home_team_id = :team1_id OR odds_away_team_id = :team1_id)
+                    AND odds_event_id IS NOT NULL
+                    LIMIT 1
+                """), {'game_date': game_date, 'team1_id': team_id}).scalar()
+
+                conn.execute(text("""
+                    INSERT INTO nfl_defense_props (
+                        team_id, team_name, game_date, odds_event_id, espn_event_id,
+                        opponent_team_name, opponent_team_id,
+                        actual_total_tackles, actual_solo_tackles, actual_sacks,
+                        actual_tackles_for_loss, actual_passes_defended, actual_qb_hits,
+                        actual_defensive_touchdowns, actual_interceptions,
+                        actual_interception_yards, actual_interception_touchdowns,
+                        actual_kick_returns, actual_kick_return_yards,
+                        actual_yards_per_kick_return, actual_long_kick_return,
+                        actual_kick_return_touchdowns, actual_punt_returns,
+                        actual_punt_return_yards, actual_yards_per_punt_return,
+                        actual_long_punt_return, actual_punt_return_touchdowns,
+                        actual_anytime_td
+                    ) VALUES (
+                        :team_id, :team_name, :game_date, :odds_event_id, :espn_event_id,
+                        :opponent_team_name, :opponent_team_id,
+                        :total_tackles, :solo_tackles, :sacks,
+                        :tackles_for_loss, :passes_defended, :qb_hits,
+                        :defensive_touchdowns, :interceptions,
+                        :interception_yards, :interception_touchdowns,
+                        :kick_returns, :kick_return_yards,
+                        :yards_per_kick_return, :long_kick_return,
+                        :kick_return_touchdowns, :punt_returns,
+                        :punt_return_yards, :yards_per_punt_return,
+                        :long_punt_return, :punt_return_touchdowns,
+                        :anytime_td
+                    )
+                """), {
+                    **params,
+                    'team_id': team_id,
+                    'game_date': game_date,
+                    'odds_event_id': sibling_odds_event_id,
+                })
 
             print(f"      ✅ {stats['team_name']} vs {opponent_team_name}: "
                   f"anytime_td={anytime_td} "
@@ -300,6 +351,7 @@ def import_historical_defense_actuals_for_date_reverse(target_date: date, conn) 
 
         except Exception as e:
             print(f"    ❌ Error processing game {game_id}: {e}")
+            conn.rollback()
             continue
 
     return total_updated

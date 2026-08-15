@@ -300,6 +300,7 @@ def resolve_team_id_from_odds_api(conn, odds_team_name: str) -> Optional[int]:
 
     except Exception as e:
         print(f"    ❌ Error resolving team {odds_team_name}: {e}")
+        conn.rollback()
         return None
 
 
@@ -366,6 +367,7 @@ def resolve_player_simple(conn, player_name: str, game_date: date) -> Optional[i
 
     except Exception as e:
         print(f"    ❌ Error resolving player {player_name}: {e}")
+        conn.rollback()
         return None
 
 
@@ -477,6 +479,7 @@ def insert_historical_props_to_db(conn, props_data: List[Dict]) -> int:
 
         except Exception as e:
             print(f"    Error processing {prop.get('player_name', 'unknown')}: {e}")
+            conn.rollback()
             continue
 
     return inserted_count
@@ -571,6 +574,7 @@ def insert_historical_defense_props_to_db(conn, defense_props_data: List[Dict]) 
 
         except Exception as e:
             print(f"    Error processing D/ST {prop.get('team_name', 'unknown')}: {e}")
+            conn.rollback()
             continue
 
     return inserted_count
@@ -642,6 +646,7 @@ def import_historical_player_odds_for_date(target_date: date, conn) -> int:
 
         except Exception as e:
             print(f"    Error processing event {event_id}: {e}")
+            conn.rollback()
             continue
 
     return total_props_imported

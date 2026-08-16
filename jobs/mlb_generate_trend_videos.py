@@ -3,9 +3,16 @@ MLB Trend Video Assembler
 
 Step 3 of the trend-video pipeline (after mlb_generate_trend_video_scripts.py
 and mlb_generate_trend_video_screenshots.py). For every script JSON that has
-a matching screenshot, synthesizes a spoken voiceover and renders a vertical
-(1080x1920) video: the hero screenshot slowly zooms (Ken Burns effect) for
-the full length of the voiceover.
+matching screenshots, synthesizes a spoken voiceover and renders a vertical
+(1080x1920) video split into three equal scenes, each holding for one third
+of the voiceover's length:
+
+1. hero.png       — zoom-out Ken Burns effect (starts zoomed in, eases out
+                     to the full trend card over the first 2.5s, then holds)
+2. home_last5.png — home team's last-5-home-games table
+3. away_last5.png — away team's last-5-away-games table
+
+Scenes 2 and 3 slide in from the previous scene (ffmpeg's xfade transition).
 
 Produces two videos per game — one for the standard "script" (gambling terms
 allowed) and one for "script_tiktok" (sanitized) — since they're worded
@@ -66,6 +73,13 @@ EFFECT_SECONDS = 2.5
 PAN_X_FRACTION = 0.025
 PAN_Y_FRACTION = 0.02
 
+# Transition between the 3 scenes. xfade's slide transitions "consume"
+# SLIDE_DURATION seconds from each side of the cut, so each scene's own clip
+# is rendered slightly longer than a plain 1/3 split to compensate — see
+# render_multi_scene_video's per_scene calculation.
+SLIDE_TRANSITION = "slideleft"
+SLIDE_DURATION = 0.6
+
 
 def load_games(date_str):
     date_dir = SCRIPTS_ROOT / date_str
@@ -103,36 +117,81 @@ def get_audio_duration(audio_path):
     return float(result.stdout.strip())
 
 
-def render_video(image_path, audio_path, out_path, duration):
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    total_frames = max(int(duration * FPS), 1)
-
+def _zoom_out_filter(scene_frames):
     # Ken Burns "settle": upscale the still first so zoompan has sub-pixel
     # headroom to zoom out of without blockiness, then zoom+pan out over
     # EFFECT_SECONDS — starts zoomed in on ZOOM_TARGET and eases back to the
     # full screenshot (using zoompan's per-frame "on" counter, not its
     # self-referential "zoom" accumulator, since we need it to hold exactly
-    # at 1.0 rather than keep creeping for the rest of the runtime).
-    effect_frames = max(min(int(EFFECT_SECONDS * FPS), total_frames), 1)
+    # at 1.0 rather than keep creeping for the rest of the scene).
+    effect_frames = max(min(int(EFFECT_SECONDS * FPS), scene_frames), 1)
     zoom_range = ZOOM_TARGET - 1.0
     zoom_expr = f"if(lte(on,{effect_frames}),{ZOOM_TARGET}-{zoom_range}*on/{effect_frames},1.0)"
     settle = f"(1-min(on/{effect_frames},1))"  # 1 -> 0 over the effect window, then stays 0
     x_expr = f"iw/2-(iw/zoom/2)+(iw*{PAN_X_FRACTION})*{settle}"
     y_expr = f"ih/2-(ih/zoom/2)+(ih*{PAN_Y_FRACTION})*{settle}"
-    vf = (
+    return (
         f"scale=8000:-1,"
         f"zoompan=z='{zoom_expr}':x='{x_expr}':y='{y_expr}':"
-        f"d={total_frames}:s={VIDEO_WIDTH}x{VIDEO_HEIGHT}:fps={FPS}"
+        f"d={scene_frames}:s={VIDEO_WIDTH}x{VIDEO_HEIGHT}:fps={FPS}"
     )
+
+
+def _static_filter(per_scene_duration):
+    # Whole-panel shots (data tables) are a very different aspect ratio than
+    # the vertical canvas — scale to fit width and letterbox top/bottom on
+    # white (matches the site's background) rather than cropping, so the
+    # full table stays readable instead of losing rows/columns off-frame.
+    return (
+        f"scale={VIDEO_WIDTH}:-1,"
+        f"pad={VIDEO_WIDTH}:{VIDEO_HEIGHT}:0:(oh-ih)/2:color=white,"
+        f"fps={FPS},trim=duration={per_scene_duration:.3f},setpts=PTS-STARTPTS"
+    )
+
+
+def render_multi_scene_video(scenes, audio_path, out_path, total_duration):
+    """scenes: list of {"image": Path, "kind": "zoom_out" | "static"}, played
+    back-to-back in order, each taking an equal share of total_duration, with
+    an xfade slide transition between consecutive scenes.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    n = len(scenes)
+    t = SLIDE_DURATION
+    # Each scene is rendered a bit longer than a plain 1/3 split so that,
+    # after the (n-1) transitions each "eat" t seconds of overlap, the final
+    # concatenated output still lands exactly on total_duration.
+    per_scene = (total_duration + (n - 1) * t) / n
+    scene_frames = max(int(round(per_scene * FPS)), 1)
+
+    inputs = []
+    filter_parts = []
+    for i, scene in enumerate(scenes):
+        inputs += ["-loop", "1", "-i", str(scene["image"])]
+        body = _zoom_out_filter(scene_frames) if scene["kind"] == "zoom_out" else _static_filter(per_scene)
+        filter_parts.append(f"[{i}:v]{body}[v{i}]")
+
+    xfade_parts = []
+    chain = "v0"
+    running_offset = per_scene - t
+    for i in range(1, n):
+        out_label = f"vx{i}"
+        xfade_parts.append(
+            f"[{chain}][v{i}]xfade=transition={SLIDE_TRANSITION}:duration={t}:offset={running_offset:.3f}[{out_label}]"
+        )
+        chain = out_label
+        running_offset += per_scene - t
+
+    filter_complex = ";".join(filter_parts + xfade_parts)
 
     cmd = [
         "ffmpeg", "-y",
-        "-loop", "1", "-i", str(image_path),
+        *inputs,
         "-i", str(audio_path),
-        "-vf", vf,
+        "-filter_complex", filter_complex,
+        "-map", f"[{chain}]", "-map", f"{n}:a",
         "-c:v", "libx264", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
-        "-t", f"{duration:.3f}",
+        "-t", f"{total_duration:.3f}",
         "-shortest",
         str(out_path),
     ]
@@ -147,16 +206,22 @@ def build_variant(game, date_str, script_key, suffix):
     if not text:
         return None, f"no '{script_key}' text in script JSON"
 
-    hero_path = SCREENSHOTS_ROOT / date_str / game_id / "hero.png"
-    if not hero_path.exists():
-        return None, f"no screenshot at {hero_path} — run mlb_generate_trend_video_screenshots.py first"
+    shot_dir = SCREENSHOTS_ROOT / date_str / game_id
+    scenes = [
+        {"image": shot_dir / "hero.png", "kind": "zoom_out"},
+        {"image": shot_dir / "home_last5.png", "kind": "static"},
+        {"image": shot_dir / "away_last5.png", "kind": "static"},
+    ]
+    missing = [str(s["image"]) for s in scenes if not s["image"].exists()]
+    if missing:
+        return None, f"missing screenshot(s) {missing} — run mlb_generate_trend_video_screenshots.py first"
 
     audio_path = AUDIO_ROOT / date_str / f"{game_id}{suffix}.mp3"
     synthesize_voiceover(text, audio_path)
     duration = get_audio_duration(audio_path)
 
     video_path = VIDEOS_ROOT / date_str / f"{game_id}{suffix}.mp4"
-    render_video(hero_path, audio_path, video_path, duration)
+    render_multi_scene_video(scenes, audio_path, video_path, duration)
     return video_path, None
 
 

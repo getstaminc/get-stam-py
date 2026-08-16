@@ -20,9 +20,15 @@ Usage:
     venv/bin/python jobs/mlb_generate_trend_video_screenshots.py [YYYY-MM-DD]
 
 Output:
-    output/screenshots/<date>/<game_id>/hero.png   (first-fold shot — used for
-                                                      the animated opening scene)
-    output/screenshots/<date>/<game_id>/full.png   (full scrollable page)
+    output/screenshots/<date>/<game_id>/hero.png           (first-fold shot — used
+                                                              for the animated opening scene)
+    output/screenshots/<date>/<game_id>/full.png           (full scrollable page)
+    output/screenshots/<date>/<game_id>/home_last5.png     (odds box, down through the
+                                                              home team's Last 5 Home
+                                                              Games + Home H2H tables)
+    output/screenshots/<date>/<game_id>/away_last5.png     (odds box, down through the
+                                                              away team's Last 5 Away
+                                                              Games + Away H2H tables)
 """
 
 import os
@@ -56,6 +62,19 @@ RENDER_WAIT_MS = 3500
 HERO_CROP_ANCHOR_TEXT = "Trend Analysis"
 HERO_CROP_TOP_PADDING = 16  # px of breathing room above the heading
 
+# Give the "Home Last 5" / "Away Last 5" sub-tab content a moment to render
+# after clicking (data is generally already fetched, but MUI's tab-panel
+# swap + table reflow isn't instant).
+TAB_SWITCH_WAIT_MS = 1200
+
+# Matches the historical sub-tab labels/panel headings in GameDetails.tsx:
+# Tab labels are "{team} Home Last {n}" / "{team} Away Last {n}"; each panel
+# heading rendered inside is "{team} - Last {n} Home/Away Games" followed by
+# a second panel "{team} vs {opponent} - Last {n} Home/Away H2H". The site
+# defaults the "Show Games" limit to 5, which is also what was asked for here.
+GAMES_LIMIT = 5
+CONTEXT_CROP_TOP_PADDING = 16  # px of breathing room above the odds box
+
 
 def slug_for_game(matchup, date_str):
     away = team_slug(matchup["away_team"])
@@ -78,8 +97,47 @@ def load_games(date_str):
     return games
 
 
+def _paper_bottom(page, heading_text):
+    heading = page.get_by_text(heading_text, exact=True).first
+    panel = heading.locator("xpath=ancestor::div[contains(@class,'MuiPaper-root')][1]")
+    box = panel.bounding_box()
+    return box["y"] + box["height"]
+
+
+def capture_context_panel(page, odds_anchor_text, tab_name, h2h_heading_text, out_path):
+    """Click a historical sub-tab and screenshot from the top of the odds box
+    down through that tab's two panels (the team's Last N Games table and its
+    Last N H2H table) — so the odds stay visible as context alongside whichever
+    team's recent form is on screen, not just the bare table on its own.
+
+    The span is routinely taller than one viewport, so we temporarily grow
+    the viewport to fit it (Chromium's own screenshot region is otherwise
+    limited to what's actually laid out) and restore it afterward.
+    """
+    tab = page.get_by_role("tab", name=tab_name, exact=True)
+    tab.click()
+    page.wait_for_timeout(TAB_SWITCH_WAIT_MS)
+
+    # Anchored on the home team's name at the top of the odds box, which is
+    # present regardless of which historical sub-tab is active.
+    odds_top = page.get_by_text(odds_anchor_text, exact=True).first.bounding_box()["y"]
+    top = max(odds_top - CONTEXT_CROP_TOP_PADDING, 0)
+    bottom = _paper_bottom(page, h2h_heading_text)
+    height = bottom - top
+
+    original_viewport = page.viewport_size
+    page.set_viewport_size({"width": original_viewport["width"], "height": int(top + height) + 50})
+    page.screenshot(
+        path=str(out_path),
+        clip={"x": 0, "y": top, "width": original_viewport["width"], "height": height},
+    )
+    page.set_viewport_size(original_viewport)
+
+
 def capture_game(page, game, date_str):
     game_id = game["game_id"]
+    home_team = game["matchup"]["home_team"]
+    away_team = game["matchup"]["away_team"]
     url = f"{BASE_URL}/game-details/mlb/{slug_for_game(game['matchup'], date_str)}"
     out_dir = SCREENSHOTS_ROOT / date_str / game_id
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -104,7 +162,25 @@ def capture_game(page, game, date_str):
     full_path = out_dir / "full.png"
     page.screenshot(path=str(full_path), full_page=True)
 
-    return url, hero_path, full_path
+    home_last5_path = out_dir / "home_last5.png"
+    capture_context_panel(
+        page,
+        odds_anchor_text=home_team,
+        tab_name=f"{home_team} Home Last {GAMES_LIMIT}",
+        h2h_heading_text=f"{home_team} vs {away_team} - Last {GAMES_LIMIT} Home H2H",
+        out_path=home_last5_path,
+    )
+
+    away_last5_path = out_dir / "away_last5.png"
+    capture_context_panel(
+        page,
+        odds_anchor_text=home_team,
+        tab_name=f"{away_team} Away Last {GAMES_LIMIT}",
+        h2h_heading_text=f"{away_team} vs {home_team} - Last {GAMES_LIMIT} Away H2H",
+        out_path=away_last5_path,
+    )
+
+    return url, hero_path, full_path, home_last5_path, away_last5_path
 
 
 def run(date_str=None):
@@ -132,9 +208,9 @@ def run(date_str=None):
         for game in games:
             label = f"{game['matchup']['away_team']} @ {game['matchup']['home_team']}"
             try:
-                url, hero_path, full_path = capture_game(page, game, date_str)
+                url, hero_path, full_path, home_last5_path, away_last5_path = capture_game(page, game, date_str)
                 ok += 1
-                print(f"  [OK] {label} -> {hero_path.relative_to(SCREENSHOTS_ROOT.parent.parent)}")
+                print(f"  [OK] {label} -> {hero_path.parent.relative_to(SCREENSHOTS_ROOT.parent.parent)}/")
             except Exception as e:
                 failed += 1
                 print(f"  [FAILED] {label}: {e}")

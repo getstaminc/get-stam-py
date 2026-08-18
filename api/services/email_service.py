@@ -107,3 +107,31 @@ class EmailService:
         except Exception as e:
             logger.error("EmailService.send_digest_to_one error: %s", e)
             return False, str(e)
+
+    @staticmethod
+    def send_with_attachments(email, subject, html_content, attachments=None):
+        """
+        Send a transactional email with optional attachments to a single
+        recipient. attachments: list of {"name": str, "content_b64": str}.
+        Brevo caps attachments at 4MB/file, 20MB total per email — this is
+        for small assets (thumbnails), not video files.
+        Returns (True, None) or (False, err_str).
+        """
+        try:
+            kwargs = {
+                "sender": {"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+                "reply_to": {"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+                "to": [{"email": email}],
+                "subject": subject,
+                "html_content": html_content,
+            }
+            if attachments:
+                kwargs["attachment"] = [
+                    {"name": a["name"], "content": a["content_b64"]} for a in attachments
+                ]
+            _client().transactional_emails.send_transac_email(**kwargs)
+            return True, None
+
+        except Exception as e:
+            logger.error("EmailService.send_with_attachments error: %s", e)
+            return False, str(e)

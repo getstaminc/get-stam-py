@@ -18,6 +18,10 @@ mlb_starting_pitchers.json
 # Ignore generated job output (e.g. jobs/mlb_generate_trend_video_scripts.py)
 output/
 
+# Ignore YouTube OAuth credentials (see jobs/mlb_upload_youtube_videos.py)
+youtube_client_secret.json
+youtube_token.json
+
 # Ignore Node.js files (not relevant for Python project)
 package-lock.json
 node_modules/

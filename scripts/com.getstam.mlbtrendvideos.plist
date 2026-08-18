@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs the daily MLB trend video pipeline every morning.
+
+  launchd's StartCalendarInterval fires in the Mac's LOCAL system time zone,
+  which on this machine is US/Mountain (MST/MDT) — 2 hours behind US/Eastern
+  year-round (both follow the same US DST schedule). So Hour=4 here means
+  6:00 AM ET. If this Mac's system time zone ever changes, update Hour to
+  match (Hour = desired ET hour minus 2, mod 24).
+
+  Install:
+    cp scripts/com.getstam.mlbtrendvideos.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.getstam.mlbtrendvideos.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.getstam.mlbtrendvideos.plist
+    rm ~/Library/LaunchAgents/com.getstam.mlbtrendvideos.plist
+
+  Run immediately (without waiting for the schedule), to test:
+    launchctl start com.getstam.mlbtrendvideos
+
+  Requires this Mac to be powered on and awake at run time — it will NOT
+  wake a sleeping Mac. If reliability matters, either leave the Mac plugged
+  in with sleep disabled overnight, or schedule a wake via:
+    sudo pmset repeat wakeorpoweron MTWRFSU 03:55:00
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.getstam.mlbtrendvideos</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/getstam/Documents/getstam/get-stam-py/scripts/run_daily_trend_video_pipeline.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>4</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_mlbtrendvideos.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_mlbtrendvideos.err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

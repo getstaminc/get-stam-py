@@ -50,6 +50,12 @@ MODEL = "claude-sonnet-5"
 OUTPUT_ROOT = Path(__file__).resolve().parent.parent / "output" / "scripts"
 REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trends_referenced", "estimated_word_count")
 
+# The video pipeline (screenshots -> voiceover -> render -> YouTube upload)
+# costs real time and money per game, so only the games with the strongest
+# trend signal get turned into videos each day — everything else in
+# Today's Trends still gets a script here, just not necessarily a video.
+MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY", "3"))
+
 SCRIPT_JSON_SCHEMA = {
     "type": "object",
     "properties": {
@@ -311,6 +317,17 @@ def run(date_str=None):
 
     todays_trend_games = [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
     print(f"{len(todays_trend_games)} game(s) have active trends for Today's Trends.")
+
+    for entry in todays_trend_games:
+        ranked = rank_game_trends(entry)
+        entry["_top_trend_score"] = get_confidence_score(ranked[0]) if ranked else 0
+    todays_trend_games.sort(key=lambda e: e["_top_trend_score"], reverse=True)
+    if len(todays_trend_games) > MAX_VIDEO_GAMES_PER_DAY:
+        print(
+            f"Limiting to the top {MAX_VIDEO_GAMES_PER_DAY} game(s) by trend strength "
+            f"(of {len(todays_trend_games)}) — set MAX_VIDEO_GAMES_PER_DAY to change this."
+        )
+        todays_trend_games = todays_trend_games[:MAX_VIDEO_GAMES_PER_DAY]
 
     try:
         pitcher_data_by_date = get_pitcher_data_for_dates()

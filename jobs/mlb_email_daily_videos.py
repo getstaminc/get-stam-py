@@ -129,9 +129,19 @@ def run(date_str=None):
 
     youtube_uploads = load_youtube_uploads(date_str)
 
-    ok, failed = 0, 0
+    ok, failed, skipped = 0, 0, 0
     for game in games:
         label = f"{game['matchup']['away_team']} @ {game['matchup']['home_team']}"
+
+        # Only email games that actually got a video rendered — a game can
+        # have a script (and even a TikTok script) without reaching this
+        # stage, e.g. it wasn't in the top-N picked for the full pipeline.
+        video_path = VIDEOS_ROOT / date_str / f"{game['game_id']}.mp4"
+        if not video_path.exists():
+            skipped += 1
+            print(f"  [SKIP] {label}: no video at {video_path}")
+            continue
+
         success, err = send_game_email(game, date_str, youtube_uploads)
         if success:
             ok += 1
@@ -140,7 +150,7 @@ def run(date_str=None):
             failed += 1
             print(f"  [FAILED] {label}: {err}")
 
-    print(f"\nDone. emailed={ok} failed={failed}")
+    print(f"\nDone. emailed={ok} failed={failed} skipped={skipped}")
 
 
 if __name__ == "__main__":

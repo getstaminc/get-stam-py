@@ -78,9 +78,12 @@ if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null | gr
 else
   echo "Starting React dev server..."
   (cd "$REPO_ROOT/getstam-react" && BROWSER=none "$NPM" start > "$LOG_DIR/react_${RUN_STAMP}.log" 2>&1) &
-  REACT_PID=$!
   STARTED_REACT=1
   wait_for_http "http://localhost:3000" "React dev server" || { echo "Aborting: React dev server unavailable."; exit 1; }
+  # $! above is the subshell's PID, not the actual node process CRA spawns
+  # underneath npm — look up whoever's actually listening on :3000 instead,
+  # so cleanup() can reliably stop it later.
+  REACT_PID="$(lsof -ti:3000 -sTCP:LISTEN | head -1)"
   sleep 5  # let the first compile fully settle
 fi
 

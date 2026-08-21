@@ -48,7 +48,10 @@ UPLOADS_ROOT = REPO_ROOT / "output" / "youtube_uploads"
 CLIENT_SECRETS_FILE = Path(os.getenv("YOUTUBE_CLIENT_SECRETS_FILE", REPO_ROOT / "youtube_client_secret.json"))
 TOKEN_FILE = Path(os.getenv("YOUTUBE_TOKEN_FILE", REPO_ROOT / "youtube_token.json"))
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# Broader than upload-only so we can also list/update existing videos (e.g.
+# flipping privacyStatus after the fact) — youtube.upload alone doesn't
+# grant read access needed for videos().list().
+SCOPES = ["https://www.googleapis.com/auth/youtube"]
 PRIVACY_STATUS = os.getenv("YOUTUBE_PRIVACY_STATUS", "unlisted")
 CATEGORY_ID = "17"  # Sports
 

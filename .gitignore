@@ -12,6 +12,12 @@ __pycache__/
 # Ignore the app.log file
 app.log
 
+# Ignore macOS Finder metadata
+.DS_Store
+
+# Ignore pipeline run logs (e.g. scripts/run_daily_trend_video_pipeline.sh)
+logs/
+
 # Ignore the mlb_starting_pitchers.json file
 mlb_starting_pitchers.json
 

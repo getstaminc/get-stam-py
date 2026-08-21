@@ -20,10 +20,13 @@
   Run immediately (without waiting for the schedule), to test:
     launchctl start com.getstam.mlbtrendvideos
 
-  Requires this Mac to be powered on and awake at run time — it will NOT
-  wake a sleeping Mac. If reliability matters, either leave the Mac plugged
-  in with sleep disabled overnight, or schedule a wake via:
+  Requires this Mac to be powered on at run time — launchd will NOT wake a
+  sleeping Mac on its own, so a scheduled wake is still needed:
     sudo pmset repeat wakeorpoweron MTWRFSU 04:25:00
+  Once running, the job is wrapped in `caffeinate -i`, which holds an
+  idle-sleep assertion for the ~15-20 min the pipeline takes — this is what
+  broke a run earlier (the Mac went back to sleep mid-render and corrupted
+  a video) — so it won't happen again once the wake fires and the job starts.
 -->
 <plist version="1.0">
 <dict>
@@ -32,6 +35,8 @@
 
     <key>ProgramArguments</key>
     <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
         <string>/Users/getstam/Documents/getstam/get-stam-py/scripts/run_daily_trend_video_pipeline.sh</string>
     </array>
 

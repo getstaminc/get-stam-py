@@ -6,8 +6,10 @@
 #   4. Upload to YouTube (unlisted)
 #   5. Email a recap to DAILY_VIDEO_EMAIL_TO
 #
-# Meant to run unattended via launchd (see scripts/com.getstam.mlbtrendvideos.plist)
-# or manually: ./scripts/run_daily_trend_video_pipeline.sh [YYYY-MM-DD]
+# Meant to run unattended via launchd (see scripts/com.getstam.mlbtrendvideos.plist,
+# which wraps this in `caffeinate -i` so the Mac can't fall back asleep
+# mid-render). If running manually, do the same:
+#   caffeinate -i ./scripts/run_daily_trend_video_pipeline.sh [YYYY-MM-DD]
 #
 # launchd runs with a minimal PATH/environment (just /usr/bin:/bin:/usr/sbin:/sbin),
 # so this script uses full paths for its own direct calls, AND exports a

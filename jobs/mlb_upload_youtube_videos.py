@@ -72,6 +72,14 @@ def load_games(date_str):
     return games
 
 
+def load_youtube_uploads(date_str):
+    path = UPLOADS_ROOT / f"{date_str}.json"
+    if not path.exists():
+        return {}
+    with open(path) as f:
+        return json.load(f)
+
+
 def get_credentials():
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
@@ -171,11 +179,21 @@ def run(date_str=None):
     creds = get_credentials()
     youtube = build("youtube", "v3", credentials=creds)
 
-    results = {}
-    ok, failed = 0, 0
+    # Idempotent: if this job runs twice for the same date (e.g. a retry, or
+    # re-triggering a launchd job for testing), don't re-upload games that
+    # already have a recorded video_id — that just creates duplicate public
+    # uploads of identical content.
+    results = load_youtube_uploads(date_str)
+    ok, failed, skipped = 0, 0, 0
     for game in games:
         game_id = game["game_id"]
         label = f"{game['matchup']['away_team']} @ {game['matchup']['home_team']}"
+
+        if game_id in results:
+            skipped += 1
+            print(f"  [SKIP] {label}: already uploaded -> {results[game_id].get('url')}")
+            continue
+
         video_path = VIDEOS_ROOT / date_str / f"{game_id}.mp4"
         if not video_path.exists():
             failed += 1
@@ -201,7 +219,7 @@ def run(date_str=None):
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nDone. uploaded={ok} failed={failed} -> {out_path}")
+    print(f"\nDone. uploaded={ok} failed={failed} skipped={skipped} -> {out_path}")
 
 
 if __name__ == "__main__":

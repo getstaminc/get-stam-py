@@ -9,10 +9,14 @@
 # Meant to run unattended via launchd (see scripts/com.getstam.mlbtrendvideos.plist)
 # or manually: ./scripts/run_daily_trend_video_pipeline.sh [YYYY-MM-DD]
 #
-# launchd runs with a minimal PATH/environment, so this script uses full
-# paths throughout rather than relying on what's on PATH.
-
+# launchd runs with a minimal PATH/environment (just /usr/bin:/bin:/usr/sbin:/sbin),
+# so this script uses full paths for its own direct calls, AND exports a
+# richer PATH so subprocess.run(["ffmpeg", ...]) / ["ffprobe", ...]) inside
+# the Python jobs (which rely on PATH lookup, not full paths) can find
+# Homebrew's binaries too.
 set -uo pipefail
+
+export PATH="/opt/homebrew/bin:$PATH"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"

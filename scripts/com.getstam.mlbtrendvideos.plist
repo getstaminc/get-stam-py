@@ -4,10 +4,10 @@
   Runs the daily MLB trend video pipeline every morning.
 
   launchd's StartCalendarInterval fires in the Mac's LOCAL system time zone,
-  which on this machine is US/Mountain (MST/MDT) — 2 hours behind US/Eastern
-  year-round (both follow the same US DST schedule). So Hour=4/Minute=30
-  here means 6:30 AM ET. If this Mac's system time zone ever changes,
-  update Hour to match (Hour = desired ET hour minus 2, mod 24).
+  which on this machine is US/Mountain (MST/MDT). Hour=6/Minute=0 here means
+  6:00 AM Mountain = 8:00 AM ET — deliberately later than the earlier 6:30 AM
+  ET schedule, to give same-day starting-pitcher data more time to firm up
+  before scripts get generated.
 
   Install:
     cp scripts/com.getstam.mlbtrendvideos.plist ~/Library/LaunchAgents/
@@ -22,7 +22,7 @@
 
   Requires this Mac to be powered on at run time — launchd will NOT wake a
   sleeping Mac on its own, so a scheduled wake is still needed:
-    sudo pmset repeat wakeorpoweron MTWRFSU 04:25:00
+    sudo pmset repeat wakeorpoweron MTWRFSU 05:55:00
   Once running, the job is wrapped in `caffeinate -i`, which holds an
   idle-sleep assertion for the ~15-20 min the pipeline takes — this is what
   broke a run earlier (the Mac went back to sleep mid-render and corrupted
@@ -43,9 +43,9 @@
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>4</integer>
+        <integer>6</integer>
         <key>Minute</key>
-        <integer>30</integer>
+        <integer>0</integer>
     </dict>
 
     <key>StandardOutPath</key>

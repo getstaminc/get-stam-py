@@ -57,6 +57,21 @@ class BaseHistoricalService:
         return result
 
     @staticmethod
+    def _apply_venue_context(trends: List[Dict], venue_suffix: str) -> List[Dict]:
+        """Append a venue qualifier (e.g. 'at home', 'in road games') to venue-filtered
+        trend descriptions, so a streak computed only from a team's home (or away) games
+        doesn't read like an unqualified overall streak."""
+        qualifies = {'win_streak', 'loss_streak', 'cover_streak', 'no_cover_streak',
+                     'over_streak', 'under_streak', 'draw_streak'}
+        result = []
+        for trend in trends:
+            t = dict(trend)
+            if t.get('type') in qualifies:
+                t['description'] = f"{t['description']} {venue_suffix}"
+            result.append(t)
+        return result
+
+    @staticmethod
     def _get_connection():
         """Get database connection from DATABASE_URL"""
         try:

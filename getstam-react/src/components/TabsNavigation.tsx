@@ -11,21 +11,30 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
+import IconButton from "@mui/material/IconButton";
+import Avatar from "@mui/material/Avatar";
 import styles from "./css/Navigation.module.css";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { useNavigate, useLocation } from "react-router-dom";
 import { sports } from "../configs/sportsConfig";
+import { useAuth } from "../contexts/AuthContext";
+import AuthDialog from "./AuthDialog";
+import UpgradeDialog from "./UpgradeDialog";
 
 const TabsNavigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { user, logout, isPro, openBillingPortal } = useAuth();
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [anchorSport, setAnchorSport] = React.useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = React.useState(false);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = React.useState(false);
+  const [userMenuAnchor, setUserMenuAnchor] = React.useState<null | HTMLElement>(null);
 
   const inSeasonSports = sports.filter((sport) => sport.inSeason);
   const offSeasonSports = sports.filter((sport) => !sport.inSeason);
@@ -102,6 +111,44 @@ const TabsNavigation: React.FC = () => {
     navigate(path);
     setDrawerOpen(false);
   };
+
+  const handleUserMenuClose = () => setUserMenuAnchor(null);
+  const handleLogout = () => {
+    logout();
+    handleUserMenuClose();
+  };
+  const handleUpgrade = () => {
+    handleUserMenuClose();
+    setUpgradeDialogOpen(true);
+  };
+  const handleManageBilling = () => {
+    handleUserMenuClose();
+    openBillingPortal();
+  };
+
+  const accountControls = user ? (
+    <>
+      <IconButton onClick={(e) => setUserMenuAnchor(e.currentTarget)} size="small">
+        <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: 14 }}>
+          {user.email[0].toUpperCase()}
+        </Avatar>
+      </IconButton>
+      <Menu anchorEl={userMenuAnchor} open={Boolean(userMenuAnchor)} onClose={handleUserMenuClose}>
+        <MenuItem disabled sx={{ opacity: "1 !important" }}>{user.email}</MenuItem>
+        <Divider />
+        {isPro ? (
+          <MenuItem onClick={handleManageBilling}>Manage Billing</MenuItem>
+        ) : (
+          <MenuItem onClick={handleUpgrade}>Upgrade to Pro</MenuItem>
+        )}
+        <MenuItem onClick={handleLogout}>Log Out</MenuItem>
+      </Menu>
+    </>
+  ) : (
+    <Button color="inherit" disableRipple sx={{ textTransform: "none", fontWeight: 500 }} onClick={() => setAuthDialogOpen(true)}>
+      Log In
+    </Button>
+  );
 
   return (
     <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "transparent", display: "flex", alignItems: "center" }}>
@@ -221,8 +268,9 @@ const TabsNavigation: React.FC = () => {
       </Box>
 
       {!isMobile && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml:2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml:2 }}>
           <Button color="inherit" disableRipple sx={{ minHeight:48, textTransform:'none', fontWeight:500 }} onClick={() => navigate('/feature-requests')}>Feature Requests</Button>
+          {accountControls}
         </Box>
       )}
 
@@ -254,7 +302,15 @@ const TabsNavigation: React.FC = () => {
           FEATURE REQUESTS
         </Button>
       )}
-      
+
+      {isMobile && (
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+          {accountControls}
+        </Box>
+      )}
+
+      <AuthDialog open={authDialogOpen} onClose={() => setAuthDialogOpen(false)} />
+      <UpgradeDialog open={upgradeDialogOpen} onClose={() => setUpgradeDialogOpen(false)} />
     </Box>
   );
 };

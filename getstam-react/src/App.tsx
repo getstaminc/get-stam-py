@@ -3,13 +3,14 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
 import TabsNavigation from "./components/TabsNavigation";
 import SiteFooter from "./components/SiteFooter";
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import theme from './css/theme';
 import { usePageView } from "./hooks/usePageView";
 import { GameProvider } from "./contexts/GameContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import theme from "./css/theme";
 
 // Import your sport and other pages
 // import NBA from "./pages/NBA";
@@ -19,6 +20,7 @@ import ContactUsPage from "./pages/ContactUsPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import BettingGuidePage from "./pages/BettingGuidePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 import GamesPage from "./pages/GamesPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
 import MismatchPlayersPage from "./pages/MismatchPlayersPage";
@@ -87,6 +89,7 @@ function AppContent() {
           <Route path="/contact-us" element={<ContactUsPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
           <Route path="/internal/mismatch-players" element={<MismatchPlayersPage />} />
           <Route path="/team/:sport/:teamSlug" element={<TeamPage />} />
           <Route path="/blog" element={<BlogListPage />} />
@@ -102,22 +105,24 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <GameProvider>
-        <Box
-          sx={{
-            minHeight: "100vh",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Router>
-            <AppContent />
-          </Router>
-        </Box>
-      </GameProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <GameProvider>
+          <Box
+            sx={{
+              minHeight: "100vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Router>
+              <AppContent />
+            </Router>
+          </Box>
+        </GameProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

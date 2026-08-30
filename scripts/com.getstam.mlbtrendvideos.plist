@@ -23,10 +23,15 @@
   Requires this Mac to be powered on at run time — launchd will NOT wake a
   sleeping Mac on its own, so a scheduled wake is still needed:
     sudo pmset repeat wakeorpoweron MTWRFSU 05:55:00
-  Once running, the job is wrapped in `caffeinate -i`, which holds an
-  idle-sleep assertion for the ~15-20 min the pipeline takes — this is what
-  broke a run earlier (the Mac went back to sleep mid-render and corrupted
-  a video) — so it won't happen again once the wake fires and the job starts.
+  Once running, the job is wrapped in `caffeinate -i -s -m -d`, which blocks
+  every sleep type caffeinate can prevent (idle, system, disk, display) for
+  the duration of the pipeline. `-i` alone (an earlier version of this file)
+  was NOT enough — it only blocks *idle* sleep, not macOS's periodic
+  "Maintenance Sleep" / Power Nap cycles, which kept firing every ~15 min
+  regardless and killed a Claude API connection mid-request, hanging the
+  job silently for 2+ hours with no error. `-s` requires AC power to have
+  effect, so this Mac needs to stay plugged in overnight for the guarantee
+  to actually hold.
 -->
 <plist version="1.0">
 <dict>
@@ -37,6 +42,9 @@
     <array>
         <string>/usr/bin/caffeinate</string>
         <string>-i</string>
+        <string>-s</string>
+        <string>-m</string>
+        <string>-d</string>
         <string>/Users/getstam/Documents/getstam/get-stam-py/scripts/run_daily_trend_video_pipeline.sh</string>
     </array>
 

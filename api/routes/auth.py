@@ -45,6 +45,8 @@ def request_code():
     )
     if error in ("invalid_email", "account_not_found"):
         return jsonify({"error": error}), 404 if error == "account_not_found" else 400
+    if error == "rate_limited":
+        return jsonify({"error": "Please wait a minute before requesting another code."}), 429
     if error:
         return jsonify({"error": "Could not send login code"}), 500
 
@@ -58,8 +60,12 @@ def verify_code():
     data = request.get_json() or {}
     user, error, is_first_verification = AuthService.verify_code(data.get("email"), data.get("code"))
     if error:
-        status = 429 if error == "too_many_attempts" else 400
-        return jsonify({"error": error}), status
+        if error == "too_many_attempts":
+            return jsonify({"error": error}), 429
+        if error in ("invalid_code", "expired_code"):
+            return jsonify({"error": error}), 400
+        # Unexpected (e.g. a DB error surfaced as str(e)) — don't echo internals to the client.
+        return jsonify({"error": "Could not verify login code"}), 500
 
     token = AuthService.issue_token(user)
     response = {"token": token, "user": serialize_user(user)}

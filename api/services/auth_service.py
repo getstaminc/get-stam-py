@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 import psycopg2
 import psycopg2.extras
+import pytz
 from dotenv import load_dotenv
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
@@ -25,6 +26,11 @@ AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY")
 TOKEN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60  # 30 days
 CODE_MAX_AGE_SECONDS = 10 * 60  # 10 minutes
 MAX_CODE_ATTEMPTS = 5
+# Minimum gap between successive code emails to the same address. The per-IP limiter
+# (see api/routes/auth.py) can be sidestepped with rotating IPs; this per-account gate
+# stops an attacker from mailbombing one address or resetting the attempt counter in a
+# tight loop to brute-force the 6-digit code.
+CODE_RESEND_COOLDOWN_SECONDS = 60
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -71,11 +77,28 @@ class AuthService:
 
         code = _generate_code()
         code_hash = _hash_code(code)
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=CODE_MAX_AGE_SECONDS)
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(seconds=CODE_MAX_AGE_SECONDS)
 
         try:
             with _get_conn() as conn:
                 with conn.cursor() as cur:
+                    # Per-account resend cooldown. A code issued at T has
+                    # login_code_expires_at = T + CODE_MAX_AGE, so it was issued within the
+                    # cooldown window iff expires_at is still further out than
+                    # (CODE_MAX_AGE - cooldown) from now.
+                    cur.execute(
+                        "SELECT login_code_expires_at FROM users WHERE email = %s", (email,)
+                    )
+                    existing = cur.fetchone()
+                    if existing and existing.get("login_code_expires_at"):
+                        last_exp = existing["login_code_expires_at"]
+                        if last_exp.tzinfo is None:
+                            last_exp = last_exp.replace(tzinfo=timezone.utc)
+                        issued_at = last_exp - timedelta(seconds=CODE_MAX_AGE_SECONDS)
+                        if (now - issued_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
+                            return None, None, "rate_limited"
+
                     if require_existing:
                         cur.execute("""
                             UPDATE users
@@ -199,6 +222,8 @@ class AuthService:
         fields = []
         values = {}
         if timezone is not None:
+            if timezone not in pytz.all_timezones_set:
+                return None, "invalid_timezone"
             fields.append("timezone = %(timezone)s")
             values["timezone"] = timezone
         if theme_preference is not None:

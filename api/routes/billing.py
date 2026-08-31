@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from ..services.billing_service import BillingService
 from ..services.access_code_service import AccessCodeService
 from ..utils.auth_helpers import require_user, serialize_user
+from limiter import limiter
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
@@ -44,6 +45,7 @@ def portal_session():
 
 
 @billing_bp.route("/api/billing/redeem-code", methods=["POST"])
+@limiter.limit("10 per hour")
 def redeem_code():
     user = require_user()
     data = request.get_json() or {}

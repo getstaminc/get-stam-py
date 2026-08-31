@@ -10,6 +10,8 @@ import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Link from "@mui/material/Link";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import CheckIcon from "@mui/icons-material/Check";
 import { useAuth, SignupIntent } from "../contexts/AuthContext";
 
@@ -67,11 +69,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const switchMode = (next: Mode) => {
     setMode(next);
     setError(null);
     setCodeSent(false);
+    setAgreedToTerms(false);
     if (next === "signup") {
       setStep("plan");
       setIntent(null);
@@ -106,6 +110,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup" && !agreedToTerms) return;
     setError(null);
     setLoading(true);
     const result = await requestCode(email, intent, mode === "login");
@@ -268,6 +273,29 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
             <Link component="button" type="button" variant="body2" onClick={() => switchMode(mode === "signup" ? "login" : "signup")} sx={{ alignSelf: "flex-start" }}>
               {mode === "signup" ? "Already have an account? Log in" : "Need an account? Sign up"}
             </Link>
+            {mode === "signup" && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  />
+                }
+                label={
+                  <Typography variant="body2" color="text.secondary">
+                    I agree to the{" "}
+                    <Link href="/terms-of-service" target="_blank" rel="noopener noreferrer">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">
+                      Privacy Policy
+                    </Link>
+                    .
+                  </Typography>
+                }
+              />
+            )}
             {error === "account_not_found" ? (
               <Alert severity="warning">
                 No account found for that email.{" "}
@@ -280,7 +308,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={loading}>
+          <Button type="submit" variant="contained" disabled={loading || (mode === "signup" && !agreedToTerms)}>
             {loading ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}
             Send Code
           </Button>

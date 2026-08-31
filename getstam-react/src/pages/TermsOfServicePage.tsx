@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Container, Paper, Alert } from '@mui/material';
+import { Box, Typography, Container, Paper } from '@mui/material';
 import SEO from '../components/SEO';
 
 const TermsOfServicePage: React.FC = () => {
@@ -11,10 +11,6 @@ const TermsOfServicePage: React.FC = () => {
         canonicalPath="/terms-of-service"
       />
       <Paper elevation={2} sx={{ p: 4 }}>
-        <Alert severity="warning" sx={{ mb: 4 }}>
-          Placeholder draft — not yet reviewed by counsel. Replace this text before relying on it.
-        </Alert>
-
         <Typography variant="h3" component="h1" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
           Terms of Service
         </Typography>
@@ -25,9 +21,8 @@ const TermsOfServicePage: React.FC = () => {
 
         <Typography variant="body1" paragraph>
           These Terms of Service ("Terms") govern your access to and use of GetSTAM (the "Service"), operated by
-          GetStam, 5915 Urban St., Arvada, Colorado ("Company", "We", "Us", "Our"). By creating an account or
-          otherwise using the Service, You agree to be bound by these Terms. If You do not agree, do not use the
-          Service.
+          GetStam ("Company", "We", "Us", "Our"). By creating an account or otherwise using the Service, You agree
+          to be bound by these Terms. If You do not agree, do not use the Service.
         </Typography>
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>
@@ -103,12 +98,42 @@ const TermsOfServicePage: React.FC = () => {
         </Typography>
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>
+          Data Accuracy and Third-Party Sources
+        </Typography>
+        <Typography variant="body1" paragraph>
+          Scores, odds, lines, statistics, and other data shown on the Service are sourced from third-party
+          providers We do not control. We maintain internal review processes intended to catch errors before data
+          reaches the Service, but We cannot guarantee that any data is complete, current, or error-free. If a
+          third-party source is delayed, incomplete, or incorrect, data on the Service may be delayed, incomplete,
+          or incorrect as a result. You should independently verify any information — including odds and lines —
+          with an official or licensed source before relying on it for any purpose. Use of the Service, and any
+          reliance on data it displays, is entirely at Your own risk.
+        </Typography>
+
+        <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>
+          No Liability for Betting or Wagering Decisions
+        </Typography>
+        <Typography variant="body1" paragraph>
+          GetSTAM is an informational and entertainment service only. We do not place bets, accept wagers, or act
+          as a sportsbook, and nothing on the Service is betting or financial advice. Any decision to place a bet
+          or wager, with any third party, based in whole or in part on information from the Service, is made
+          solely at Your own discretion and risk. The Company is not liable for any losses, damages, or harm —
+          financial or otherwise — resulting from bets or wagers You place, whether or not the data, odds, or
+          trends You relied on were accurate, complete, or up to date at the time.
+        </Typography>
+
+        <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>
           Limitation of Liability
         </Typography>
         <Typography variant="body1" paragraph>
-          To the maximum extent permitted by law, the Company shall not be liable for any indirect, incidental, or
-          consequential damages arising from Your use of the Service, including decisions made in reliance on data
-          or trends We provide.
+          To the maximum extent permitted by law, the Company and its officers, employees, and agents shall not be
+          liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of
+          profits, revenue, or funds wagered, arising from or related to Your use of the Service — including
+          decisions made in reliance on data, odds, or trends We provide, and including where such data, odds, or
+          trends are inaccurate, delayed, or incomplete due to errors from Us or from a third-party source. To the
+          maximum extent permitted by law, the Company's total liability to You for any claim arising from the
+          Service shall not exceed the greater of (a) the amount You paid Us in the twelve (12) months before the
+          claim arose, or (b) one hundred U.S. dollars ($100).
         </Typography>
 
         <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, color: '#1976d2' }}>

@@ -54,6 +54,12 @@ from flask_cors import CORS
 # Configure Flask app to serve React build
 app = Flask(__name__, static_folder='getstam-react/build/static', static_url_path='/static')
 
+# Heroku terminates TLS at its router and forwards the request over plain HTTP with the
+# real client IP in X-Forwarded-For. Without this, request.remote_addr is the router's IP,
+# which would make the rate limiter (limiter.py) key every visitor to the same bucket.
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
 port = 5000
 
 # Specify allowed origins

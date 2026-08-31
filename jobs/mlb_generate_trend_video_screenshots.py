@@ -207,13 +207,24 @@ def run(date_str=None):
         page = browser.new_page(viewport=VIEWPORT, device_scale_factor=2)
         for game in games:
             label = f"{game['matchup']['away_team']} @ {game['matchup']['home_team']}"
-            try:
-                url, hero_path, full_path, home_last5_path, away_last5_path = capture_game(page, game, date_str)
-                ok += 1
-                print(f"  [OK] {label} -> {hero_path.parent.relative_to(SCREENSHOTS_ROOT.parent.parent)}/")
-            except Exception as e:
+            # The dev server occasionally times out navigating to a page
+            # (seen a couple of times on the live 6am run, always succeeded
+            # immediately on retry) — one retry here avoids that needing a
+            # manual re-run.
+            last_err = None
+            for attempt in range(1, 3):
+                try:
+                    url, hero_path, full_path, home_last5_path, away_last5_path = capture_game(page, game, date_str)
+                    ok += 1
+                    print(f"  [OK] {label} -> {hero_path.parent.relative_to(SCREENSHOTS_ROOT.parent.parent)}/")
+                    last_err = None
+                    break
+                except Exception as e:
+                    last_err = e
+                    print(f"  [RETRY] {label} (attempt {attempt}/2): {e}")
+            if last_err is not None:
                 failed += 1
-                print(f"  [FAILED] {label}: {e}")
+                print(f"  [FAILED] {label}: {last_err}")
         browser.close()
 
     print(f"\nDone. captured={ok} failed={failed}")

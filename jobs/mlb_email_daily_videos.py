@@ -19,6 +19,7 @@ import os
 import sys
 import json
 import base64
+import time
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -112,7 +113,19 @@ def send_game_email(game, date_str, youtube_uploads):
     subject = f"[GetSTAM] {away} @ {home} — video ready"
     html = build_html(game, date_str, youtube_url, standard_path, tiktok_path, has_thumbnail)
 
-    return EmailService.send_with_attachments(RECIPIENT, subject, html, attachments=attachments)
+    # Brevo has intermittently dropped the connection mid-send (SSL bad
+    # record mac) a handful of times on the live 6am run — always worked
+    # immediately on a manual retry, so retry here instead of needing that
+    # manual step every time.
+    last_err = None
+    for attempt in range(1, 4):
+        success, err = EmailService.send_with_attachments(RECIPIENT, subject, html, attachments=attachments)
+        if success:
+            return True, None
+        last_err = err
+        if attempt < 3:
+            time.sleep(3)
+    return False, last_err
 
 
 def run(date_str=None):

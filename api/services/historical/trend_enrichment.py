@@ -17,6 +17,8 @@ def _enrich_desc(t: dict, team: str, venue: str) -> str:
         return f"{team} won {n} straight{venue_suffix}"
     if tt == 'loss_streak':
         return f"{team} lost {n} straight{venue_suffix}"
+    if tt == 'draw_streak':
+        return f"{team} drew {n} straight{venue_suffix}"
     if tt in ('over_streak', 'under_streak'):
         direction = 'OVER' if tt == 'over_streak' else 'UNDER'
         if venue:

@@ -47,6 +47,10 @@ class SoccerTrendsService(BaseHistoricalService):
             league = None
             sport_key_to_league = {
                 'soccer_epl': 'EPL',
+                'soccer_spain_la_liga': 'LA LIGA',
+                'soccer_germany_bundesliga': 'BUNDESLIGA',
+                'soccer_france_ligue_one': 'LIGUE 1',
+                'soccer_italy_serie_a': 'SERIE A',
                 'soccer_uefa_champs_league': 'UCL',
                 'soccer_uefa_europa_league': 'UEL',
                 'soccer_uefa_conference_league': 'UECL',

@@ -17,6 +17,7 @@ import theme from "./css/theme";
 // import NFL from "./pages/NFL";
 import FeatureRequestsPage from "./pages/FeatureRequestsPage";
 import ContactUsPage from "./pages/ContactUsPage";
+import SupportPage from "./pages/SupportPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import BettingGuidePage from "./pages/BettingGuidePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
@@ -87,6 +88,7 @@ function AppContent() {
           <Route path="/about-us" element={<AboutUsPage />} />
           <Route path="/feature-requests" element={<FeatureRequestsPage />} />
           <Route path="/contact-us" element={<ContactUsPage />} />
+          <Route path="/support" element={<SupportPage />} />
           <Route path="/betting-guide" element={<BettingGuidePage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service" element={<TermsOfServicePage />} />

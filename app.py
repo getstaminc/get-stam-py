@@ -144,6 +144,7 @@ _ORG_WEBSITE_JSON_LD = {
 _STATIC_PAGE_META = {
     'about-us': ('About GetSTAM', 'Learn about GetSTAM and our sports analytics platform.'),
     'contact-us': ('Contact Us | GetSTAM', 'Get in touch with the GetSTAM team.'),
+    'support': ('Support | GetSTAM', 'Get help with your GetSTAM subscription, billing, and account.'),
     'betting-guide': ('Betting Guide | GetSTAM', 'Learn how to read betting odds and use trends to your advantage.'),
     'privacy-policy': ('Privacy Policy | GetSTAM', 'GetSTAM privacy policy.'),
     'terms-of-service': ('Terms of Service | GetSTAM', 'The terms that govern your use of GetSTAM.'),
@@ -427,6 +428,7 @@ def sitemap():
         ('https://www.getstam.com/about-us',      'monthly', '0.5', '2025-01-01'),
         ('https://www.getstam.com/betting-guide',  'monthly', '0.6', '2025-01-01'),
         ('https://www.getstam.com/contact-us',     'monthly', '0.4', '2025-01-01'),
+        ('https://www.getstam.com/support',        'monthly', '0.4', '2026-08-31'),
         ('https://www.getstam.com/privacy-policy', 'yearly',  '0.3', '2025-01-01'),
         ('https://www.getstam.com/terms-of-service', 'yearly', '0.3', '2026-08-18'),
         ('https://www.getstam.com/blog',           'weekly',  '0.7', today),

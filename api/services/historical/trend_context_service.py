@@ -17,9 +17,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SPORT_CONFIG: Dict[str, Dict[str, str]] = {
-    'mlb': {'table': 'mlb_games',   'home_score': 'home_runs',   'away_score': 'away_runs',   'total_col': 'total', 'time_col': 'start_time'},
-    'nhl': {'table': 'nhl_games',   'home_score': 'home_goals',  'away_score': 'away_goals',  'total_col': 'total'},
-    'nba': {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time'},
+    'mlb':   {'table': 'mlb_games',   'home_score': 'home_runs',   'away_score': 'away_runs',   'total_col': 'total', 'time_col': 'start_time'},
+    'nhl':   {'table': 'nhl_games',   'home_score': 'home_goals',  'away_score': 'away_goals',  'total_col': 'total'},
+    'nba':   {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time'},
+    # home_spread/away_spread enable cover_streak/no_cover_streak analysis for a sport.
+    # Omitted for mlb/nhl/nba: MLB's home_line/away_line columns are a duplicate of the
+    # moneyline (not a real spread) — see GameFAQSection.tsx's same caveat.
+    'ncaaf': {'table': 'ncaaf_games', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
+              'home_spread': 'home_line', 'away_spread': 'away_line'},
+    # Soccer is scoped per-league (not one shared 'soccer' pool) — mixing e.g. EPL and
+    # Bundesliga history would produce a misleading continuation rate.
+    'soccer_epl':        {'table': 'soccer_games', 'home_score': 'home_goals', 'away_score': 'away_goals', 'total_col': 'total_goals', 'time_col': 'start_time',
+                           'home_spread': 'home_spread', 'away_spread': 'away_spread', 'league_filter': 'EPL'},
+    'soccer_laliga':     {'table': 'soccer_games', 'home_score': 'home_goals', 'away_score': 'away_goals', 'total_col': 'total_goals', 'time_col': 'start_time',
+                           'home_spread': 'home_spread', 'away_spread': 'away_spread', 'league_filter': 'LA LIGA'},
+    'soccer_bundesliga': {'table': 'soccer_games', 'home_score': 'home_goals', 'away_score': 'away_goals', 'total_col': 'total_goals', 'time_col': 'start_time',
+                           'home_spread': 'home_spread', 'away_spread': 'away_spread', 'league_filter': 'BUNDESLIGA'},
+    'soccer_ligue1':     {'table': 'soccer_games', 'home_score': 'home_goals', 'away_score': 'away_goals', 'total_col': 'total_goals', 'time_col': 'start_time',
+                           'home_spread': 'home_spread', 'away_spread': 'away_spread', 'league_filter': 'LIGUE 1'},
+    'soccer_seriea':     {'table': 'soccer_games', 'home_score': 'home_goals', 'away_score': 'away_goals', 'total_col': 'total_goals', 'time_col': 'start_time',
+                           'home_spread': 'home_spread', 'away_spread': 'away_spread', 'league_filter': 'SERIE A'},
 }
 
 # Module-level cache: sport → loaded context dict
@@ -61,10 +78,13 @@ def _game_results(games: List[Dict], trend_type: str) -> List[bool]:
         hs = g.get('hs')
         aw = g.get('aw')
         tl = g.get('tl')
+        ln = g.get('ln')
 
         if hs is None or aw is None:
             continue
         if trend_type in ('over_streak', 'under_streak') and tl is None:
+            continue
+        if trend_type in ('cover_streak', 'no_cover_streak') and ln is None:
             continue
 
         actual = hs + aw
@@ -76,6 +96,12 @@ def _game_results(games: List[Dict], trend_type: str) -> List[bool]:
             results.append(hs > aw)
         elif trend_type == 'loss_streak':
             results.append(hs < aw)
+        elif trend_type == 'draw_streak':
+            results.append(hs == aw)
+        elif trend_type == 'cover_streak':
+            results.append(hs + ln > aw)
+        elif trend_type == 'no_cover_streak':
+            results.append(hs + ln < aw)
 
     return results
 
@@ -90,10 +116,13 @@ def _game_results_with_ml(games: List[Dict], trend_type: str) -> List[Tuple[bool
         hs = g.get('hs')
         aw = g.get('aw')
         tl = g.get('tl')
+        ln = g.get('ln')
 
         if hs is None or aw is None:
             continue
         if trend_type in ('over_streak', 'under_streak') and tl is None:
+            continue
+        if trend_type in ('cover_streak', 'no_cover_streak') and ln is None:
             continue
 
         actual = hs + aw
@@ -105,6 +134,12 @@ def _game_results_with_ml(games: List[Dict], trend_type: str) -> List[Tuple[bool
             out.append((hs > aw, g.get('hml')))
         elif trend_type == 'loss_streak':
             out.append((hs < aw, g.get('hml')))
+        elif trend_type == 'draw_streak':
+            out.append((hs == aw, g.get('hml')))
+        elif trend_type == 'cover_streak':
+            out.append((hs + ln > aw, g.get('hml')))
+        elif trend_type == 'no_cover_streak':
+            out.append((hs + ln < aw, g.get('hml')))
     return out
 
 
@@ -144,19 +179,23 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
     conn = None
     try:
         conn = _get_connection()
+        has_spread = bool(cfg.get('home_spread') and cfg.get('away_spread'))
+        spread_select = f", {cfg['home_spread']} AS hln, {cfg['away_spread']} AS aln" if has_spread else ""
+        league_filter = cfg.get('league_filter')
+        league_where = " AND league = %s" if league_filter else ""
         query = f"""
             SELECT game_date, home_team_name, away_team_name,
                    {cfg['home_score']} AS hs,
                    {cfg['away_score']} AS aw,
                    {cfg['total_col']}  AS tl,
                    home_money_line    AS hml,
-                   away_money_line    AS aml
+                   away_money_line    AS aml{spread_select}
             FROM {cfg['table']}
-            WHERE {cfg['home_score']} IS NOT NULL AND {cfg['away_score']} IS NOT NULL
+            WHERE {cfg['home_score']} IS NOT NULL AND {cfg['away_score']} IS NOT NULL{league_where}
             ORDER BY game_date ASC{', ' + cfg['time_col'] + ' ASC NULLS LAST' if cfg.get('time_col') else ''}, game_id ASC
         """
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query)
+            cur.execute(query, [league_filter] if league_filter else None)
             rows = [dict(r) for r in cur.fetchall()]
 
         print(f"[context] Loaded {len(rows)} completed {sport.upper()} games")
@@ -167,21 +206,26 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
 
         for row in rows:
             ht, at = row['home_team_name'], row['away_team_name']
+            hln, aln = row.get('hln'), row.get('aln')
+            # 'ln' is the home team's own spread (for home_h2h/gen_h2h, perspective is home);
+            # 'aln' is kept alongside so the away-perspective flip in _continuation_stats can use it.
             g = {'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'], 'game_date': row['game_date'],
-                 'hml': row['hml'], 'aml': row['aml']}
+                 'hml': row['hml'], 'aml': row['aml'], 'ln': hln, 'aln': aln}
             home_h2h_games[(ht, at)].append(g)
             gen_h2h_games[(min(ht, at), max(ht, at))].append(g)
-            # Team-perspective: each team's own score first, their own ML as hml
+            # Team-perspective: each team's own score, own ML, and own spread first
             team_games[ht].append({
                 'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'],
-                'game_date': row['game_date'], 'hml': row['hml'],
+                'game_date': row['game_date'], 'hml': row['hml'], 'ln': hln,
             })
             team_games[at].append({
                 'hs': row['aw'], 'aw': row['hs'], 'tl': row['tl'],
-                'game_date': row['game_date'], 'hml': row['aml'],
+                'game_date': row['game_date'], 'hml': row['aml'], 'ln': aln,
             })
 
         TREND_TYPES = ('over_streak', 'under_streak', 'win_streak', 'loss_streak')
+        if has_spread:
+            TREND_TYPES = TREND_TYPES + ('cover_streak', 'no_cover_streak')
 
         # Max streaks for home H2H (home team perspective)
         home_h2h_max = {}
@@ -251,18 +295,19 @@ def _continuation_stats(
     """
     continued = 0
     total = 0
-    track_ml = trend_type in ('win_streak', 'loss_streak')
+    track_ml = trend_type in ('win_streak', 'loss_streak', 'draw_streak', 'cover_streak', 'no_cover_streak')
     fav_c = fav_t = dog_c = dog_t = 0
 
     pairs_to_check = list(all_pair_games.items())
 
-    # For gen_h2h win/loss, also run the flipped perspective (swap scores and ML)
-    if gen_h2h and trend_type in ('win_streak', 'loss_streak'):
+    # For gen_h2h win/loss/cover, also run the flipped perspective (swap scores, ML, and spread)
+    if gen_h2h and trend_type in ('win_streak', 'loss_streak', 'draw_streak', 'cover_streak', 'no_cover_streak'):
         flipped_pairs = []
         for pair, games in all_pair_games.items():
             flipped = [
                 {'hs': g['aw'], 'aw': g['hs'], 'tl': g['tl'], 'game_date': g['game_date'],
-                 'hml': g.get('aml'), 'aml': g.get('hml')}
+                 'hml': g.get('aml'), 'aml': g.get('hml'),
+                 'ln': g.get('aln'), 'aln': g.get('ln')}
                 for g in games
             ]
             flipped_pairs.append((pair, flipped))
@@ -310,7 +355,7 @@ def _continuation_stats_team(
     """
     continued = 0
     total = 0
-    track_ml = trend_type in ('win_streak', 'loss_streak')
+    track_ml = trend_type in ('win_streak', 'loss_streak', 'draw_streak', 'cover_streak', 'no_cover_streak')
     fav_c = fav_t = dog_c = dog_t = 0
 
     for _team, games in team_games.items():
@@ -457,8 +502,20 @@ def get_streak_context(
                 base = f"Historically {condition}, it has always continued{sample_note}"
             else:
                 base = f"Historically {condition}, it continues {_pct(continued, total)} of the time{sample_note}"
-        else:  # win_streak / loss_streak
-            direction = 'wins' if trend_type == 'win_streak' else 'losses'
+        elif trend_type in ('cover_streak', 'no_cover_streak'):
+            direction = 'covers' if trend_type == 'cover_streak' else 'fails to cover'
+            if h2h_mode == 'team':
+                condition = f"when a team {direction} {streak_length} straight spreads"
+            else:
+                condition = f"when a team {direction} {streak_length} straight spreads in {sport_label} {location}"
+            if continued == 0:
+                base = f"Historically {condition}, the streak has never continued{sample_note}"
+            elif continued == total:
+                base = f"Historically {condition}, the streak has always continued{sample_note}"
+            else:
+                base = f"Historically {condition}, the streak continues {_pct(continued, total)} of the time{sample_note}"
+        else:  # win_streak / loss_streak / draw_streak
+            direction = {'win_streak': 'wins', 'loss_streak': 'losses', 'draw_streak': 'draws'}[trend_type]
             if h2h_mode == 'team':
                 condition = f"when a team hits {streak_length} straight {direction}"
             else:
@@ -470,8 +527,8 @@ def get_streak_context(
             else:
                 base = f"Historically {condition}, the streak continues {_pct(continued, total)} of the time{sample_note}"
 
-        # For win/loss: show ML split breakdown, then team role as a separate statement
-        if ml_stats and trend_type in ('win_streak', 'loss_streak'):
+        # For win/loss/cover: show ML split breakdown, then team role as a separate statement
+        if ml_stats and trend_type in ('win_streak', 'loss_streak', 'draw_streak', 'cover_streak', 'no_cover_streak'):
             fav_c, fav_t = ml_stats['fav']
             dog_c, dog_t = ml_stats['dog']
 

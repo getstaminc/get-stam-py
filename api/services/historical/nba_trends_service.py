@@ -86,8 +86,10 @@ class NBATrendsService(BaseHistoricalService):
 
                 home_team_trends = cls._analyze_team_trends(home_team_games, home_team, min_trend_length)
                 away_team_trends = cls._analyze_team_trends(away_team_games, away_team, min_trend_length)
-                home_team_home_trends = cls._analyze_team_trends(home_team_home_games, home_team, min_trend_length)
-                away_team_away_trends = cls._analyze_team_trends(away_team_away_games, away_team, min_trend_length)
+                home_team_home_trends = cls._apply_venue_context(
+                    cls._analyze_team_trends(home_team_home_games, home_team, min_trend_length), 'at home')
+                away_team_away_trends = cls._apply_venue_context(
+                    cls._analyze_team_trends(away_team_away_games, away_team, min_trend_length), 'on the road')
 
                 # For H2H, ensure team_side is set correctly for the home team
                 h2h_games_with_side = []

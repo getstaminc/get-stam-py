@@ -4,26 +4,45 @@ from flask import Blueprint, request, jsonify, redirect
 from cache import cache
 from ...services.historical.soccer_trends_service import SoccerTrendsService
 from ...services.historical.soccer_service import SoccerService
+from ...services.historical.trend_enrichment import enrich_game_trends
 
 
 soccer_trends_bp = Blueprint('soccer_trends', __name__)
 
+# Odds API sport_key -> league URL slug, for resolving a trend_context_service key
+# on the generic (non-league-scoped) /api/historical/trends/soccer route.
+SPORT_KEY_TO_SLUG = {
+    'soccer_epl': 'epl',
+    'soccer_spain_la_liga': 'laliga',
+    'soccer_germany_bundesliga': 'bundesliga',
+    'soccer_france_ligue_one': 'ligue1',
+    'soccer_italy_serie_a': 'seriea',
+}
+
+
+def _league_to_context_key(league_slug_or_name: str) -> str:
+    """Normalize a league slug ('epl') or DB league name ('LA LIGA') to the
+    trend_context_service.SPORT_CONFIG key ('soccer_epl' / 'soccer_laliga')."""
+    return f"soccer_{league_slug_or_name.lower().replace(' ', '')}"
+
 
 def make_soccer_trends_cache_key(*args, **kwargs):
-    """Create a custom cache key based on game IDs only."""
+    """Create a custom cache key based on game IDs, enrich flag, and min trend length."""
     data = request.get_json() or {}
     games = data.get('games', [])
-    
+
     # Extract and sort game IDs for consistent cache key
     game_ids = [game.get('game_id') for game in games if game.get('game_id')]
     game_ids.sort()  # Sort to ensure consistent key regardless of game order
-    
+
     # Create a shorter hash of the game IDs to keep cache key manageable
     import hashlib
     game_ids_str = '|'.join(game_ids)
     game_ids_hash = hashlib.md5(game_ids_str.encode()).hexdigest()[:8]  # First 8 chars
-    
-    return f"soccer_trends:{game_ids_hash}"
+    enrich_flag = 'e1' if data.get('enrich') else 'e0'
+    min_len = data.get('min_trend_length', data.get('minTrendLength', 3))
+
+    return f"soccer_trends:{game_ids_hash}:{enrich_flag}:m{min_len}"
 
 
 @soccer_trends_bp.route('/api/historical/trends/soccer', methods=['POST'])
@@ -40,15 +59,21 @@ def analyze_soccer_trends():
         # Support both min_trend_length and minTrendLength keys
         min_trend_length = data.get('min_trend_length', data.get('minTrendLength', 3))
         sport_key = data.get('sportKey')
+        enrich = data.get('enrich', False)
 
         # Analyze trends for all games
         results, error = SoccerTrendsService.analyze_multiple_games_trends(
             games, limit, min_trend_length, sport_key
         )
-        
+
         if error:
             return jsonify({'error': error}), 500
-        
+
+        if enrich and results:
+            slug = SPORT_KEY_TO_SLUG.get(sport_key)
+            if slug:
+                enrich_game_trends(results, _league_to_context_key(slug))
+
         return jsonify({
             'success': True,
             'data': results,
@@ -94,17 +119,30 @@ def league_trends(league_slug: str):
         if not league:
             return redirect(f'/{league_slug}')
 
+        slug_to_sport_key = {
+            'epl': 'soccer_epl',
+            'laliga': 'soccer_spain_la_liga',
+            'bundesliga': 'soccer_germany_bundesliga',
+            'ligue1': 'soccer_france_ligue_one',
+            'seriea': 'soccer_italy_serie_a',
+        }
+        sport_key = slug_to_sport_key.get(league_slug.lower())
+
         limit = int(request.args.get('limit', 50))
         min_trend_length = int(request.args.get('min_trend_length', request.args.get('minTrendLength', 3)))
+        enrich = request.args.get('enrich', 'true').lower() != 'false'
 
         games, error = SoccerService.get_games(limit=limit, start_date=game_date, end_date=game_date, league=league)
         if error:
             return jsonify({'error': error}), 500
 
         # SoccerTrendsService expects a list of game dicts (it accepts home_team_name / away_team_name)
-        results, svc_error = SoccerTrendsService.analyze_multiple_games_trends(games or [], limit=5, min_trend_length=min_trend_length, sport_key=None)
+        results, svc_error = SoccerTrendsService.analyze_multiple_games_trends(games or [], limit=5, min_trend_length=min_trend_length, sport_key=sport_key)
         if svc_error:
             return jsonify({'error': svc_error}), 500
+
+        if enrich and results:
+            enrich_game_trends(results, _league_to_context_key(league_slug))
 
         return jsonify({'success': True, 'data': results, 'meta': {'league': league, 'date': game_date, 'games_analyzed': len(games or [])}})
 
@@ -199,6 +237,10 @@ def analyze_soccer_trends_by_league(league_slug: str):
         )
         if error:
             return jsonify({'error': error}), 500
+
+        enrich = data.get('enrich', False)
+        if enrich and results:
+            enrich_game_trends(results, _league_to_context_key(league_slug))
 
         return jsonify({
             'success': True,

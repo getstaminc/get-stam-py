@@ -456,6 +456,11 @@ const GameDetailsPage: React.FC = () => {
     americanfootball_nfl: "nfl",
     americanfootball_ncaaf: "ncaaf",
     basketball_ncaab: "ncaab",
+    soccer_epl: "soccer/epl",
+    soccer_spain_la_liga: "soccer/laliga",
+    soccer_germany_bundesliga: "soccer/bundesliga",
+    soccer_france_ligue_one: "soccer/ligue1",
+    soccer_italy_serie_a: "soccer/seriea",
   };
 
   const minTrendLength = sportKey === "baseball_mlb" ? 5 : 3;

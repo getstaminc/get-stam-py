@@ -17,21 +17,27 @@ const API_BASE_URL =
     : "https://www.getstam.com");
 const API_KEY = process.env.REACT_APP_API_KEY || "";
 
-// Config for each sport that may appear on the homepage
+// Config for each sport that may appear on the homepage. Deliberately just MLB + NFL —
+// NBA/NHL/NCAAF/NCAAB/World Cup are intentionally left off the homepage feed.
 const SPORT_CONFIG: Record<
   string,
   { apiKey: string; historicalKey: string; minTrendLength: number }
 > = {
-  MLB:   { apiKey: "baseball_mlb",           historicalKey: "mlb",   minTrendLength: 5 },
-  NBA:   { apiKey: "basketball_nba",         historicalKey: "nba",   minTrendLength: 3 },
-  NHL:   { apiKey: "icehockey_nhl",          historicalKey: "nhl",   minTrendLength: 3 },
-  NFL:   { apiKey: "americanfootball_nfl",   historicalKey: "nfl",   minTrendLength: 3 },
-  NCAAF: { apiKey: "americanfootball_ncaaf", historicalKey: "ncaaf", minTrendLength: 3 },
-  NCAAB: { apiKey: "basketball_ncaab",       historicalKey: "ncaab", minTrendLength: 3 },
-  "WORLD CUP": { apiKey: "soccer_fifa_world_cup", historicalKey: "worldcup", minTrendLength: 3 },
+  MLB: { apiKey: "baseball_mlb",         historicalKey: "mlb", minTrendLength: 5 },
+  NFL: { apiKey: "americanfootball_nfl", historicalKey: "nfl", minTrendLength: 3 },
 };
 
-const SKIP_SPORTS = new Set(["SOCCER"]);
+// Soccer gets its own per-league homepage sections (EPL, LA LIGA, etc. rather than one
+// blended "SOCCER" section) — the grouped sportsConfig "SOCCER" entry has no single
+// path/apiKey of its own, so these are built separately rather than via SPORT_CONFIG.
+const SOCCER_LEAGUES: { name: string; urlKey: string; apiKey: string }[] = [
+  { name: "EPL",         urlKey: "epl",         apiKey: "soccer_epl" },
+  { name: "LA LIGA",     urlKey: "laliga",       apiKey: "soccer_spain_la_liga" },
+  { name: "BUNDESLIGA",  urlKey: "bundesliga",   apiKey: "soccer_germany_bundesliga" },
+  { name: "LIGUE 1",     urlKey: "ligue1",       apiKey: "soccer_france_ligue_one" },
+  { name: "SERIE A",     urlKey: "seriea",       apiKey: "soccer_italy_serie_a" },
+];
+const SOCCER_MIN_TREND_LENGTH = 5;
 
 const formatDate = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -74,11 +80,9 @@ async function fetchTrends(
 ): Promise<GameWithTrends[]> {
   if (games.length === 0) return [];
   try {
-    // World Cup lives under the soccer trends blueprint's per-league route, not the
-    // generic /api/historical/trends/<sport> path the other sports use.
-    const url = historicalKey === "worldcup"
-      ? `${API_BASE_URL}/api/historical/trends/soccer/worldcup`
-      : `${API_BASE_URL}/api/historical/trends/${historicalKey}`;
+    // historicalKey is e.g. "mlb", "nfl", or "soccer/epl" — all resolve directly
+    // under the generic /api/historical/trends/<historicalKey> path.
+    const url = `${API_BASE_URL}/api/historical/trends/${historicalKey}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-API-KEY": API_KEY },
@@ -230,15 +234,26 @@ function SportSection({
 }
 
 export default function HomePage() {
-  const inSeasonSports = sports
-    .filter(
-      (s) => s.inSeason && !SKIP_SPORTS.has(s.name) && s.path && SPORT_CONFIG[s.name]
-    )
-    .map((s) => ({
-      name: s.name,
-      urlKey: s.path!.slice(1), // "/mlb" → "mlb"
-      ...SPORT_CONFIG[s.name],
-    }));
+  const soccerInSeason = sports.find((s) => s.name === "SOCCER")?.inSeason ?? false;
+
+  const inSeasonSports = [
+    ...sports
+      .filter((s) => s.inSeason && s.path && SPORT_CONFIG[s.name])
+      .map((s) => ({
+        name: s.name,
+        urlKey: s.path!.slice(1), // "/mlb" → "mlb"
+        ...SPORT_CONFIG[s.name],
+      })),
+    ...(soccerInSeason
+      ? SOCCER_LEAGUES.map((league) => ({
+          name: league.name,
+          urlKey: league.urlKey,
+          apiKey: league.apiKey,
+          historicalKey: `soccer/${league.urlKey}`,
+          minTrendLength: SOCCER_MIN_TREND_LENGTH,
+        }))
+      : []),
+  ];
 
   const [reportedCount, setReportedCount] = useState(0);
   const [hasAnyActiveGames, setHasAnyActiveGames] = useState(false);

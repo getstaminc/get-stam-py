@@ -209,15 +209,17 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
           >
             <Typography sx={{ fontSize: "0.98rem", fontWeight: 600, color: "#334155" }}>
               {formatH2H(home.odds?.h2h)}
+            </Typography>
+            <Box sx={{ textAlign: "center" }}>
+              <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, letterSpacing: "0.05em", color: "#64748b", textTransform: "uppercase" }}>
+                H2H
+              </Typography>
               {draw?.h2h !== null && draw?.h2h !== undefined && (
-                <Typography component="span" sx={{ fontSize: "0.86rem", color: "#64748b", ml: 0.5 }}>
-                  Draw: {formatH2H(draw.h2h)}
+                <Typography sx={{ fontSize: "0.82rem", fontWeight: 600, color: "#334155", mt: 0.15, whiteSpace: "nowrap" }}>
+                  Draw {formatH2H(draw.h2h)}
                 </Typography>
               )}
-            </Typography>
-            <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, letterSpacing: "0.05em", color: "#64748b", textTransform: "uppercase", textAlign: "center" }}>
-              H2H
-            </Typography>
+            </Box>
             <Typography sx={{ fontSize: "0.98rem", fontWeight: 600, color: "#334155", textAlign: "right" }}>
               {formatH2H(away.odds?.h2h)}
             </Typography>

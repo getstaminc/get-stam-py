@@ -159,17 +159,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
         <DialogTitle>Choose Your Plan</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 2 }}>
-              <Typography variant="subtitle1" fontWeight={700}>Free</Typography>
-              <Typography variant="body2" color="text.secondary">$0</Typography>
-              <FeatureList features={FREE_FEATURES} />
-              <Button fullWidth variant="outlined" onClick={chooseFree}>Continue with Free</Button>
-            </Box>
             <Box sx={{ border: "2px solid", borderColor: "primary.main", borderRadius: 1, p: 2 }}>
               <Typography variant="subtitle1" fontWeight={700}>Pro</Typography>
               <Typography variant="body2" color="text.secondary">$4.99/month · 7-day free trial</Typography>
               <FeatureList features={PRO_FEATURES} comingSoon={PRO_COMING_SOON} />
               <Button fullWidth variant="contained" onClick={choosePro}>Continue with Pro</Button>
+            </Box>
+            <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 2 }}>
+              <Typography variant="subtitle1" fontWeight={700}>Free</Typography>
+              <Typography variant="body2" color="text.secondary">$0</Typography>
+              <FeatureList features={FREE_FEATURES} />
+              <Button fullWidth variant="outlined" onClick={chooseFree}>Continue with Free</Button>
             </Box>
             <Link component="button" type="button" variant="body2" onClick={() => switchMode("login")} sx={{ alignSelf: "flex-start" }}>
               Already have an account? Log in

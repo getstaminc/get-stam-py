@@ -8,6 +8,9 @@ from typing import Dict, List, Optional, Tuple
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
+# Allow running this file directly (python jobs/nfl_historical_defense_actuals_import_reverse.py)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Reuse the NFL scoreboard/boxscore fetchers and team-id resolution already
 # built for skill-position player actuals - the ESPN data source and game
 # discovery are identical, only the stat groups consumed differ.

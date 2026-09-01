@@ -71,7 +71,9 @@ def verify_code():
     response = {"token": token, "user": serialize_user(user)}
 
     if is_first_verification and user.get("signup_intent") == "trial":
-        checkout_url, checkout_error = BillingService.create_checkout_session(user, start_trial=True)
+        checkout_url, checkout_error = BillingService.create_checkout_session(
+            user, start_trial=True, origin=request.headers.get("Origin")
+        )
         if checkout_error:
             # Non-fatal — they're still verified and logged in, just land on the site
             # instead of Checkout. They can always start a trial from the Upgrade dialog.

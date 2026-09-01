@@ -115,7 +115,7 @@ def test_verify_code_first_verification_with_trial_intent_returns_checkout_url(a
     assert resp.status_code == 200
     body = resp.get_json()
     assert body["checkout_url"] == "https://checkout.stripe.com/fake"
-    mock_checkout.assert_called_once_with(trial_user, start_trial=True)
+    mock_checkout.assert_called_once_with(trial_user, start_trial=True, origin=None)
 
 
 def test_verify_code_returning_user_with_trial_intent_skips_checkout(auth_headers):

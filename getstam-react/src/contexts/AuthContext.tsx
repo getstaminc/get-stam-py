@@ -75,15 +75,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetch(`${API_BASE_URL}/api/auth/me`, {
       headers: { "X-API-KEY": API_KEY, "Authorization": `Bearer ${token}` },
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("unauthorized");
-        return res.json();
-      })
-      .then((data) => {
+      .then(async (res) => {
+        if (res.status === 401 || res.status === 403) {
+          // Token is genuinely bad — drop it.
+          if (!cancelled) clearAuth();
+          return;
+        }
+        if (!res.ok) {
+          // Transient (5xx / network). Keep the token so a refresh recovers instead of
+          // silently logging the user out — e.g. right after returning from Stripe Checkout.
+          return;
+        }
+        const data = await res.json();
         if (!cancelled) setUser(data.user);
       })
       .catch(() => {
-        if (!cancelled) clearAuth();
+        // Network failure — keep the token, let a later load retry.
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

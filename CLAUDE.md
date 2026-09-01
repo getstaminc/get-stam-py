@@ -40,6 +40,15 @@ npm run build
 GET /clear-cache
 ```
 
+### Stripe billing (local testing)
+```bash
+# Required for local checkout/subscription testing — without this running, Stripe has
+# nowhere to deliver webhooks and the users table (plan/subscription_status) never updates,
+# even though the checkout itself succeeds on Stripe's side.
+stripe listen --forward-to 127.0.0.1:5000/api/webhooks/stripe
+```
+Copy the printed `whsec_...` into `STRIPE_WEBHOOK_SECRET` in `.env` (only needed once per Stripe account — the CLI reuses the same signing secret across `listen` sessions). If a webhook is missed, replay it with `stripe events resend <event_id>`.
+
 ## Architecture
 
 This is a **Flask + React monorepo**. Flask serves the React build at `/` and exposes a JSON API under `/api/`. All API routes require an `X-API-KEY` header.
@@ -75,6 +84,8 @@ Named `{sport_key}_games` (e.g., `nba_games`, `nfl_games`). Sport keys used in t
 - `ODDS_API_KEY` — Key for [the-odds-api.com](https://the-odds-api.com)
 - `API_KEY` — Internal key sent in `X-API-KEY` header by the React frontend
 - `FLASK_ENV` — Set to `development` to disable caching
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID` — Stripe billing (see "Stripe billing" above for local webhook setup)
+- `AUTH_SECRET_KEY` — Signing key for auth tokens (30-day expiry, `api/services/auth_service.py`)
 
 ## React Frontend
 

@@ -72,6 +72,21 @@ const SiteFooter: React.FC = () => (
         Contact Us
       </Link>
       <Link
+        href="/support"
+        underline="none"
+        color="inherit"
+        sx={{
+          mx: 1,
+          transition: "color 0.2s",
+          "&:hover": {
+            color: "#007bff",
+            textDecoration: "none",
+          },
+        }}
+      >
+        Support
+      </Link>
+      <Link
         href="/betting-guide"
         underline="none"
         color="inherit"
@@ -100,6 +115,21 @@ const SiteFooter: React.FC = () => (
           }}
         >
           Privacy Policy
+        </Link>
+        <Link
+          href="/terms-of-service"
+          underline="none"
+          color="inherit"
+          sx={{
+            mx: 1,
+            transition: "color 0.2s",
+            "&:hover": {
+              color: "#007bff",
+              textDecoration: "none",
+            },
+          }}
+        >
+          Terms of Service
         </Link>
     </Box>
     <Box sx={{ mb: 1 }}>

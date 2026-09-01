@@ -90,7 +90,6 @@ def analyze_soccer_trends():
 
 
 @soccer_trends_bp.route('/api/historical/soccer/<league_slug>/trends', methods=['GET'])
-@soccer_trends_bp.route('/<league_slug>/trends', methods=['GET'])
 def league_trends(league_slug: str):
     """GET endpoint to return trends for a league on a specific date.
 

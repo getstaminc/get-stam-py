@@ -8,6 +8,7 @@ os.environ.setdefault("ODDS_API_KEY", "test-odds-key")
 os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost/test")
 os.environ.setdefault("FLASK_ENV", "development")  # disables Flask-Caching (CACHE_TYPE=null)
 os.environ.setdefault("INTERNAL_PASSWORD", "test-internal-password")
+os.environ.setdefault("AUTH_SECRET_KEY", "test-auth-secret")  # auth_service reads this at import time for HMAC code hashing
 
 import pytest
 from flask import Flask

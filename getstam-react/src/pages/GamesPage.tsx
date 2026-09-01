@@ -10,6 +10,7 @@ import {
   ToggleButton,
 } from "@mui/material";
 import { useGame } from "../contexts/GameContext";
+import { useAuth } from "../contexts/AuthContext";
 import GameOdds, { shouldDisplayGame } from "../components/GameOdds";
 import GamesWithTrends from "../components/GamesWithTrends";
 import PastGamesDisplay from "../components/PastGamesDisplay";
@@ -130,7 +131,7 @@ async function fetchGamesData(sportKey: string, date: Date) {
 }
 
 // Fetch trends from your new API endpoint
-async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: number, leagueSlug?: string) {
+async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: number, leagueSlug?: string, token?: string | null) {
   // Map sportKey to the appropriate endpoint
   const sportEndpointMap: { [key: string]: string } = {
     'americanfootball_nfl': 'nfl',
@@ -180,10 +181,11 @@ async function fetchTrendsData(games: any[], sportKey: string, minTrendLength: n
       headers: {
         'Content-Type': 'application/json',
         "X-API-KEY": process.env.REACT_APP_API_KEY || "",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(requestBody)
     });
-    
+
     if (!res.ok) throw new Error(`Trends API error: ${res.status}`);
     const trendsData = await res.json();
     return trendsData;
@@ -197,6 +199,7 @@ const GamesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setCurrentGame } = useGame();
+  const { token } = useAuth();
 
   // Get sport from URL path (e.g. "/nfl")
   const urlSport = getSportFromPath(location.pathname);
@@ -364,7 +367,7 @@ const GamesPage = () => {
     if (isTrends && games.length > 0) {
       setTrendsLoading(true);
       
-      fetchTrendsData(games, sportKey, minTrendLength, urlSport)
+      fetchTrendsData(games, sportKey, minTrendLength, urlSport, token)
         .then((trendsResponse) => {
           // Extract the data array from the API response
           const trendsData = trendsResponse?.data || [];
@@ -407,7 +410,7 @@ const GamesPage = () => {
     } else {
       setGamesWithTrends([]);
     }
-  }, [isTrends, games, sportKey, minTrendLength]); // Changed dependency from activeView to isTrends
+  }, [isTrends, games, sportKey, minTrendLength, token]); // Changed dependency from activeView to isTrends
 
   // Handle minimum trend length change
   const handleMinTrendLengthChange = (newMinLength: number) => {

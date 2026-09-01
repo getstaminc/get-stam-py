@@ -10,6 +10,7 @@ import html
 import json
 
 from cache import cache, init_cache
+from limiter import limiter, init_limiter
 from api.services.blog_service import BlogService
 from api.utils.team_slugs import team_slug as _team_slug, SPORT_TEAMS as _SPORT_TEAMS, resolve_team_slug
 from api.services.game_service import GameService
@@ -44,11 +45,20 @@ from api.routes.webhooks.youtube_webhook import youtube_webhook_bp
 from api.routes.blog import blog_bp
 from api.routes.admin_blog import admin_blog_bp
 from api.routes.subscribers import subscribers_bp
+from api.routes.auth import auth_bp
+from api.routes.billing import billing_bp
+from api.routes.webhooks.stripe_webhook import stripe_webhook_bp
 from flask_cors import CORS
 
 
 # Configure Flask app to serve React build
 app = Flask(__name__, static_folder='getstam-react/build/static', static_url_path='/static')
+
+# Heroku terminates TLS at its router and forwards the request over plain HTTP with the
+# real client IP in X-Forwarded-For. Without this, request.remote_addr is the router's IP,
+# which would make the rate limiter (limiter.py) key every visitor to the same bucket.
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 port = 5000
 
@@ -57,7 +67,7 @@ CORS(app, origins=[
     "http://localhost:3000",
     "http://127.0.0.1:5000",
     "https://www.getstam.com"
-])
+], allow_headers=["Content-Type", "X-API-KEY", "Authorization"])
 
 # Configure logging to write to a file
 if not os.path.exists('logs'):
@@ -84,6 +94,7 @@ eastern_tz = pytz.timezone('US/Eastern')
 
 # Determine if caching should be enabled based on the environment
 cache = init_cache(app)
+limiter = init_limiter(app)
 
 app.register_blueprint(games_bp)
 app.register_blueprint(odds_bp)
@@ -114,6 +125,9 @@ app.register_blueprint(youtube_webhook_bp)
 app.register_blueprint(blog_bp)
 app.register_blueprint(admin_blog_bp)
 app.register_blueprint(subscribers_bp)
+app.register_blueprint(auth_bp)
+app.register_blueprint(billing_bp)
+app.register_blueprint(stripe_webhook_bp)
 
 _SPORT_DISPLAY = {
     'nfl': 'NFL', 'mlb': 'MLB', 'nba': 'NBA', 'nhl': 'NHL',
@@ -136,8 +150,10 @@ _ORG_WEBSITE_JSON_LD = {
 _STATIC_PAGE_META = {
     'about-us': ('About GetSTAM', 'Learn about GetSTAM and our sports analytics platform.'),
     'contact-us': ('Contact Us | GetSTAM', 'Get in touch with the GetSTAM team.'),
+    'support': ('Support | GetSTAM', 'Get help with your GetSTAM subscription, billing, and account.'),
     'betting-guide': ('Betting Guide | GetSTAM', 'Learn how to read betting odds and use trends to your advantage.'),
     'privacy-policy': ('Privacy Policy | GetSTAM', 'GetSTAM privacy policy.'),
+    'terms-of-service': ('Terms of Service | GetSTAM', 'The terms that govern your use of GetSTAM.'),
     'feature-requests': ('Feature Requests | GetSTAM', 'Request new features for GetSTAM.'),
     'blog': ('Blog | GetSTAM', 'Sports betting analysis and tips.'),
 }
@@ -418,7 +434,9 @@ def sitemap():
         ('https://www.getstam.com/about-us',      'monthly', '0.5', '2025-01-01'),
         ('https://www.getstam.com/betting-guide',  'monthly', '0.6', '2025-01-01'),
         ('https://www.getstam.com/contact-us',     'monthly', '0.4', '2025-01-01'),
+        ('https://www.getstam.com/support',        'monthly', '0.4', '2026-08-31'),
         ('https://www.getstam.com/privacy-policy', 'yearly',  '0.3', '2025-01-01'),
+        ('https://www.getstam.com/terms-of-service', 'yearly', '0.3', '2026-08-18'),
         ('https://www.getstam.com/blog',           'weekly',  '0.7', today),
     ]
 

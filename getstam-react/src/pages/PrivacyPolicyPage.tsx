@@ -58,7 +58,7 @@ const PrivacyPolicyPage: React.FC = () => {
           </Box>
           <Box component="li" sx={{ mb: 1 }}>
             <Typography variant="body1">
-              <strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to GetStam, 5915 Urban St.
+              <strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to GetStam.
             </Typography>
           </Box>
           <Box component="li" sx={{ mb: 1 }}>

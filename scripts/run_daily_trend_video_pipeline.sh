@@ -93,36 +93,21 @@ else
   sleep 5  # let the first compile fully settle
 fi
 
-# Every step gets a hard wall-clock timeout (via gtimeout, from `brew install
-# coreutils`) and one retry — this is what's missing that let a hung network
-# call (Claude/Odds API/Brevo, root cause varies) freeze the whole pipeline
-# for hours with nothing to wake it back up. A timed-out or failed attempt
-# just gets one clean retry rather than sitting frozen indefinitely.
 run_step() {
   local script="$1"
-  local timeout_secs="$2"
-  local max_attempts="${3:-2}"
-  local attempt=1
-  while [ "$attempt" -le "$max_attempts" ]; do
-    echo "--- Running $script $DATE_ARG (attempt $attempt/$max_attempts, timeout ${timeout_secs}s) ---"
-    gtimeout "$timeout_secs" "$PYTHON" "$REPO_ROOT/jobs/$script" $DATE_ARG
-    local status=$?
-    if [ $status -eq 0 ]; then
-      return 0
-    elif [ $status -eq 124 ]; then
-      echo "ERROR: $script timed out after ${timeout_secs}s (attempt $attempt/$max_attempts)"
-    else
-      echo "ERROR: $script exited with status $status (attempt $attempt/$max_attempts)"
-    fi
-    attempt=$((attempt + 1))
-  done
-  return 1
+  echo "--- Running $script $DATE_ARG ---"
+  "$PYTHON" "$REPO_ROOT/jobs/$script" $DATE_ARG
+  local status=$?
+  if [ $status -ne 0 ]; then
+    echo "ERROR: $script exited with status $status"
+  fi
+  return $status
 }
 
-run_step "mlb_generate_trend_video_scripts.py" 300 2 || exit 1
-run_step "mlb_generate_trend_video_screenshots.py" 300 2 || exit 1
-run_step "mlb_generate_trend_videos.py" 2400 2 || exit 1
-run_step "mlb_upload_youtube_videos.py" 600 2   # don't abort the email step if YouTube upload has an issue
-run_step "mlb_email_daily_videos.py" 180 2
+run_step "mlb_generate_trend_video_scripts.py" || exit 1
+run_step "mlb_generate_trend_video_screenshots.py" || exit 1
+run_step "mlb_generate_trend_videos.py" || exit 1
+run_step "mlb_upload_youtube_videos.py"   # don't abort the email step if YouTube upload has an issue
+run_step "mlb_email_daily_videos.py"
 
 echo "=== Daily trend video pipeline finished at $(date) ==="

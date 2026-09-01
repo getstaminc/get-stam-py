@@ -19,6 +19,27 @@ STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
+# Hosts we're willing to send a user back to after Stripe Checkout/Portal. Stripe redirects
+# via a full page load, so the return URL must land on the *same origin* the user started on
+# — otherwise their auth token (in that origin's localStorage) isn't there and they look
+# logged out. Keeping this list aligned with the CORS origins in app.py plus the apex domain.
+_ALLOWED_RETURN_ORIGINS = {
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "https://getstam.com",
+    "https://www.getstam.com",
+}
+
+
+def resolve_return_base(origin):
+    """Base URL for Stripe return links: the caller's own Origin when it's a known one (so they
+    come back to the exact host + localStorage they left from), else SITE_BASE_URL."""
+    if origin and origin.rstrip("/") in _ALLOWED_RETURN_ORIGINS:
+        return origin.rstrip("/")
+    return SITE_BASE_URL
+
 
 def _get_conn():
     return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
@@ -34,16 +55,18 @@ def _sget(obj, key, default=None):
 class BillingService:
 
     @staticmethod
-    def create_checkout_session(user, start_trial=True):
-        """Returns (checkout_url, error). start_trial=False charges immediately with no trial period."""
+    def create_checkout_session(user, start_trial=True, origin=None):
+        """Returns (checkout_url, error). start_trial=False charges immediately with no trial period.
+        origin is the caller's Origin header — the user is returned to that host when it's known."""
+        base = resolve_return_base(origin)
         try:
             kwargs = {
                 "mode": "subscription",
                 "line_items": [{"price": STRIPE_PRICE_ID, "quantity": 1}],
                 "client_reference_id": str(user["id"]),
                 "metadata": {"user_id": str(user["id"])},
-                "success_url": f"{SITE_BASE_URL}/mlb/trends?checkout=success",
-                "cancel_url": f"{SITE_BASE_URL}/mlb/trends?checkout=cancel",
+                "success_url": f"{base}/mlb/trends?checkout=success",
+                "cancel_url": f"{base}/mlb/trends?checkout=cancel",
             }
             if start_trial:
                 kwargs["subscription_data"] = {"trial_period_days": 7}
@@ -59,14 +82,14 @@ class BillingService:
             return None, str(e)
 
     @staticmethod
-    def create_portal_session(user):
+    def create_portal_session(user, origin=None):
         """Returns (portal_url, error)."""
         if not user.get("stripe_customer_id"):
             return None, "no_stripe_customer"
         try:
             session = stripe.billing_portal.Session.create(
                 customer=user["stripe_customer_id"],
-                return_url=f"{SITE_BASE_URL}/mlb/trends",
+                return_url=f"{resolve_return_base(origin)}/mlb/trends",
             )
             return session.url, None
         except Exception as e:

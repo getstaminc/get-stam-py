@@ -29,7 +29,9 @@ def checkout_session():
     user = require_user()
     data = request.get_json() or {}
     start_trial = data.get("trial", True)
-    url, error = BillingService.create_checkout_session(user, start_trial=start_trial)
+    url, error = BillingService.create_checkout_session(
+        user, start_trial=start_trial, origin=request.headers.get("Origin")
+    )
     if error:
         return jsonify({"error": error}), 500
     return jsonify({"url": url})
@@ -38,7 +40,7 @@ def checkout_session():
 @billing_bp.route("/api/billing/portal-session", methods=["POST"])
 def portal_session():
     user = require_user()
-    url, error = BillingService.create_portal_session(user)
+    url, error = BillingService.create_portal_session(user, origin=request.headers.get("Origin"))
     if error:
         return jsonify({"error": error}), 400 if error == "no_stripe_customer" else 500
     return jsonify({"url": url})

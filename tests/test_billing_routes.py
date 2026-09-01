@@ -35,7 +35,7 @@ def test_checkout_session_defaults_to_trial(auth_headers):
             headers={**auth_headers, "Authorization": "Bearer tok"},
         )
     assert resp.status_code == 200
-    mock_create.assert_called_once_with(FAKE_USER, start_trial=True)
+    mock_create.assert_called_once_with(FAKE_USER, start_trial=True, origin=None)
 
 
 def test_checkout_session_can_skip_trial(auth_headers):
@@ -47,7 +47,7 @@ def test_checkout_session_can_skip_trial(auth_headers):
             headers={**auth_headers, "Authorization": "Bearer tok"},
         )
     assert resp.status_code == 200
-    mock_create.assert_called_once_with(FAKE_USER, start_trial=False)
+    mock_create.assert_called_once_with(FAKE_USER, start_trial=False, origin=None)
 
 
 def test_redeem_code_success(auth_headers):

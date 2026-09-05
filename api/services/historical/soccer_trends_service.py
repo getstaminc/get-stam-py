@@ -47,6 +47,10 @@ class SoccerTrendsService(BaseHistoricalService):
             league = None
             sport_key_to_league = {
                 'soccer_epl': 'EPL',
+                'soccer_spain_la_liga': 'LA LIGA',
+                'soccer_germany_bundesliga': 'BUNDESLIGA',
+                'soccer_france_ligue_one': 'LIGUE 1',
+                'soccer_italy_serie_a': 'SERIE A',
                 'soccer_uefa_champs_league': 'UCL',
                 'soccer_uefa_europa_league': 'UEL',
                 'soccer_uefa_conference_league': 'UECL',
@@ -91,8 +95,10 @@ class SoccerTrendsService(BaseHistoricalService):
                 # Analyze trends using the filtered data
                 home_team_trends = cls._analyze_team_trends(home_team_games, home_team, min_trend_length)
                 away_team_trends = cls._analyze_team_trends(away_team_games, away_team, min_trend_length)
-                home_team_home_trends = cls._analyze_team_trends(home_team_home_games, home_team, min_trend_length)
-                away_team_away_trends = cls._analyze_team_trends(away_team_away_games, away_team, min_trend_length)
+                home_team_home_trends = cls._apply_venue_context(
+                    cls._analyze_team_trends(home_team_home_games, home_team, min_trend_length), 'at home')
+                away_team_away_trends = cls._apply_venue_context(
+                    cls._analyze_team_trends(away_team_away_games, away_team, min_trend_length), 'on the road')
 
                 # For H2H, ensure each game has correct team_side for the home team
                 h2h_games_with_side = []

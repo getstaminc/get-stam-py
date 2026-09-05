@@ -1,10 +1,13 @@
-import React from "react";
-import { Box, Typography, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import React, { useState } from "react";
+import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Tooltip, Link } from "@mui/material";
+import LockIcon from "@mui/icons-material/Lock";
 import { useLocation } from "react-router-dom";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { getMatchupPageLink, MATCHUP_SLUG_SPORTS } from "../utils/teamSlugUtils";
 import TrendInsightCard, { getConfidenceScore } from "./TrendInsightCard";
+import { useAuth } from "../contexts/AuthContext";
+import UpgradeDialog from "./UpgradeDialog";
 
 interface GamesWithTrendsProps {
   gamesWithTrends: GameWithTrends[];
@@ -20,16 +23,62 @@ interface GamesWithTrendsProps {
   } | undefined;
 }
 
+// Above this length, MLB's filter is a Pro-only feature — free/anonymous users stay capped at 5+.
+const MLB_FREE_MAX = 5;
+
 const TrendFilter: React.FC<{ value: number; onChange: (v: number) => void; sport: string }> = ({ value, onChange, sport }) => {
+  const { isPro } = useAuth();
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+
   const minAllowed = sport === "mlb" ? 5 : 3;
-  const options = [3, 4, 5].filter((n) => n >= minAllowed);
+  const allOptions = sport === "mlb" ? [5, 7, 10] : [3, 4, 5];
+  const options = allOptions.filter((n) => n >= minAllowed);
+  const showUpgrade = sport === "mlb" && !isPro;
+
+  const handleUpgradeClick = () => setUpgradeDialogOpen(true);
+
+  // Locked options aren't marked MUI-`disabled` — a disabled MenuItem needed a pointer-events
+  // override for its tooltip to work, which let clicks slip through and actually select it.
+  // Instead: they're fully clickable, but the change handler intercepts a locked selection and
+  // opens the Upgrade dialog instead of applying it, so the Select's value never actually changes.
+  const handleSelectChange = (newValue: number) => {
+    if (newValue > MLB_FREE_MAX && !isPro) {
+      setUpgradeDialogOpen(true);
+      return;
+    }
+    onChange(newValue);
+  };
+
   return (
-    <FormControl size="small" sx={{ minWidth: 180 }}>
-      <InputLabel>Min Trend Length</InputLabel>
-      <Select value={value} label="Min Trend Length" onChange={(e) => onChange(e.target.value as number)}>
-        {options.map((n) => <MenuItem key={n} value={n}>{n}+ Games</MenuItem>)}
-      </Select>
-    </FormControl>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <FormControl size="small" sx={{ minWidth: 180 }}>
+        <InputLabel>Min Trend Length</InputLabel>
+        <Select value={value} label="Min Trend Length" onChange={(e) => handleSelectChange(e.target.value as number)}>
+          {options.map((n) => {
+            const locked = n > MLB_FREE_MAX && !isPro;
+            return (
+              <MenuItem key={n} value={n}>
+                {locked ? (
+                  <Tooltip title="Upgrade to Pro to unlock" placement="right">
+                    <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "text.disabled" }}>
+                      {n}+ Games <LockIcon fontSize="inherit" />
+                    </Box>
+                  </Tooltip>
+                ) : (
+                  `${n}+ Games`
+                )}
+              </MenuItem>
+            );
+          })}
+        </Select>
+      </FormControl>
+      {showUpgrade && (
+        <Link component="button" type="button" variant="body2" onClick={handleUpgradeClick}>
+          Upgrade
+        </Link>
+      )}
+      <UpgradeDialog open={upgradeDialogOpen} onClose={() => setUpgradeDialogOpen(false)} />
+    </Box>
   );
 };
 

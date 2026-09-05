@@ -13,8 +13,8 @@ const allSports: Sport[] = [
   { name: "NBA", path: "/nba", inSeason: false },
   { name: "NCAAB", path: "/ncaab", inSeason: false },
   { name: "NHL", path: "/nhl", inSeason: false },
-  { name: "NFL", path: "/nfl", inSeason: false },
-  { name: "NCAAF", path: "/ncaaf", inSeason: false },
+  { name: "NFL", path: "/nfl", inSeason: true },
+  { name: "NCAAF", path: "/ncaaf", inSeason: true },
   // Next World Cup is 2030 — flip `enabled` to true to bring it back
   { name: "WORLD CUP", path: "/worldcup", inSeason: true, enabled: false },
   // Group soccer leagues under a single Soccer nav item to reduce clutter

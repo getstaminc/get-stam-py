@@ -78,7 +78,12 @@ const GameFAQSection: React.FC<GameFAQSectionProps> = ({ sportKey, sport, homeTe
 
   const last = sorted[0];
   const lastDate = last.game_date
-    ? new Date(last.game_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    ? new Date(last.game_date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      })
     : null;
 
   const leader = homeWins > awayWins ? homeTeam : awayWins > homeWins ? awayTeam : null;

@@ -93,21 +93,35 @@ else
   sleep 5  # let the first compile fully settle
 fi
 
+# Retries on a nonzero exit (max 2 attempts by default) — no hard wall-clock
+# timeout here. An earlier attempt at this wrapped every step in `gtimeout`
+# to also catch true hangs, but inserting that extra binary into the exec
+# chain broke Python's own venv resolution under launchd in a way that was
+# never fully explained (worked fine invoked directly, failed only via
+# launchd) — reverted rather than risk repeating it. So this only covers
+# "ran and failed" (screenshot nav timeouts, transient API errors, etc.),
+# not "hung forever with no timeout" — that's a known gap, not a design win.
 run_step() {
   local script="$1"
-  echo "--- Running $script $DATE_ARG ---"
-  "$PYTHON" "$REPO_ROOT/jobs/$script" $DATE_ARG
-  local status=$?
-  if [ $status -ne 0 ]; then
-    echo "ERROR: $script exited with status $status"
-  fi
-  return $status
+  local max_attempts="${2:-2}"
+  local attempt=1
+  while [ "$attempt" -le "$max_attempts" ]; do
+    echo "--- Running $script $DATE_ARG (attempt $attempt/$max_attempts) ---"
+    "$PYTHON" "$REPO_ROOT/jobs/$script" $DATE_ARG
+    local status=$?
+    if [ $status -eq 0 ]; then
+      return 0
+    fi
+    echo "ERROR: $script exited with status $status (attempt $attempt/$max_attempts)"
+    attempt=$((attempt + 1))
+  done
+  return 1
 }
 
-run_step "mlb_generate_trend_video_scripts.py" || exit 1
-run_step "mlb_generate_trend_video_screenshots.py" || exit 1
-run_step "mlb_generate_trend_videos.py" || exit 1
-run_step "mlb_upload_youtube_videos.py"   # don't abort the email step if YouTube upload has an issue
-run_step "mlb_email_daily_videos.py"
+run_step "mlb_generate_trend_video_scripts.py" 2 || exit 1
+run_step "mlb_generate_trend_video_screenshots.py" 2 || exit 1
+run_step "mlb_generate_trend_videos.py" 2 || exit 1
+run_step "mlb_upload_youtube_videos.py" 2   # don't abort the email step if YouTube upload has an issue
+run_step "mlb_email_daily_videos.py" 2
 
 echo "=== Daily trend video pipeline finished at $(date) ==="

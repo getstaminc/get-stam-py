@@ -201,6 +201,14 @@ def render_multi_scene_video(scenes, audio_path, out_path, total_duration):
 
 def build_variant(game, date_str, script_key, suffix):
     game_id = game["game_id"]
+
+    # Idempotent: a rerun for a date that's already produced this exact
+    # video (e.g. catching up other games in the same batch that failed
+    # earlier) shouldn't re-synthesize audio and re-render it from scratch.
+    video_path = VIDEOS_ROOT / date_str / f"{game_id}{suffix}.mp4"
+    if video_path.exists():
+        return video_path, None
+
     script_data = (game.get(script_key) or {})
     text = script_data.get("script")
     if not text:
@@ -220,7 +228,6 @@ def build_variant(game, date_str, script_key, suffix):
     synthesize_voiceover(text, audio_path)
     duration = get_audio_duration(audio_path)
 
-    video_path = VIDEOS_ROOT / date_str / f"{game_id}{suffix}.mp4"
     render_multi_scene_video(scenes, audio_path, video_path, duration)
     return video_path, None
 

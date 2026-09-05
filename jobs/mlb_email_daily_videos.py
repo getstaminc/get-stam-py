@@ -19,6 +19,7 @@ import os
 import sys
 import json
 import base64
+import time
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,6 +34,7 @@ SCRIPTS_ROOT = REPO_ROOT / "output" / "scripts"
 SCREENSHOTS_ROOT = REPO_ROOT / "output" / "screenshots"
 VIDEOS_ROOT = REPO_ROOT / "output" / "videos"
 UPLOADS_ROOT = REPO_ROOT / "output" / "youtube_uploads"
+SENT_LOG_ROOT = REPO_ROOT / "output" / "emailed"
 
 RECIPIENT = os.getenv("DAILY_VIDEO_EMAIL_TO", "getstaminc@gmail.com")
 
@@ -61,6 +63,21 @@ def load_youtube_uploads(date_str):
         return {}
     with open(path) as f:
         return json.load(f)
+
+
+def load_sent_log(date_str):
+    path = SENT_LOG_ROOT / f"{date_str}.json"
+    if not path.exists():
+        return set()
+    with open(path) as f:
+        return set(json.load(f))
+
+
+def mark_sent(date_str, game_id, sent_ids):
+    sent_ids.add(game_id)
+    SENT_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+    with open(SENT_LOG_ROOT / f"{date_str}.json", "w") as f:
+        json.dump(sorted(sent_ids), f, indent=2)
 
 
 def build_html(game, date_str, youtube_url, standard_path, tiktok_path, has_thumbnail):
@@ -112,7 +129,19 @@ def send_game_email(game, date_str, youtube_uploads):
     subject = f"[GetSTAM] {away} @ {home} — video ready"
     html = build_html(game, date_str, youtube_url, standard_path, tiktok_path, has_thumbnail)
 
-    return EmailService.send_with_attachments(RECIPIENT, subject, html, attachments=attachments)
+    # Brevo has intermittently dropped the connection mid-send (SSL bad
+    # record mac) a handful of times on the live 6am run — always worked
+    # immediately on a manual retry, so retry here instead of needing that
+    # manual step every time.
+    last_err = None
+    for attempt in range(1, 4):
+        success, err = EmailService.send_with_attachments(RECIPIENT, subject, html, attachments=attachments)
+        if success:
+            return True, None
+        last_err = err
+        if attempt < 3:
+            time.sleep(3)
+    return False, last_err
 
 
 def run(date_str=None):
@@ -128,15 +157,25 @@ def run(date_str=None):
         return
 
     youtube_uploads = load_youtube_uploads(date_str)
+    sent_ids = load_sent_log(date_str)
 
     ok, failed, skipped = 0, 0, 0
     for game in games:
+        game_id = game["game_id"]
         label = f"{game['matchup']['away_team']} @ {game['matchup']['home_team']}"
+
+        # Idempotent: a rerun for a date that's already been emailed (e.g.
+        # catching up games that failed earlier in the same run) shouldn't
+        # resend games that already went out.
+        if game_id in sent_ids:
+            skipped += 1
+            print(f"  [SKIP] {label}: already emailed")
+            continue
 
         # Only email games that actually got a video rendered — a game can
         # have a script (and even a TikTok script) without reaching this
         # stage, e.g. it wasn't in the top-N picked for the full pipeline.
-        video_path = VIDEOS_ROOT / date_str / f"{game['game_id']}.mp4"
+        video_path = VIDEOS_ROOT / date_str / f"{game_id}.mp4"
         if not video_path.exists():
             skipped += 1
             print(f"  [SKIP] {label}: no video at {video_path}")
@@ -145,6 +184,7 @@ def run(date_str=None):
         success, err = send_game_email(game, date_str, youtube_uploads)
         if success:
             ok += 1
+            mark_sent(date_str, game_id, sent_ids)
             print(f"  [OK] {label} -> emailed {RECIPIENT}")
         else:
             failed += 1

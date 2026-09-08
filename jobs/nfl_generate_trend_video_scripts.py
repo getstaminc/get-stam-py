@@ -1,10 +1,10 @@
 """
-MLB Trend Video Script Generator
+NFL Trend Video Script Generator
 
-For every MLB game that would appear on the homepage's "Today's Trends"
+For every NFL game that would appear on the homepage's "Today's Trends"
 section (not completed, hasTrends), calls Claude to write two spoken video
-scripts covering the game's trends, betting lines, and starting pitching
-matchup (when available):
+scripts covering the game's trends, betting lines, and team rankings context
+(offense/defense total, passing, rushing, scoring — out of 32):
 
 - "script": ~90-130 seconds, talks openly about moneyline/spread/totals.
 - "script_tiktok": ~90-130 seconds, same substance but avoids gambling
@@ -12,14 +12,15 @@ matchup (when available):
   TikTok that restrict gambling talk — favorite/underdog and high/low
   scoring framing instead, no raw odds numbers.
 
-Writes one JSON file per game to output/scripts/<date>/<game_id>.json.
+Writes one JSON file per game to output/scripts/<date>/<game_id>.json —
+the same directory MLB writes into, since downstream steps (screenshots,
+video assembly, YouTube upload, email) are already sport-agnostic and just
+glob everything in that folder for the date.
 
 Usage:
-  venv/bin/python jobs/mlb_generate_trend_video_scripts.py [YYYY-MM-DD]
+  venv/bin/python jobs/nfl_generate_trend_video_scripts.py [YYYY-MM-DD]
 
-If no date is given, defaults to today in US/Eastern. Starting pitcher data
-is only available for today/tomorrow (scraped live from RotoWire), so games
-on other dates will generate without a pitching-matchup section.
+If no date is given, defaults to today in US/Eastern.
 """
 
 import os
@@ -38,11 +39,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from api.services.game_service import GameService
-from api.services.historical.mlb_trends_service import MLBTrendsService
+from api.services.historical.nfl_trends_service import NFLTrendsService
 from api.services.historical.trend_enrichment import enrich_game_trends
 from api.services.historical.trend_scoring import rank_game_trends, get_confidence_score
-from shared_utils import convert_roto_team_names
-from mlb_pitchers import get_pitcher_data_for_dates
+from nfl_rankings import fetch_nfl_rankings
 
 eastern_tz = pytz.timezone("US/Eastern")
 
@@ -50,11 +50,8 @@ MODEL = "claude-sonnet-5"
 OUTPUT_ROOT = Path(__file__).resolve().parent.parent / "output" / "scripts"
 REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trends_referenced", "estimated_word_count")
 
-# The video pipeline (screenshots -> voiceover -> render -> YouTube upload)
-# costs real time and money per game, so only the games with the strongest
-# trend signal get turned into videos each day — everything else in
-# Today's Trends still gets a script here, just not necessarily a video.
-MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY", "3"))
+# Independent of MLB's own cap — set MAX_VIDEO_GAMES_PER_DAY_NFL to change.
+MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY_NFL", "3"))
 
 SCRIPT_JSON_SCHEMA = {
     "type": "object",
@@ -69,39 +66,39 @@ SCRIPT_JSON_SCHEMA = {
     "additionalProperties": False,
 }
 
-SYSTEM_PROMPT = """You are a sports broadcast scriptwriter for GetSTAM, a sports betting trends platform. You write conversational, first-person spoken video scripts (90-130 seconds) for social media (TikTok/Reels/Shorts) that break down one upcoming MLB game the way a sharp, confident bettor would talk through their notes out loud — not like an ad, and not like a robotic stat recital.
+SYSTEM_PROMPT = """You are a sports broadcast scriptwriter for GetSTAM, a sports betting trends platform. You write conversational, first-person spoken video scripts (90-130 seconds) for social media (TikTok/Reels/Shorts) that break down one upcoming NFL game the way a sharp, confident bettor would talk through their notes out loud — not like an ad, and not like a robotic stat recital.
 
 Voice and structure:
 - Open by naming the matchup, then work through both teams' recent form. It's fine — good, even — to note a bit of tension or nuance (e.g. one team's recent streak vs. what happened the last time these two played), the way a real analyst would say "pretty interesting" about a wrinkle in the data.
 - Weave the betting lines (moneyline, spread, total) in naturally as you talk, not as a rattled-off list.
-- If a starting pitching matchup is provided, spend real time on it — name both pitchers, give their record/ERA, and compare them directly. This is often the most interesting part of the breakdown.
+- If team rankings are provided (offense/defense — total, passing, rushing, scoring), spend real time on it — call out the specific ranks that matter for this matchup (e.g. a top-5 rushing offense against a bottom-10 run defense) and compare the two teams directly. This is often the most interesting part of the breakdown.
 - Use casual, natural spoken phrasing: contractions, short reactions ("Pretty good.", "Interesting."), transitions like "If you look at..." or "But if you go back...". Sentence fragments are fine when they sound like real speech.
-- Every trend comes with a confidence score (0-4) showing how often this exact pattern has historically held up — calibrate how sure you sound to match it, not just what you say. A 0-1 score means the historical rate is close to a coin flip (roughly 50-55%): say that plainly, and don't force a confident lean on the trend alone — either point to a different factor that actually tips it (a clear pitching mismatch, a lopsided line move) or be upfront that it's a genuine toss-up. A 2-3 score supports a real but moderate lean ("I'd favor," "I lean towards") — not a lock. A 3-4 score is a strong historical signal — be genuinely assertive there.
+- Every trend comes with a confidence score (0-4) showing how often this exact pattern has historically held up — calibrate how sure you sound to match it, not just what you say. A 0-1 score means the historical rate is close to a coin flip (roughly 50-55%): say that plainly, and don't force a confident lean on the trend alone — either point to a different factor that actually tips it (a clear rankings mismatch, a lopsided line move) or be upfront that it's a genuine toss-up. A 2-3 score supports a real but moderate lean ("I'd favor," "I lean towards") — not a lock. A 3-4 score is a strong historical signal — be genuinely assertive there.
 - Treat the primary trend as evidence to weigh, not an automatic pick — don't default to "the streak just continues." Sometimes the sharper read is that the trend is misleading given a stronger countervailing factor, and sometimes the honest take really is that it's close to 50/50.
 - Close with ONE clear takeaway either way — even "this one's a genuine coin flip, but here's the tiebreaker" counts as a clear takeaway. Ground it only in the moneyline/spread/total actually given to you — never invent a market or number you weren't given. Show a bit of the reasoning rather than just asserting it — e.g. "history gives this about a 51% edge, close to a coin flip, but..." — so the confidence you project actually matches the strength of the signal.
 - After the takeaway, invite engagement (e.g. ask viewers how they see the game going, in the comments).
 - End with a short branded sign-off mentioning getstam.com and inviting a follow for more games — vary the phrasing naturally rather than repeating the exact same sentence every time.
 
-Write the "script" field as one continuous paragraph — no line breaks or newline characters, ever. Never invent stats, records, or odds beyond what's given to you. No bullet points, no headers, no emoji, no hashtags — this is spoken word only."""
+Write the "script" field as one continuous paragraph — no line breaks or newline characters, ever. Never invent stats, records, ranks, or odds beyond what's given to you. No bullet points, no headers, no emoji, no hashtags — this is spoken word only."""
 
-TIKTOK_SYSTEM_PROMPT = """You are a sports broadcast scriptwriter for GetSTAM, a sports betting trends platform. You write conversational, first-person spoken video scripts (90-130 seconds) for TikTok that break down one upcoming MLB game the way a sharp, confident fan would talk through their notes out loud — not like an ad, and not like a robotic stat recital.
+TIKTOK_SYSTEM_PROMPT = """You are a sports broadcast scriptwriter for GetSTAM, a sports betting trends platform. You write conversational, first-person spoken video scripts (90-130 seconds) for TikTok that break down one upcoming NFL game the way a sharp, confident fan would talk through their notes out loud — not like an ad, and not like a robotic stat recital.
 
 TikTok restricts gambling content, so this version must stay strictly in plain sports-commentary language:
 - Never use the words/phrases: "moneyline", "money line", "spread", "against the spread", "cover"/"covers", "over/under", "over-under", "total" (as a betting term), "bet", "betting", "wager", "odds", "line", "pick", "lean", "sportsbook", "gambling", "handicap".
 - Instead: say a team is "favored" or "the underdog" (no odds numbers). Say a team's games have been "high-scoring" or "low-scoring" lately instead of talking about overs/unders. Never state a specific price, spread number, or total number — qualitative only.
-- You may freely use pitcher stats (record, ERA) — those are performance stats, not gambling terms.
+- You may freely use team rankings (offense/defense — total, passing, rushing, scoring) — those are performance stats, not gambling terms.
 
 Voice and structure:
 - Open by naming the matchup, then work through both teams' recent form, including a bit of tension or nuance where it exists (e.g. a team is hot right now but has struggled specifically against this opponent).
-- If a starting pitching matchup is provided, spend real time on it — name both pitchers, give their record/ERA, and compare them directly.
+- If team rankings are provided, spend real time on it — call out specific ranks that matter for this matchup and compare the two teams directly.
 - Use casual, natural spoken phrasing: contractions, short reactions ("Pretty good.", "Interesting."), transitions like "If you look at..." or "But if you go back...". Sentence fragments are fine when they sound like real speech.
-- Every trend comes with a confidence score (0-4) showing how often this exact pattern has historically held up — calibrate how sure you sound to match it. A 0-1 score means the historical rate is close to a coin flip (roughly 50-55%): say that plainly rather than forcing a confident prediction off a weak trend alone — point to a different factor that actually tips it (a clear pitching mismatch), or be upfront it's a genuine toss-up. A 2-3 score supports a real but moderate favor toward one side — not a lock. A 3-4 score is a strong historical signal — be genuinely assertive there.
+- Every trend comes with a confidence score (0-4) showing how often this exact pattern has historically held up — calibrate how sure you sound to match it. A 0-1 score means the historical rate is close to a coin flip (roughly 50-55%): say that plainly rather than forcing a confident prediction off a weak trend alone — point to a different factor that actually tips it (a clear rankings mismatch), or be upfront it's a genuine toss-up. A 2-3 score supports a real but moderate favor toward one side — not a lock. A 3-4 score is a strong historical signal — be genuinely assertive there.
 - Treat the trend as evidence to weigh, not an automatic prediction — don't default to assuming a streak just continues. Sometimes the sharper read is that the trend is misleading given a stronger countervailing factor, and sometimes the honest take really is that it's close to 50/50.
 - Close with ONE clear prediction on how the game goes (who wins, and whether you expect a high- or low-scoring game) either way — even "this one's a genuine toss-up, but here's the tiebreaker" counts as a clear prediction — framed as your read of the matchup, not as betting advice. Show a bit of the reasoning rather than just asserting it, so the confidence you project actually matches the strength of the signal.
 - After the prediction, invite engagement (e.g. ask viewers how they see the game going, in the comments).
 - End with a short branded sign-off mentioning getstam.com and inviting a follow for more games — vary the phrasing naturally rather than repeating the exact same sentence every time.
 
-Write the "script" field as one continuous paragraph — no line breaks or newline characters, ever. Never invent stats or records beyond what's given to you. No bullet points, no headers, no emoji, no hashtags — this is spoken word only."""
+Write the "script" field as one continuous paragraph — no line breaks or newline characters, ever. Never invent stats, records, or ranks beyond what's given to you. No bullet points, no headers, no emoji, no hashtags — this is spoken word only."""
 
 # Words/phrases that must never appear in the TikTok script, checked after generation
 # as a safety net (the prompt already omits odds numbers and forbids this vocabulary,
@@ -117,10 +114,8 @@ def sanitize_trend_for_tiktok(trend):
     """Return a copy of trend with an over/under-free description.
 
     over_streak/under_streak descriptions (both the base text and the enriched
-    historical-context suffix) contain literal "OVER"/"UNDER" wording — see
-    trend_enrichment.py's _enrich_desc and trend_context_service.py's
-    get_streak_context. Reconstruct a clean sentence from the structured
-    fields instead of trying to scrub the existing prose.
+    historical-context suffix) contain literal "OVER"/"UNDER" wording. Reconstruct
+    a clean sentence from the structured fields instead of scrubbing the prose.
     """
     if trend["type"] not in ("over_streak", "under_streak"):
         return trend
@@ -135,7 +130,39 @@ def sanitize_trend_for_tiktok(trend):
     return sanitized
 
 
-def build_user_prompt(game, ranked_trends, pitcher_matchup):
+def _rankings_lines(team_name, rankings_for_team):
+    if not rankings_for_team:
+        return f"- {team_name}: no rankings data available"
+    off = rankings_for_team.get("offense", {})
+    dff = rankings_for_team.get("defense", {})
+
+    def fmt(stats, prefix):
+        parts = []
+        for stat in ("Total", "Passing", "Rushing", "Scoring"):
+            val = stats.get(stat)
+            rank = stats.get(f"{stat} Rank")
+            if val is not None and rank is not None:
+                parts.append(f"{stat} {val} (#{rank})")
+        return f"{prefix}: " + ", ".join(parts) if parts else f"{prefix}: no data"
+
+    return f"- {team_name} {fmt(off, 'offense')}\n- {team_name} {fmt(dff, 'defense')}"
+
+
+def build_rankings_section(game, rankings):
+    home_name = game["home"]["team"]
+    away_name = game["away"]["team"]
+    home_r = rankings.get(home_name)
+    away_r = rankings.get(away_name)
+    if not home_r and not away_r:
+        return "\nNo team rankings data available for this game — do not mention rankings.\n"
+    return f"""
+Team rankings context (out of 32 teams, higher rank number = worse):
+{_rankings_lines(home_name, home_r)}
+{_rankings_lines(away_name, away_r)}
+"""
+
+
+def build_user_prompt(game, ranked_trends, rankings):
     home = game["home"]
     away = game["away"]
     totals = game.get("totals") or {}
@@ -144,27 +171,19 @@ def build_user_prompt(game, ranked_trends, pitcher_matchup):
         f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
         for i, t in enumerate(ranked_trends, start=1)
     )
+    rankings_section = build_rankings_section(game, rankings)
 
-    if pitcher_matchup:
-        pitching_section = f"""
-Starting pitching matchup:
-- {away['team']}: {pitcher_matchup['away_pitcher']} ({pitcher_matchup['away_pitcher_stats']})
-- {home['team']}: {pitcher_matchup['home_pitcher']} ({pitcher_matchup['home_pitcher_stats']})
-"""
-    else:
-        pitching_section = "\nNo starting pitching data available for this game — do not mention pitchers.\n"
-
-    return f"""Upcoming MLB game: {away['team']} at {home['team']}, {game.get('commence_time')} ET.
+    return f"""Upcoming NFL game: {away['team']} at {home['team']}, {game.get('commence_time')} ET.
 
 Betting lines:
 - Moneyline: {away['team']} {away['odds'].get('h2h')}, {home['team']} {home['odds'].get('h2h')}
 - Spread: {home['team']} {home['odds'].get('spread_point')} ({home['odds'].get('spread_price')})
 - Total: {totals.get('over_point')} (over {totals.get('over_price')} / under {totals.get('under_price')})
-{pitching_section}
+{rankings_section}
 Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
 {trend_lines}
 
-Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form, the pitching matchup (if given), and the betting lines, built primarily around trend #1 but free to reference others that add to the story. End with one clear betting takeaway grounded in the lines above, an invitation to comment, and a branded sign-off.
+Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form, the rankings context (if given), and the betting lines, built primarily around trend #1 but free to reference others that add to the story. End with one clear betting takeaway grounded in the lines above, an invitation to comment, and a branded sign-off.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
 
@@ -180,46 +199,24 @@ def _favorite_underdog_line(game):
     return f"{favorite} is favored tonight; {underdog} is the underdog. Do not state odds numbers or prices."
 
 
-def build_tiktok_user_prompt(game, ranked_trends, pitcher_matchup):
-    home = game["home"]
-    away = game["away"]
-
+def build_tiktok_user_prompt(game, ranked_trends, rankings):
     sanitized_trends = [sanitize_trend_for_tiktok(t) for t in ranked_trends]
     trend_lines = "\n".join(
         f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
         for i, t in enumerate(sanitized_trends, start=1)
     )
+    rankings_section = build_rankings_section(game, rankings)
 
-    if pitcher_matchup:
-        pitching_section = f"""
-Starting pitching matchup:
-- {away['team']}: {pitcher_matchup['away_pitcher']} ({pitcher_matchup['away_pitcher_stats']})
-- {home['team']}: {pitcher_matchup['home_pitcher']} ({pitcher_matchup['home_pitcher_stats']})
-"""
-    else:
-        pitching_section = "\nNo starting pitching data available for this game — do not mention pitchers.\n"
-
-    return f"""Upcoming MLB game: {away['team']} at {home['team']}, {game.get('commence_time')} ET.
+    return f"""Upcoming NFL game: {game['away']['team']} at {game['home']['team']}, {game.get('commence_time')} ET.
 
 {_favorite_underdog_line(game)}
-{pitching_section}
+{rankings_section}
 Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
 {trend_lines}
 
-Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form and the pitching matchup (if given), built primarily around trend #1 but free to reference others that add to the story. End with one clear prediction (who wins, high- or low-scoring), an invitation to comment, and a branded sign-off. Remember: no gambling terminology, no odds numbers.
+Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form and the rankings context (if given), built primarily around trend #1 but free to reference others that add to the story. End with one clear prediction (who wins, high- or low-scoring), an invitation to comment, and a branded sign-off. Remember: no gambling terminology, no odds numbers.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
-
-
-def find_pitcher_matchup(game, pitcher_data_for_date):
-    if not pitcher_data_for_date:
-        return None
-    home_abbr = convert_roto_team_names(game["home"]["team"])
-    away_abbr = convert_roto_team_names(game["away"]["team"])
-    for entry in pitcher_data_for_date:
-        if entry.get("home_team") == home_abbr and entry.get("away_team") == away_abbr:
-            return entry
-    return None
 
 
 def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
@@ -242,9 +239,6 @@ def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
         return None, "Claude response contained no text block"
     text = text_block.text
 
-    # strict=False: Claude's "script" text often contains literal newlines
-    # between spoken "paragraphs", which are control characters that strict
-    # JSON parsing rejects inside string values.
     try:
         data = json.loads(text, strict=False)
     except json.JSONDecodeError:
@@ -256,11 +250,6 @@ def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
         except json.JSONDecodeError as e:
             return None, f"Claude response was not valid JSON: {e}"
 
-    # Backstop: structured-output mode has occasionally produced garbled text
-    # right at embedded-newline boundaries in long string fields (e.g. a lost
-    # backslash leaving a stray "n" or "//" mid-sentence). The prompt now asks
-    # for single-paragraph text with no newlines; normalize here in case any
-    # slip through anyway.
     for key in ("hook", "script"):
         if isinstance(data.get(key), str):
             data[key] = re.sub(r"\s*[\r\n]+\s*", " ", data[key]).strip()
@@ -280,14 +269,14 @@ def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
     return data, None
 
 
-def call_claude(game, ranked_trends, pitcher_matchup):
-    prompt = build_user_prompt(game, ranked_trends, pitcher_matchup)
+def call_claude(game, ranked_trends, rankings):
+    prompt = build_user_prompt(game, ranked_trends, rankings)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(SYSTEM_PROMPT, prompt, valid_types)
 
 
-def call_claude_tiktok(game, ranked_trends, pitcher_matchup):
-    prompt = build_tiktok_user_prompt(game, ranked_trends, pitcher_matchup)
+def call_claude_tiktok(game, ranked_trends, rankings):
+    prompt = build_tiktok_user_prompt(game, ranked_trends, rankings)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
 
@@ -305,22 +294,26 @@ def run(date_str=None):
     if not date_str:
         date_str = datetime.now(eastern_tz).strftime("%Y-%m-%d")
 
-    print(f"Fetching MLB games for {date_str}...")
-    result, err = GameService.get_games_for_date("baseball_mlb", date_str)
+    print(f"Fetching NFL games for {date_str}...")
+    result, err = GameService.get_games_for_date("americanfootball_nfl", date_str)
     if err:
         print(f"Error fetching games: {err}")
         return
     games = (result or {}).get("games", [])
     print(f"Found {len(games)} games.")
+    if not games:
+        return
 
-    trend_results, err = MLBTrendsService.analyze_multiple_games_trends(games, limit=20, min_trend_length=5)
+    trend_results, err = NFLTrendsService.analyze_multiple_games_trends(games, limit=20, min_trend_length=3)
     if err:
         print(f"Error analyzing trends: {err}")
         return
-    trend_results = enrich_game_trends(trend_results, "mlb")
+    trend_results = enrich_game_trends(trend_results, "nfl")
 
     todays_trend_games = [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
     print(f"{len(todays_trend_games)} game(s) have active trends for Today's Trends.")
+    if not todays_trend_games:
+        return
 
     for entry in todays_trend_games:
         ranked = rank_game_trends(entry)
@@ -329,16 +322,34 @@ def run(date_str=None):
     if len(todays_trend_games) > MAX_VIDEO_GAMES_PER_DAY:
         print(
             f"Limiting to the top {MAX_VIDEO_GAMES_PER_DAY} game(s) by trend strength "
-            f"(of {len(todays_trend_games)}) — set MAX_VIDEO_GAMES_PER_DAY to change this."
+            f"(of {len(todays_trend_games)}) — set MAX_VIDEO_GAMES_PER_DAY_NFL to change this."
         )
         todays_trend_games = todays_trend_games[:MAX_VIDEO_GAMES_PER_DAY]
 
     try:
-        pitcher_data_by_date = get_pitcher_data_for_dates()
+        rankings = fetch_nfl_rankings()
+        # fetch_nfl_rankings() returns raw ESPN stat keys like "Total (Yds/G)"
+        # / "Total (Yds/G) Rank" — strip the units suffix so they match what
+        # _rankings_lines() looks up ("Total" / "Total Rank"), same cleanup
+        # api/external_requests/espn.py does for the site's own API response.
+        def _clean_stats(stats):
+            return {
+                key.replace(" (Yds/G)", "").replace(" (Pts/G)", ""): value
+                for key, value in stats.items()
+            }
+
+        # Reshape to {team_name: {"offense": {...}, "defense": {...}}}, matching
+        # what build_rankings_section expects (fetch_nfl_rankings returns two
+        # separate top-level dicts keyed by team name/abbreviation).
+        offense = rankings.get("offense", {})
+        defense = rankings.get("defense", {})
+        rankings_by_team = {
+            name: {"offense": _clean_stats(offense.get(name, {})), "defense": _clean_stats(defense.get(name, {}))}
+            for name in offense.keys()
+        }
     except Exception as e:
-        print(f"Warning: could not fetch pitcher data ({e}); continuing without it.")
-        pitcher_data_by_date = {}
-    pitcher_data_for_date = pitcher_data_by_date.get(date_str, [])
+        print(f"Warning: could not fetch NFL rankings ({e}); continuing without them.")
+        rankings_by_team = {}
 
     games_processed = 0
     scripts_generated = 0
@@ -357,14 +368,13 @@ def run(date_str=None):
             for t in top_trends:
                 t["_score"] = round(get_confidence_score(t), 1)
 
-            pitcher_matchup = find_pitcher_matchup(game, pitcher_data_for_date)
-            script_data, gen_err = call_claude(game, top_trends, pitcher_matchup)
-            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, pitcher_matchup)
+            script_data, gen_err = call_claude(game, top_trends, rankings_by_team)
+            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, rankings_by_team)
 
             payload = {
-                "job": "mlb_generate_trend_video_scripts",
+                "job": "nfl_generate_trend_video_scripts",
                 "generated_at": datetime.now(eastern_tz).isoformat(),
-                "sport": "mlb",
+                "sport": "nfl",
                 "date": date_str,
                 "game_id": game_id,
                 "matchup": {
@@ -375,7 +385,10 @@ def run(date_str=None):
                 "odds": {"home": game["home"]["odds"], "away": game["away"]["odds"], "totals": game.get("totals")},
                 "trends_considered": top_trends,
                 "primary_trend": top_trends[0] if top_trends else None,
-                "pitcher_matchup": pitcher_matchup,
+                "rankings": {
+                    "home": rankings_by_team.get(game["home"]["team"]),
+                    "away": rankings_by_team.get(game["away"]["team"]),
+                },
                 "model": MODEL,
                 "script": script_data,
                 "generation_error": gen_err,
@@ -406,9 +419,9 @@ def run(date_str=None):
             print(f"  [ERROR] game_id={game_id}: {e}")
             try:
                 write_output_file(date_str, game_id, {
-                    "job": "mlb_generate_trend_video_scripts",
+                    "job": "nfl_generate_trend_video_scripts",
                     "generated_at": datetime.now(eastern_tz).isoformat(),
-                    "sport": "mlb",
+                    "sport": "nfl",
                     "date": date_str,
                     "game_id": game_id,
                     "script": None,

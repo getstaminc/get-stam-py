@@ -138,7 +138,10 @@ def capture_game(page, game, date_str):
     game_id = game["game_id"]
     home_team = game["matchup"]["home_team"]
     away_team = game["matchup"]["away_team"]
-    url = f"{BASE_URL}/game-details/mlb/{slug_for_game(game['matchup'], date_str)}"
+    # Falls back to "mlb" for older script JSONs written before "sport" was
+    # stored in the payload — every sport's script generator writes it now.
+    sport = game.get("sport", "mlb")
+    url = f"{BASE_URL}/game-details/{sport}/{slug_for_game(game['matchup'], date_str)}"
     out_dir = SCREENSHOTS_ROOT / date_str / game_id
     out_dir.mkdir(parents=True, exist_ok=True)
 

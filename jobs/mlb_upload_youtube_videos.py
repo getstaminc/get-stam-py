@@ -105,6 +105,19 @@ def get_credentials():
     return creds
 
 
+# Falls back to "mlb" for older script JSONs written before "sport" was
+# stored in the payload — every sport's script generator writes it now.
+_SPORT_META = {
+    "mlb": {"hashtag": "MLB", "keyword": "baseball"},
+    "nfl": {"hashtag": "NFL", "keyword": "football"},
+    "ncaaf": {"hashtag": "CFB", "keyword": "college football"},
+}
+
+
+def _sport_meta(game):
+    return _SPORT_META.get(game.get("sport", "mlb"), {"hashtag": "Sports", "keyword": "sports"})
+
+
 def build_title(game):
     away = game["matchup"]["away_team"]
     home = game["matchup"]["home_team"]
@@ -117,6 +130,7 @@ def build_description(game):
     script_text = (game.get("script") or {}).get("script", "")
     away = game["matchup"]["away_team"]
     home = game["matchup"]["home_team"]
+    hashtag = _sport_meta(game)["hashtag"]
     return (
         f"{hook}\n\n"
         f"{script_text}\n\n"
@@ -124,14 +138,15 @@ def build_description(game):
         "GetSTAM — stats that actually matter. For entertainment purposes only. "
         "Not affiliated with any sportsbook. Must be 18+ (21+ in some jurisdictions). "
         "Gambling problem? Call 1-800-GAMBLER.\n\n"
-        "#MLB #SportsBetting #BettingTrends"
+        f"#{hashtag} #SportsBetting #BettingTrends"
     )
 
 
 def build_tags(game):
     away = game["matchup"]["away_team"]
     home = game["matchup"]["home_team"]
-    return ["MLB", "baseball", "sports betting", "betting trends", "sports picks", away, home]
+    meta = _sport_meta(game)
+    return [meta["hashtag"], meta["keyword"], "sports betting", "betting trends", "sports picks", away, home]
 
 
 def upload_video(youtube, video_path, game):

@@ -42,6 +42,7 @@ from api.routes.mlb_pitchers import mlb_pitchers_bp
 from api.routes.internal.mlb_mismatch import mlb_mismatch_bp
 from api.routes.internal.nfl_mismatch import nfl_mismatch_bp
 from api.routes.mlb_player_props import mlb_props_bp
+from api.routes.nfl_player_props import nfl_props_bp
 from api.routes.webhooks.youtube_webhook import youtube_webhook_bp
 from api.routes.blog import blog_bp
 from api.routes.admin_blog import admin_blog_bp
@@ -123,6 +124,7 @@ app.register_blueprint(mlb_pitchers_bp)
 app.register_blueprint(mlb_mismatch_bp)
 app.register_blueprint(nfl_mismatch_bp)
 app.register_blueprint(mlb_props_bp)
+app.register_blueprint(nfl_props_bp)
 app.register_blueprint(youtube_webhook_bp)
 app.register_blueprint(blog_bp)
 app.register_blueprint(admin_blog_bp)

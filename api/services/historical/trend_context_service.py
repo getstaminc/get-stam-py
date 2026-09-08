@@ -25,6 +25,8 @@ SPORT_CONFIG: Dict[str, Dict[str, str]] = {
     # moneyline (not a real spread) — see GameFAQSection.tsx's same caveat.
     'ncaaf': {'table': 'ncaaf_games', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
               'home_spread': 'home_line', 'away_spread': 'away_line'},
+    'nfl':   {'table': 'nfl_games',   'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
+              'home_spread': 'home_line', 'away_spread': 'away_line'},
     # Soccer is scoped per-league (not one shared 'soccer' pool) — mixing e.g. EPL and
     # Bundesliga history would produce a misleading continuation rate.
     'soccer_epl':        {'table': 'soccer_games', 'home_score': 'home_goals', 'away_score': 'away_goals', 'total_col': 'total_goals', 'time_col': 'start_time',

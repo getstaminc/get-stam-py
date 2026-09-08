@@ -27,6 +27,12 @@ const SPORT_CONFIG: Record<
   NFL: { apiKey: "americanfootball_nfl", historicalKey: "nfl", minTrendLength: 3 },
 };
 
+// Fixed homepage lead order — NFL first, then MLB — regardless of trend-strength
+// scores. Sports not listed here fall where their max trend score puts them (below
+// the ones that are listed).
+const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 2, MLB: 1 };
+const homepagePriority = (name: string) => HOMEPAGE_PRIORITY[name] ?? 0;
+
 // Soccer gets its own per-league homepage sections (EPL, LA LIGA, etc. rather than one
 // blended "SOCCER" section) — the grouped sportsConfig "SOCCER" entry has no single
 // path/apiKey of its own, so these are built separately rather than via SPORT_CONFIG.
@@ -253,7 +259,7 @@ export default function HomePage() {
           minTrendLength: SOCCER_MIN_TREND_LENGTH,
         }))
       : []),
-  ];
+  ].sort((a, b) => homepagePriority(b.name) - homepagePriority(a.name));
 
   const [reportedCount, setReportedCount] = useState(0);
   const [hasAnyActiveGames, setHasAnyActiveGames] = useState(false);
@@ -269,7 +275,11 @@ export default function HomePage() {
     inSeasonSports.length > 0 && reportedCount >= inSeasonSports.length;
 
   const sortedSports = allLoaded
-    ? [...inSeasonSports].sort((a, b) => (sectionScores[b.name] ?? 0) - (sectionScores[a.name] ?? 0))
+    ? [...inSeasonSports].sort(
+        (a, b) =>
+          homepagePriority(b.name) - homepagePriority(a.name) ||
+          (sectionScores[b.name] ?? 0) - (sectionScores[a.name] ?? 0)
+      )
     : inSeasonSports;
 
   const now = new Date();

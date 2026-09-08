@@ -159,20 +159,23 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     }
   }, [playerPropsLimit]);
 
-  // MLB: fetch player streaks on mount
+  // MLB / NFL: fetch player streaks on mount
   useEffect(() => {
-    if (sportKey !== 'baseball_mlb') return;
+    const streaksSport =
+      sportKey === 'baseball_mlb' ? 'mlb' :
+      sportKey === 'americanfootball_nfl' ? 'nfl' : null;
+    if (!streaksSport) return;
     const homeTeam = home.team || (game as any).home_team_name;
     const awayTeam = away.team || (game as any).away_team_name;
     if (!homeTeam && !awayTeam) return;
     const teamNames = [homeTeam, awayTeam].filter(Boolean);
-    fetch('/api/historical/player-trends/mlb', {
+    fetch(`/api/historical/player-trends/${streaksSport}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-KEY': process.env.REACT_APP_API_KEY || '',
       },
-      body: JSON.stringify({ team_names: teamNames, min_streak: 5 }),
+      body: JSON.stringify({ team_names: teamNames, min_streak: streaksSport === 'nfl' ? 3 : 5 }),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data?.data) setPlayerStreaksByTeam(data.data); })
@@ -314,8 +317,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
-      {/* MLB Player Streaks */}
-      {sportKey === 'baseball_mlb' && (
+      {/* MLB / NFL Player Streaks */}
+      {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl') && (
         (() => {
           const homeTeam = home.team || (game as any).home_team_name || "";
           const awayTeam = away.team || (game as any).away_team_name || "";

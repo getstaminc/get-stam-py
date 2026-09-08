@@ -27,7 +27,7 @@ import os
 import sys
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytz
@@ -52,6 +52,13 @@ REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trend
 
 # Independent of MLB's own cap — set MAX_VIDEO_GAMES_PER_DAY_NCAAF to change.
 MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY_NCAAF", "3"))
+
+# NCAAF plays mostly Saturday, with some games sprinkled through the week —
+# so a real "today" slate should generally be tried first (handled by run()
+# below); on a date with no active-trend games, fall back to previewing the
+# upcoming Saturday slate instead of producing nothing.
+# python's date.weekday(): Monday=0 ... Sunday=6.
+WEEKEND_FALLBACK_WEEKDAY = 5  # Saturday
 
 SCRIPT_JSON_SCHEMA = {
     "type": "object",
@@ -290,28 +297,53 @@ def write_output_file(date_str, game_id, payload):
     return out_path
 
 
-def run(date_str=None):
-    if not date_str:
-        date_str = datetime.now(eastern_tz).strftime("%Y-%m-%d")
+def _next_weekday(from_date_str, target_weekday):
+    """Next date on/after from_date_str that falls on target_weekday (Monday=0
+    ... Sunday=6) — always strictly in the future, never from_date_str itself,
+    even if from_date_str already falls on target_weekday."""
+    d = datetime.strptime(from_date_str, "%Y-%m-%d").date()
+    days_ahead = (target_weekday - d.weekday()) % 7
+    if days_ahead == 0:
+        days_ahead = 7
+    return (d + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
 
+
+def _fetch_trend_games(date_str):
+    """Games for date_str that are upcoming (not completed) and have active
+    trends. Returns [] on any error or empty result — callers decide what
+    "nothing found" means (fall back, or give up)."""
     print(f"Fetching NCAAF games for {date_str}...")
     result, err = GameService.get_games_for_date("americanfootball_ncaaf", date_str)
     if err:
         print(f"Error fetching games: {err}")
-        return
+        return []
     games = (result or {}).get("games", [])
     print(f"Found {len(games)} games.")
     if not games:
-        return
+        return []
 
     trend_results, err = NCAAFTrendsService.analyze_multiple_games_trends(games, limit=20, min_trend_length=3)
     if err:
         print(f"Error analyzing trends: {err}")
-        return
+        return []
     trend_results = enrich_game_trends(trend_results, "ncaaf")
 
-    todays_trend_games = [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
-    print(f"{len(todays_trend_games)} game(s) have active trends for Today's Trends.")
+    return [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
+
+
+def run(date_str=None):
+    if not date_str:
+        date_str = datetime.now(eastern_tz).strftime("%Y-%m-%d")
+
+    todays_trend_games = _fetch_trend_games(date_str)
+    if not todays_trend_games:
+        fallback_date = _next_weekday(date_str, WEEKEND_FALLBACK_WEEKDAY)
+        print(f"No NCAAF games with active trends on {date_str} — trying the upcoming Saturday slate ({fallback_date}) instead.")
+        todays_trend_games = _fetch_trend_games(fallback_date)
+        if todays_trend_games:
+            date_str = fallback_date
+
+    print(f"{len(todays_trend_games)} game(s) have active trends for {date_str}.")
     if not todays_trend_games:
         return
 

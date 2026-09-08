@@ -242,15 +242,9 @@ def resolve_mismatch(player_id):
     engine = _get_engine()
     dates_processed = []
     dates_skipped = []
+    merged_into = None
 
-    # Step 1: update espn_player_id in mlb_players
-    with engine.connect() as conn:
-        conn.execute(text("""
-            UPDATE mlb_players SET espn_player_id = :espn_player_id WHERE id = :player_id
-        """), {"espn_player_id": espn_player_id, "player_id": player_id})
-        conn.commit()
-
-    # Step 2: load mismatches and collect espn_event_ids per mismatch
+    # Step 1: load this player's unresolved mismatches (game dates drive the backfill below).
     with engine.connect() as conn:
         rows = conn.execute(text("""
             SELECT id, game_date, batter_props_id, pitcher_props_id,
@@ -260,14 +254,46 @@ def resolve_mismatch(player_id):
             ORDER BY game_date
         """), {"player_id": player_id}).fetchall()
         mismatch_data = [tuple(row) for row in rows]
+    mismatch_ids = [row[0] for row in mismatch_data]
 
-    # Step 3: for each mismatch, run process_game_reverse in its own connection
-    mismatch_ids_to_mark = []
-    for row in mismatch_data:
-        mismatch_id, game_date, batter_props_id, pitcher_props_id, home_team_id, away_team_id = row
+    # Step 2: point this player at the ESPN id. If another mlb_players row already owns
+    # that id (the odds and ESPN spellings each spawned their own row), merge this one
+    # into that row instead of hitting the UNIQUE(espn_player_id) constraint.
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("""
+                UPDATE mlb_players SET espn_player_id = :espn_player_id WHERE id = :player_id
+            """), {"espn_player_id": espn_player_id, "player_id": player_id})
+            conn.commit()
+        except IntegrityError:
+            conn.rollback()
+            row = conn.execute(text("""
+                SELECT id FROM mlb_players WHERE espn_player_id = :espn_player_id
+            """), {"espn_player_id": espn_player_id}).fetchone()
+            if not row:
+                return jsonify({"error": "Duplicate ESPN ID but existing player not found"}), 500
+            merged_into = row[0]
+
+            # Move props onto the existing player (skip games it already has), clear this
+            # player's mismatch rows, then drop the now-empty duplicate row
+            # (mlb_player_aliases cascades on delete).
+            for props_table in ("mlb_batter_props", "mlb_pitcher_props"):
+                conn.execute(text(f"""
+                    UPDATE {props_table} SET player_id = :target_id
+                    WHERE player_id = :src_id
+                      AND odds_event_id NOT IN (
+                          SELECT odds_event_id FROM {props_table} WHERE player_id = :target_id
+                      )
+                """), {"target_id": merged_into, "src_id": player_id})
+                conn.execute(text(f"DELETE FROM {props_table} WHERE player_id = :src_id"), {"src_id": player_id})
+            conn.execute(text("DELETE FROM mlb_player_name_mismatch WHERE player_id = :src_id"), {"src_id": player_id})
+            conn.execute(text("DELETE FROM mlb_players WHERE id = :player_id"), {"player_id": player_id})
+            conn.commit()
+
+    # Step 3: backfill actuals for each mismatch game via its sibling ESPN event.
+    for mismatch_id, game_date, batter_props_id, pitcher_props_id, home_team_id, away_team_id in mismatch_data:
         player_type = "batter" if batter_props_id else "pitcher"
         date_str = _date_str(game_date)
-        mismatch_ids_to_mark.append(mismatch_id)
 
         with engine.connect() as conn:
             eid = _find_sibling_espn_event(conn, game_date, home_team_id, away_team_id, player_id, player_type)
@@ -285,17 +311,18 @@ def resolve_mismatch(player_id):
         else:
             dates_skipped.append(date_str)
 
-    # Step 4: delete resolved mismatch records
-    if mismatch_ids_to_mark:
+    # Step 4: delete the resolved mismatch records (the merge path already cleared them).
+    if merged_into is None and mismatch_ids:
         with engine.connect() as conn:
             conn.execute(text("""
                 DELETE FROM mlb_player_name_mismatch WHERE id = ANY(:ids)
-            """), {"ids": mismatch_ids_to_mark})
+            """), {"ids": mismatch_ids})
             conn.commit()
 
     return jsonify({
         "espn_player_id_set": True,
         "espn_name": espn_name,
+        "merged_into_player_id": merged_into,
         "dates_processed": dates_processed,
         "dates_skipped": dates_skipped,
     })

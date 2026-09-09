@@ -183,6 +183,7 @@ class NFLPlayerTrendsService(BaseHistoricalService):
             meta = player_meta[player_id]
             continued, total = rates.get((player_id, stat, direction, streak_count), (None, None))
             result[meta["team_name"]].append({
+                "player_id": player_id,
                 "player_name": meta["player_name"],
                 "stat": stat,
                 "direction": direction,

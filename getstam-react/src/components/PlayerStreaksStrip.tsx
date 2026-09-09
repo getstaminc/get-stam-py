@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Box, Chip, Typography } from "@mui/material";
 
 export interface PlayerStreak {
+  player_id?: number;
   player_name: string;
   // MLB: hits/hr/rbi (+ _cover).  NFL: pass_yds/pass_tds/rush_yds/reception_yds/anytime_td
   stat:

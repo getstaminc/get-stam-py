@@ -166,12 +166,13 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     }
   }, [playerPropsLimit]);
 
-  // NFL: load player props when Player Props tab is clicked
+  // NFL: load player props on mount (not just on tab click) — the Player Streaks
+  // strip filters itself to players who have an active prop line for this game.
   useEffect(() => {
-    if (activeTab === 1 && sportKey === 'americanfootball_nfl' && !nflHasLoaded) {
+    if (sportKey === 'americanfootball_nfl' && !nflHasLoaded) {
       fetchNFLPlayerProps();
     }
-  }, [activeTab, sportKey, nflHasLoaded]);
+  }, [sportKey, nflHasLoaded]);
 
   // NFL: re-fetch when limit changes
   useEffect(() => {
@@ -361,9 +362,27 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         (() => {
           const homeTeam = home.team || (game as any).home_team_name || "";
           const awayTeam = away.team || (game as any).away_team_name || "";
+
+          // NFL: only show a streak if the player has an active prop line for this
+          // game. Match on player_id from the live props response; wait for it to
+          // load (and skip the strip entirely if props are unavailable).
+          const isNfl = sportKey === 'americanfootball_nfl';
+          if (isNfl && (!nflPlayerPropsData || nflPlayerPropsData.error)) return null;
+          const nflPropIds = isNfl
+            ? new Set(
+                ['home_team', 'away_team'].flatMap(side =>
+                  Object.values(nflPlayerPropsData?.[side]?.players ?? {})
+                    .map((p: any) => p?.player_id)
+                    .filter((id: any) => id != null)
+                )
+              )
+            : null;
+          const filterStreaks = (streaks: PlayerStreak[]) =>
+            nflPropIds ? streaks.filter(s => s.player_id != null && nflPropIds.has(s.player_id)) : streaks;
+
           const groups = [
-            { team: homeTeam, streaks: playerStreaksByTeam[homeTeam] ?? [] },
-            { team: awayTeam, streaks: playerStreaksByTeam[awayTeam] ?? [] },
+            { team: homeTeam, streaks: filterStreaks(playerStreaksByTeam[homeTeam] ?? []) },
+            { team: awayTeam, streaks: filterStreaks(playerStreaksByTeam[awayTeam] ?? []) },
           ].filter(g => g.team && g.streaks.length > 0);
           if (groups.length === 0) return null;
           return (

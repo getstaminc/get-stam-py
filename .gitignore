@@ -12,6 +12,9 @@ __pycache__/
 # Ignore the app.log file
 app.log
 
+# Ignore local job logs (daily import wrappers, launchd out/err)
+logs/
+
 # Ignore the mlb_starting_pitchers.json file
 mlb_starting_pitchers.json
 

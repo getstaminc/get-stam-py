@@ -56,8 +56,9 @@ const NFLPlayerPropsTable: React.FC<NFLPlayerPropsTableProps> = ({ players }) =>
   const hasData = Object.keys(playersData).length > 0;
   const allPlayerNames = Object.keys(playersData);
 
-  const [openPlayers, setOpenPlayers] = useState<Set<string>>(() => new Set(allPlayerNames));
-  const allExpanded = openPlayers.size === allPlayerNames.length;
+  // Collapsed by default — expand a player (or "Expand All") to see their game log.
+  const [openPlayers, setOpenPlayers] = useState<Set<string>>(() => new Set());
+  const allExpanded = allPlayerNames.length > 0 && openPlayers.size === allPlayerNames.length;
 
   const handleTogglePlayer = (name: string) => {
     setOpenPlayers(prev => {

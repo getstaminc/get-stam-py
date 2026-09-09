@@ -113,6 +113,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   // MLB player streaks state
   const [playerStreaksByTeam, setPlayerStreaksByTeam] = useState<Record<string, PlayerStreak[]>>({});
+  const [playerStreaksLoading, setPlayerStreaksLoading] = useState<boolean>(false);
 
   // MLB player props state
   const [mlbPlayerPropsData, setMlbPlayerPropsData] = useState<any>(null);
@@ -191,6 +192,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     const awayTeam = away.team || (game as any).away_team_name;
     if (!homeTeam && !awayTeam) return;
     const teamNames = [homeTeam, awayTeam].filter(Boolean);
+    setPlayerStreaksLoading(true);
     fetch(`/api/historical/player-trends/${streaksSport}`, {
       method: 'POST',
       headers: {
@@ -201,7 +203,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data?.data) setPlayerStreaksByTeam(data.data); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPlayerStreaksLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sportKey, home.team, away.team]);
 
@@ -367,6 +370,21 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           // game. Match on player_id from the live props response; wait for it to
           // load (and skip the strip entirely if props are unavailable).
           const isNfl = sportKey === 'americanfootball_nfl';
+
+          // Still fetching streaks (or, for NFL, the prop lines we filter against).
+          const streaksBusy = playerStreaksLoading || (isNfl && (nflPlayerPropsLoading || !nflHasLoaded));
+          if (streaksBusy) {
+            return (
+              <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
+                <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">Loading player streaks…</Typography>
+                </Box>
+              </Box>
+            );
+          }
+
           if (isNfl && (!nflPlayerPropsData || nflPlayerPropsData.error)) return null;
           const nflPropIds = isNfl
             ? new Set(

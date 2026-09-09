@@ -308,6 +308,12 @@ def _next_weekday(from_date_str, target_weekday):
     return (d + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
 
 
+def _has_real_odds(game):
+    home_ml = (game["home"].get("odds") or {}).get("h2h")
+    away_ml = (game["away"].get("odds") or {}).get("h2h")
+    return home_ml is not None and away_ml is not None
+
+
 def _fetch_trend_games(date_str):
     """Games for date_str that are upcoming (not completed) and have active
     trends. Returns [] on any error or empty result — callers decide what
@@ -328,7 +334,18 @@ def _fetch_trend_games(date_str):
         return []
     trend_results = enrich_game_trends(trend_results, "ncaaf")
 
-    return [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
+    candidates = [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
+
+    # Smaller/FCS-opponent matchups often have no real sportsbook coverage
+    # (moneyline/spread all null) — the site's odds box doesn't render for
+    # these, and without this filter the model has been caught inventing a
+    # "favorite" that doesn't exist. This is a betting-trends platform, so a
+    # game with nothing to bet on isn't our content regardless.
+    with_odds = [r for r in candidates if _has_real_odds(r["game"])]
+    skipped = len(candidates) - len(with_odds)
+    if skipped:
+        print(f"Skipping {skipped} game(s) with no real odds coverage (no sportsbook lines available).")
+    return with_odds
 
 
 def run(date_str=None):

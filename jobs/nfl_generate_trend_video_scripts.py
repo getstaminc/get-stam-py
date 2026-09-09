@@ -307,6 +307,12 @@ def _next_weekday(from_date_str, target_weekday):
     return (d + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
 
 
+def _has_real_odds(game):
+    home_ml = (game["home"].get("odds") or {}).get("h2h")
+    away_ml = (game["away"].get("odds") or {}).get("h2h")
+    return home_ml is not None and away_ml is not None
+
+
 def _fetch_trend_games(date_str):
     """Games for date_str that are upcoming (not completed) and have active
     trends. Returns [] on any error or empty result — callers decide what
@@ -327,7 +333,16 @@ def _fetch_trend_games(date_str):
         return []
     trend_results = enrich_game_trends(trend_results, "nfl")
 
-    return [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
+    candidates = [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
+
+    # Defensive — NFL games are always fully covered in practice, but this
+    # matches the same "no odds = not our content" filter added for NCAAF
+    # (where it's a real, observed case for smaller/FCS-opponent matchups).
+    with_odds = [r for r in candidates if _has_real_odds(r["game"])]
+    skipped = len(candidates) - len(with_odds)
+    if skipped:
+        print(f"Skipping {skipped} game(s) with no real odds coverage (no sportsbook lines available).")
+    return with_odds
 
 
 def run(date_str=None):

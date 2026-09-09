@@ -84,20 +84,29 @@ class NFLPlayerTrendsService(BaseHistoricalService):
             with conn:
                 with conn.cursor() as cur:
                     # ── Step 1: recent games (last N per player) to find current runs ──
+                    # Team comes from nfl_players.team_id (kept current by
+                    # jobs/nfl_daily_player_team_assignment_job.py) -> teams.odds_api_team_name,
+                    # falling back to the prop row's player_team_name for players with no
+                    # team_id yet. Filtering on the stale player_team_name alone put e.g. a
+                    # traded player's old-team streaks under his old team.
                     params = []
                     team_filter = ""
                     if team_names:
-                        placeholders = ", ".join(["%s"] * len(team_names))
-                        team_filter = f"AND pp.player_team_name IN ({placeholders})"
+                        ph = ", ".join(["%s"] * len(team_names))
+                        team_filter = (
+                            f"AND (t.odds_api_team_name IN ({ph}) "
+                            f"OR (p.team_id IS NULL AND pp.player_team_name IN ({ph})))"
+                        )
+                        params.extend(team_names)
                         params.extend(team_names)
 
                     recent_sql = f"""
-                        SELECT player_id, player_team_name, player_name, game_date,
+                        SELECT player_id, team_name, player_name, game_date,
                                {", ".join(_ALL_STAT_COLS)}
                         FROM (
                             SELECT
                                 pp.player_id,
-                                pp.player_team_name,
+                                COALESCE(t.odds_api_team_name, pp.player_team_name) AS team_name,
                                 p.player_name,
                                 pp.game_date,
                                 {select_cols},
@@ -106,7 +115,15 @@ class NFLPlayerTrendsService(BaseHistoricalService):
                                 ) AS rn
                             FROM nfl_player_props pp
                             JOIN nfl_players p ON p.id = pp.player_id
+                            LEFT JOIN teams t ON t.team_id = p.team_id AND t.sport = 'NFL'
                             WHERE pp.did_not_play IS NOT TRUE
+                              -- drop rows with odds but no actuals (unplayed / not-yet-imported
+                              -- games, e.g. a future slate) so they can't head the recent window
+                              AND COALESCE(
+                                    pp.actual_player_pass_yds, pp.actual_player_pass_tds,
+                                    pp.actual_player_rush_yds, pp.actual_player_reception_yds,
+                                    pp.actual_player_receptions
+                                  ) IS NOT NULL
                               {team_filter}
                         ) ranked
                         WHERE rn <= %s
@@ -207,6 +224,11 @@ class NFLPlayerTrendsService(BaseHistoricalService):
                         FROM nfl_player_props pp
                         WHERE pp.did_not_play IS NOT TRUE
                           AND pp.player_id IN ({placeholders})
+                          AND COALESCE(
+                                pp.actual_player_pass_yds, pp.actual_player_pass_tds,
+                                pp.actual_player_rush_yds, pp.actual_player_reception_yds,
+                                pp.actual_player_receptions
+                              ) IS NOT NULL
                         ORDER BY pp.player_id, pp.game_date ASC, pp.id ASC
                     """
                     cur.execute(sql, player_ids)

@@ -72,8 +72,10 @@ def _format_date(record):
 def resolve_nfl_player(player_name):
     """Return (team_name, player_id) for an NFL player name, checking aliases first.
 
-    nfl_players.team_id is not populated, so the player's team is taken from their
-    most recent nfl_player_props row (player_team_name, an Odds API full team name).
+    Team comes from nfl_players.team_id (kept current by
+    jobs/nfl_daily_player_team_assignment_job.py) mapped to teams.odds_api_team_name;
+    falls back to the most recent nfl_player_props row's player_team_name for players
+    with no team_id yet.
     """
     normalized = normalize_name(player_name)
     try:
@@ -91,6 +93,18 @@ def resolve_nfl_player(player_name):
             if not rows:
                 return None, None
             player_id = rows[0][0]
+
+        team_rows = execute_with_retry(
+            """
+            SELECT t.odds_api_team_name
+            FROM nfl_players p
+            JOIN teams t ON t.team_id = p.team_id
+            WHERE p.id = :player_id AND t.odds_api_team_name IS NOT NULL
+            """,
+            {"player_id": player_id}
+        )
+        if team_rows:
+            return team_rows[0][0], player_id
 
         team_rows = execute_with_retry(
             """

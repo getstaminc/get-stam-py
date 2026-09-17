@@ -35,12 +35,14 @@ from api.routes.historical.nhl_trends import nhl_trends_bp
 from api.routes.historical.nba_games import nba_historical_bp
 from api.routes.historical.nba_trends import nba_trends_bp
 from api.routes.historical.mlb_player_trends import bp as mlb_player_trends_bp
+from api.routes.historical.nfl_player_trends import bp as nfl_player_trends_bp
 from api.routes.historical.ncaab_trends import ncaab_trends_bp
 from api.routes.historical.meta import historical_meta_bp
 from api.routes.mlb_pitchers import mlb_pitchers_bp
 from api.routes.internal.mlb_mismatch import mlb_mismatch_bp
 from api.routes.internal.nfl_mismatch import nfl_mismatch_bp
 from api.routes.mlb_player_props import mlb_props_bp
+from api.routes.nfl_player_props import nfl_props_bp
 from api.routes.webhooks.youtube_webhook import youtube_webhook_bp
 from api.routes.blog import blog_bp
 from api.routes.admin_blog import admin_blog_bp
@@ -116,11 +118,13 @@ app.register_blueprint(nba_trends_bp)
 app.register_blueprint(ncaab_trends_bp)
 app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_player_trends_bp)
+app.register_blueprint(nfl_player_trends_bp)
 app.register_blueprint(historical_meta_bp)
 app.register_blueprint(mlb_pitchers_bp)
 app.register_blueprint(mlb_mismatch_bp)
 app.register_blueprint(nfl_mismatch_bp)
 app.register_blueprint(mlb_props_bp)
+app.register_blueprint(nfl_props_bp)
 app.register_blueprint(youtube_webhook_bp)
 app.register_blueprint(blog_bp)
 app.register_blueprint(admin_blog_bp)

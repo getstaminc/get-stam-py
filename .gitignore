@@ -15,7 +15,7 @@ app.log
 # Ignore macOS Finder metadata
 .DS_Store
 
-# Ignore pipeline run logs (e.g. scripts/run_daily_trend_video_pipeline.sh)
+# Ignore local job logs (pipeline runs, daily import wrappers, launchd out/err)
 logs/
 
 # Ignore the mlb_starting_pitchers.json file

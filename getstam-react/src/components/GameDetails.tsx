@@ -8,6 +8,7 @@ import { convertTeamNameBySport } from "../utils/teamNameConverter";
 import { TeamOdds, TeamData, TotalsData } from "../types/gameTypes";
 import PlayerPropsTable from "./PlayerPropsTable";
 import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
+import NFLPlayerPropsTable from "./NFLPlayerPropsTable";
 import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
 
 type Game = {
@@ -112,12 +113,19 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   // MLB player streaks state
   const [playerStreaksByTeam, setPlayerStreaksByTeam] = useState<Record<string, PlayerStreak[]>>({});
+  const [playerStreaksLoading, setPlayerStreaksLoading] = useState<boolean>(false);
 
   // MLB player props state
   const [mlbPlayerPropsData, setMlbPlayerPropsData] = useState<any>(null);
   const [mlbPlayerPropsLoading, setMlbPlayerPropsLoading] = useState<boolean>(false);
   const [mlbHasLoaded, setMlbHasLoaded] = useState<boolean>(false);
   const [mlbPropsSubTab, setMlbPropsSubTab] = useState<number>(0); // 0: Home, 1: Away
+
+  // NFL player props state
+  const [nflPlayerPropsData, setNflPlayerPropsData] = useState<any>(null);
+  const [nflPlayerPropsLoading, setNflPlayerPropsLoading] = useState<boolean>(false);
+  const [nflHasLoaded, setNflHasLoaded] = useState<boolean>(false);
+  const [nflPropsSubTab, setNflPropsSubTab] = useState<number>(0); // 0: Home, 1: Away
 
   // Load player props when Player Props tab is clicked (home team by default)
   useEffect(() => {
@@ -159,24 +167,44 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     }
   }, [playerPropsLimit]);
 
-  // MLB: fetch player streaks on mount
+  // NFL: load player props on mount (not just on tab click) — the Player Streaks
+  // strip filters itself to players who have an active prop line for this game.
   useEffect(() => {
-    if (sportKey !== 'baseball_mlb') return;
+    if (sportKey === 'americanfootball_nfl' && !nflHasLoaded) {
+      fetchNFLPlayerProps();
+    }
+  }, [sportKey, nflHasLoaded]);
+
+  // NFL: re-fetch when limit changes
+  useEffect(() => {
+    if (nflHasLoaded && activeTab === 1 && sportKey === 'americanfootball_nfl') {
+      fetchNFLPlayerProps();
+    }
+  }, [playerPropsLimit]);
+
+  // MLB / NFL: fetch player streaks on mount
+  useEffect(() => {
+    const streaksSport =
+      sportKey === 'baseball_mlb' ? 'mlb' :
+      sportKey === 'americanfootball_nfl' ? 'nfl' : null;
+    if (!streaksSport) return;
     const homeTeam = home.team || (game as any).home_team_name;
     const awayTeam = away.team || (game as any).away_team_name;
     if (!homeTeam && !awayTeam) return;
     const teamNames = [homeTeam, awayTeam].filter(Boolean);
-    fetch('/api/historical/player-trends/mlb', {
+    setPlayerStreaksLoading(true);
+    fetch(`/api/historical/player-trends/${streaksSport}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-KEY': process.env.REACT_APP_API_KEY || '',
       },
-      body: JSON.stringify({ team_names: teamNames, min_streak: 5 }),
+      body: JSON.stringify({ team_names: teamNames, min_streak: streaksSport === 'nfl' ? 3 : 5 }),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data?.data) setPlayerStreaksByTeam(data.data); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPlayerStreaksLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sportKey, home.team, away.team]);
 
@@ -258,6 +286,24 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     setMlbPlayerPropsLoading(false);
   };
 
+  const fetchNFLPlayerProps = async () => {
+    setNflPlayerPropsLoading(true);
+    const gameId = (game as any).game_id || '';
+    if (gameId) {
+      try {
+        const res = await fetch(`/api/odds/nfl/player-props/${gameId}?limit=${playerPropsLimit}`, {
+          headers: { "X-API-KEY": process.env.REACT_APP_API_KEY || "" },
+        });
+        const data = await res.json();
+        setNflPlayerPropsData(data);
+        setNflHasLoaded(true);
+      } catch (error) {
+        console.error('Error fetching NFL player props:', error);
+      }
+    }
+    setNflPlayerPropsLoading(false);
+  };
+
   const handlePlayerPropsLimitChange = (newLimit: number) => {
     setPlayerPropsLimit(newLimit);
   };
@@ -314,14 +360,47 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
-      {/* MLB Player Streaks */}
-      {sportKey === 'baseball_mlb' && (
+      {/* MLB / NFL Player Streaks */}
+      {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl') && (
         (() => {
           const homeTeam = home.team || (game as any).home_team_name || "";
           const awayTeam = away.team || (game as any).away_team_name || "";
+
+          // NFL: only show a streak if the player has an active prop line for this
+          // game. Match on player_id from the live props response; wait for it to
+          // load (and skip the strip entirely if props are unavailable).
+          const isNfl = sportKey === 'americanfootball_nfl';
+
+          // Still fetching streaks (or, for NFL, the prop lines we filter against).
+          const streaksBusy = playerStreaksLoading || (isNfl && (nflPlayerPropsLoading || !nflHasLoaded));
+          if (streaksBusy) {
+            return (
+              <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
+                <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">Loading player streaks…</Typography>
+                </Box>
+              </Box>
+            );
+          }
+
+          if (isNfl && (!nflPlayerPropsData || nflPlayerPropsData.error)) return null;
+          const nflPropIds = isNfl
+            ? new Set(
+                ['home_team', 'away_team'].flatMap(side =>
+                  Object.values(nflPlayerPropsData?.[side]?.players ?? {})
+                    .map((p: any) => p?.player_id)
+                    .filter((id: any) => id != null)
+                )
+              )
+            : null;
+          const filterStreaks = (streaks: PlayerStreak[]) =>
+            nflPropIds ? streaks.filter(s => s.player_id != null && nflPropIds.has(s.player_id)) : streaks;
+
           const groups = [
-            { team: homeTeam, streaks: playerStreaksByTeam[homeTeam] ?? [] },
-            { team: awayTeam, streaks: playerStreaksByTeam[awayTeam] ?? [] },
+            { team: homeTeam, streaks: filterStreaks(playerStreaksByTeam[homeTeam] ?? []) },
+            { team: awayTeam, streaks: filterStreaks(playerStreaksByTeam[awayTeam] ?? []) },
           ].filter(g => g.team && g.streaks.length > 0);
           if (groups.length === 0) return null;
           return (
@@ -346,7 +425,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
-        {sportKey === 'baseball_mlb' && !isFromDb ? (
+        {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl') && !isFromDb ? (
           <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
             <Tab label="Recent Performance" />
             <Tab label="Player Props" />
@@ -354,7 +433,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         ) : null}
 
         {/* Tab 0: Recent Performance (Historical Games) */}
-        {(activeTab === 0 || sportKey !== 'baseball_mlb') && (
+        {(activeTab === 0 || !['baseball_mlb', 'americanfootball_nfl'].includes(sportKey)) && (
           <>
             <Box sx={{ 
               display: 'flex', 
@@ -624,6 +703,80 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                         tableType="pitcher"
                       />
                     </Box>
+                  )}
+                </Box>
+              </Paper>
+            </Box>
+          ) : null
+        )}
+
+        {/* Tab 1: NFL Player Props */}
+        {activeTab === 1 && sportKey === 'americanfootball_nfl' && (
+          !nflHasLoaded || nflPlayerPropsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+              <CircularProgress />
+              <Typography variant="body2" sx={{ ml: 2 }}>Loading player props...</Typography>
+            </Box>
+          ) : nflPlayerPropsData && nflPlayerPropsData.error ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+              <Typography variant="body1" color="text.secondary">
+                {nflPlayerPropsData.error}
+              </Typography>
+            </Box>
+          ) : nflPlayerPropsData ? (
+            <Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                mb: 2,
+                gap: { xs: 2, sm: 0 }
+              }}>
+                <Typography variant="h5" sx={{ mb: 0, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                  Player Props
+                </Typography>
+                <FormControl size="small" sx={{ minWidth: 120, width: { xs: '100%', sm: 'auto' } }}>
+                  <InputLabel id="nfl-player-props-limit-label">Show Games</InputLabel>
+                  <Select
+                    labelId="nfl-player-props-limit-label"
+                    id="nfl-player-props-limit-select"
+                    value={playerPropsLimit}
+                    label="Show Games"
+                    onChange={(e) => handlePlayerPropsLimitChange(e.target.value as number)}
+                  >
+                    <MenuItem value={3}>Last 3</MenuItem>
+                    <MenuItem value={5}>Last 5</MenuItem>
+                    <MenuItem value={10}>Last 10</MenuItem>
+                    <MenuItem value={15}>Last 15</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Paper sx={{ mt: 2 }}>
+                <Tabs
+                  value={nflPropsSubTab}
+                  onChange={(_, v) => setNflPropsSubTab(v)}
+                  variant="fullWidth"
+                  sx={{
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    '& .MuiTab-root': {
+                      fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                      padding: { xs: '8px 4px', sm: '12px 16px' }
+                    }
+                  }}
+                >
+                  <Tab label={`${nflPlayerPropsData.home_team?.name || 'Home'} Players`} />
+                  <Tab label={`${nflPlayerPropsData.away_team?.name || 'Away'} Players`} />
+                </Tabs>
+
+                <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                  {nflPropsSubTab === 0 && (
+                    <NFLPlayerPropsTable players={nflPlayerPropsData.home_team?.players || {}} />
+                  )}
+                  {nflPropsSubTab === 1 && (
+                    <NFLPlayerPropsTable players={nflPlayerPropsData.away_team?.players || {}} />
                   )}
                 </Box>
               </Paper>

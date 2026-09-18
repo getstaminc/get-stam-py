@@ -488,6 +488,18 @@ def run(date_str=None):
         f"tiktok_generated={tiktok_generated} tiktok_failed={tiktok_failed}"
     )
 
+    if scripts_generated > 0:
+        # Scripts may have been filed under a fallback date (e.g. previewing
+        # the upcoming Saturday slate on an off day) rather than today's date.
+        # Downstream steps (screenshots/video/upload/email) need to know the
+        # exact date_str actually used so they process the right folder and
+        # build working page URLs — the orchestrator reads this marker file.
+        try:
+            marker_path = OUTPUT_ROOT.parent / ".ncaaf_last_run_date"
+            marker_path.write_text(date_str)
+        except Exception:
+            pass
+
 
 if __name__ == "__main__":
     date_arg = sys.argv[1] if len(sys.argv) > 1 else None

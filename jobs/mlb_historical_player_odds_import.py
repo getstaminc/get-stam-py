@@ -482,6 +482,12 @@ def insert_historical_props_to_db(conn, props_data: List[Dict]) -> tuple:
             error_str = str(e).splitlines()[0]  # first line only — keeps output readable
             print(f"    ❌ Error processing {player_name}: {error_str}")
             player_errors.append((player_name, error_str))
+            # Without this, a single dropped connection/timeout leaves the
+            # transaction in a failed state and every subsequent player in this
+            # (and later) events fails too with "Can't reconnect until invalid
+            # transaction is rolled back" -- silently losing the whole date's
+            # data even though the outer loop still reports success.
+            conn.rollback()
             continue
 
     return inserted_count, player_errors
@@ -546,6 +552,11 @@ def import_historical_player_odds_for_date(target_date: date, conn) -> int:
             inserted, errors = insert_historical_props_to_db(conn, props_data)
 
             total_props_imported += inserted
+
+            # Commit per event rather than waiting for the whole date: a MLB date
+            # is ~15 games, and one bad event further down shouldn't be able to
+            # roll back events already successfully inserted earlier in the day.
+            conn.commit()
 
             if errors:
                 unique_errors = {}

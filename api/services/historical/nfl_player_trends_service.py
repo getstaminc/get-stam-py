@@ -6,6 +6,10 @@ from .base_service import BaseHistoricalService
 # Number of most-recent games per player scanned for an active run.
 RECENT_GAMES_WINDOW = 20
 
+# Minimum prior occurrences of a streak before its continuation rate is worth
+# showing — below this the rate is noise (0/1, 0/2) dressed up as a percentage.
+MIN_CONTINUATION_SAMPLE = 5
+
 # stat key -> (actual column, odds/line column)
 STAT_COLUMNS = {
     "pass_yds":      ("actual_player_pass_yds",      "odds_player_pass_yds"),
@@ -182,6 +186,7 @@ class NFLPlayerTrendsService(BaseHistoricalService):
         for player_id, stat, direction, streak_count, line in active_streaks:
             meta = player_meta[player_id]
             continued, total = rates.get((player_id, stat, direction, streak_count), (None, None))
+            has_rate = bool(total) and total >= MIN_CONTINUATION_SAMPLE
             result[meta["team_name"]].append({
                 "player_id": player_id,
                 "player_name": meta["player_name"],
@@ -189,8 +194,8 @@ class NFLPlayerTrendsService(BaseHistoricalService):
                 "direction": direction,
                 "streak_count": streak_count,
                 "line": line,
-                "continuation_rate": round(continued / total, 3) if total else None,
-                "sample_size": total if total else None,
+                "continuation_rate": round(continued / total, 3) if has_rate else None,
+                "sample_size": total if has_rate else None,
             })
 
         for team_name in result:

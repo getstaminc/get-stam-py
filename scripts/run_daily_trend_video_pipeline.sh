@@ -1,15 +1,13 @@
 #!/bin/bash
 # Daily trend video pipeline (MLB + NFL + NCAAF) — runs the full chain end to end:
-#   1. Generate scripts (Claude) for the day's best-trending games, per sport
+#   1. Generate scripts (Claude) for the day's best-trending games, per the
+#      weekly schedule in jobs/plan_daily_trend_videos.py (which sports run,
+#      for which date — including "look ahead" previews of a future slate —
+#      and with what per-day max/kickoff-time preference)
 #   2. Screenshot each game's page (needs the local React + Flask servers)
 #   3. Assemble videos (voiceover + Ken Burns/slide effects)
 #   4. Upload to YouTube (per YOUTUBE_PRIVACY_STATUS, currently public)
 #   5. Email a recap to DAILY_VIDEO_EMAIL_TO
-#
-# NFL and NCAAF generate on every run: a real matchup slate when games exist
-# for the day, or (on off days) a preview of the upcoming Sunday/Saturday
-# slate instead — see nfl_generate_trend_video_scripts.py /
-# ncaaf_generate_trend_video_scripts.py.
 #
 # Meant to run unattended via launchd (see scripts/com.getstam.mlbtrendvideos.plist,
 # which wraps this in `caffeinate -i` so the Mac can't fall back asleep
@@ -107,10 +105,9 @@ fi
 # "ran and failed" (screenshot nav timeouts, transient API errors, etc.),
 # not "hung forever with no timeout" — that's a known gap, not a design win.
 # run_step takes an explicit date (rather than always reading the global
-# DATE_ARG) because NFL's script generator can file its output under a
-# fallback date different from today's (see below) — the shared
-# screenshots/video/upload/email steps need to be pointed at whichever date
-# actually has content.
+# DATE_ARG) because a sport can file its output under a date other than
+# today's (a "look ahead" preview) — the shared screenshots/video/upload/
+# email steps need to be pointed at whichever date actually has content.
 run_step() {
   local script="$1"
   local date_val="$2"
@@ -129,55 +126,38 @@ run_step() {
   return 1
 }
 
-# Resolve "today" the same way the Python jobs do (US/Eastern) so it matches
-# exactly what mlb_generate_trend_video_scripts.py used when DATE_ARG is empty.
-if [ -n "$DATE_ARG" ]; then
-  MLB_DATE="$DATE_ARG"
-else
-  MLB_DATE="$("$PYTHON" -c "from datetime import datetime; import pytz; print(datetime.now(pytz.timezone('US/Eastern')).strftime('%Y-%m-%d'))")"
+DATES_MARKER="$REPO_ROOT/output/.trend_video_dates.json"
+rm -f "$DATES_MARKER"   # avoid reprocessing a stale date list if this run produces nothing
+
+run_step "plan_daily_trend_videos.py" "$DATE_ARG" 2 || exit 1
+
+if [ ! -f "$DATES_MARKER" ]; then
+  echo "No dates_marker written — nothing to screenshot/render/publish today."
+  echo "=== Daily trend video pipeline finished at $(date) ==="
+  exit 0
 fi
 
-NFL_MARKER="$REPO_ROOT/output/.nfl_last_run_date"
-NCAAF_MARKER="$REPO_ROOT/output/.ncaaf_last_run_date"
-rm -f "$NFL_MARKER" "$NCAAF_MARKER"   # avoid reprocessing a stale date if a sport generates nothing this run
+# plan_daily_trend_videos.py writes a JSON array of every date that got at
+# least one script this run (today's date, plus any look-ahead date like an
+# upcoming Saturday/Sunday preview). Run the shared pipeline once per date.
+# (mapfile/readarray isn't available — macOS ships bash 3.2, not 4+.)
+TREND_DATES=()
+while IFS= read -r line; do
+  [ -n "$line" ] && TREND_DATES+=("$line")
+done < <("$PYTHON" -c "import json; print('\n'.join(json.load(open('$DATES_MARKER'))))")
 
-run_step "mlb_generate_trend_video_scripts.py" "$DATE_ARG" 2 || exit 1
-run_step "nfl_generate_trend_video_scripts.py" "$DATE_ARG" 2     # don't abort MLB publishing over an NFL issue
-run_step "ncaaf_generate_trend_video_scripts.py" "$DATE_ARG" 2   # don't abort MLB publishing over an NCAAF issue
+if [ "${#TREND_DATES[@]}" -eq 0 ]; then
+  echo "No games with active trends today — nothing to screenshot/render/publish."
+  echo "=== Daily trend video pipeline finished at $(date) ==="
+  exit 0
+fi
 
-run_step "mlb_generate_trend_video_screenshots.py" "$MLB_DATE" 2 || exit 1
-run_step "mlb_generate_trend_videos.py" "$MLB_DATE" 2 || exit 1
-run_step "mlb_upload_youtube_videos.py" "$MLB_DATE" 2   # don't abort the email step if YouTube upload has an issue
-run_step "mlb_email_daily_videos.py" "$MLB_DATE" 2
-
-# NFL/NCAAF preview themselves on off days by pulling the upcoming Sunday/
-# Saturday slate, filing scripts under that future date instead of today's
-# (see nfl_generate_trend_video_scripts.py / ncaaf_generate_trend_video_scripts.py).
-# When that happens, run the shared pipeline again for that date so those
-# scripts actually get screenshotted/rendered/published instead of sitting
-# untouched. Track which dates are already covered so two sports landing on
-# the same fallback date don't get double-processed.
-PROCESSED_DATES=("$MLB_DATE")
-
-for marker_and_label in "$NFL_MARKER:NFL" "$NCAAF_MARKER:NCAAF"; do
-  marker_file="${marker_and_label%%:*}"
-  label="${marker_and_label##*:}"
-  [ -f "$marker_file" ] || continue
-  this_date="$(cat "$marker_file")"
-  [ -z "$this_date" ] && continue
-
-  already_done=0
-  for d in "${PROCESSED_DATES[@]}"; do
-    [ "$d" = "$this_date" ] && already_done=1
-  done
-  if [ "$already_done" -eq 0 ]; then
-    echo "--- $label filed scripts under $this_date — running the shared pipeline again for that date ---"
-    run_step "mlb_generate_trend_video_screenshots.py" "$this_date" 2
-    run_step "mlb_generate_trend_videos.py" "$this_date" 2
-    run_step "mlb_upload_youtube_videos.py" "$this_date" 2
-    run_step "mlb_email_daily_videos.py" "$this_date" 2
-    PROCESSED_DATES+=("$this_date")
-  fi
+for this_date in "${TREND_DATES[@]}"; do
+  echo "--- Running shared pipeline steps for $this_date ---"
+  run_step "mlb_generate_trend_video_screenshots.py" "$this_date" 2 || exit 1
+  run_step "mlb_generate_trend_videos.py" "$this_date" 2 || exit 1
+  run_step "mlb_upload_youtube_videos.py" "$this_date" 2   # don't abort the email step if YouTube upload has an issue
+  run_step "mlb_email_daily_videos.py" "$this_date" 2
 done
 
 echo "=== Daily trend video pipeline finished at $(date) ==="

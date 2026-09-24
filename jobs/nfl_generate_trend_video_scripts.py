@@ -17,6 +17,11 @@ the same directory MLB writes into, since downstream steps (screenshots,
 video assembly, YouTube upload, email) are already sport-agnostic and just
 glob everything in that folder for the date.
 
+Which day(s) this actually gets run for, with what date/max/preferences, is
+decided by jobs/plan_daily_trend_videos.py (see that file for the weekly
+schedule) — this module no longer auto-falls-back to a future date on its
+own; run() just generates for whatever date_str it's given.
+
 Usage:
   venv/bin/python jobs/nfl_generate_trend_video_scripts.py [YYYY-MM-DD]
 
@@ -27,7 +32,7 @@ import os
 import sys
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import pytz
@@ -43,6 +48,7 @@ from api.services.historical.nfl_trends_service import NFLTrendsService
 from api.services.historical.trend_enrichment import enrich_game_trends
 from api.services.historical.trend_scoring import rank_game_trends, get_confidence_score
 from nfl_rankings import fetch_nfl_rankings
+from jobs.trend_video_common import select_top_games, LOOKAHEAD_PROMPT_NOTE
 
 eastern_tz = pytz.timezone("US/Eastern")
 
@@ -50,14 +56,10 @@ MODEL = "claude-sonnet-5"
 OUTPUT_ROOT = Path(__file__).resolve().parent.parent / "output" / "scripts"
 REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trends_referenced", "estimated_word_count")
 
-# Independent of MLB's own cap — set MAX_VIDEO_GAMES_PER_DAY_NFL to change.
+# Default when run() isn't given an explicit max_games (e.g. manual/testing
+# invocation) — set MAX_VIDEO_GAMES_PER_DAY_NFL to change. The daily
+# automated run always passes an explicit max per jobs/plan_daily_trend_videos.py.
 MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY_NFL", "3"))
-
-# NFL only plays Thu/Sun/Mon — running this daily would go dark Tue/Wed/Fri/Sat.
-# On a date with no active-trend games, fall back to previewing the upcoming
-# Sunday slate instead (the main weekend games) rather than producing nothing.
-# python's date.weekday(): Monday=0 ... Sunday=6.
-WEEKEND_FALLBACK_WEEKDAY = 6  # Sunday
 
 SCRIPT_JSON_SCHEMA = {
     "type": "object",
@@ -117,23 +119,40 @@ _TIKTOK_BANNED_PATTERN = re.compile(
 
 
 def sanitize_trend_for_tiktok(trend):
-    """Return a copy of trend with an over/under-free description.
+    """Return a copy of trend with a gambling-term-free description.
 
     over_streak/under_streak descriptions (both the base text and the enriched
-    historical-context suffix) contain literal "OVER"/"UNDER" wording. Reconstruct
-    a clean sentence from the structured fields instead of scrubbing the prose.
+    historical-context suffix) contain literal "OVER"/"UNDER" wording.
+    cover_streak/no_cover_streak descriptions contain literal "cover" wording
+    (see trend_enrichment.py's _enrich_desc and trend_context_service.py's
+    get_streak_context) — a real game with a no_cover_streak as its top trend
+    failed TikTok generation 4/4 times in a row because of this before the
+    cover_streak branch was added below. Reconstruct a clean sentence from the
+    structured fields instead of trying to scrub the existing prose.
     """
-    if trend["type"] not in ("over_streak", "under_streak"):
-        return trend
+    if trend["type"] in ("over_streak", "under_streak"):
+        sanitized = dict(trend)
+        direction = "high-scoring" if trend["type"] == "over_streak" else "low-scoring"
+        desc = f"This team's games have been {direction} lately — {trend['count']} straight"
+        rate = trend.get("continuation_rate")
+        if rate is not None:
+            desc += f", and that pattern has continued about {round(rate * 100)}% of the time historically"
+        sanitized["description"] = desc
+        return sanitized
 
-    sanitized = dict(trend)
-    direction = "high-scoring" if trend["type"] == "over_streak" else "low-scoring"
-    desc = f"This team's games have been {direction} lately — {trend['count']} straight"
-    rate = trend.get("continuation_rate")
-    if rate is not None:
-        desc += f", and that pattern has continued about {round(rate * 100)}% of the time historically"
-    sanitized["description"] = desc
-    return sanitized
+    if trend["type"] in ("cover_streak", "no_cover_streak"):
+        sanitized = dict(trend)
+        match = re.match(r"^(.+?) (?:failed to cover|covered) \d+ straight", trend["description"])
+        team = match.group(1) if match else "This team"
+        verb = "beaten expectations" if trend["type"] == "cover_streak" else "fallen short of expectations"
+        desc = f"{team} has {verb} in {trend['count']} straight games"
+        rate = trend.get("continuation_rate")
+        if rate is not None:
+            desc += f", and that pattern has continued about {round(rate * 100)}% of the time historically"
+        sanitized["description"] = desc
+        return sanitized
+
+    return trend
 
 
 def _rankings_lines(team_name, rankings_for_team):
@@ -168,7 +187,7 @@ Team rankings context (out of 32 teams, higher rank number = worse):
 """
 
 
-def build_user_prompt(game, ranked_trends, rankings):
+def build_user_prompt(game, ranked_trends, rankings, lookahead=False):
     home = game["home"]
     away = game["away"]
     totals = game.get("totals") or {}
@@ -179,7 +198,7 @@ def build_user_prompt(game, ranked_trends, rankings):
     )
     rankings_section = build_rankings_section(game, rankings)
 
-    return f"""Upcoming NFL game: {away['team']} at {home['team']}, {game.get('commence_time')} ET.
+    prompt = f"""Upcoming NFL game: {away['team']} at {home['team']}, {game.get('commence_time')} ET.
 
 Betting lines:
 - Moneyline: {away['team']} {away['odds'].get('h2h')}, {home['team']} {home['odds'].get('h2h')}
@@ -192,6 +211,9 @@ Ranked trends for this game (most significant first; confidence score 0-4, highe
 Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form, the rankings context (if given), and the betting lines, built primarily around trend #1 but free to reference others that add to the story. End with one clear betting takeaway grounded in the lines above, an invitation to comment, and a branded sign-off.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
+    if lookahead:
+        prompt += LOOKAHEAD_PROMPT_NOTE
+    return prompt
 
 
 def _favorite_underdog_line(game):
@@ -205,7 +227,7 @@ def _favorite_underdog_line(game):
     return f"{favorite} is favored tonight; {underdog} is the underdog. Do not state odds numbers or prices."
 
 
-def build_tiktok_user_prompt(game, ranked_trends, rankings):
+def build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=False):
     sanitized_trends = [sanitize_trend_for_tiktok(t) for t in ranked_trends]
     trend_lines = "\n".join(
         f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
@@ -213,7 +235,7 @@ def build_tiktok_user_prompt(game, ranked_trends, rankings):
     )
     rankings_section = build_rankings_section(game, rankings)
 
-    return f"""Upcoming NFL game: {game['away']['team']} at {game['home']['team']}, {game.get('commence_time')} ET.
+    prompt = f"""Upcoming NFL game: {game['away']['team']} at {game['home']['team']}, {game.get('commence_time')} ET.
 
 {_favorite_underdog_line(game)}
 {rankings_section}
@@ -223,6 +245,9 @@ Ranked trends for this game (most significant first; confidence score 0-4, highe
 Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form and the rankings context (if given), built primarily around trend #1 but free to reference others that add to the story. End with one clear prediction (who wins, high- or low-scoring), an invitation to comment, and a branded sign-off. Remember: no gambling terminology, no odds numbers.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
+    if lookahead:
+        prompt += LOOKAHEAD_PROMPT_NOTE
+    return prompt
 
 
 def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
@@ -275,14 +300,14 @@ def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
     return data, None
 
 
-def call_claude(game, ranked_trends, rankings):
-    prompt = build_user_prompt(game, ranked_trends, rankings)
+def call_claude(game, ranked_trends, rankings, lookahead=False):
+    prompt = build_user_prompt(game, ranked_trends, rankings, lookahead=lookahead)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(SYSTEM_PROMPT, prompt, valid_types)
 
 
-def call_claude_tiktok(game, ranked_trends, rankings):
-    prompt = build_tiktok_user_prompt(game, ranked_trends, rankings)
+def call_claude_tiktok(game, ranked_trends, rankings, lookahead=False):
+    prompt = build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=lookahead)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
 
@@ -294,17 +319,6 @@ def write_output_file(date_str, game_id, payload):
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2, default=str)
     return out_path
-
-
-def _next_weekday(from_date_str, target_weekday):
-    """Next date on/after from_date_str that falls on target_weekday (Monday=0
-    ... Sunday=6) — always strictly in the future, never from_date_str itself,
-    even if from_date_str already falls on target_weekday."""
-    d = datetime.strptime(from_date_str, "%Y-%m-%d").date()
-    days_ahead = (target_weekday - d.weekday()) % 7
-    if days_ahead == 0:
-        days_ahead = 7
-    return (d + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
 
 
 def _has_real_odds(game):
@@ -345,32 +359,39 @@ def _fetch_trend_games(date_str):
     return with_odds
 
 
-def run(date_str=None):
+def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
+    """Generate NFL trend video scripts for date_str.
+
+    max_games: cap on how many games get a video (defaults to
+        MAX_VIDEO_GAMES_PER_DAY_NFL for manual/standalone runs — the daily
+        automated run always passes this explicitly, see plan_daily_trend_videos.py).
+    lookahead: True when date_str isn't "today" (a preview of a future
+        slate) — tells the script to open with "looking ahead" framing
+        instead of implying the game is happening today.
+    time_pref: optional key into trend_video_common.TIME_PREFERENCES, a soft
+        tiebreak toward games in a given kickoff-time window.
+
+    Returns (date_str, scripts_generated) so callers can track which dates
+    actually received content.
+    """
     if not date_str:
         date_str = datetime.now(eastern_tz).strftime("%Y-%m-%d")
+    if max_games is None:
+        max_games = MAX_VIDEO_GAMES_PER_DAY
 
     todays_trend_games = _fetch_trend_games(date_str)
-    if not todays_trend_games:
-        fallback_date = _next_weekday(date_str, WEEKEND_FALLBACK_WEEKDAY)
-        print(f"No NFL games with active trends on {date_str} — trying the upcoming Sunday slate ({fallback_date}) instead.")
-        todays_trend_games = _fetch_trend_games(fallback_date)
-        if todays_trend_games:
-            date_str = fallback_date
-
     print(f"{len(todays_trend_games)} game(s) have active trends for {date_str}.")
     if not todays_trend_games:
-        return
+        return date_str, 0
 
     for entry in todays_trend_games:
         ranked = rank_game_trends(entry)
         entry["_top_trend_score"] = get_confidence_score(ranked[0]) if ranked else 0
-    todays_trend_games.sort(key=lambda e: e["_top_trend_score"], reverse=True)
-    if len(todays_trend_games) > MAX_VIDEO_GAMES_PER_DAY:
-        print(
-            f"Limiting to the top {MAX_VIDEO_GAMES_PER_DAY} game(s) by trend strength "
-            f"(of {len(todays_trend_games)}) — set MAX_VIDEO_GAMES_PER_DAY_NFL to change this."
-        )
-        todays_trend_games = todays_trend_games[:MAX_VIDEO_GAMES_PER_DAY]
+    total_qualifying = len(todays_trend_games)
+    todays_trend_games = select_top_games(todays_trend_games, max_games, time_pref=time_pref, eastern_tz=eastern_tz)
+    if total_qualifying > max_games:
+        pref_note = f" (time preference: {time_pref})" if time_pref else ""
+        print(f"Limiting to the top {max_games} game(s) by trend strength (of {total_qualifying}){pref_note}.")
 
     try:
         rankings = fetch_nfl_rankings()
@@ -414,14 +435,15 @@ def run(date_str=None):
             for t in top_trends:
                 t["_score"] = round(get_confidence_score(t), 1)
 
-            script_data, gen_err = call_claude(game, top_trends, rankings_by_team)
-            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, rankings_by_team)
+            script_data, gen_err = call_claude(game, top_trends, rankings_by_team, lookahead=lookahead)
+            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, rankings_by_team, lookahead=lookahead)
 
             payload = {
                 "job": "nfl_generate_trend_video_scripts",
                 "generated_at": datetime.now(eastern_tz).isoformat(),
                 "sport": "nfl",
                 "date": date_str,
+                "lookahead": lookahead,
                 "game_id": game_id,
                 "matchup": {
                     "away_team": game["away"]["team"],
@@ -485,17 +507,7 @@ def run(date_str=None):
         f"tiktok_generated={tiktok_generated} tiktok_failed={tiktok_failed}"
     )
 
-    if scripts_generated > 0:
-        # Scripts may have been filed under a fallback date (e.g. previewing
-        # the upcoming Sunday slate on an off day) rather than today's date.
-        # Downstream steps (screenshots/video/upload/email) need to know the
-        # exact date_str actually used so they process the right folder and
-        # build working page URLs — the orchestrator reads this marker file.
-        try:
-            marker_path = OUTPUT_ROOT.parent / ".nfl_last_run_date"
-            marker_path.write_text(date_str)
-        except Exception:
-            pass
+    return date_str, scripts_generated
 
 
 if __name__ == "__main__":

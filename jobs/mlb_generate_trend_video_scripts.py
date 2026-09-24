@@ -43,7 +43,13 @@ from api.services.historical.trend_enrichment import enrich_game_trends
 from api.services.historical.trend_scoring import rank_game_trends, get_confidence_score
 from shared_utils import convert_roto_team_names
 from mlb_pitchers import get_pitcher_data_for_dates
-from jobs.trend_video_common import select_top_games, LOOKAHEAD_PROMPT_NOTE
+from jobs.trend_video_common import (
+    select_top_games,
+    LOOKAHEAD_PROMPT_NOTE,
+    annotate_live_series,
+    gather_extra_context,
+    format_extra_context,
+)
 
 eastern_tz = pytz.timezone("US/Eastern")
 
@@ -136,7 +142,7 @@ def sanitize_trend_for_tiktok(trend):
     return sanitized
 
 
-def build_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=False):
+def build_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=False, extra_context=None):
     home = game["home"]
     away = game["away"]
     totals = game.get("totals") or {}
@@ -145,6 +151,7 @@ def build_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=False):
         f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
         for i, t in enumerate(ranked_trends, start=1)
     )
+    extra_context_section = format_extra_context(extra_context)
 
     if pitcher_matchup:
         pitching_section = f"""
@@ -164,7 +171,7 @@ Betting lines:
 {pitching_section}
 Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
 {trend_lines}
-
+{extra_context_section}
 Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form, the pitching matchup (if given), and the betting lines, built primarily around trend #1 but free to reference others that add to the story. End with one clear betting takeaway grounded in the lines above, an invitation to comment, and a branded sign-off.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
@@ -184,7 +191,7 @@ def _favorite_underdog_line(game):
     return f"{favorite} is favored tonight; {underdog} is the underdog. Do not state odds numbers or prices."
 
 
-def build_tiktok_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=False):
+def build_tiktok_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=False, extra_context=None):
     home = game["home"]
     away = game["away"]
 
@@ -193,6 +200,7 @@ def build_tiktok_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=Fal
         f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
         for i, t in enumerate(sanitized_trends, start=1)
     )
+    extra_context_section = format_extra_context(extra_context)
 
     if pitcher_matchup:
         pitching_section = f"""
@@ -209,7 +217,7 @@ Starting pitching matchup:
 {pitching_section}
 Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
 {trend_lines}
-
+{extra_context_section}
 Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form and the pitching matchup (if given), built primarily around trend #1 but free to reference others that add to the story. End with one clear prediction (who wins, high- or low-scoring), an invitation to comment, and a branded sign-off. Remember: no gambling terminology, no odds numbers.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
@@ -287,14 +295,14 @@ def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
     return data, None
 
 
-def call_claude(game, ranked_trends, pitcher_matchup, lookahead=False):
-    prompt = build_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=lookahead)
+def call_claude(game, ranked_trends, pitcher_matchup, lookahead=False, extra_context=None):
+    prompt = build_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=lookahead, extra_context=extra_context)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(SYSTEM_PROMPT, prompt, valid_types)
 
 
-def call_claude_tiktok(game, ranked_trends, pitcher_matchup, lookahead=False):
-    prompt = build_tiktok_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=lookahead)
+def call_claude_tiktok(game, ranked_trends, pitcher_matchup, lookahead=False, extra_context=None):
+    prompt = build_tiktok_user_prompt(game, ranked_trends, pitcher_matchup, lookahead=lookahead, extra_context=extra_context)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
 
@@ -372,14 +380,20 @@ def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
         games_processed += 1
 
         try:
+            home_team = game["home"]["team"]
+            away_team = game["away"]["team"]
             ranked = rank_game_trends(entry)
+            ranked = annotate_live_series(ranked, "mlb", home_team, away_team, date_str)
             top_trends = ranked[:5]
             for t in top_trends:
                 t["_score"] = round(get_confidence_score(t), 1)
 
+            extra_context = gather_extra_context(entry, "mlb", game, home_team, away_team, tiktok=False)
+            extra_context_tiktok = gather_extra_context(entry, "mlb", game, home_team, away_team, tiktok=True)
+
             pitcher_matchup = find_pitcher_matchup(game, pitcher_data_for_date)
-            script_data, gen_err = call_claude(game, top_trends, pitcher_matchup, lookahead=lookahead)
-            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, pitcher_matchup, lookahead=lookahead)
+            script_data, gen_err = call_claude(game, top_trends, pitcher_matchup, lookahead=lookahead, extra_context=extra_context)
+            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, pitcher_matchup, lookahead=lookahead, extra_context=extra_context_tiktok)
 
             payload = {
                 "job": "mlb_generate_trend_video_scripts",
@@ -395,6 +409,8 @@ def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
                 },
                 "odds": {"home": game["home"]["odds"], "away": game["away"]["odds"], "totals": game.get("totals")},
                 "trends_considered": top_trends,
+                "extra_context": extra_context,
+                "extra_context_tiktok": extra_context_tiktok,
                 "primary_trend": top_trends[0] if top_trends else None,
                 "pitcher_matchup": pitcher_matchup,
                 "model": MODEL,

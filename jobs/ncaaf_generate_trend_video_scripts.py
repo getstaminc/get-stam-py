@@ -48,7 +48,13 @@ from api.services.historical.ncaaf_trends_service import NCAAFTrendsService
 from api.services.historical.trend_enrichment import enrich_game_trends
 from api.services.historical.trend_scoring import rank_game_trends, get_confidence_score
 from ncaaf_rankings import fetch_ncaaf_rankings
-from jobs.trend_video_common import select_top_games, LOOKAHEAD_PROMPT_NOTE
+from jobs.trend_video_common import (
+    select_top_games,
+    LOOKAHEAD_PROMPT_NOTE,
+    annotate_live_series,
+    gather_extra_context,
+    format_extra_context,
+)
 
 eastern_tz = pytz.timezone("US/Eastern")
 
@@ -187,7 +193,7 @@ Team rankings context (out of 32 teams, higher rank number = worse):
 """
 
 
-def build_user_prompt(game, ranked_trends, rankings, lookahead=False):
+def build_user_prompt(game, ranked_trends, rankings, lookahead=False, extra_context=None):
     home = game["home"]
     away = game["away"]
     totals = game.get("totals") or {}
@@ -197,6 +203,7 @@ def build_user_prompt(game, ranked_trends, rankings, lookahead=False):
         for i, t in enumerate(ranked_trends, start=1)
     )
     rankings_section = build_rankings_section(game, rankings)
+    extra_context_section = format_extra_context(extra_context)
 
     prompt = f"""Upcoming NCAAF game: {away['team']} at {home['team']}, {game.get('commence_time')} ET.
 
@@ -207,7 +214,7 @@ Betting lines:
 {rankings_section}
 Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
 {trend_lines}
-
+{extra_context_section}
 Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form, the rankings context (if given), and the betting lines, built primarily around trend #1 but free to reference others that add to the story. End with one clear betting takeaway grounded in the lines above, an invitation to comment, and a branded sign-off.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
@@ -227,13 +234,14 @@ def _favorite_underdog_line(game):
     return f"{favorite} is favored tonight; {underdog} is the underdog. Do not state odds numbers or prices."
 
 
-def build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=False):
+def build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=False, extra_context=None):
     sanitized_trends = [sanitize_trend_for_tiktok(t) for t in ranked_trends]
     trend_lines = "\n".join(
         f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
         for i, t in enumerate(sanitized_trends, start=1)
     )
     rankings_section = build_rankings_section(game, rankings)
+    extra_context_section = format_extra_context(extra_context)
 
     prompt = f"""Upcoming NCAAF game: {game['away']['team']} at {game['home']['team']}, {game.get('commence_time')} ET.
 
@@ -241,7 +249,7 @@ def build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=False):
 {rankings_section}
 Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
 {trend_lines}
-
+{extra_context_section}
 Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form and the rankings context (if given), built primarily around trend #1 but free to reference others that add to the story. End with one clear prediction (who wins, high- or low-scoring), an invitation to comment, and a branded sign-off. Remember: no gambling terminology, no odds numbers.
 
 For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
@@ -300,14 +308,14 @@ def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
     return data, None
 
 
-def call_claude(game, ranked_trends, rankings, lookahead=False):
-    prompt = build_user_prompt(game, ranked_trends, rankings, lookahead=lookahead)
+def call_claude(game, ranked_trends, rankings, lookahead=False, extra_context=None):
+    prompt = build_user_prompt(game, ranked_trends, rankings, lookahead=lookahead, extra_context=extra_context)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(SYSTEM_PROMPT, prompt, valid_types)
 
 
-def call_claude_tiktok(game, ranked_trends, rankings, lookahead=False):
-    prompt = build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=lookahead)
+def call_claude_tiktok(game, ranked_trends, rankings, lookahead=False, extra_context=None):
+    prompt = build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=lookahead, extra_context=extra_context)
     valid_types = {t["type"] for t in ranked_trends}
     return _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
 
@@ -432,13 +440,19 @@ def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
         games_processed += 1
 
         try:
+            home_team = game["home"]["team"]
+            away_team = game["away"]["team"]
             ranked = rank_game_trends(entry)
+            ranked = annotate_live_series(ranked, "ncaaf", home_team, away_team, date_str)
             top_trends = ranked[:5]
             for t in top_trends:
                 t["_score"] = round(get_confidence_score(t), 1)
 
-            script_data, gen_err = call_claude(game, top_trends, rankings_by_team, lookahead=lookahead)
-            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, rankings_by_team, lookahead=lookahead)
+            extra_context = gather_extra_context(entry, "ncaaf", game, home_team, away_team, tiktok=False)
+            extra_context_tiktok = gather_extra_context(entry, "ncaaf", game, home_team, away_team, tiktok=True)
+
+            script_data, gen_err = call_claude(game, top_trends, rankings_by_team, lookahead=lookahead, extra_context=extra_context)
+            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, rankings_by_team, lookahead=lookahead, extra_context=extra_context_tiktok)
 
             payload = {
                 "job": "ncaaf_generate_trend_video_scripts",
@@ -454,6 +468,8 @@ def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
                 },
                 "odds": {"home": game["home"]["odds"], "away": game["away"]["odds"], "totals": game.get("totals")},
                 "trends_considered": top_trends,
+                "extra_context": extra_context,
+                "extra_context_tiktok": extra_context_tiktok,
                 "primary_trend": top_trends[0] if top_trends else None,
                 "rankings": {
                     "home": rankings_by_team.get(game["home"]["team"]),

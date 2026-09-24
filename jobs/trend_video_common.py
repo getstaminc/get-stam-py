@@ -5,6 +5,11 @@ weekly scheduler (plan_daily_trend_videos.py) that drives them.
 
 from datetime import datetime, timedelta
 
+from api.services.historical.trend_context_service import (
+    find_odds_whiplash_trend,
+    get_recent_series_games,
+)
+
 
 def next_weekday(from_date_str, target_weekday):
     """Next date on/after from_date_str that falls on target_weekday (Monday=0
@@ -64,6 +69,111 @@ def select_top_games(entries, max_games, time_pref=None, eastern_tz=None):
         hour = commence_hour_et(e["game"].get("commence_time"), eastern_tz)
         (preferred if (hour is not None and predicate(hour)) else other).append(e)
     return (preferred + other)[:max_games]
+
+
+def _trend_alignment_note(entry, home_team, away_team, tiktok=False):
+    """Idea: if both teams carry their own over/under streak into the game,
+    note whether those two signals reinforce each other (same direction) or
+    contradict each other (opposite directions) on tonight's total. No new
+    continuation-rate stat here on purpose — just a plain observation for the
+    model to weigh itself, not a scored/ranked trend of its own. tiktok=True
+    swaps OVER/UNDER wording for high-/low-scoring, matching how over_streak/
+    under_streak trends are already sanitized elsewhere for TikTok.
+    """
+    home_ou = next((t for t in (entry.get("homeTeamTrends") or []) if t["type"] in ("over_streak", "under_streak")), None)
+    away_ou = next((t for t in (entry.get("awayTeamTrends") or []) if t["type"] in ("over_streak", "under_streak")), None)
+    if not home_ou or not away_ou:
+        return None
+
+    def label(t):
+        if tiktok:
+            return "high-scoring" if t["type"] == "over_streak" else "low-scoring"
+        return "OVER" if t["type"] == "over_streak" else "UNDER"
+
+    if home_ou["type"] == away_ou["type"]:
+        return (
+            f"{home_team} and {away_team} are both trending {label(home_ou)} lately "
+            f"({home_team} {home_ou['count']} straight, {away_team} {away_ou['count']} straight) — "
+            "these are reinforcing signals pointing the same way on the total."
+        )
+    return (
+        f"{home_team} has been trending {label(home_ou)} ({home_ou['count']} straight) while "
+        f"{away_team} has been trending {label(away_ou)} ({away_ou['count']} straight) — "
+        "these two signals contradict each other on the total, worth weighing which one actually matters more."
+    )
+
+
+def gather_extra_context(entry, sport, game, home_team, away_team, tiktok=False):
+    """Collect supporting-context notes for a game — plain descriptive
+    strings the model can weave in if useful, NOT scored/ranked trends
+    competing for the primary-trend slot (that stays whatever
+    rank_game_trends already picked). Covers:
+      - the odds-whiplash situational patterns (find_odds_whiplash_trend)
+      - the over/under trend-alignment note above
+    Returns a list of strings (possibly empty) — the caller only renders an
+    "Additional context" prompt section when this is non-empty. (The third
+    idea, live-series awareness, is handled separately by
+    annotate_live_series, which enriches an existing H2H trend's own
+    description in place rather than adding a new note here.)
+    """
+    notes = []
+
+    home = game["home"]
+    away = game["away"]
+    home_ml = (home.get("odds") or {}).get("h2h")
+    away_ml = (away.get("odds") or {}).get("h2h")
+    home_trend = find_odds_whiplash_trend(sport, home["team"], home_ml, True)
+    if home_trend:
+        notes.append(home_trend["description"])
+    away_trend = find_odds_whiplash_trend(sport, away["team"], away_ml, False)
+    if away_trend:
+        notes.append(away_trend["description"])
+
+    alignment_note = _trend_alignment_note(entry, home_team, away_team, tiktok=tiktok)
+    if alignment_note:
+        notes.append(alignment_note)
+
+    return notes
+
+
+_H2H_SOURCES = ("headToHeadTrends", "homeAtHomeH2HTrends")
+
+
+def annotate_live_series(trends, sport, home_team, away_team, date_str):
+    """For any H2H win/loss-streak trend in `trends`, check whether some of
+    the streak's games were played within the last week (i.e. this is an
+    active, ongoing series between these two teams, not just an H2H streak
+    spread across older, separate meetings) and if so append a note to its
+    description. Mutates the trend dicts in place; returns `trends`.
+    """
+    for t in trends:
+        if t.get("type") not in ("win_streak", "loss_streak") or t.get("_source") not in _H2H_SOURCES:
+            continue
+        recent = get_recent_series_games(sport, home_team, away_team, date_str)
+        if not recent:
+            continue
+        n = len(recent)
+        if n == 1:
+            note = " — including their most recent meeting just days ago"
+        else:
+            note = f" — including their last {n} meetings, all within the past week"
+        t["description"] = t["description"] + note
+    return trends
+
+
+def format_extra_context(notes):
+    """Render gather_extra_context()'s notes as an optional prompt section, or
+    "" if there are none. Deliberately separate from the numbered/scored
+    trend list — these are supporting observations the model can weave in if
+    useful, not primary-trend candidates."""
+    if not notes:
+        return ""
+    bullet_lines = "\n".join(f"- {n}" for n in notes)
+    return (
+        "\nAdditional context (weave in naturally if it strengthens or "
+        "complicates the story — don't force it in if it doesn't fit):\n"
+        f"{bullet_lines}\n"
+    )
 
 
 LOOKAHEAD_PROMPT_NOTE = (

@@ -6,6 +6,7 @@ E.g. "Total went OVER 6 straight at home vs Mariners — OVER in 3 of 4 similar 
 """
 
 import os
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from collections import defaultdict
 from urllib.parse import urlparse
@@ -43,6 +44,15 @@ SPORT_CONFIG: Dict[str, Dict[str, str]] = {
 
 # Module-level cache: sport → loaded context dict
 _context_cache: Dict[str, Dict] = {}
+
+# Cache for get_odds_whiplash_context's pooled stats (built once per sport,
+# same lifetime as _context_cache).
+_whiplash_cache: Dict[str, Dict] = {}
+
+# American-odds cutoff for what counts as a "big" favorite in
+# get_odds_whiplash_context/find_odds_whiplash_trend below — -300 means
+# roughly a 3-in-4 implied favorite or steeper.
+BIG_FAVORITE_ML = -300
 
 
 # ---------------------------------------------------------------------------
@@ -215,14 +225,19 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
                  'hml': row['hml'], 'aml': row['aml'], 'ln': hln, 'aln': aln}
             home_h2h_games[(ht, at)].append(g)
             gen_h2h_games[(min(ht, at), max(ht, at))].append(g)
-            # Team-perspective: each team's own score, own ML, and own spread first
+            # Team-perspective: each team's own score, own ML, own spread, and
+            # whether they were home or away, first (is_home powers
+            # get_odds_whiplash_context/find_odds_whiplash_trend below, which
+            # need to know venue as well as result/price).
             team_games[ht].append({
                 'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'],
                 'game_date': row['game_date'], 'hml': row['hml'], 'ln': hln,
+                'is_home': True,
             })
             team_games[at].append({
                 'hs': row['aw'], 'aw': row['hs'], 'tl': row['tl'],
                 'game_date': row['game_date'], 'hml': row['aml'], 'ln': aln,
+                'is_home': False,
             })
 
         TREND_TYPES = ('over_streak', 'under_streak', 'win_streak', 'loss_streak')
@@ -557,5 +572,182 @@ def get_streak_context(
     except Exception as e:
         print(f"[context] get_streak_context error: {e}")
         return ''
+
+
+# ---------------------------------------------------------------------------
+# Odds-status whiplash — situational patterns around a team's last game vs.
+# tonight's own line, e.g. "lost last time as a big favorite, big favorite
+# again tonight" or "won on the road as a dog, home favorite tonight".
+# Pooled the same way as the streak stats above: scan every team's full
+# game log league-wide for every historical instance of the pattern, not
+# just these two teams (a single team's own history of it is nearly always
+# too small a sample to say anything).
+# ---------------------------------------------------------------------------
+
+def get_odds_whiplash_context(sport: str) -> Dict[str, Dict[str, Any]]:
+    """Pooled, cached stats for two situational patterns, scanned across every
+    team's game log for `sport`:
+
+      big_favorite_letdown_rebound: lost the previous game as a big favorite
+        (moneyline <= BIG_FAVORITE_ML), and is a big favorite again this game.
+      dog_win_home_favorite_swing: won the previous game on the road as an
+        underdog, and is the home favorite this game.
+
+    Returns {pattern_name: {'win_rate': float, 'sample_size': int,
+    'avg_margin': float}} — avg_margin is the mean (team_score - opp_score)
+    across the *next* game in every matching instance (so it's negative if
+    the pattern more often ends in a loss). Empty dict if sport has no
+    context loaded.
+    """
+    if sport in _whiplash_cache:
+        return _whiplash_cache[sport]
+
+    ctx = _load_sport_context(sport)
+    if not ctx:
+        return {}
+
+    team_games = ctx.get('team_games', {})
+
+    patterns = {
+        'big_favorite_letdown_rebound': {'margins': [], 'wins': 0, 'total': 0},
+        'dog_win_home_favorite_swing':  {'margins': [], 'wins': 0, 'total': 0},
+    }
+
+    for _team, games in team_games.items():
+        # games is already chronological (game_date ASC) — see _load_sport_context.
+        for i in range(len(games) - 1):
+            g, nxt = games[i], games[i + 1]
+            g_ml = g.get('hml')
+            if g_ml is None:
+                continue
+            g_won = g['hs'] > g['aw']
+
+            if g_ml <= BIG_FAVORITE_ML and not g_won:
+                nxt_ml = nxt.get('hml')
+                if nxt_ml is not None and nxt_ml <= BIG_FAVORITE_ML:
+                    stats = patterns['big_favorite_letdown_rebound']
+                    stats['total'] += 1
+                    margin = nxt['hs'] - nxt['aw']
+                    stats['margins'].append(margin)
+                    if margin > 0:
+                        stats['wins'] += 1
+
+            if g.get('is_home') is False and g_ml > 0 and g_won:
+                if nxt.get('is_home') is True and (nxt.get('hml') or 0) < 0:
+                    stats = patterns['dog_win_home_favorite_swing']
+                    stats['total'] += 1
+                    margin = nxt['hs'] - nxt['aw']
+                    stats['margins'].append(margin)
+                    if margin > 0:
+                        stats['wins'] += 1
+
+    result = {}
+    for name, stats in patterns.items():
+        total = stats['total']
+        result[name] = {
+            'win_rate': (stats['wins'] / total) if total else 0.0,
+            'sample_size': total,
+            'avg_margin': (sum(stats['margins']) / total) if total else 0.0,
+        }
+
+    _whiplash_cache[sport] = result
+    return result
+
+
+def find_odds_whiplash_trend(
+    sport: str, team_name: str, today_ml: Optional[int], today_is_home: bool,
+) -> Optional[Dict[str, Any]]:
+    """Check `team_name`'s most recent completed game against tonight's own
+    line for one of the two odds-whiplash patterns (see
+    get_odds_whiplash_context). Returns a trend dict (already carrying
+    continuation_rate/sample_size, same shape as any other trend so
+    get_confidence_score/rank_game_trends work on it unmodified) or None if
+    neither pattern applies or there isn't enough data to check.
+
+    The two patterns are mutually exclusive by construction (one requires
+    the last game to be a loss, the other a win), so at most one is returned.
+    """
+    if today_ml is None:
+        return None
+    ctx = _load_sport_context(sport)
+    if not ctx:
+        return None
+    games = ctx.get('team_games', {}).get(team_name)
+    if not games:
+        return None
+
+    last = games[-1]
+    last_ml = last.get('hml')
+    if last_ml is None:
+        return None
+    last_won = last['hs'] > last['aw']
+
+    if last_ml <= BIG_FAVORITE_ML and not last_won and today_ml <= BIG_FAVORITE_ML:
+        stats = get_odds_whiplash_context(sport).get('big_favorite_letdown_rebound')
+        if not stats or stats['sample_size'] == 0:
+            return None
+        base = f"{team_name} lost their last game as a big favorite and are a big favorite again tonight"
+        return {
+            'type': 'favorite_letdown_rebound',
+            'count': 1,
+            'description': f"{base} — {_whiplash_history_note(stats)}",
+            'continuation_rate': stats['win_rate'],
+            'sample_size': stats['sample_size'],
+            'avg_margin': round(stats['avg_margin'], 1),
+        }
+
+    if last.get('is_home') is False and last_ml > 0 and last_won and today_is_home and today_ml < 0:
+        stats = get_odds_whiplash_context(sport).get('dog_win_home_favorite_swing')
+        if not stats or stats['sample_size'] == 0:
+            return None
+        base = f"{team_name} won on the road as an underdog last time out and are the favorite at home tonight"
+        return {
+            'type': 'dog_win_home_favorite_swing',
+            'count': 1,
+            'description': f"{base} — {_whiplash_history_note(stats)}",
+            'continuation_rate': stats['win_rate'],
+            'sample_size': stats['sample_size'],
+            'avg_margin': round(stats['avg_margin'], 1),
+        }
+
+    return None
+
+
+def _whiplash_history_note(stats: Dict[str, Any]) -> str:
+    """Turn a get_odds_whiplash_context() stats dict into the same kind of
+    self-contained "Historically... X% of the time" clause get_streak_context
+    produces — this is the only text the model actually sees, so the
+    percentage/margin has to be spelled out here rather than left as a raw
+    field the prompt never renders."""
+    pct = round(stats['win_rate'] * 100)
+    n = stats['sample_size']
+    margin = stats['avg_margin']
+    margin_str = f"winning by about {abs(round(margin))} on average" if margin >= 0 else f"losing by about {abs(round(margin))} on average"
+    return f"historically in this exact situation, teams win {pct}% of the time ({n} instances), {margin_str}"
+
+
+# ---------------------------------------------------------------------------
+# Live-series detection — is an active H2H win/loss streak actually from
+# games these two teams played in the last few days (a live series), or
+# spread across separate, non-adjacent past meetings?
+# ---------------------------------------------------------------------------
+
+def get_recent_series_games(
+    sport: str, team_a: str, team_b: str, before_date_str: str, lookback_days: int = 6,
+) -> List[Dict[str, Any]]:
+    """Completed games between team_a and team_b (either home/away order)
+    within lookback_days of before_date_str — reuses the cached gen_h2h_games
+    data, no extra DB query. Used to tell whether an H2H streak reflects
+    games played in the current live series vs. older, separate meetings."""
+    ctx = _load_sport_context(sport)
+    if not ctx:
+        return []
+    games = ctx.get('gen_h2h_games', {}).get((min(team_a, team_b), max(team_a, team_b)), [])
+    try:
+        before = datetime.strptime(before_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return []
+    cutoff = before - timedelta(days=lookback_days)
+    return [g for g in games if cutoff <= g['game_date'] < before]
 
 

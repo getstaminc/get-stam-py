@@ -63,7 +63,10 @@ def build_plan(date_str):
     saturday = next_weekday(date_str, SATURDAY)
     sunday = next_weekday(date_str, SUNDAY)
 
-    plan = [("mlb", mlb_job, date_str, {"max_games": 3})]
+    # Reads mlb_job.MAX_VIDEO_GAMES_PER_DAY (env var MAX_VIDEO_GAMES_PER_DAY,
+    # default 3) rather than hardcoding it here — e.g. bumped to 4 for the
+    # 2026 MLB postseason's Wild Card round (4 games/day, one per series).
+    plan = [("mlb", mlb_job, date_str, {"max_games": mlb_job.MAX_VIDEO_GAMES_PER_DAY})]
 
     if weekday in (MONDAY, THURSDAY):
         # That night's NFL game.

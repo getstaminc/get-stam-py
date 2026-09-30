@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Keeps the Mac awake across the whole morning job window (4:00-6:05 AM),
+  bridging the gap between com.getstam.mlb-daily-import (4:00) and the later
+  com.getstam.nfl-daily-import (6:00) / com.getstam.mlbtrendvideos (6:05) jobs.
+
+  Why this exists: pmset only supports ONE repeating wake time ("you may
+  only have one pair of repeating events scheduled" — man pmset), so moving
+  mlb-daily-import to 4:00 AM meant moving the single repeating wake from
+  5:55 to 3:55 AM rather than adding a second one. But this Mac's AC-power
+  system-sleep idle timer is just 1 minute (`pmset -g custom` → sleep=1) —
+  with nothing else keeping it awake, it would fall back asleep within a
+  minute of the 4:00 AM job finishing and NOT wake again in time for the
+  6:00/6:05 jobs (launchd cannot wake a sleeping Mac on its own). This job
+  just holds one long caffeinate assertion across the whole window instead.
+
+  launchd's StartCalendarInterval fires in the Mac's LOCAL system time zone
+  (US/Mountain here). Hour=3/Minute=56 = one minute after the 3:55 wake.
+  -t 9000 = 150 minutes, running until ~6:26 AM — comfortably past the
+  6:05 trend-video job's typical runtime.
+
+  Install:
+    cp scripts/com.getstam.morning-wake-bridge.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.getstam.morning-wake-bridge.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.getstam.morning-wake-bridge.plist
+    rm ~/Library/LaunchAgents/com.getstam.morning-wake-bridge.plist
+
+  Requires:
+    sudo pmset repeat wakeorpoweron MTWRFSU 03:55:00
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.getstam.morning-wake-bridge</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>-s</string>
+        <string>-m</string>
+        <string>-d</string>
+        <string>-t</string>
+        <string>9000</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>56</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_morning_wake_bridge.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_morning_wake_bridge.err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

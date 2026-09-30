@@ -6,8 +6,9 @@
 # hits site.api.espn.com) fails on Heroku. This stopped Aug 3 2026. Odds come from
 # the Odds API and are fine on Heroku, but we do the whole pipeline here.
 #
-# Scheduled by ~/Library/LaunchAgents/com.getstam.mlb-daily-import.plist (6:15 AM
-# local). If the Mac is asleep at 6:15, launchd runs it once on the next wake.
+# Scheduled by ~/Library/LaunchAgents/com.getstam.mlb-daily-import.plist (4:00 AM
+# local). If the Mac is asleep at 4:00, launchd runs it once on the next wake.
+# (Wake schedule + a caffeinate bridge job cover this — see that plist.)
 #
 # - Orchestrator (odds + actuals): yesterday only  (Odds API credits)
 # - Extra actuals-only catch-up:    last 3 days     (ESPN is free)
@@ -19,7 +20,7 @@
 
 set -u
 
-PROJECT_DIR="/Users/stephaniegillen/Projects/get-stam-py"
+PROJECT_DIR="/Users/getstam/Documents/getstam/get-stam-py"
 PY="$PROJECT_DIR/venv/bin/python"
 LOG_DIR="$PROJECT_DIR/logs"
 STEP_CAP=2700   # 45 min

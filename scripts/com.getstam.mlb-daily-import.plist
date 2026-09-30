@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs the MLB daily player-props import (odds + actuals) every morning.
+  See scripts/mlb_daily_import.sh for why this runs locally instead of on
+  Heroku (ESPN blocks datacenter IPs) and how it stays resilient to the Mac
+  sleeping mid-run (per-step hard timeout + a 3-day actuals catch-up window,
+  rather than blocking all sleep the way com.getstam.mlbtrendvideos.plist
+  does — a killed step here is expected to be recovered by the next run).
+
+  launchd's StartCalendarInterval fires in the Mac's LOCAL system time zone
+  (US/Mountain on this machine). Hour=4/Minute=0 here means 4:00 AM Mountain
+  — moved earlier from 6:15 to run well ahead of the NFL import/trend-video
+  jobs, which stayed at 6:00/6:05.
+
+  Install:
+    cp scripts/com.getstam.mlb-daily-import.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.getstam.mlb-daily-import.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.getstam.mlb-daily-import.plist
+    rm ~/Library/LaunchAgents/com.getstam.mlb-daily-import.plist
+
+  Run immediately (without waiting for the schedule), to test:
+    launchctl start com.getstam.mlb-daily-import
+
+  Requires this Mac to be powered on/awake at run time — launchd will NOT
+  wake a sleeping Mac on its own. Since pmset only supports one repeating
+  wake time, the single wake moved from 5:55 to 3:55 AM to cover this job,
+  and com.getstam.morning-wake-bridge.plist holds the Mac awake across the
+  whole 4:00-6:05 window (see that plist for why a bridge is needed) —
+    sudo pmset repeat wakeorpoweron MTWRFSU 03:55:00
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.getstam.mlb-daily-import</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/getstam/Documents/getstam/get-stam-py/scripts/mlb_daily_import.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>4</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_mlb_daily_import.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_mlb_daily_import.err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

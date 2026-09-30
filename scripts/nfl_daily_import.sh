@@ -19,7 +19,7 @@
 
 set -u
 
-PROJECT_DIR="/Users/stephaniegillen/Projects/get-stam-py"
+PROJECT_DIR="/Users/getstam/Documents/getstam/get-stam-py"
 PY="$PROJECT_DIR/venv/bin/python"
 LOG_DIR="$PROJECT_DIR/logs"
 STEP_CAP=2700   # 45 min

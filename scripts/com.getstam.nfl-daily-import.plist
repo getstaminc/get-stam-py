@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs the NFL daily player-props import (odds + player actuals + defense
+  actuals) every morning. See scripts/nfl_daily_import.sh for why this runs
+  locally instead of on Heroku (ESPN blocks datacenter IPs) and how it stays
+  resilient to the Mac sleeping mid-run (per-step hard timeout + a 3-day
+  actuals catch-up window, rather than blocking all sleep the way
+  com.getstam.mlbtrendvideos.plist does — a killed step here is expected to
+  be recovered by the next run).
+
+  launchd's StartCalendarInterval fires in the Mac's LOCAL system time zone
+  (US/Mountain on this machine). Hour=6/Minute=0 here means 6:00 AM Mountain.
+
+  Install:
+    cp scripts/com.getstam.nfl-daily-import.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.getstam.nfl-daily-import.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.getstam.nfl-daily-import.plist
+    rm ~/Library/LaunchAgents/com.getstam.nfl-daily-import.plist
+
+  Run immediately (without waiting for the schedule), to test:
+    launchctl start com.getstam.nfl-daily-import
+
+  Requires this Mac to be powered on/awake at run time — launchd will NOT
+  wake a sleeping Mac on its own. This machine already has a repeating wake
+  scheduled (shared with com.getstam.mlbtrendvideos.plist), plus
+  com.getstam.morning-wake-bridge.plist holding the Mac awake through the
+  gap since the earlier com.getstam.mlb-daily-import.plist run at 4:00 AM:
+    sudo pmset repeat wakeorpoweron MTWRFSU 03:55:00
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.getstam.nfl-daily-import</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/getstam/Documents/getstam/get-stam-py/scripts/nfl_daily_import.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_nfl_daily_import.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/getstam/Documents/getstam/get-stam-py/logs/launchd_nfl_daily_import.err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

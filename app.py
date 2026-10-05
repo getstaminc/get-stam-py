@@ -72,8 +72,7 @@ CORS(app, origins=[
 ], allow_headers=["Content-Type", "X-API-KEY", "Authorization"])
 
 # Configure logging to write to a file
-if not os.path.exists('logs'):
-    os.makedirs('logs')
+os.makedirs('logs', exist_ok=True)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

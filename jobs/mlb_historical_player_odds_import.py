@@ -98,7 +98,11 @@ def get_historical_player_odds(event_id: str, target_date: date, retries=3, dela
             'regions': 'us',
             'markets': 'batter_hits,batter_home_runs,batter_rbis,batter_runs_scored,batter_total_bases,pitcher_strikeouts,pitcher_earned_runs,pitcher_hits_allowed,pitcher_walks',
             'oddsFormat': 'american',
-            'bookmakers': 'draftkings'
+            # DraftKings doesn't always have player props posted for a given historical
+            # game - fall back to FanDuel (same pattern as the live odds fetch in
+            # api/external_requests/mlb_player_props_api.py) rather than treating a
+            # DK-only miss as "no data for this game".
+            'bookmakers': 'draftkings,fanduel'
         }
         for i in range(retries):
             try:
@@ -139,14 +143,20 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
     if not odds_data.get('bookmakers'):
         return props
 
-    draftkings_data = None
-    for bookmaker in odds_data['bookmakers']:
-        if bookmaker['key'] == 'draftkings':
-            draftkings_data = bookmaker
+    # Prefer DraftKings, fall back to FanDuel when DK has no markets for this game.
+    bookmaker_data = None
+    for preferred_key in ('draftkings', 'fanduel'):
+        for bookmaker in odds_data['bookmakers']:
+            if bookmaker['key'] == preferred_key and bookmaker.get('markets'):
+                bookmaker_data = bookmaker
+                break
+        if bookmaker_data:
             break
 
-    if not draftkings_data or not draftkings_data.get('markets'):
+    if not bookmaker_data:
         return props
+
+    bookmaker_key = bookmaker_data['key']
 
     event_id = odds_data['id']
     home_team = odds_data.get('home_team', '')
@@ -168,7 +178,7 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
     }
     stat_columns = {**batter_stat_columns, **pitcher_stat_columns}
 
-    for market in draftkings_data['markets']:
+    for market in bookmaker_data['markets']:
         market_key = market['key']
 
         if market_key not in stat_columns:
@@ -200,7 +210,7 @@ def parse_historical_player_props(odds_data: Dict, commence_time: str) -> List[D
                     'game_date': game_date,
                     'home_team': home_team,
                     'away_team': away_team,
-                    'bookmaker': 'draftkings',
+                    'bookmaker': bookmaker_key,
                     'market_key': market_key,
                     'line': point,
                     'over_price': None,
@@ -482,6 +492,12 @@ def insert_historical_props_to_db(conn, props_data: List[Dict]) -> tuple:
             error_str = str(e).splitlines()[0]  # first line only — keeps output readable
             print(f"    ❌ Error processing {player_name}: {error_str}")
             player_errors.append((player_name, error_str))
+            # Without this, a single dropped connection/timeout leaves the
+            # transaction in a failed state and every subsequent player in this
+            # (and later) events fails too with "Can't reconnect until invalid
+            # transaction is rolled back" -- silently losing the whole date's
+            # data even though the outer loop still reports success.
+            conn.rollback()
             continue
 
     return inserted_count, player_errors
@@ -546,6 +562,11 @@ def import_historical_player_odds_for_date(target_date: date, conn) -> int:
             inserted, errors = insert_historical_props_to_db(conn, props_data)
 
             total_props_imported += inserted
+
+            # Commit per event rather than waiting for the whole date: a MLB date
+            # is ~15 games, and one bad event further down shouldn't be able to
+            # roll back events already successfully inserted earlier in the day.
+            conn.commit()
 
             if errors:
                 unique_errors = {}

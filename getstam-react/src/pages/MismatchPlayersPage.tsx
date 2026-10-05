@@ -113,6 +113,14 @@ export default function MismatchPlayersPage() {
   const [placeholdersError, setPlaceholdersError] = useState("");
   const [placeholderCardStates, setPlaceholderCardStates] = useState<Record<number, PlayerCardState>>({});
 
+  const [autoResolving, setAutoResolving] = useState(false);
+  const [autoResolveError, setAutoResolveError] = useState("");
+  const [autoResolveResult, setAutoResolveResult] = useState<{
+    auto_resolved_count: number;
+    skipped_count: number;
+    auto_resolved: { player_id: number; odds_name: string; espn_name: string }[];
+  } | null>(null);
+
   const isAuthenticated = !!password;
 
   // Load mismatches + placeholders once authenticated, and whenever the sport toggle changes
@@ -195,6 +203,30 @@ export default function MismatchPlayersPage() {
       setAuthError(e.message || "Request failed");
     } finally {
       setAuthLoading(false);
+    }
+  }
+
+  async function handleAutoResolve() {
+    setAutoResolving(true);
+    setAutoResolveError("");
+    setAutoResolveResult(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/internal/${sport}/auto-resolve-exact-matches`, {
+        method: "POST",
+        headers: { "X-Internal-Password": password },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAutoResolveError(data.error || `Error ${res.status}`);
+        return;
+      }
+      setAutoResolveResult(data);
+      loadMismatches();
+      loadPlaceholders();
+    } catch (e: any) {
+      setAutoResolveError(e.message || "Request failed");
+    } finally {
+      setAutoResolving(false);
     }
   }
 
@@ -479,6 +511,34 @@ export default function MismatchPlayersPage() {
           <ToggleButton value="nfl">NFL</ToggleButton>
         </ToggleButtonGroup>
       </Box>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+        <Button
+          size="small"
+          variant="contained"
+          color="secondary"
+          onClick={handleAutoResolve}
+          disabled={autoResolving}
+        >
+          {autoResolving ? <CircularProgress size={16} sx={{ mr: 1 }} /> : null}
+          Auto-Resolve Exact Matches (single candidate, score 1.00)
+        </Button>
+      </Box>
+      {autoResolveError && <Alert severity="error" sx={{ mb: 2 }}>{autoResolveError}</Alert>}
+      {autoResolveResult && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setAutoResolveResult(null)}>
+          Auto-resolved {autoResolveResult.auto_resolved_count} player(s); {autoResolveResult.skipped_count} left for manual review.
+          {autoResolveResult.auto_resolved_count > 0 && (
+            <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
+              {autoResolveResult.auto_resolved.map((r) => (
+                <li key={r.player_id}>
+                  {r.odds_name} → {r.espn_name}
+                </li>
+              ))}
+            </Box>
+          )}
+        </Alert>
+      )}
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
         {!loadingGroups && (

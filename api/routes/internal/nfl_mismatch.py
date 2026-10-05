@@ -6,8 +6,10 @@ keyed directly by ESPN event id (no historical-date lookup needed).
 """
 
 import os
+import re
 import sys
 from collections import defaultdict
+import requests
 from flask import Blueprint, request, jsonify
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
@@ -46,16 +48,75 @@ def _get_engine():
     return create_engine(DATABASE_URL)
 
 
+_SUFFIX_TOKENS = {"jr", "sr", "ii", "iii", "iv", "v", "2nd", "3rd", "4th"}
+
+
+def _scoring_tokens(name: str) -> set:
+    """Tokenize a normalized name for scoring purposes only — drops parenthetical
+    groups (sportsbook team-code disambiguators like "(NO)") and generational
+    suffixes (Jr/Sr/II/...), neither of which `normalize_player_name` strips, so an
+    odds-side "trent sherfield sr" doesn't lose a point against ESPN's "Trent
+    Sherfield" just because the real person's own data carries one token more or
+    fewer than the other. Doesn't touch the canonical normalize_player_name used
+    by the actual ingestion pipeline — two genuinely different same-named players
+    (there are two real "Michael Thomas"es in the NFL) still need that suffix to
+    stay distinguishable there; here, if stripping it makes two different real
+    people both score 1.0, the auto-resolve "no tied runner-up" guard still catches
+    it and leaves it for manual review.
+    """
+    name = re.sub(r"\([^)]*\)", "", name)
+    return {t for t in name.split() if t not in _SUFFIX_TOKENS}
+
+
 def score_candidate(odds_name: str, espn_name: str) -> float:
     """Token overlap score between normalized odds name and ESPN name."""
-    odds_tokens = set(odds_name.split())
-    espn_tokens = set(espn_name.split())
+    odds_tokens = _scoring_tokens(odds_name)
+    espn_tokens = _scoring_tokens(espn_name)
     overlap = len(odds_tokens & espn_tokens)
     return overlap / max(len(odds_tokens), len(espn_tokens), 1)
 
 
 def _date_str(game_date) -> str:
     return game_date.isoformat() if hasattr(game_date, "isoformat") else str(game_date)
+
+
+def search_espn_player_api(name: str) -> list:
+    """Last-resort lookup: ESPN's public site-search index, queried by name directly.
+    Unlike the boxscore and DB-search tiers (both scoped to data we already have —
+    one specific game's roster, or players we've already ESPN-linked before), this
+    reaches ESPN's full player database, so it can find someone neither of those two
+    would ever surface (e.g. a bench/practice-squad player with no prior ESPN link
+    who also didn't appear in the one boxscore we happened to check).
+    """
+    try:
+        resp = requests.get(
+            "https://site.api.espn.com/apis/search/v2",
+            params={"query": name, "limit": 10},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        return []
+
+    candidates = []
+    for result_type in data.get("results", []):
+        if result_type.get("type") != "player":
+            continue
+        for item in result_type.get("contents", []):
+            uid_parts = dict(p.split(":", 1) for p in item.get("uid", "").split("~") if ":" in p)
+            if uid_parts.get("l") != "28":  # NFL league id
+                continue
+            espn_id = uid_parts.get("a")
+            display_name = item.get("displayName", "")
+            if not espn_id or not display_name:
+                continue
+            candidates.append({
+                "espn_player_id": espn_id,
+                "espn_display_name": display_name,
+                "source": "espn_search",
+            })
+    return candidates
 
 
 def _find_sibling_espn_event(conn, game_date, home_team_id, away_team_id, player_id):
@@ -119,6 +180,7 @@ def get_mismatches():
         }
         for g in groups.values()
     ]
+    result.sort(key=lambda g: g["total_mismatches"], reverse=True)
     return jsonify(result)
 
 
@@ -126,9 +188,9 @@ def get_mismatches():
 # GET /api/internal/nfl/mismatches/<player_id>/candidates
 # ---------------------------------------------------------------------------
 
-@nfl_mismatch_bp.route("/api/internal/nfl/mismatches/<int:player_id>/candidates", methods=["GET"])
-def get_candidates(player_id):
-    engine = _get_engine()
+def _compute_mismatch_candidates(engine, player_id):
+    """Core candidate-lookup logic for a mismatched player. Returns (data, error)
+    where error is (message, status_code) or None."""
     with engine.connect() as conn:
         rows = conn.execute(text("""
             SELECT id, normalized_name, game_date, odds_home_team_id, odds_away_team_id
@@ -138,7 +200,7 @@ def get_candidates(player_id):
         """), {"player_id": player_id}).fetchall()
 
         if not rows:
-            return jsonify({"error": "No unresolved mismatches found for this player"}), 404
+            return None, ("No unresolved mismatches found for this player", 404)
 
         odds_name = rows[0][1]
         espn_event_id = None
@@ -151,11 +213,11 @@ def get_candidates(player_id):
                 break
 
     if not espn_event_id:
-        return jsonify({"error": "Could not find a sibling prop with espn_event_id for any mismatch date"}), 404
+        return None, ("Could not find a sibling prop with espn_event_id for any mismatch date", 404)
 
     boxscore_data = get_game_boxscore(espn_event_id)
     if not boxscore_data:
-        return jsonify({"error": f"Could not fetch ESPN boxscore for event {espn_event_id}"}), 500
+        return None, (f"Could not fetch ESPN boxscore for event {espn_event_id}", 500)
 
     player_lookup, _ = build_player_stats_lookup_nfl(boxscore_data)
 
@@ -209,28 +271,46 @@ def get_candidates(player_id):
             db_candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
             candidates = db_candidates[:8]
 
-    return jsonify({
+    # If our own data (this game's boxscore + players we've already linked before)
+    # hasn't already produced a confident match, merge in ESPN's full player search
+    # index too — it can surface someone neither tier above ever could (e.g. a
+    # bench player with no prior ESPN link who didn't appear in this one boxscore).
+    if not candidates or candidates[0]["similarity_score"] < 1.0:
+        merged = {c["espn_player_id"]: c for c in candidates}
+        for cand in search_espn_player_api(odds_name):
+            score = score_candidate(normalized_odds, normalize_player_name(cand["espn_display_name"]))
+            cand = {**cand, "similarity_score": round(score, 3), "espn_event_id": espn_event_id}
+            existing = merged.get(cand["espn_player_id"])
+            if not existing or cand["similarity_score"] > existing["similarity_score"]:
+                merged[cand["espn_player_id"]] = cand
+        candidates = sorted(merged.values(), key=lambda x: x["similarity_score"], reverse=True)[:8]
+
+    return {
         "player_id": player_id,
         "odds_name": odds_name,
         "espn_event_id": espn_event_id,
         "candidates": candidates,
-    })
+    }, None
+
+
+@nfl_mismatch_bp.route("/api/internal/nfl/mismatches/<int:player_id>/candidates", methods=["GET"])
+def get_candidates(player_id):
+    engine = _get_engine()
+    data, error = _compute_mismatch_candidates(engine, player_id)
+    if error:
+        message, status = error
+        return jsonify({"error": message}), status
+    return jsonify(data)
 
 
 # ---------------------------------------------------------------------------
 # POST /api/internal/nfl/mismatches/<player_id>/resolve
 # ---------------------------------------------------------------------------
 
-@nfl_mismatch_bp.route("/api/internal/nfl/mismatches/<int:player_id>/resolve", methods=["POST"])
-def resolve_mismatch(player_id):
-    body = request.get_json()
-    if not body or "espn_player_id" not in body:
-        return jsonify({"error": "Missing espn_player_id in request body"}), 400
-
-    espn_player_id = str(body["espn_player_id"])
-    espn_name = body.get("espn_name", "")
-
-    engine = _get_engine()
+def _do_resolve_mismatch(engine, player_id, espn_player_id, espn_name):
+    """Core resolve/merge logic for a mismatched player. Returns (result, error)
+    where error is (message, status_code) or None."""
+    espn_player_id = str(espn_player_id)
     dates_processed = []
     dates_skipped = []
     merged_into = None
@@ -262,7 +342,7 @@ def resolve_mismatch(player_id):
                 SELECT id FROM nfl_players WHERE espn_player_id = :espn_player_id
             """), {"espn_player_id": espn_player_id}).fetchone()
             if not row:
-                return jsonify({"error": "Duplicate ESPN ID but existing player not found"}), 500
+                return None, ("Duplicate ESPN ID but existing player not found", 500)
             merged_into = row[0]
 
             # Move this player's props onto the existing player (skip games it already has),
@@ -275,8 +355,10 @@ def resolve_mismatch(player_id):
                       SELECT odds_event_id FROM nfl_player_props WHERE player_id = :target_id
                   )
             """), {"target_id": merged_into, "src_id": player_id})
-            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
+            # Mismatch rows reference nfl_player_props.id (non-cascading FK), so they
+            # must go before the leftover (unmoved/conflicting) prop rows they point at.
             conn.execute(text("DELETE FROM nfl_player_name_mismatch WHERE player_id = :src_id"), {"src_id": player_id})
+            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
             conn.execute(text("DELETE FROM nfl_players WHERE id = :player_id"), {"player_id": player_id})
             conn.commit()
 
@@ -308,13 +390,27 @@ def resolve_mismatch(player_id):
             """), {"ids": mismatch_ids})
             conn.commit()
 
-    return jsonify({
+    return {
         "espn_player_id_set": True,
         "espn_name": espn_name,
         "merged_into_player_id": merged_into,
         "dates_processed": dates_processed,
         "dates_skipped": dates_skipped,
-    })
+    }, None
+
+
+@nfl_mismatch_bp.route("/api/internal/nfl/mismatches/<int:player_id>/resolve", methods=["POST"])
+def resolve_mismatch(player_id):
+    body = request.get_json()
+    if not body or "espn_player_id" not in body:
+        return jsonify({"error": "Missing espn_player_id in request body"}), 400
+
+    engine = _get_engine()
+    result, error = _do_resolve_mismatch(engine, player_id, body["espn_player_id"], body.get("espn_name", ""))
+    if error:
+        message, status = error
+        return jsonify({"error": message}), status
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +431,7 @@ def get_placeholder_players():
             WHERE p.espn_player_id IS NULL
             GROUP BY p.id, p.normalized_name
             HAVING COUNT(pp.id) > 0
-            ORDER BY p.normalized_name
+            ORDER BY props_count DESC, p.normalized_name
         """)).fetchall()
 
     result = []
@@ -352,9 +448,9 @@ def get_placeholder_players():
     return jsonify(result)
 
 
-@nfl_mismatch_bp.route("/api/internal/nfl/placeholders/<int:player_id>/candidates", methods=["GET"])
-def get_placeholder_candidates(player_id):
-    engine = _get_engine()
+def _compute_placeholder_candidates(engine, player_id):
+    """Core candidate-lookup logic for a placeholder player. Returns (data, error)
+    where error is (message, status_code) or None."""
     with engine.connect() as conn:
         row = conn.execute(text("""
             SELECT normalized_name FROM nfl_players
@@ -362,13 +458,13 @@ def get_placeholder_candidates(player_id):
         """), {"player_id": player_id}).fetchone()
 
     if not row:
-        return jsonify({"error": "Placeholder player not found"}), 404
+        return None, ("Placeholder player not found", 404)
 
     normalized_odds = row[0]
     tokens = [t for t in normalized_odds.split() if len(t) > 2]
 
     if not tokens:
-        return jsonify({"player_id": player_id, "odds_name": normalized_odds, "candidates": []})
+        return {"player_id": player_id, "odds_name": normalized_odds, "candidates": []}, None
 
     conditions = " OR ".join([f"normalized_name LIKE :tok{i}" for i in range(len(tokens))])
     params = {f"tok{i}": f"%{tok}%" for i, tok in enumerate(tokens)}
@@ -396,28 +492,46 @@ def get_placeholder_candidates(player_id):
             "source": "db_search",
         })
     candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
+    candidates = candidates[:8]
 
-    return jsonify({
+    # If nothing in our own already-linked players is a confident match, merge in
+    # ESPN's full player search index too.
+    if not candidates or candidates[0]["similarity_score"] < 1.0:
+        merged = {c["espn_player_id"]: c for c in candidates}
+        for cand in search_espn_player_api(normalized_odds):
+            score = score_candidate(normalized_odds, normalize_player_name(cand["espn_display_name"]))
+            cand = {**cand, "similarity_score": round(score, 3)}
+            existing = merged.get(cand["espn_player_id"])
+            if not existing or cand["similarity_score"] > existing["similarity_score"]:
+                merged[cand["espn_player_id"]] = cand
+        candidates = sorted(merged.values(), key=lambda x: x["similarity_score"], reverse=True)[:8]
+
+    return {
         "player_id": player_id,
         "odds_name": normalized_odds,
-        "candidates": candidates[:8],
-    })
+        "candidates": candidates,
+    }, None
 
 
-@nfl_mismatch_bp.route("/api/internal/nfl/placeholders/<int:player_id>/resolve", methods=["POST"])
-def resolve_placeholder(player_id):
-    body = request.get_json()
-    if not body or "espn_player_id" not in body:
-        return jsonify({"error": "Missing espn_player_id in request body"}), 400
-
-    espn_player_id = str(body["espn_player_id"])
-    espn_name = body.get("espn_name", "")
-
+@nfl_mismatch_bp.route("/api/internal/nfl/placeholders/<int:player_id>/candidates", methods=["GET"])
+def get_placeholder_candidates(player_id):
     engine = _get_engine()
+    data, error = _compute_placeholder_candidates(engine, player_id)
+    if error:
+        message, status = error
+        return jsonify({"error": message}), status
+    return jsonify(data)
+
+
+def _do_resolve_placeholder(engine, player_id, espn_player_id, espn_name):
+    """Core resolve/merge logic for a placeholder player. Returns (result, error)
+    where error is (message, status_code) or None."""
+    espn_player_id = str(espn_player_id)
 
     # Step 1: set espn_player_id on the placeholder.
     # If another player already has this ESPN ID, merge the placeholder into that player.
     merged_from = None
+    target_player_id = player_id
     with engine.connect() as conn:
         try:
             conn.execute(text("""
@@ -425,7 +539,6 @@ def resolve_placeholder(player_id):
                 WHERE id = :player_id AND espn_player_id IS NULL
             """), {"espn_player_id": espn_player_id, "player_id": player_id})
             conn.commit()
-            target_player_id = player_id
         except IntegrityError:
             conn.rollback()
             # Find the existing player that owns this ESPN ID
@@ -433,7 +546,7 @@ def resolve_placeholder(player_id):
                 SELECT id, normalized_name FROM nfl_players WHERE espn_player_id = :espn_player_id
             """), {"espn_player_id": espn_player_id}).fetchone()
             if not row:
-                return jsonify({"error": "Duplicate ESPN ID but existing player not found"}), 500
+                return None, ("Duplicate ESPN ID but existing player not found", 500)
             target_player_id, target_name = row[0], row[1]
             merged_from = player_id
 
@@ -445,10 +558,13 @@ def resolve_placeholder(player_id):
                       SELECT odds_event_id FROM nfl_player_props WHERE player_id = :target_id
                   )
             """), {"target_id": target_player_id, "src_id": player_id})
-            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
 
-            # Remove the duplicate placeholder
+            # Remove the duplicate placeholder. Mismatch rows reference both
+            # nfl_players.id and nfl_player_props.id (both non-cascading FKs), so they
+            # must be cleared before either the leftover prop rows or the player row.
             conn.execute(text("DELETE FROM nfl_player_aliases WHERE player_id = :player_id"), {"player_id": player_id})
+            conn.execute(text("DELETE FROM nfl_player_name_mismatch WHERE player_id = :player_id"), {"player_id": player_id})
+            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
             conn.execute(text("DELETE FROM nfl_players WHERE id = :player_id"), {"player_id": player_id})
             conn.commit()
 
@@ -477,10 +593,107 @@ def resolve_placeholder(player_id):
                 print(f"Error processing game {eid} for date {date_str}: {e}")
                 dates_skipped.append(date_str)
 
-    return jsonify({
+    return {
         "espn_player_id_set": True,
         "espn_name": espn_name,
         "merged_placeholder_id": merged_from,
         "dates_processed": dates_processed,
         "dates_skipped": dates_skipped,
+    }, None
+
+
+@nfl_mismatch_bp.route("/api/internal/nfl/placeholders/<int:player_id>/resolve", methods=["POST"])
+def resolve_placeholder(player_id):
+    body = request.get_json()
+    if not body or "espn_player_id" not in body:
+        return jsonify({"error": "Missing espn_player_id in request body"}), 400
+
+    engine = _get_engine()
+    result, error = _do_resolve_placeholder(engine, player_id, body["espn_player_id"], body.get("espn_name", ""))
+    if error:
+        message, status = error
+        return jsonify({"error": message}), status
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/internal/nfl/auto-resolve-exact-matches
+#
+# Sweeps both queues (mismatches + placeholders) and auto-confirms only the
+# unambiguous case: a top candidate at a perfect 1.00 token-overlap score with
+# no runner-up also at 1.00. A perfect score means the odds-API name and an
+# already-ESPN-linked player's name are identical strings, which is the same
+# standard a human reviewer applies when clicking "Confirm Match" on a 1.00
+# entry — the candidate list commonly includes other (lower-scoring) names
+# from the fuzzy DB-search fallback, so list length alone isn't a signal.
+# Anything without a clear 1.00 winner is left for manual review.
+# ---------------------------------------------------------------------------
+
+@nfl_mismatch_bp.route("/api/internal/nfl/auto-resolve-exact-matches", methods=["POST"])
+def auto_resolve_exact_matches():
+    engine = _get_engine()
+    resolved = []
+    skipped = []
+
+    with engine.connect() as conn:
+        mismatch_player_ids = [r[0] for r in conn.execute(text("""
+            SELECT DISTINCT player_id FROM nfl_player_name_mismatch WHERE resolved = false
+        """)).fetchall()]
+
+        placeholder_player_ids = [r[0] for r in conn.execute(text("""
+            SELECT p.id
+            FROM nfl_players p
+            JOIN nfl_player_props pp ON pp.player_id = p.id
+            WHERE p.espn_player_id IS NULL
+            GROUP BY p.id
+            HAVING COUNT(pp.id) > 0
+        """)).fetchall()]
+
+    queues = [
+        ("mismatch", mismatch_player_ids, _compute_mismatch_candidates, _do_resolve_mismatch),
+        ("placeholder", placeholder_player_ids, _compute_placeholder_candidates, _do_resolve_placeholder),
+    ]
+
+    for queue_name, player_ids, compute_candidates, do_resolve in queues:
+        for player_id in player_ids:
+            try:
+                data, error = compute_candidates(engine, player_id)
+                if error or not data:
+                    skipped.append({"player_id": player_id, "queue": queue_name, "reason": error[0] if error else "no data"})
+                    continue
+
+                candidates = data["candidates"]
+                top_score = candidates[0]["similarity_score"] if candidates else 0
+                runner_up_score = candidates[1]["similarity_score"] if len(candidates) > 1 else 0
+                if top_score != 1.0 or runner_up_score == 1.0:
+                    skipped.append({
+                        "player_id": player_id,
+                        "queue": queue_name,
+                        "odds_name": data.get("odds_name"),
+                        "reason": f"{len(candidates)} candidate(s)" if candidates else "no candidates",
+                    })
+                    continue
+
+                cand = candidates[0]
+                result, error = do_resolve(engine, player_id, cand["espn_player_id"], cand["espn_display_name"])
+                if error:
+                    skipped.append({"player_id": player_id, "queue": queue_name, "reason": error[0]})
+                    continue
+
+                resolved.append({
+                    "player_id": player_id,
+                    "queue": queue_name,
+                    "odds_name": data.get("odds_name"),
+                    "espn_player_id": cand["espn_player_id"],
+                    "espn_name": cand["espn_display_name"],
+                    "merged_into_player_id": result.get("merged_into_player_id") or result.get("merged_placeholder_id"),
+                })
+            except Exception as e:
+                skipped.append({"player_id": player_id, "queue": queue_name, "reason": str(e)})
+
+    return jsonify({
+        "auto_resolved_count": len(resolved),
+        "auto_resolved": resolved,
+        "skipped_count": len(skipped),
+        "skipped": skipped,
     })

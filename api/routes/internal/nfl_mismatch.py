@@ -6,8 +6,10 @@ keyed directly by ESPN event id (no historical-date lookup needed).
 """
 
 import os
+import re
 import sys
 from collections import defaultdict
+import requests
 from flask import Blueprint, request, jsonify
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
@@ -46,16 +48,75 @@ def _get_engine():
     return create_engine(DATABASE_URL)
 
 
+_SUFFIX_TOKENS = {"jr", "sr", "ii", "iii", "iv", "v", "2nd", "3rd", "4th"}
+
+
+def _scoring_tokens(name: str) -> set:
+    """Tokenize a normalized name for scoring purposes only — drops parenthetical
+    groups (sportsbook team-code disambiguators like "(NO)") and generational
+    suffixes (Jr/Sr/II/...), neither of which `normalize_player_name` strips, so an
+    odds-side "trent sherfield sr" doesn't lose a point against ESPN's "Trent
+    Sherfield" just because the real person's own data carries one token more or
+    fewer than the other. Doesn't touch the canonical normalize_player_name used
+    by the actual ingestion pipeline — two genuinely different same-named players
+    (there are two real "Michael Thomas"es in the NFL) still need that suffix to
+    stay distinguishable there; here, if stripping it makes two different real
+    people both score 1.0, the auto-resolve "no tied runner-up" guard still catches
+    it and leaves it for manual review.
+    """
+    name = re.sub(r"\([^)]*\)", "", name)
+    return {t for t in name.split() if t not in _SUFFIX_TOKENS}
+
+
 def score_candidate(odds_name: str, espn_name: str) -> float:
     """Token overlap score between normalized odds name and ESPN name."""
-    odds_tokens = set(odds_name.split())
-    espn_tokens = set(espn_name.split())
+    odds_tokens = _scoring_tokens(odds_name)
+    espn_tokens = _scoring_tokens(espn_name)
     overlap = len(odds_tokens & espn_tokens)
     return overlap / max(len(odds_tokens), len(espn_tokens), 1)
 
 
 def _date_str(game_date) -> str:
     return game_date.isoformat() if hasattr(game_date, "isoformat") else str(game_date)
+
+
+def search_espn_player_api(name: str) -> list:
+    """Last-resort lookup: ESPN's public site-search index, queried by name directly.
+    Unlike the boxscore and DB-search tiers (both scoped to data we already have —
+    one specific game's roster, or players we've already ESPN-linked before), this
+    reaches ESPN's full player database, so it can find someone neither of those two
+    would ever surface (e.g. a bench/practice-squad player with no prior ESPN link
+    who also didn't appear in the one boxscore we happened to check).
+    """
+    try:
+        resp = requests.get(
+            "https://site.api.espn.com/apis/search/v2",
+            params={"query": name, "limit": 10},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        return []
+
+    candidates = []
+    for result_type in data.get("results", []):
+        if result_type.get("type") != "player":
+            continue
+        for item in result_type.get("contents", []):
+            uid_parts = dict(p.split(":", 1) for p in item.get("uid", "").split("~") if ":" in p)
+            if uid_parts.get("l") != "28":  # NFL league id
+                continue
+            espn_id = uid_parts.get("a")
+            display_name = item.get("displayName", "")
+            if not espn_id or not display_name:
+                continue
+            candidates.append({
+                "espn_player_id": espn_id,
+                "espn_display_name": display_name,
+                "source": "espn_search",
+            })
+    return candidates
 
 
 def _find_sibling_espn_event(conn, game_date, home_team_id, away_team_id, player_id):
@@ -119,6 +180,7 @@ def get_mismatches():
         }
         for g in groups.values()
     ]
+    result.sort(key=lambda g: g["total_mismatches"], reverse=True)
     return jsonify(result)
 
 
@@ -209,6 +271,20 @@ def _compute_mismatch_candidates(engine, player_id):
             db_candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
             candidates = db_candidates[:8]
 
+    # If our own data (this game's boxscore + players we've already linked before)
+    # hasn't already produced a confident match, merge in ESPN's full player search
+    # index too — it can surface someone neither tier above ever could (e.g. a
+    # bench player with no prior ESPN link who didn't appear in this one boxscore).
+    if not candidates or candidates[0]["similarity_score"] < 1.0:
+        merged = {c["espn_player_id"]: c for c in candidates}
+        for cand in search_espn_player_api(odds_name):
+            score = score_candidate(normalized_odds, normalize_player_name(cand["espn_display_name"]))
+            cand = {**cand, "similarity_score": round(score, 3), "espn_event_id": espn_event_id}
+            existing = merged.get(cand["espn_player_id"])
+            if not existing or cand["similarity_score"] > existing["similarity_score"]:
+                merged[cand["espn_player_id"]] = cand
+        candidates = sorted(merged.values(), key=lambda x: x["similarity_score"], reverse=True)[:8]
+
     return {
         "player_id": player_id,
         "odds_name": odds_name,
@@ -279,8 +355,10 @@ def _do_resolve_mismatch(engine, player_id, espn_player_id, espn_name):
                       SELECT odds_event_id FROM nfl_player_props WHERE player_id = :target_id
                   )
             """), {"target_id": merged_into, "src_id": player_id})
-            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
+            # Mismatch rows reference nfl_player_props.id (non-cascading FK), so they
+            # must go before the leftover (unmoved/conflicting) prop rows they point at.
             conn.execute(text("DELETE FROM nfl_player_name_mismatch WHERE player_id = :src_id"), {"src_id": player_id})
+            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
             conn.execute(text("DELETE FROM nfl_players WHERE id = :player_id"), {"player_id": player_id})
             conn.commit()
 
@@ -353,7 +431,7 @@ def get_placeholder_players():
             WHERE p.espn_player_id IS NULL
             GROUP BY p.id, p.normalized_name
             HAVING COUNT(pp.id) > 0
-            ORDER BY p.normalized_name
+            ORDER BY props_count DESC, p.normalized_name
         """)).fetchall()
 
     result = []
@@ -414,11 +492,24 @@ def _compute_placeholder_candidates(engine, player_id):
             "source": "db_search",
         })
     candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
+    candidates = candidates[:8]
+
+    # If nothing in our own already-linked players is a confident match, merge in
+    # ESPN's full player search index too.
+    if not candidates or candidates[0]["similarity_score"] < 1.0:
+        merged = {c["espn_player_id"]: c for c in candidates}
+        for cand in search_espn_player_api(normalized_odds):
+            score = score_candidate(normalized_odds, normalize_player_name(cand["espn_display_name"]))
+            cand = {**cand, "similarity_score": round(score, 3)}
+            existing = merged.get(cand["espn_player_id"])
+            if not existing or cand["similarity_score"] > existing["similarity_score"]:
+                merged[cand["espn_player_id"]] = cand
+        candidates = sorted(merged.values(), key=lambda x: x["similarity_score"], reverse=True)[:8]
 
     return {
         "player_id": player_id,
         "odds_name": normalized_odds,
-        "candidates": candidates[:8],
+        "candidates": candidates,
     }, None
 
 
@@ -467,12 +558,13 @@ def _do_resolve_placeholder(engine, player_id, espn_player_id, espn_name):
                       SELECT odds_event_id FROM nfl_player_props WHERE player_id = :target_id
                   )
             """), {"target_id": target_player_id, "src_id": player_id})
-            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
 
-            # Remove the duplicate placeholder (mismatch rows have a non-cascading FK,
-            # so they must be cleared explicitly before the player row can be deleted).
+            # Remove the duplicate placeholder. Mismatch rows reference both
+            # nfl_players.id and nfl_player_props.id (both non-cascading FKs), so they
+            # must be cleared before either the leftover prop rows or the player row.
             conn.execute(text("DELETE FROM nfl_player_aliases WHERE player_id = :player_id"), {"player_id": player_id})
             conn.execute(text("DELETE FROM nfl_player_name_mismatch WHERE player_id = :player_id"), {"player_id": player_id})
+            conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
             conn.execute(text("DELETE FROM nfl_players WHERE id = :player_id"), {"player_id": player_id})
             conn.commit()
 
@@ -528,12 +620,13 @@ def resolve_placeholder(player_id):
 # POST /api/internal/nfl/auto-resolve-exact-matches
 #
 # Sweeps both queues (mismatches + placeholders) and auto-confirms only the
-# unambiguous case: exactly one candidate whose similarity score is 1.00. A
-# single candidate at a perfect token-overlap score means the odds-API name
-# and an already-ESPN-linked player's name are identical strings, which is
-# the same standard a human reviewer applies when clicking "Confirm Match"
-# on a 1.00 entry. Everything else (0, 2+ candidates, or a top score < 1.00)
-# is left for manual review.
+# unambiguous case: a top candidate at a perfect 1.00 token-overlap score with
+# no runner-up also at 1.00. A perfect score means the odds-API name and an
+# already-ESPN-linked player's name are identical strings, which is the same
+# standard a human reviewer applies when clicking "Confirm Match" on a 1.00
+# entry — the candidate list commonly includes other (lower-scoring) names
+# from the fuzzy DB-search fallback, so list length alone isn't a signal.
+# Anything without a clear 1.00 winner is left for manual review.
 # ---------------------------------------------------------------------------
 
 @nfl_mismatch_bp.route("/api/internal/nfl/auto-resolve-exact-matches", methods=["POST"])
@@ -570,7 +663,9 @@ def auto_resolve_exact_matches():
                     continue
 
                 candidates = data["candidates"]
-                if len(candidates) != 1 or candidates[0]["similarity_score"] != 1.0:
+                top_score = candidates[0]["similarity_score"] if candidates else 0
+                runner_up_score = candidates[1]["similarity_score"] if len(candidates) > 1 else 0
+                if top_score != 1.0 or runner_up_score == 1.0:
                     skipped.append({
                         "player_id": player_id,
                         "queue": queue_name,

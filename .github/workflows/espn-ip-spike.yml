@@ -1,0 +1,37 @@
+name: ESPN IP Spike (throwaway)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/espn-ip-spike.yml"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request ESPN scoreboard endpoint
+        run: |
+          RESP=$(curl -s -w "\n%{http_code}" \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=20251004&limit=5")
+          CODE=$(echo "$RESP" | tail -n1)
+          BODY=$(echo "$RESP" | sed '$d')
+          echo "HTTP status: $CODE"
+          echo "$BODY" > resp.json
+          echo "--- first 500 chars of response ---"
+          head -c 500 resp.json
+          echo ""
+          if [ "$CODE" != "200" ]; then
+            echo "Non-200 status — request was likely blocked."
+            exit 1
+          fi
+          python3 -c "
+          import json, sys
+          with open('resp.json') as f:
+              data = json.load(f)
+          if 'events' not in data and 'leagues' not in data:
+              print('200 OK but missing expected ESPN keys — possibly a block/challenge page.')
+              sys.exit(1)
+          print(f\"Got {len(data.get('events', []))} events back — looks like real ESPN data.\")
+          "

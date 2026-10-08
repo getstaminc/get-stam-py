@@ -34,6 +34,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from jobs.nfl_historical_player_odds_import import import_historical_odds_date_range
 from jobs.nfl_historical_player_actuals_import_reverse import import_historical_actuals_date_range_reverse
 from jobs.nfl_historical_defense_actuals_import_reverse import import_historical_defense_actuals_date_range_reverse
+from api.routes.internal.nfl_mismatch import run_auto_resolve_exact_matches
+from sqlalchemy import create_engine
 
 # Load environment variables
 load_dotenv()
@@ -139,6 +141,18 @@ def main():
         except Exception as e:
             print(f"\n❌ Error during defense actuals import: {e}")
             raise
+
+        print("\n" + "=" * 80)
+        print("STEP 4: Auto-Resolving Exact Player-ID Matches")
+        print("=" * 80)
+
+        try:
+            engine = create_engine(os.getenv("DATABASE_URL").replace("postgres://", "postgresql://"))
+            sweep_result = run_auto_resolve_exact_matches(engine)
+            print(f"✅ Auto-resolved {sweep_result['auto_resolved_count']} player(s); "
+                  f"{sweep_result['skipped_count']} left for manual review")
+        except Exception as e:
+            print(f"\n❌ Error during auto-resolve sweep: {e}")
 
         print("\n" + "=" * 80)
         print("🎉 Historical Data Import Complete!")

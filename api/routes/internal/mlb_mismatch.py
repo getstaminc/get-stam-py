@@ -659,9 +659,10 @@ def resolve_placeholder(player_id):
 # Anything without a clear 1.00 winner is left for manual review.
 # ---------------------------------------------------------------------------
 
-@mlb_mismatch_bp.route("/api/internal/mlb/auto-resolve-exact-matches", methods=["POST"])
-def auto_resolve_exact_matches():
-    engine = _get_engine()
+def run_auto_resolve_exact_matches(engine):
+    """Core sweep: auto-confirms any mismatch/placeholder player with exactly one
+    candidate at a 1.00 similarity score (no tied runner-up). Plain function so
+    both the admin-page endpoint below and the daily import job can call it."""
     resolved = []
     skipped = []
 
@@ -722,9 +723,15 @@ def auto_resolve_exact_matches():
             except Exception as e:
                 skipped.append({"player_id": player_id, "queue": queue_name, "reason": str(e)})
 
-    return jsonify({
+    return {
         "auto_resolved_count": len(resolved),
         "auto_resolved": resolved,
         "skipped_count": len(skipped),
         "skipped": skipped,
-    })
+    }
+
+
+@mlb_mismatch_bp.route("/api/internal/mlb/auto-resolve-exact-matches", methods=["POST"])
+def auto_resolve_exact_matches():
+    engine = _get_engine()
+    return jsonify(run_auto_resolve_exact_matches(engine))

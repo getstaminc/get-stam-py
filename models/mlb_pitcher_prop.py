@@ -50,6 +50,11 @@ class MLBPitcherProp(Base):
 
     did_not_play = Column(Boolean, nullable=False, default=False)
 
+    # Set when actuals can never be filled in because the game was postponed/
+    # canceled on this scheduled date (e.g. 'postponed', 'canceled'); NULL means
+    # no known reason.
+    actuals_unavailable_reason = Column(String(30))
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

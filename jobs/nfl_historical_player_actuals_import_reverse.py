@@ -650,7 +650,39 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
                     unique_espn_ids = set(espn_ids)
 
                     if len(unique_espn_ids) == 1:
-                        print(f"      ℹ️  Player not in ESPN data (likely DNP): {normalized_name} (has ESPN ID {list(unique_espn_ids)[0]} from other games)")
+                        confirmed_espn_id = list(unique_espn_ids)[0]
+                        player_team_row = conn.execute(text("""
+                            SELECT team_id FROM nfl_players WHERE id = :player_id
+                        """), {'player_id': player_id}).fetchone()
+                        player_current_team_id = player_team_row[0] if player_team_row else None
+
+                        # Only persist DNP when the player's own (already-confirmed) team is
+                        # actually one of the two teams in this game -- otherwise we'd be
+                        # guessing, since a stale/wrong team_id could mean something else is
+                        # going on (e.g. a trade) rather than a genuine DNP.
+                        if player_current_team_id in (team1_id, team2_id):
+                            player_team_info = next((t for t in team_info_list if t['id'] == player_current_team_id), None)
+                            opponent_team_info = next((t for t in team_info_list if t['id'] != player_current_team_id), None)
+                            conn.execute(text("""
+                                UPDATE nfl_player_props
+                                SET player_team_id = :team_id, player_team_name = :team_name,
+                                    opponent_team_id = :opp_id, opponent_team_name = :opp_name,
+                                    espn_event_id = :espn_event_id, did_not_play = true,
+                                    actuals_unavailable_reason = 'did_not_play',
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE id = :record_id
+                            """), {
+                                'team_id': player_current_team_id,
+                                'team_name': player_team_info['name'] if player_team_info else None,
+                                'opp_id': opponent_team_info['id'] if opponent_team_info else None,
+                                'opp_name': opponent_team_info['name'] if opponent_team_info else None,
+                                'espn_event_id': game_id,
+                                'record_id': props_id,
+                            })
+                            print(f"      🚫 DNP (not in boxscore at all, confirmed via known team): {normalized_name} (ESPN ID {confirmed_espn_id})")
+                        else:
+                            print(f"      ℹ️  Player not in ESPN data and current team doesn't match this game "
+                                  f"(leaving as-is): {normalized_name} (ESPN ID {confirmed_espn_id}, team_id={player_current_team_id})")
                         continue
 
                     if len(unique_espn_ids) == 0:

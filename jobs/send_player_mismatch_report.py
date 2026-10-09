@@ -16,16 +16,20 @@ Usage:
 import os
 import sys
 import itertools
+from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
+import requests
 from sqlalchemy import create_engine, text
 
 from api.services.email_service import EmailService
 from api.routes.internal.mlb_mismatch import score_candidate
+
+ESPN_HEALTH_CHECK_URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").replace("postgres://", "postgresql://")
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://www.getstam.com")
@@ -53,6 +57,27 @@ SPORTS = [
 
 def _get_engine():
     return create_engine(DATABASE_URL)
+
+
+def _check_espn_reachable():
+    """One lightweight ESPN ping from wherever this job actually runs (a pulse
+    check on the same dependency every other check in this report relies on).
+    Checks status 200 AND that the body has the expected key, not just that
+    *something* came back -- a block/challenge page can still return 200."""
+    try:
+        resp = requests.get(
+            ESPN_HEALTH_CHECK_URL,
+            params={"dates": date.today().strftime("%Y%m%d"), "limit": 5},
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return False, f"HTTP {resp.status_code}"
+        if "events" not in resp.json():
+            return False, "200 OK but missing expected 'events' key (possible block/challenge page)"
+        return True, None
+    except Exception as e:
+        return False, str(e)
 
 
 def _fetch_mismatches(engine, table):
@@ -180,7 +205,21 @@ def _fetch_missing_actuals_summary(engine, prop_tables):
     }
 
 
-def _build_html(results_by_sport, collisions_by_sport, team_issues_by_sport, missing_actuals_by_sport):
+def _build_html(results_by_sport, collisions_by_sport, team_issues_by_sport, missing_actuals_by_sport, espn_ok, espn_detail):
+    if espn_ok:
+        espn_banner = """
+            <div style="padding:12px; background:#e6f4ea; border:1px solid #34a853; margin-bottom:16px;">
+                ✅ ESPN reachable from this job's environment right now.
+            </div>
+        """
+    else:
+        espn_banner = f"""
+            <div style="padding:12px; background:#fce8e6; border:1px solid #d93025; margin-bottom:16px;">
+                ❌ ESPN is NOT reachable from this job's environment right now ({espn_detail}).
+                Every check below that depends on ESPN access may be stale or incomplete until this is fixed.
+            </div>
+        """
+
     sections = []
     total_players = 0
     for sport in SPORTS:
@@ -277,6 +316,7 @@ def _build_html(results_by_sport, collisions_by_sport, team_issues_by_sport, mis
     link = f"{SITE_BASE_URL}/internal/mismatch-players"
     return f"""
         <div style="font-family: sans-serif;">
+            {espn_banner}
             <h2>Player Prop Mismatch Report</h2>
             <p>{total_players} player(s) across MLB/NFL have an odds-side name that never
             confidently matched an ESPN player.</p>
@@ -308,6 +348,10 @@ def run():
     collisions_by_sport = {}
     team_issues_by_sport = {}
     missing_actuals_by_sport = {}
+
+    espn_ok, espn_detail = _check_espn_reachable()
+    print(f"[mismatch-report] ESPN reachable: {espn_ok}" + (f" ({espn_detail})" if espn_detail else ""))
+
     for sport in SPORTS:
         rows = _fetch_mismatches(engine, sport["table"])
         results_by_sport[sport["key"]] = rows
@@ -327,8 +371,10 @@ def run():
               f"{summary['unexplained_total']} unexplained missing-actuals row(s)")
 
     total = sum(len(v) for v in results_by_sport.values())
-    subject = f"Player Prop Mismatch Report — {total} player(s) need review"
-    html = _build_html(results_by_sport, collisions_by_sport, team_issues_by_sport, missing_actuals_by_sport)
+    subject_prefix = "" if espn_ok else "🚨 ESPN UNREACHABLE — "
+    subject = f"{subject_prefix}Player Prop Mismatch Report — {total} player(s) need review"
+    html = _build_html(results_by_sport, collisions_by_sport, team_issues_by_sport, missing_actuals_by_sport,
+                        espn_ok, espn_detail)
 
     ok, err = EmailService.send_digest_to_one(REPORT_RECIPIENT, subject, html)
     if ok:

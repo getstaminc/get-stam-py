@@ -345,6 +345,15 @@ def _do_resolve_mismatch(engine, player_id, espn_player_id, espn_name):
                 return None, ("Duplicate ESPN ID but existing player not found", 500)
             merged_into = row[0]
 
+            # Grab the duplicate's own name before it's gone -- its own odds_api alias
+            # (added automatically when it was first created) cascades away with it
+            # below, which is exactly what let this duplicate get created in the first
+            # place, so without re-adding it the same odds-side spelling spawns a brand
+            # new placeholder/mismatch again next time it comes in.
+            src_player = conn.execute(text("""
+                SELECT player_name, normalized_name FROM nfl_players WHERE id = :player_id
+            """), {"player_id": player_id}).fetchone()
+
             # Move this player's props onto the existing player (skip games it already has),
             # clear its mismatch rows, then drop the now-empty duplicate row
             # (nfl_player_aliases cascades on delete).
@@ -360,6 +369,17 @@ def _do_resolve_mismatch(engine, player_id, espn_player_id, espn_name):
             conn.execute(text("DELETE FROM nfl_player_name_mismatch WHERE player_id = :src_id"), {"src_id": player_id})
             conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
             conn.execute(text("DELETE FROM nfl_players WHERE id = :player_id"), {"player_id": player_id})
+
+            if src_player and src_player[1] is not None:
+                conn.execute(text("""
+                    INSERT INTO nfl_player_aliases (player_id, source, source_name, normalized_name, created_at)
+                    VALUES (:player_id, 'odds_api', :source_name, :normalized_name, NOW())
+                    ON CONFLICT (source, normalized_name) DO NOTHING
+                """), {
+                    "player_id": merged_into,
+                    "source_name": src_player[0],
+                    "normalized_name": src_player[1],
+                })
             conn.commit()
 
     # Step 3: backfill actuals for each mismatch game via its sibling ESPN event.
@@ -550,6 +570,13 @@ def _do_resolve_placeholder(engine, player_id, espn_player_id, espn_name):
             target_player_id, target_name = row[0], row[1]
             merged_from = player_id
 
+            # Grab the placeholder's own name before it's deleted below -- without
+            # re-adding it as an alias on the target, the same odds-side spelling just
+            # spawns a brand new placeholder again next time it comes in.
+            src_player = conn.execute(text("""
+                SELECT player_name, normalized_name FROM nfl_players WHERE id = :player_id
+            """), {"player_id": player_id}).fetchone()
+
             # Move props from placeholder → existing player (skip any that conflict)
             conn.execute(text("""
                 UPDATE nfl_player_props SET player_id = :target_id
@@ -566,6 +593,17 @@ def _do_resolve_placeholder(engine, player_id, espn_player_id, espn_name):
             conn.execute(text("DELETE FROM nfl_player_name_mismatch WHERE player_id = :player_id"), {"player_id": player_id})
             conn.execute(text("DELETE FROM nfl_player_props WHERE player_id = :src_id"), {"src_id": player_id})
             conn.execute(text("DELETE FROM nfl_players WHERE id = :player_id"), {"player_id": player_id})
+
+            if src_player and src_player[1] is not None:
+                conn.execute(text("""
+                    INSERT INTO nfl_player_aliases (player_id, source, source_name, normalized_name, created_at)
+                    VALUES (:player_id, 'odds_api', :source_name, :normalized_name, NOW())
+                    ON CONFLICT (source, normalized_name) DO NOTHING
+                """), {
+                    "player_id": target_player_id,
+                    "source_name": src_player[0],
+                    "normalized_name": src_player[1],
+                })
             conn.commit()
 
     # Step 2: find all espn_event_ids already linked to the target player's prop records

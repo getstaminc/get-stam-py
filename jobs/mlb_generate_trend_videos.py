@@ -20,9 +20,20 @@ differently and may end up on different platforms.
 
 Requires:
 - ffmpeg on PATH (`brew install ffmpeg`)
-- edge-tts (`pip install edge-tts`) — free, uses Microsoft Edge's neural
-  voices via an unofficial API. No API key. Good enough quality for this;
-  swap to a paid TTS provider later if/when it matters.
+- TTS_ENGINE=piper (default, see below) — piper-tts (`pip install piper-tts`)
+  plus a downloaded .onnx voice model. Runs fully offline, no API/network
+  dependency at all. piper_voices/ is gitignored (models run ~100-200MB
+  each) — fetch the default voice with:
+    mkdir -p piper_voices && cd piper_voices
+    curl -sL -o en_US-ryan-high.onnx "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx"
+    curl -sL -o en_US-ryan-high.onnx.json "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx.json"
+  Browse https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US for
+  other voices.
+- TTS_ENGINE=edge (the original engine, kept as a fallback option) —
+  edge-tts (`pip install edge-tts`), free, uses Microsoft Edge's neural
+  voices via an unofficial API. No API key, but that API started rejecting
+  all requests with a 403 on 2026-10-12 with no fix available upstream —
+  this is exactly the kind of outage risk piper's offline model avoids.
 
 Usage:
     venv/bin/python jobs/mlb_generate_trend_videos.py [YYYY-MM-DD]
@@ -51,6 +62,11 @@ SCREENSHOTS_ROOT = Path(__file__).resolve().parent.parent / "output" / "screensh
 AUDIO_ROOT = Path(__file__).resolve().parent.parent / "output" / "audio"
 VIDEOS_ROOT = Path(__file__).resolve().parent.parent / "output" / "videos"
 
+# Which TTS engine to use — "piper" (offline, default since edge-tts's
+# 2026-10-12 outage) or "edge" (the original, free but outage-prone).
+TTS_ENGINE = os.getenv("TTS_ENGINE", "piper")
+
+# --- edge-tts settings (only used when TTS_ENGINE=edge) ---
 # "Reliable, Authority" — reads as a confident sports analyst. Swap via env
 # var without touching code; run `edge-tts --list-voices` for the full list.
 TTS_VOICE = os.getenv("TTS_VOICE", "en-US-ChristopherNeural")
@@ -58,6 +74,17 @@ TTS_VOICE = os.getenv("TTS_VOICE", "en-US-ChristopherNeural")
 # post-process time-stretch), so pitch stays natural. "+0%" is the neutral
 # speaking pace edge-tts defaults to; bump this to tighten up the pacing.
 TTS_RATE = os.getenv("TTS_RATE", "+20%")
+
+# --- piper settings (only used when TTS_ENGINE=piper) ---
+# en_US-ryan-high picked after comparing several candidates by ear — see
+# piper_voices/ for other downloaded models. length_scale is piper's speed
+# control (smaller = faster; inverse of a plain multiplier) — 0.8333 =
+# 1/1.2, matching edge-tts's previous "+20%" rate by ear.
+PIPER_VOICE_PATH = os.getenv(
+    "PIPER_VOICE_PATH",
+    str(Path(__file__).resolve().parent.parent / "piper_voices" / "en_US-ryan-high.onnx"),
+)
+PIPER_LENGTH_SCALE = os.getenv("PIPER_LENGTH_SCALE", "0.8333")
 
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
@@ -95,16 +122,37 @@ def load_games(date_str):
     return games
 
 
-async def _synthesize(text, voice, rate, out_path):
+async def _synthesize_edge(text, voice, rate, out_path):
     import edge_tts
 
     communicate = edge_tts.Communicate(text, voice, rate=rate)
     await communicate.save(str(out_path))
 
 
+def _synthesize_piper(text, out_path):
+    # piper only writes wav directly; render to a temp .wav next to the
+    # real destination, then transcode to .mp3 (matching what the rest of
+    # the pipeline — ffprobe duration checks, ffmpeg muxing — expects) and
+    # clean up the intermediate file.
+    wav_path = out_path.with_suffix(".wav")
+    subprocess.run(
+        [sys.executable, "-m", "piper", "-m", PIPER_VOICE_PATH,
+         "--length-scale", PIPER_LENGTH_SCALE, "-f", str(wav_path)],
+        input=text, text=True, check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", str(wav_path), "-q:a", "2", str(out_path)],
+        check=True, capture_output=True,
+    )
+    wav_path.unlink(missing_ok=True)
+
+
 def synthesize_voiceover(text, out_path):
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    asyncio.run(_synthesize(text, TTS_VOICE, TTS_RATE, out_path))
+    if TTS_ENGINE == "piper":
+        _synthesize_piper(text, out_path)
+    else:
+        asyncio.run(_synthesize_edge(text, TTS_VOICE, TTS_RATE, out_path))
     return out_path
 
 

@@ -28,6 +28,10 @@ output/
 youtube_client_secret.json
 youtube_token.json
 
+# Ignore downloaded Piper TTS voice models (~100-200MB each, see
+# jobs/mlb_generate_trend_videos.py's docstring for the download commands)
+piper_voices/
+
 # Ignore Node.js files (not relevant for Python project)
 package-lock.json
 node_modules/

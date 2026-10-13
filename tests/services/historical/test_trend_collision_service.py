@@ -51,3 +51,43 @@ def test_entering_streak_skips_games_missing_required_data_for_that_trend_type()
     assert general['Dodgers']['g1']['cover_streak'] == 0
     assert 'cover_streak' not in general['Dodgers'].get('g2', {})
     assert general['Dodgers']['g3']['cover_streak'] == 1  # only g1 counted as prior cover
+
+
+from api.services.historical.trend_collision_service import _build_collision_index
+
+
+def test_collision_index_records_winner_ats_and_total():
+    home_h2h_games = {
+        ('Huskers', 'Sooners'): [
+            {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 30, 'aw': 20, 'tl': 45, 'ln': -3},  # home wins, home covers (30-3=27>20), over (50>45)
+        ],
+    }
+    general = {'Huskers': {'g1': {'win_streak': 5}}, 'Sooners': {'g1': {'loss_streak': 5}}}
+    home_venue = {'Huskers': {'g1': {'win_streak': 5}}}
+    away_venue = {'Sooners': {'g1': {'loss_streak': 5}}}
+
+    index = _build_collision_index(home_h2h_games, general, home_venue, away_venue, has_spread=True)
+
+    assert len(index) == 1
+    record = index[0]
+    assert record['game_id'] == 'g1'
+    assert record['home']['name'] == 'Huskers'
+    assert record['home']['general'] == {'win_streak': 5}
+    assert record['home']['home_venue'] == {'win_streak': 5}
+    assert record['away']['name'] == 'Sooners'
+    assert record['away']['general'] == {'loss_streak': 5}
+    assert record['away']['away_venue'] == {'loss_streak': 5}
+    assert record['outcome'] == {'winner': 'home', 'ats_result': 'home', 'total_result': 'over'}
+
+
+def test_collision_index_handles_ties_pushes_and_missing_data():
+    home_h2h_games = {
+        ('A', 'B'): [
+            {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 10, 'aw': 10, 'tl': 20, 'ln': 0},   # tie, ats push, total push
+            {'game_id': 'g2', 'game_date': '2026-01-02', 'hs': 10, 'aw': 8, 'tl': None, 'ln': None},  # no spread/total configured
+        ],
+    }
+    index = _build_collision_index(home_h2h_games, {}, {}, {}, has_spread=True)
+    g1, g2 = (r for r in index if r['game_id'] in ('g1', 'g2'))
+    assert g1['outcome'] == {'winner': None, 'ats_result': 'push', 'total_result': 'push'}
+    assert g2['outcome'] == {'winner': 'home', 'ats_result': None, 'total_result': None}  # ln/tl both None -> no spread/total data for this game

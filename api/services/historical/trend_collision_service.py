@@ -79,3 +79,69 @@ def _build_entering_streaks(
                 away_venue[team].setdefault(game_id, {})[tt] = count
 
     return general, home_venue, away_venue
+
+
+def _build_collision_index(
+    home_h2h_games: Dict[Tuple[str, str], List[Dict]],
+    general: Dict[str, Dict[Any, Dict[str, int]]],
+    home_venue: Dict[str, Dict[Any, Dict[str, int]]],
+    away_venue: Dict[str, Dict[Any, Dict[str, int]]],
+    has_spread: bool,
+) -> List[Dict]:
+    """One record per historical game, carrying both teams' entering streaks
+    and that game's outcome (straight-up / ATS / total)."""
+    index: List[Dict] = []
+    for (home_team, away_team), games in home_h2h_games.items():
+        for g in games:
+            game_id = g['game_id']
+            hs, aw, tl, ln = g.get('hs'), g.get('aw'), g.get('tl'), g.get('ln')
+            if hs is None or aw is None:
+                continue
+
+            if hs > aw:
+                winner = 'home'
+            elif hs < aw:
+                winner = 'away'
+            else:
+                winner = None
+
+            if has_spread and ln is not None:
+                if hs + ln > aw:
+                    ats_result = 'home'
+                elif hs + ln < aw:
+                    ats_result = 'away'
+                else:
+                    ats_result = 'push'
+            else:
+                ats_result = None
+
+            if tl is not None:
+                total = hs + aw
+                if total > tl:
+                    total_result = 'over'
+                elif total < tl:
+                    total_result = 'under'
+                else:
+                    total_result = 'push'
+            else:
+                total_result = None
+
+            index.append({
+                'game_id': game_id,
+                'home': {
+                    'name': home_team,
+                    'general': general.get(home_team, {}).get(game_id, {}),
+                    'home_venue': home_venue.get(home_team, {}).get(game_id, {}),
+                },
+                'away': {
+                    'name': away_team,
+                    'general': general.get(away_team, {}).get(game_id, {}),
+                    'away_venue': away_venue.get(away_team, {}).get(game_id, {}),
+                },
+                'outcome': {
+                    'winner': winner,
+                    'ats_result': ats_result,
+                    'total_result': total_result,
+                },
+            })
+    return index

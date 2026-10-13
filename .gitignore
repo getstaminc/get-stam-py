@@ -21,3 +21,6 @@ mlb_starting_pitchers.json
 # Ignore Node.js files (not relevant for Python project)
 package-lock.json
 node_modules/
+
+# Subagent-driven-development scratch workspace (ledgers, briefs, review packages)
+.superpowers/

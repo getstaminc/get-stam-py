@@ -110,10 +110,12 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
     const homeTeamHomeTrends = filterByLength(gwt.homeTeamHomeTrends || []);
     const awayTeamAwayTrends = filterByLength(gwt.awayTeamAwayTrends || []);
     const homeAtHomeH2HTrends = filterByLength(gwt.homeAtHomeH2HTrends || []);
+    const collisionTrends = filterByLength(gwt.collisionTrends || []);
     const hasTrends =
       homeTeamTrends.length > 0 || awayTeamTrends.length > 0 || headToHeadTrends.length > 0 ||
-      homeTeamHomeTrends.length > 0 || awayTeamAwayTrends.length > 0 || homeAtHomeH2HTrends.length > 0;
-    return { ...gwt, homeTeamTrends, awayTeamTrends, headToHeadTrends, homeTeamHomeTrends, awayTeamAwayTrends, homeAtHomeH2HTrends, hasTrends };
+      homeTeamHomeTrends.length > 0 || awayTeamAwayTrends.length > 0 || homeAtHomeH2HTrends.length > 0 ||
+      collisionTrends.length > 0;
+    return { ...gwt, homeTeamTrends, awayTeamTrends, headToHeadTrends, homeTeamHomeTrends, awayTeamAwayTrends, homeAtHomeH2HTrends, collisionTrends, hasTrends };
   }).filter((gwt) => gwt.hasTrends);
 
   if (filtered.length === 0) {
@@ -134,6 +136,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
   const getTopTrends = (gwt: GameWithTrends) => [
     ...(gwt.headToHeadTrends || []),
     ...(gwt.homeAtHomeH2HTrends || []),
+    ...(gwt.collisionTrends || []),
     ...(gwt.homeTeamHomeTrends || []),
     ...(gwt.awayTeamAwayTrends || []),
     ...(gwt.homeTeamTrends || []),
@@ -160,6 +163,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
           const allTrends = [
             ...(gwt.headToHeadTrends || []),
             ...(gwt.homeAtHomeH2HTrends || []),
+            ...(gwt.collisionTrends || []),
             ...(gwt.homeTeamHomeTrends || []),
             ...(gwt.awayTeamAwayTrends || []),
             ...(gwt.homeTeamTrends || []),

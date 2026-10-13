@@ -3,12 +3,19 @@ import { convertTeamNameBySport } from './teamNameConverter';
 // Types for trend analysis
 export type TrendType = 'win_streak' | 'loss_streak' | 'cover_streak' | 'no_cover_streak' | 'over_streak' | 'under_streak';
 
+export interface SecondaryRate {
+  label: string;
+  rate: number;
+  sample_size: number;
+}
+
 export interface TrendResult {
   type: TrendType;
   count: number;
   description: string;
   continuation_rate?: number;
   sample_size?: number;
+  secondary_rates?: SecondaryRate[];
 }
 
 export interface GameWithTrends {
@@ -19,6 +26,7 @@ export interface GameWithTrends {
   homeTeamHomeTrends?: TrendResult[];
   awayTeamAwayTrends?: TrendResult[];
   homeAtHomeH2HTrends?: TrendResult[];
+  collisionTrends?: TrendResult[];
   hasTrends: boolean;
 }
 

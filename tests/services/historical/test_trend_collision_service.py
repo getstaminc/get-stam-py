@@ -1,3 +1,5 @@
+import pytest
+
 from api.services.historical.trend_collision_service import _build_entering_streaks
 
 TREND_TYPES = ('over_streak', 'under_streak', 'win_streak', 'loss_streak', 'cover_streak', 'no_cover_streak')
@@ -203,3 +205,245 @@ def test_no_sport_context_returns_none():
             {'trend_type': 'win_streak', 'min_length': 3, 'venue': 'general'},
             {'trend_type': 'loss_streak', 'min_length': 3, 'venue': 'general'},
         ) is None
+
+
+def test_venue_specific_pair_does_not_match_via_general_swap():
+    """both_general gate (fix round 1, finding #1): a venue_specific/venue_specific
+    query must NEVER match through a role-swapped arrangement, even when the swap
+    condition would be satisfied using general pools. Here H (literal home team)
+    carries a general LOSS streak (the away_criterion's profile) and A (literal
+    away team) carries a general WIN streak (the home_criterion's profile) -- the
+    "hot"/"cold" streaks sit on the physically opposite roles from what this
+    venue_specific query asks for. Neither team has the matching VENUE-PINNED
+    streak either (H has no prior home games at all; A has no prior away games
+    at all), so straight fails too. If `if not straight and both_general:` were
+    ever weakened to `if not straight:`, this would incorrectly match via the
+    general-pool swap -- see the sibling test below, which proves the same
+    fixture DOES match once both criteria are 'general'."""
+    prior_h_losses = [
+        {'game_id': f'h{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 5, 'aw': 10, 'tl': None, 'ln': None, 'is_home': False}
+        for i in range(1, 6)
+    ]
+    prior_a_wins = [
+        {'game_id': f'a{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 10, 'aw': 5, 'tl': None, 'ln': None, 'is_home': True}
+        for i in range(1, 6)
+    ]
+    deciding = {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 25, 'ln': -3}
+    team_games = {
+        'H': prior_h_losses + [{**deciding, 'is_home': True}],
+        'A': prior_a_wins + [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 25, 'ln': 3, 'is_home': False}],
+    }
+    home_h2h_games = {('H', 'A'): [deciding]}
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'ncaaf': {'home_spread': 'home_line', 'away_spread': 'away_line'}}):
+        stats = get_collision_stats(
+            'ncaaf',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'venue_specific'},
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'venue_specific'},
+        )
+
+    assert stats is None
+
+
+def test_general_pair_matches_via_swap_with_same_opposite_role_fixture():
+    """Sibling to the test above: the identical fixture, but both criteria are
+    'general'. Since general criteria carry no venue identity, the swapped
+    arrangement (A satisfies the win_streak slot, H satisfies the loss_streak
+    slot) is a legitimate match. This proves the `and both_general` gate is
+    load-bearing: general queries still pool across both arrangements as
+    designed, while the venue_specific/venue_specific version of this exact
+    fixture (previous test) correctly returns None."""
+    prior_h_losses = [
+        {'game_id': f'h{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 5, 'aw': 10, 'tl': None, 'ln': None, 'is_home': False}
+        for i in range(1, 6)
+    ]
+    prior_a_wins = [
+        {'game_id': f'a{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 10, 'aw': 5, 'tl': None, 'ln': None, 'is_home': True}
+        for i in range(1, 6)
+    ]
+    deciding = {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 25, 'ln': -3}
+    team_games = {
+        'H': prior_h_losses + [{**deciding, 'is_home': True}],
+        'A': prior_a_wins + [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 25, 'ln': 3, 'is_home': False}],
+    }
+    home_h2h_games = {('H', 'A'): [deciding]}
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'ncaaf': {'home_spread': 'home_line', 'away_spread': 'away_line'}}):
+        stats = get_collision_stats(
+            'ncaaf',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'general'},
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'general'},
+        )
+
+    assert stats is not None
+    assert stats['sample_size'] == 1
+    # Match came via swap (home_side_is_literal_home=False): the literal AWAY team (A)
+    # satisfied the home_criterion, and A actually LOST the literal game (H=20 beat A=10
+    # straight-up) -> home_side (A) lost -> home_side_win_rate must be 0.0, not 1.0. A
+    # sign-flip bug in the home_side_won expression would silently invert this to 1.0.
+    assert stats['straight_up']['home_side_win_rate'] == 0.0
+
+
+def test_mixed_general_and_venue_specific_criteria_match_straight():
+    """No prior coverage existed for a mixed general/venue_specific pair (fix
+    round 1, finding #2a). H2 (home) straight-matches on a general win_streak,
+    A2 (away) straight-matches on an away_venue (venue_specific) loss_streak --
+    both_general is False here, but straight alone is enough."""
+    prior_h2_wins = [
+        {'game_id': f'h{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 10, 'aw': 5, 'tl': None, 'ln': None, 'is_home': True}
+        for i in range(1, 6)
+    ]
+    prior_a2_away_losses = [
+        {'game_id': f'a{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 5, 'aw': 10, 'tl': None, 'ln': None, 'is_home': False}
+        for i in range(1, 6)
+    ]
+    deciding = {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 25, 'ln': -3}
+    team_games = {
+        'H2': prior_h2_wins + [{**deciding, 'is_home': True}],
+        'A2': prior_a2_away_losses + [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 25, 'ln': 3, 'is_home': False}],
+    }
+    home_h2h_games = {('H2', 'A2'): [deciding]}
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'ncaaf': {'home_spread': 'home_line', 'away_spread': 'away_line'}}):
+        stats = get_collision_stats(
+            'ncaaf',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'general'},
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'venue_specific'},
+        )
+
+    assert stats is not None
+    assert stats['sample_size'] == 1
+    assert stats['straight_up']['home_side_win_rate'] == 1.0
+
+
+def test_mixed_general_and_venue_specific_criteria_never_swap():
+    """Fix round 1, finding #2b: a mixed general/venue_specific pair must never
+    match via a swap, even on a fixture where the raw swap arithmetic (which
+    always reads the *general* pools on both sides, regardless of what the
+    criteria's own 'venue' fields say) would line up. Reuses the exact
+    opposite-role fixture from the venue_specific/venue_specific test above --
+    H's general loss_streak is 5 and A's general win_streak is 5, which is
+    exactly what the swap formula would check -- but because one side here is
+    'venue_specific', both_general is False, so the swap is never attempted and
+    the result must be None."""
+    prior_h_losses = [
+        {'game_id': f'h{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 5, 'aw': 10, 'tl': None, 'ln': None, 'is_home': False}
+        for i in range(1, 6)
+    ]
+    prior_a_wins = [
+        {'game_id': f'a{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 10, 'aw': 5, 'tl': None, 'ln': None, 'is_home': True}
+        for i in range(1, 6)
+    ]
+    deciding = {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 25, 'ln': -3}
+    team_games = {
+        'H': prior_h_losses + [{**deciding, 'is_home': True}],
+        'A': prior_a_wins + [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 25, 'ln': 3, 'is_home': False}],
+    }
+    home_h2h_games = {('H', 'A'): [deciding]}
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'ncaaf': {'home_spread': 'home_line', 'away_spread': 'away_line'}}):
+        stats = get_collision_stats(
+            'ncaaf',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'general'},
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'venue_specific'},
+        )
+
+    assert stats is None
+
+
+def test_multiple_matches_aggregate_with_push_excluded_from_its_metric():
+    """Fix round 1, finding #3: 3 historical games match the same general/general
+    query -- one matches straight (P/Q), one matches ONLY via the swap (R/S), and
+    one matches straight again (T/U). G2 (R/S) has an ATS push. Values are chosen
+    so a sign-flip bug in home_side bookkeeping for the swapped game would
+    visibly change the straight_up rate (2 wins / 3 = 0.667, not a trivial
+    0.0/1.0), the push is excluded from the ats denominator (2, not 3) while
+    still counting toward the overall sample_size (3), and the ats/total rates
+    are themselves non-trivial (0.5 and 0.667) rather than accidentally-correct
+    0.0/1.0 values."""
+    def wins(prefix):
+        return [
+            {'game_id': f'{prefix}{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 10, 'aw': 5, 'tl': None, 'ln': None, 'is_home': True}
+            for i in range(1, 6)
+        ]
+
+    def losses(prefix):
+        return [
+            {'game_id': f'{prefix}{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 5, 'aw': 10, 'tl': None, 'ln': None, 'is_home': False}
+            for i in range(1, 6)
+        ]
+
+    # G1: P (home) straight-matches (win_streak>=5 general), Q (away) straight-matches
+    # (loss_streak>=5 general). P wins straight-up, covers, and the total goes over.
+    g1 = {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 25, 'ln': -3}
+    # G2: R (home) is on a general LOSS streak and S (away) is on a general WIN streak --
+    # the opposite of what straight needs -- so this matches ONLY via the swap (S satisfies
+    # the home_criterion's win_streak slot, R satisfies the away_criterion's loss_streak
+    # slot). R wins the literal game, so the swapped home_side (S) LOSES. ATS is a push.
+    g2 = {'game_id': 'g2', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 25, 'ln': -10}
+    # G3: T (home) straight-matches like G1 and wins straight-up, but does NOT cover
+    # (big home line) and the total goes under -- keeps the ats/total rates non-trivial.
+    g3 = {'game_id': 'g3', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 35, 'ln': -15}
+
+    team_games = {
+        'P': wins('p') + [{**g1, 'is_home': True}],
+        'Q': losses('q') + [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 25, 'ln': 3, 'is_home': False}],
+        'R': losses('r') + [{**g2, 'is_home': True}],
+        'S': wins('s') + [{'game_id': 'g2', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 25, 'ln': 10, 'is_home': False}],
+        'T': wins('t') + [{**g3, 'is_home': True}],
+        'U': losses('u') + [{'game_id': 'g3', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 35, 'ln': 15, 'is_home': False}],
+    }
+    home_h2h_games = {
+        ('P', 'Q'): [g1],
+        ('R', 'S'): [g2],
+        ('T', 'U'): [g3],
+    }
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'ncaaf': {'home_spread': 'home_line', 'away_spread': 'away_line'}}):
+        stats = get_collision_stats(
+            'ncaaf',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'general'},
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'general'},
+        )
+
+    assert stats['sample_size'] == 3
+    # G1 win (P, straight), G2 loss (S via swap -- literal home R won, so swapped
+    # home_side S lost), G3 win (T, straight) -> 2/3.
+    assert stats['straight_up']['sample_size'] == 3
+    assert stats['straight_up']['home_side_win_rate'] == pytest.approx(2 / 3)
+    # G2 is a push -> excluded from the ats denominator (2, not 3) though still counted
+    # in the overall sample_size (3) above. G1 covers (win), G3 does not (loss) -> 1/2.
+    assert stats['ats']['sample_size'] == 2
+    assert stats['ats']['home_side_cover_rate'] == pytest.approx(0.5)
+    # G1 over, G2 over, G3 under -> 2/3.
+    assert stats['total']['sample_size'] == 3
+    assert stats['total']['over_rate'] == pytest.approx(2 / 3)
+
+
+def test_unrecognized_venue_value_raises_value_error():
+    """Fix round 1, finding #4: a typo'd venue (e.g. 'generl', 'home_venue')
+    must raise ValueError rather than silently falling through to the general
+    pool. Checked on both the home and away criterion."""
+    with pytest.raises(ValueError):
+        get_collision_stats(
+            'mlb',
+            {'trend_type': 'win_streak', 'min_length': 3, 'venue': 'generl'},
+            {'trend_type': 'loss_streak', 'min_length': 3, 'venue': 'general'},
+        )
+
+    with pytest.raises(ValueError):
+        get_collision_stats(
+            'mlb',
+            {'trend_type': 'win_streak', 'min_length': 3, 'venue': 'general'},
+            {'trend_type': 'loss_streak', 'min_length': 3, 'venue': 'home_venue'},
+        )

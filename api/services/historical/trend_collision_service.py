@@ -185,6 +185,13 @@ def get_collision_stats(
     unless both criteria are 'general' and a role-swapped arrangement matched
     instead (general trends carry no venue identity, so either physical team
     may satisfy either side of the query)."""
+    valid_venues = ('general', 'venue_specific')
+    if home_criterion['venue'] not in valid_venues or away_criterion['venue'] not in valid_venues:
+        raise ValueError(
+            "criterion 'venue' must be 'general' or 'venue_specific', got "
+            f"home={home_criterion['venue']!r} away={away_criterion['venue']!r}"
+        )
+
     ctx = _load_collision_context(sport)
     if not ctx:
         return None

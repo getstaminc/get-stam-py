@@ -639,22 +639,17 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
 
             if not player_stats:
                 try:
-                    other_props = conn.execute(text("""
-                        SELECT DISTINCT p.espn_player_id
-                        FROM nfl_player_props pp
-                        JOIN nfl_players p ON pp.player_id = p.id
-                        WHERE pp.player_id = :player_id AND pp.id != :props_id
-                    """), {'player_id': player_id, 'props_id': props_id}).fetchall()
+                    # Check the player's own record directly -- not by inferring identity
+                    # from sibling prop rows, which is blind whenever this is their only
+                    # prop row ever (no siblings to check), incorrectly treating an
+                    # already-identified player as unidentified every time.
+                    player_row = conn.execute(text("""
+                        SELECT espn_player_id, team_id FROM nfl_players WHERE id = :player_id
+                    """), {'player_id': player_id}).fetchone()
+                    confirmed_espn_id = player_row[0] if player_row else None
 
-                    espn_ids = [row[0] for row in other_props if row[0] is not None]
-                    unique_espn_ids = set(espn_ids)
-
-                    if len(unique_espn_ids) == 1:
-                        confirmed_espn_id = list(unique_espn_ids)[0]
-                        player_team_row = conn.execute(text("""
-                            SELECT team_id FROM nfl_players WHERE id = :player_id
-                        """), {'player_id': player_id}).fetchone()
-                        player_current_team_id = player_team_row[0] if player_team_row else None
+                    if confirmed_espn_id:
+                        player_current_team_id = player_row[1]
 
                         # Only persist DNP when the player's own (already-confirmed) team is
                         # actually one of the two teams in this game -- otherwise we'd be
@@ -685,10 +680,7 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
                                   f"(leaving as-is): {normalized_name} (ESPN ID {confirmed_espn_id}, team_id={player_current_team_id})")
                         continue
 
-                    if len(unique_espn_ids) == 0:
-                        print(f"      ⚠️  No ESPN ID found in any records for {normalized_name}")
-                    else:
-                        print(f"      ⚠️  Inconsistent ESPN IDs for {normalized_name}: {unique_espn_ids}")
+                    print(f"      ⚠️  No ESPN ID found in any records for {normalized_name}")
 
                     home_team_name = conn.execute(text("""
                         SELECT team_name FROM teams WHERE team_id = :team_id

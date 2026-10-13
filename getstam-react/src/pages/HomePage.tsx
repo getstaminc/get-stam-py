@@ -146,7 +146,7 @@ function SportSection({
           if (!cancelled) setPlayerStreaksByTeam(streaks);
         }
         const allOf = (gwt: GameWithTrends): TrendResult[] => [
-          ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]),
+          ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]), ...(gwt.collisionTrends||[]),
           ...(gwt.homeTeamHomeTrends||[]), ...(gwt.awayTeamAwayTrends||[]),
           ...(gwt.homeTeamTrends||[]), ...(gwt.awayTeamTrends||[]),
         ];
@@ -201,6 +201,7 @@ function SportSection({
           const allTrends: TrendResult[] = [
             ...(gwt.headToHeadTrends || []),
             ...(gwt.homeAtHomeH2HTrends || []),
+            ...(gwt.collisionTrends || []),
             ...(gwt.homeTeamHomeTrends || []),
             ...(gwt.awayTeamAwayTrends || []),
             ...(gwt.homeTeamTrends || []).filter(t => !homeSpecificTypes.has(t.type)),

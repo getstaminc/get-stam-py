@@ -51,7 +51,7 @@ def _pick_primary_metric(stats: dict):
     return max(candidates, key=lambda c: abs(c[1] - 0.5))
 
 
-def _collision_phrase(team: str, trend: dict) -> str:
+def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
     tt, n = trend['type'], trend['count']
     word = {
         'win_streak': f'{n}-game win streak',
@@ -61,22 +61,34 @@ def _collision_phrase(team: str, trend: dict) -> str:
         'over_streak': f'{n}-game OVER streak',
         'under_streak': f'{n}-game UNDER streak',
     }.get(tt, f'{tt} of {n}')
-    return f"{team}'s {word}"
+    team_possessive = f"{team}'" if team.endswith('s') else f"{team}'s"
+    return f"{team_possessive} {word}{venue_suffix}"
 
 
-def _build_collision_entry(home: str, home_trend: dict, away: str, away_trend: dict, stats: dict):
+def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: str, away_trend: dict, away_venue: str, stats: dict):
     primary = _pick_primary_metric(stats)
     if primary is None:
         return None
     primary_key, primary_rate, primary_sample = primary
 
-    matchup = f"{_collision_phrase(home, home_trend)} meets {_collision_phrase(away, away_trend)}"
-    pct = f"{round(primary_rate * 100)}%"
-    sentence = (
-        f"Historically when this collision has happened, the home side's "
-        f"{_collision_rate_label(primary_key).lower()} continues {pct} of the time "
-        f"({primary_sample} instances)"
+    home_suffix = " at home" if home_venue == 'venue_specific' else ""
+    away_suffix = " on the road" if away_venue == 'venue_specific' else ""
+    matchup = (
+        f"{_collision_phrase(home, home_trend, home_suffix)} meets "
+        f"{_collision_phrase(away, away_trend, away_suffix)}"
     )
+    pct = f"{round(primary_rate * 100)}%"
+    if primary_key == 'total':
+        sentence = (
+            f"Historically when this collision has happened, the OVER "
+            f"continues {pct} of the time"
+        )
+    else:
+        metric_word = _collision_rate_label(primary_key).lower()
+        sentence = (
+            f"Historically when this collision has happened, the "
+            f"trend-matching side's {metric_word} continues {pct} of the time"
+        )
 
     secondary_rates = []
     for key in ('straight_up', 'ats', 'total'):
@@ -92,11 +104,11 @@ def _build_collision_entry(home: str, home_trend: dict, away: str, away_trend: d
     return {
         'type': 'win_streak' if primary_rate >= 0.5 else 'loss_streak',
         'count': max(home_trend['count'], away_trend['count']),
-        'description': f"{matchup} — {sentence}",
+        'description': f"{matchup} — {sentence} — {primary_sample} historical meetings",
         'continuation_rate': primary_rate,
         'sample_size': primary_sample,
-        'home_trend': {'team': home, 'type': home_trend['type'], 'count': home_trend['count']},
-        'away_trend': {'team': away, 'type': away_trend['type'], 'count': away_trend['count']},
+        'home_trend': {'team': home, 'type': home_trend['type'], 'count': home_trend['count'], 'venue': home_venue},
+        'away_trend': {'team': away, 'type': away_trend['type'], 'count': away_trend['count'], 'venue': away_venue},
         'straight_up_rate': stats['straight_up']['home_side_win_rate'] if stats.get('straight_up') else None,
         'ats_rate': stats['ats']['home_side_cover_rate'] if stats.get('ats') else None,
         'total_rate': stats['total']['over_rate'] if stats.get('total') else None,
@@ -179,16 +191,30 @@ def enrich_game_trends(results: list, sport: str) -> list:
         collision_trends = []
         for hc in home_criteria:
             for ac in away_criteria:
-                stats = get_collision_stats(
-                    sport,
-                    {'trend_type': hc['trend_type'], 'min_length': hc['min_length'], 'venue': hc['venue']},
-                    {'trend_type': ac['trend_type'], 'min_length': ac['min_length'], 'venue': ac['venue']},
-                )
-                if not stats:
+                try:
+                    stats = get_collision_stats(
+                        sport,
+                        {'trend_type': hc['trend_type'], 'min_length': hc['min_length'], 'venue': hc['venue']},
+                        {'trend_type': ac['trend_type'], 'min_length': ac['min_length'], 'venue': ac['venue']},
+                    )
+                    if not stats or stats.get('sample_size', 0) < 3:
+                        continue
+                    entry = _build_collision_entry(
+                        home, hc['raw'], hc['venue'],
+                        away, ac['raw'], ac['venue'],
+                        stats,
+                    )
+                    if entry:
+                        collision_trends.append(entry)
+                except Exception as e:
+                    print(
+                        f"[trend_enrichment] collision pairing failed for {sport}: "
+                        f"home={hc.get('trend_type')}/{hc.get('min_length')}/{hc.get('venue')} "
+                        f"away={ac.get('trend_type')}/{ac.get('min_length')}/{ac.get('venue')}: {e}"
+                    )
                     continue
-                entry = _build_collision_entry(home, hc['raw'], away, ac['raw'], stats)
-                if entry:
-                    collision_trends.append(entry)
-        game_trends['collisionTrends'] = collision_trends
+
+        collision_trends.sort(key=lambda c: c['sample_size'], reverse=True)
+        game_trends['collisionTrends'] = collision_trends[:3]
 
     return results

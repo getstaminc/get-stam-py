@@ -136,6 +136,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({ gameTrends,
   const allTrends: TrendResult[] = [
     ...(gameTrends.headToHeadTrends || []),
     ...(gameTrends.homeAtHomeH2HTrends || []),
+    ...(gameTrends.collisionTrends || []),
     ...(gameTrends.homeTeamHomeTrends || []),
     ...(gameTrends.awayTeamAwayTrends || []),
     ...(gameTrends.homeTeamTrends || []).filter(t => !homeSpecificTypes.has(t.type)),

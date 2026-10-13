@@ -31,9 +31,22 @@ played out historically across the league. This feature adds that.
 - **Outcome metric**: report all three angles — straight-up winner, ATS
   cover, and over/under result — each as a rate + sample size, same shape as
   the existing `continuation_rate`/`sample_size` pair.
-- **Home/away framing**: outcomes are reported from the perspective of
-  "team carrying trend A" vs "team carrying trend B," not home/away. A trend
-  pairing doesn't care which side is home.
+- **Home/away framing**: both kinds of trend already exist in this codebase
+  and both must be collision-able:
+  - *Venue-specific* trends (today's `homeTeamHomeTrends` /
+    `awayTeamAwayTrends` — e.g. "Huskers won their last 5 **home** games,"
+    "Oklahoma lost their last 5 **road** games") are inherently pinned to a
+    role — the metric doesn't exist for a team except in that role. For
+    these, the historical search is naturally home/away-framed: it can only
+    ever be matched by whichever team is actually playing that role in a
+    given historical game.
+  - *General* trends (today's `homeTeamTrends` / `awayTeamTrends` — e.g.
+    "Tennessee won their last 7 games," "Texas lost their last 5 games,"
+    with no venue qualifier) carry no venue identity. For these, the
+    historical search must NOT impose today's home/away arrangement —
+    either team in a historical game may satisfy either side of the
+    query, and the match is accepted in whichever arrangement works. See
+    §4.3 for the matching algorithm.
 - **Surface**: automatically on game cards, alongside existing trend pills —
   not a separate explorer tool.
 - **Sport scope for v1**: MLB, NFL, NCAAF, soccer (the sports where
@@ -75,16 +88,27 @@ played out historically across the league. This feature adds that.
 
 ## 4. New computation: entering-streak index + collision lookup
 
-### 4.1 Entering streaks
+### 4.1 Entering streaks — general and venue-specific
 
 Extend `_load_sport_context(sport)` to additionally compute, per team per
 game, the streak **entering** that game for each trend type — i.e. the same
 `calc_streak()` logic, but walked forward chronologically so each game gets
 the streak value as of just before it was played (not the final, most-recent
-streak). Store as:
+streak). This is computed in two flavors per team, mirroring the existing
+trend categories:
+
+- **General** — walked over *all* of the team's games, any venue (feeds
+  `homeTeamTrends`/`awayTeamTrends`-style collisions).
+- **Venue-specific** — walked over only the team's home games, and
+  separately only its away games (feeds `homeTeamHomeTrends`/
+  `awayTeamAwayTrends`-style collisions). A team's home-venue sequence only
+  has entries for games it played at home; its away-venue sequence only for
+  games it played away.
 
 ```python
-entering_streaks: dict[str, dict[game_id, dict[str, int]]]
+entering_streaks: dict[str, dict[game_id, dict[str, int]]]          # general
+entering_streaks_home_venue: dict[str, dict[game_id, dict[str, int]]]  # home games only
+entering_streaks_away_venue: dict[str, dict[game_id, dict[str, int]]]  # away games only
 # entering_streaks["Dodgers"][game_id] = {
 #   "win_streak": 3, "loss_streak": 0,
 #   "cover_streak": 1, "no_cover_streak": 0,
@@ -93,21 +117,33 @@ entering_streaks: dict[str, dict[game_id, dict[str, int]]]
 ```
 
 This reuses the per-team chronological game lists already built for
-`team_games` in `_load_sport_context` — no new DB query.
+`team_games` in `_load_sport_context` (filtered by venue for the two
+venue-specific passes) — no new DB query.
 
 ### 4.2 Collision index
 
-From the same pass, build one record per historical game:
+From the same pass, build one record per historical game. Each side carries
+both its general and (role-appropriate) venue-specific entering streaks,
+since a historical game's home team only ever needs its home-venue sequence
+and the away team only its away-venue sequence:
 
 ```python
 collision_index[sport]: list[dict]
 # {
 #   "game_id": ...,
-#   "team_a": {"name": ..., "entering_streaks": {...}},  # home
-#   "team_b": {"name": ..., "entering_streaks": {...}},  # away
+#   "home": {
+#     "name": ...,
+#     "general": {...},        # from entering_streaks
+#     "home_venue": {...},     # from entering_streaks_home_venue
+#   },
+#   "away": {
+#     "name": ...,
+#     "general": {...},
+#     "away_venue": {...},     # from entering_streaks_away_venue
+#   },
 #   "outcome": {
-#     "winner": "team_a" | "team_b",
-#     "ats_result": "team_a" | "team_b" | "push",
+#     "winner": "home" | "away",
+#     "ats_result": "home" | "away" | "push",
 #     "total_result": "over" | "under" | "push",
 #   },
 # }
@@ -119,31 +155,50 @@ invalidation path needed).
 
 ### 4.3 Query function
 
+Each side of a query is a criterion: `{trend_type, min_length, venue}` where
+`venue` is `"general"` or `"venue_specific"` — set directly by which trend
+category the input came from (`homeTeamTrends` → general,
+`homeTeamHomeTrends` → venue_specific, etc; same for away).
+
 ```python
 def get_collision_stats(
     sport: str,
-    trend_type_a: str, min_length_a: int,
-    trend_type_b: str, min_length_b: int,
+    home_criterion: dict,  # {trend_type, min_length, venue}
+    away_criterion: dict,
 ) -> dict:
     """
-    Scans collision_index[sport] for every historical game where one team's
-    entering streak for trend_type_a was >= min_length_a and the OPPONENT's
-    entering streak for trend_type_b was >= min_length_b, in either
-    home/away arrangement. Returns:
+    Scans collision_index[sport] for historical games matching both
+    criteria (>= per §2). Returns:
     {
       "sample_size": int,
-      "straight_up": {"trend_a_team_win_rate": float},
-      "ats": {"trend_a_team_cover_rate": float},
+      "straight_up": {"home_side_win_rate": float},
+      "ats": {"home_side_cover_rate": float},
       "total": {"over_rate": float},
     }
     """
 ```
 
-Matching is `>=` per §2. Because team_a/team_b in the index are fixed to
-home/away but the query is home/away-agnostic, the function checks both
-orderings (home carries trend A / away carries trend B, and vice versa) and
-pools results, flipping outcome framing accordingly so stats always read as
-"trend-A-team" vs "trend-B-team."
+Matching rule, per historical game in the index:
+
+- If `home_criterion.venue == "venue_specific"`, it can only be checked
+  against that game's `home.home_venue` streak — venue-specific trends are
+  pinned to the role they're defined for. Likewise `away_criterion` against
+  `away.away_venue` when venue-specific.
+- If a criterion is `"general"`, it's checked against the matching role's
+  `general` streak first (`home.general` for the home criterion, `away.general`
+  for the away criterion). If **both** criteria are `"general"`, a game also
+  counts as a match with the roles swapped (home team satisfying the away
+  criterion and vice versa) — general trends carry no venue identity, so
+  today's home/away arrangement shouldn't constrain which physical team
+  satisfies which side of the query. When a venue-specific criterion is
+  present on either side, no swapping happens — that side's role is already
+  pinned, so the other side (general or not) is evaluated against the
+  remaining role only.
+- `"home_side"` / `"away_side"` in the output always refer to *which
+  criterion* a team satisfied (the home-query-side vs the away-query-side),
+  not necessarily which physical role it played in that historical game —
+  this only diverges from literal home/away when a swapped general-vs-general
+  match occurred.
 
 ## 5. Why no schema changes
 
@@ -164,16 +219,28 @@ Revisit if either changes.
 ## 6. API / enrichment integration
 
 No new route. Extend `trend_enrichment.py::enrich_game_trends(results, sport)`:
-for each game, take the cross-product of `homeTeamTrends` × `awayTeamTrends`
-(already computed by the sport's trends service, typically 0–3 trends per
-side), call `get_collision_stats()` for each pairing, and attach any matches
+for each game, take the cross-product of the home-side trend categories
+(`homeTeamTrends` ∪ `homeTeamHomeTrends`) × the away-side trend categories
+(`awayTeamTrends` ∪ `awayTeamAwayTrends`) — already computed by the sport's
+trends service, typically 0–3 trends per side — tag each with
+`venue: "general"` or `"venue_specific"` by which category it came from,
+call `get_collision_stats()` for each pairing, and attach any matches
 (`sample_size > 0`) as a new category on the per-game result:
 
 ```python
 results[i]["collisionTrends"] = [
   {
-    "trend_a": {"team": "Dodgers", "type": "loss_streak", "count": 5},
-    "trend_b": {"team": "Padres", "type": "win_streak", "count": 7},
+    "home_trend": {"team": "Huskers", "type": "win_streak", "count": 5, "venue": "venue_specific"},
+    "away_trend": {"team": "Sooners", "type": "loss_streak", "count": 5, "venue": "venue_specific"},
+    "description": "...",
+    "straight_up_rate": 0.62,
+    "ats_rate": 0.55,
+    "total_rate": 0.48,
+    "sample_size": 14,
+  },
+  {
+    "home_trend": {"team": "Volunteers", "type": "win_streak", "count": 7, "venue": "general"},
+    "away_trend": {"team": "Longhorns", "type": "loss_streak", "count": 5, "venue": "general"},
     "description": "...",
     "straight_up_rate": 0.38,
     "ats_rate": 0.44,
@@ -205,12 +272,15 @@ automatically scoped to those sports with no route-level changes.
 
 ## 8. Testing
 
-- Unit tests for `entering_streaks` computation against a small fixture game
-  list (verify forward-walked streak values match hand-computed expectations,
-  including streak resets).
+- Unit tests for `entering_streaks`/`entering_streaks_home_venue`/
+  `entering_streaks_away_venue` computation against a small fixture game
+  list (verify forward-walked streak values match hand-computed
+  expectations, including streak resets and venue filtering).
 - Unit tests for `get_collision_stats()`: fixture `collision_index` with
-  known games, assert `>=` matching behavior, both home/away orderings pool
-  correctly, and rates compute correctly.
+  known games, covering all three cases — both criteria venue-specific (no
+  swapping), both general (swapped arrangement also matches), and mixed
+  (venue-specific side pinned, general side evaluated against the
+  remaining role only) — plus `>=` matching and rate computation.
 - Integration test on one real sport (MLB) trends route with `enrich=true`,
   asserting `collisionTrends` appears on at least one fixture game with a
   known collision.

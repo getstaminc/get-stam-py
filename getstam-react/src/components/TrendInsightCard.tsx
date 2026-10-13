@@ -229,6 +229,13 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
                     {context}
                   </Typography>
                 )}
+                {trend.secondary_rates && trend.secondary_rates.length > 0 && (
+                  <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", mt: 0.2, lineHeight: 1.4 }}>
+                    {trend.secondary_rates
+                      .map((r) => `${r.label}: ${Math.round(r.rate * 100)}% (${r.sample_size})`)
+                      .join(" • ")}
+                  </Typography>
+                )}
               </Box>
               {confidence && (
                 <Box sx={{

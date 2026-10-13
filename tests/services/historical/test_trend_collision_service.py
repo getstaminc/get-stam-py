@@ -91,3 +91,115 @@ def test_collision_index_handles_ties_pushes_and_missing_data():
     g1, g2 = (r for r in index if r['game_id'] in ('g1', 'g2'))
     assert g1['outcome'] == {'winner': None, 'ats_result': 'push', 'total_result': 'push'}
     assert g2['outcome'] == {'winner': 'home', 'ats_result': None, 'total_result': None}  # ln/tl both None -> no spread/total data for this game
+
+
+from unittest.mock import patch
+from api.services.historical.trend_collision_service import get_collision_stats, _collision_cache
+
+
+def _ctx(team_games, home_h2h_games):
+    return {'team_games': team_games, 'home_h2h_games': home_h2h_games}
+
+
+def setup_function(_):
+    _collision_cache.clear()
+
+
+def test_venue_specific_criteria_are_pinned_to_their_role_no_swap():
+    # Home team's home-venue win_streak of 5 meets away team's away-venue loss_streak of 5.
+    # A reversed arrangement (if it existed) must NOT be counted for venue-specific criteria.
+    # Huskers' and Sooners' only *recorded matchup* is g1 (hs=30, aw=10, tl=35 -> total 40 is OVER,
+    # ln=-3 -> home covers 27>10). Five prior home wins/away losses (dated before g1) give each team
+    # an entering streak of exactly 5 at g1 — the minimum the query asks for.
+    deciding = {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 30, 'aw': 10, 'tl': 35, 'ln': -3}
+    home_h2h_games = {('Huskers', 'Sooners'): [deciding]}
+
+    prior_huskers_home_wins = [
+        {'game_id': f'h{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 20, 'aw': 10, 'tl': 30, 'ln': -3, 'is_home': True}
+        for i in range(1, 6)
+    ]
+    prior_sooners_away_losses = [
+        {'game_id': f's{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 10, 'aw': 20, 'tl': 30, 'ln': 3, 'is_home': False}
+        for i in range(1, 6)
+    ]
+    team_games = {
+        'Huskers': prior_huskers_home_wins + [{**deciding, 'is_home': True}],
+        'Sooners': prior_sooners_away_losses + [{**deciding, 'hs': 10, 'aw': 30, 'ln': 3, 'is_home': False}],
+    }
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'ncaaf': {'home_spread': 'home_line', 'away_spread': 'away_line'}}):
+        stats = get_collision_stats(
+            'ncaaf',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'venue_specific'},
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'venue_specific'},
+        )
+
+    assert stats['sample_size'] == 1
+    assert stats['straight_up']['home_side_win_rate'] == 1.0
+    assert stats['ats']['home_side_cover_rate'] == 1.0
+    assert stats['total']['over_rate'] == 1.0
+
+
+def test_general_criteria_pool_both_arrangements():
+    # Team A enters with a 5-game win_streak as the home_h2h AWAY team (A@B), and B enters with a
+    # 5-game loss_streak as the home_h2h HOME team. Since both criteria are general, querying
+    # "home: win_streak>=5, away: loss_streak>=5" must still match via the swapped arrangement.
+    prior_a_wins = [
+        {'game_id': f'a{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 20, 'aw': 10, 'tl': 30, 'ln': None, 'is_home': True}
+        for i in range(1, 6)
+    ]
+    prior_b_losses = [
+        {'game_id': f'b{i}', 'game_date': f'2025-12-{i:02d}', 'hs': 10, 'aw': 20, 'tl': 30, 'ln': None, 'is_home': True}
+        for i in range(1, 6)
+    ]
+    # The deciding game: B is home, A is away (A still carries its general win_streak, B its general loss_streak)
+    deciding = {'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 15, 'aw': 25, 'tl': 30, 'ln': None}
+    team_games = {
+        'A': prior_a_wins + [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 25, 'aw': 15, 'tl': 30, 'ln': None, 'is_home': False}],
+        'B': prior_b_losses + [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 15, 'aw': 25, 'tl': 30, 'ln': None, 'is_home': True}],
+    }
+    home_h2h_games = {('B', 'A'): [deciding]}  # the prior games belong to other opponents; only g1 is B-vs-A
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'mlb': {}}):
+        stats = get_collision_stats(
+            'mlb',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'general'},
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'general'},
+        )
+
+    assert stats['sample_size'] == 1
+    # A (literal away team) satisfied the "home" criterion via the swap, and A lost this game (15<25 means
+    # literal home B=15 lost, literal away A=25 won) -> home_side (=A) won.
+    assert stats['straight_up']['home_side_win_rate'] == 1.0
+
+
+def test_below_threshold_does_not_match():
+    team_games = {
+        'A': [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 30, 'ln': None, 'is_home': True}],
+        'B': [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 10, 'aw': 20, 'tl': 30, 'ln': None, 'is_home': False}],
+    }
+    home_h2h_games = {('A', 'B'): [{'game_id': 'g1', 'game_date': '2026-01-01', 'hs': 20, 'aw': 10, 'tl': 30, 'ln': None}]}
+
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=_ctx(team_games, home_h2h_games)), \
+         patch('api.services.historical.trend_collision_service.get_trend_types', return_value=('win_streak', 'loss_streak')), \
+         patch('api.services.historical.trend_collision_service.SPORT_CONFIG', {'mlb': {}}):
+        stats = get_collision_stats(
+            'mlb',
+            {'trend_type': 'win_streak', 'min_length': 5, 'venue': 'general'},  # A has 0 entering win_streak (first game)
+            {'trend_type': 'loss_streak', 'min_length': 5, 'venue': 'general'},
+        )
+
+    assert stats is None
+
+
+def test_no_sport_context_returns_none():
+    with patch('api.services.historical.trend_collision_service.get_sport_context', return_value=None):
+        assert get_collision_stats(
+            'mlb',
+            {'trend_type': 'win_streak', 'min_length': 3, 'venue': 'general'},
+            {'trend_type': 'loss_streak', 'min_length': 3, 'venue': 'general'},
+        ) is None

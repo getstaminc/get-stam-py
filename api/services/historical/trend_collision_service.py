@@ -5,6 +5,8 @@ where that same collision occurred league-wide and report what happened.
 
 from typing import Any, Dict, List, Tuple
 
+from .trend_context_service import SPORT_CONFIG, get_sport_context, get_trend_types
+
 
 def _typed_results(games: List[Dict], trend_type: str) -> List[Tuple[Any, bool]]:
     """Chronologically-ordered (game_id, result) pairs for one trend type.
@@ -145,3 +147,101 @@ def _build_collision_index(
                 },
             })
     return index
+
+
+_collision_cache: Dict[str, Dict] = {}
+
+
+def _load_collision_context(sport: str) -> Any:
+    if sport in _collision_cache:
+        return _collision_cache[sport]
+
+    ctx = get_sport_context(sport)
+    if not ctx:
+        return None
+
+    cfg = SPORT_CONFIG.get(sport, {})
+    has_spread = bool(cfg.get('home_spread') and cfg.get('away_spread'))
+    trend_types = get_trend_types(sport)
+
+    general, home_venue, away_venue = _build_entering_streaks(ctx.get('team_games', {}), trend_types)
+    collision_index = _build_collision_index(
+        ctx.get('home_h2h_games', {}), general, home_venue, away_venue, has_spread,
+    )
+
+    result = {'collision_index': collision_index}
+    _collision_cache[sport] = result
+    return result
+
+
+def get_collision_stats(
+    sport: str,
+    home_criterion: Dict[str, Any],
+    away_criterion: Dict[str, Any],
+) -> Any:
+    """Scan the sport's collision_index for every historical game matching both
+    criteria (>= threshold). 'home_side' in the result labels whichever team
+    satisfied home_criterion in each matched game — the literal home team,
+    unless both criteria are 'general' and a role-swapped arrangement matched
+    instead (general trends carry no venue identity, so either physical team
+    may satisfy either side of the query)."""
+    ctx = _load_collision_context(sport)
+    if not ctx:
+        return None
+
+    both_general = home_criterion['venue'] == 'general' and away_criterion['venue'] == 'general'
+
+    matches = 0
+    su_wins = su_total = 0
+    ats_wins = ats_total = 0
+    over_count = over_total = 0
+
+    for game in ctx['collision_index']:
+        home_pool = game['home']['home_venue'] if home_criterion['venue'] == 'venue_specific' else game['home']['general']
+        away_pool = game['away']['away_venue'] if away_criterion['venue'] == 'venue_specific' else game['away']['general']
+        home_val = home_pool.get(home_criterion['trend_type'], 0)
+        away_val = away_pool.get(away_criterion['trend_type'], 0)
+
+        straight = home_val >= home_criterion['min_length'] and away_val >= away_criterion['min_length']
+
+        swapped = False
+        if not straight and both_general:
+            swapped_home_val = game['away']['general'].get(home_criterion['trend_type'], 0)
+            swapped_away_val = game['home']['general'].get(away_criterion['trend_type'], 0)
+            swapped = swapped_home_val >= home_criterion['min_length'] and swapped_away_val >= away_criterion['min_length']
+
+        if not (straight or swapped):
+            continue
+
+        matches += 1
+        home_side_is_literal_home = straight
+
+        winner = game['outcome']['winner']
+        if winner is not None:
+            su_total += 1
+            home_side_won = (winner == 'home') if home_side_is_literal_home else (winner == 'away')
+            if home_side_won:
+                su_wins += 1
+
+        ats_result = game['outcome']['ats_result']
+        if ats_result not in (None, 'push'):
+            ats_total += 1
+            home_side_covered = (ats_result == 'home') if home_side_is_literal_home else (ats_result == 'away')
+            if home_side_covered:
+                ats_wins += 1
+
+        total_result = game['outcome']['total_result']
+        if total_result not in (None, 'push'):
+            over_total += 1
+            if total_result == 'over':
+                over_count += 1
+
+    if matches == 0:
+        return None
+
+    return {
+        'sample_size': matches,
+        'straight_up': {'home_side_win_rate': su_wins / su_total, 'sample_size': su_total} if su_total else None,
+        'ats': {'home_side_cover_rate': ats_wins / ats_total, 'sample_size': ats_total} if ats_total else None,
+        'total': {'over_rate': over_count / over_total, 'sample_size': over_total} if over_total else None,
+    }

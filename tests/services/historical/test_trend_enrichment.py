@@ -84,6 +84,27 @@ def test_collision_trends_skipped_when_sample_size_below_three():
     assert results[0]['collisionTrends'] == []
 
 
+def test_collision_trends_skipped_when_primary_metric_sample_below_three():
+    """Final-review re-review finding: the overall sample_size floor (fix #1) isn't
+    enough on its own -- a collision can have a healthy overall sample_size but a
+    primary metric (the one actually picked for the headline/sort/description) backed
+    by far fewer instances, e.g. because ats/total exclude pushes and missing lines.
+    Here overall sample_size=6 passes the floor, but the metric furthest from 50%
+    (ats, at 100%) is backed by only 1 instance -- that must still be suppressed,
+    exactly like a sub-3 overall sample_size would be."""
+    stats = {
+        'sample_size': 6,
+        'straight_up': {'home_side_win_rate': 0.5, 'sample_size': 6},
+        'ats': {'home_side_cover_rate': 1.0, 'sample_size': 1},
+    }
+    with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
+         patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
+         patch('api.services.historical.trend_enrichment.get_collision_stats', return_value=stats):
+        results = enrich_game_trends([_game_trends()], 'ncaaf')
+
+    assert results[0]['collisionTrends'] == []
+
+
 def test_collision_trends_capped_when_more_than_3_pairs_qualify():
     """Fix #1 / #7: with more than 3 qualifying pairs, only the top 3 by sample_size
     survive, sorted descending -- the rest are dropped even though they qualified."""

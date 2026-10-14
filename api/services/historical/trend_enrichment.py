@@ -204,7 +204,12 @@ def enrich_game_trends(results: list, sport: str) -> list:
                         away, ac['raw'], ac['venue'],
                         stats,
                     )
-                    if entry:
+                    # The overall sample_size floor above isn't sufficient on its own:
+                    # the primary metric actually driving the headline/sort/description
+                    # can be backed by far fewer instances than the overall collision
+                    # (e.g. ats/total exclude pushes and missing lines), so it needs
+                    # its own floor too.
+                    if entry and entry['sample_size'] >= 3:
                         collision_trends.append(entry)
                 except Exception as e:
                     print(

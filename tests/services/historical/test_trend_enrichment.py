@@ -202,6 +202,34 @@ def test_collision_headline_excludes_unrelated_metric_on_mixed_dimension_pair():
     assert "Falcons' cover continues 25% of the time (Bears covers 75% of the time)" in c['description']
 
 
+def test_collision_bet_recommendation_flips_to_away_team_when_rate_below_half():
+    """User request: a blunt 'bet: Team to verb' tag. For a general-vs-general
+    pair, the home-position trend's own rate can be BELOW 50% (e.g. a covering
+    streak team that actually only covers 46% of the time against this specific
+    collision) -- the actionable recommendation in that case is the OPPOSITE
+    team (the one that covers the complementary 54%+ of the time), not the
+    trend-carrying team itself."""
+    game_trends = {
+        'game': {'home': {'team': 'Giants', 'odds': {'h2h': -150}}, 'away': {'team': 'Saints', 'odds': {'h2h': 130}}},
+        'homeTeamTrends': [{'type': 'cover_streak', 'count': 3, 'description': 'd'}],
+        'awayTeamTrends': [{'type': 'no_cover_streak', 'count': 3, 'description': 'd'}],
+        'headToHeadTrends': [], 'homeTeamHomeTrends': [], 'awayTeamAwayTrends': [], 'homeAtHomeH2HTrends': [],
+    }
+    stats = {
+        'sample_size': 125,
+        'ats': {'home_side_cover_rate': 0.46, 'sample_size': 125},  # below 50% -> bet the AWAY team to cover
+    }
+    with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
+         patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
+         patch('api.services.historical.trend_enrichment.get_collision_stats', return_value=stats):
+        results = enrich_game_trends([game_trends], 'nfl')
+
+    c = results[0]['collisionTrends'][0]
+    assert "cover continues 46% of the time" in c['description']
+    assert "(bet: Saints to cover)" in c['description']
+    assert "bet: Giants" not in c['description']
+
+
 def test_total_trends_only_collide_with_other_total_trends():
     """User requirement: an over/under streak may only collide with another
     over/under streak -- never with a spread (ats) or moneyline (straight_up)
@@ -404,4 +432,5 @@ def test_collision_trends_unmocked_end_to_end_through_real_collision_service():
     assert "Wildcats' 5-game win streak" in c['description']
     assert "Aggies' 5-game loss streak" in c['description']
     assert "5-game win streak team's win continues 67% of the time" in c['description']
+    assert "(bet: Wildcats to win)" in c['description']  # rate >= 50% -> bet the trend-carrying team (home today)
     assert c['description'].endswith(' — 3 historical meetings')

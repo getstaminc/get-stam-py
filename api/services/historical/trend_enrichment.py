@@ -136,10 +136,18 @@ def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: s
             # trend (the metric is tracked as "home_side_...", which get_collision_stats
             # re-attributes to whichever physical team actually has that trend even
             # when a swap matched) -- name that trend explicitly rather than the
-            # unhelpfully vague "trend-matching side."
+            # unhelpfully vague "trend-matching side." Regardless of how the
+            # historical SAMPLE was pooled, TODAY's matchup is concrete: `home` is
+            # literally the team carrying this trend right now, so a blunt bet
+            # recommendation can always be stated -- and must flip to `away` when
+            # the rate is below 50%, since that means the other side wins/covers
+            # more often.
+            bet_team = home if primary_rate >= 0.5 else away
+            bet_verb = 'win' if primary_key == 'straight_up' else 'cover'
             sentence = (
                 f"Historically when this collision has happened, the "
-                f"{_trend_word(home_trend)} team's {metric_word} continues {pct} of the time"
+                f"{_trend_word(home_trend)} team's {metric_word} continues {pct} of the time "
+                f"(bet: {bet_team} to {bet_verb})"
             )
         else:
             opponent_pct = f"{round((1 - primary_rate) * 100)}%"

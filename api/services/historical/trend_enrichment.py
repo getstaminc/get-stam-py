@@ -36,9 +36,28 @@ def _collision_rate_label(key: str) -> str:
     return {'straight_up': 'Win', 'ats': 'ATS', 'total': 'Total'}[key]
 
 
-def _pick_primary_metric(stats: dict):
-    """Pick whichever of straight_up/ats/total deviates most from 50% to drive
-    the headline sentence and confidence badge; the rest become secondary_rates."""
+def _trend_dimension(trend_type: str) -> str:
+    """Which of the three outcome metrics (straight_up/ats/total) a trend type
+    is about."""
+    return {
+        'win_streak': 'straight_up', 'loss_streak': 'straight_up',
+        'cover_streak': 'ats', 'no_cover_streak': 'ats',
+        'over_streak': 'total', 'under_streak': 'total',
+    }.get(trend_type)
+
+
+def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = None):
+    """Pick the metric to drive the headline sentence and confidence badge.
+
+    If both sides of the collision share the same outcome dimension (e.g. an
+    OVER streak meeting an UNDER streak -- both 'total'), that dimension is
+    the headline whenever it's available, since it's literally what the
+    collision is about. A headline about which team wins straight-up is not
+    an answer to "does the over or the under continue." Only when the two
+    sides are about different dimensions (or the shared one has no data) do
+    we fall back to whichever of straight_up/ats/total deviates most from
+    50%; the rest become secondary_rates.
+    """
     candidates = []
     if stats.get('straight_up'):
         candidates.append(('straight_up', stats['straight_up']['home_side_win_rate'], stats['straight_up']['sample_size']))
@@ -48,6 +67,17 @@ def _pick_primary_metric(stats: dict):
         candidates.append(('total', stats['total']['over_rate'], stats['total']['sample_size']))
     if not candidates:
         return None
+
+    shared_dimension = None
+    if home_type and away_type:
+        home_dim, away_dim = _trend_dimension(home_type), _trend_dimension(away_type)
+        if home_dim and home_dim == away_dim:
+            shared_dimension = home_dim
+    if shared_dimension:
+        for c in candidates:
+            if c[0] == shared_dimension:
+                return c
+
     return max(candidates, key=lambda c: abs(c[1] - 0.5))
 
 
@@ -66,7 +96,7 @@ def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
 
 
 def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: str, away_trend: dict, away_venue: str, stats: dict):
-    primary = _pick_primary_metric(stats)
+    primary = _pick_primary_metric(stats, home_trend.get('type'), away_trend.get('type'))
     if primary is None:
         return None
     primary_key, primary_rate, primary_sample = primary

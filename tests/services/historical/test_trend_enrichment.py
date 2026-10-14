@@ -91,7 +91,21 @@ def test_collision_trends_skipped_when_primary_metric_sample_below_three():
     by far fewer instances, e.g. because ats/total exclude pushes and missing lines.
     Here overall sample_size=6 passes the floor, but the metric furthest from 50%
     (ats, at 100%) is backed by only 1 instance -- that must still be suppressed,
-    exactly like a sub-3 overall sample_size would be."""
+    exactly like a sub-3 overall sample_size would be.
+
+    Uses mismatched trend-type dimensions (win_streak vs cover_streak) so the
+    same-dimension-priority rule (see test_collision_headline_uses_total_when_both_sides_are_over_under_streaks)
+    doesn't force straight_up here -- this test is specifically about the
+    deviation-based fallback path."""
+    game_trends = {
+        'game': {'home': {'team': 'Huskers', 'odds': {'h2h': -150}}, 'away': {'team': 'Sooners', 'odds': {'h2h': 130}}},
+        'homeTeamTrends': [{'type': 'win_streak', 'count': 5, 'description': 'd'}],
+        'awayTeamTrends': [{'type': 'cover_streak', 'count': 5, 'description': 'd'}],
+        'headToHeadTrends': [],
+        'homeTeamHomeTrends': [],
+        'awayTeamAwayTrends': [],
+        'homeAtHomeH2HTrends': [],
+    }
     stats = {
         'sample_size': 6,
         'straight_up': {'home_side_win_rate': 0.5, 'sample_size': 6},
@@ -100,9 +114,43 @@ def test_collision_trends_skipped_when_primary_metric_sample_below_three():
     with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
          patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
          patch('api.services.historical.trend_enrichment.get_collision_stats', return_value=stats):
-        results = enrich_game_trends([_game_trends()], 'ncaaf')
+        results = enrich_game_trends([game_trends], 'ncaaf')
 
     assert results[0]['collisionTrends'] == []
+
+
+def test_collision_headline_uses_total_when_both_sides_are_over_under_streaks():
+    """A user-reported confusion: an OVER streak meeting an UNDER streak headlined
+    with 'the trend-matching side's win continues 58%' -- i.e. the straight-up
+    winner, which has nothing to do with the over/under collision the card is
+    actually about, just because straight_up happened to deviate furthest from
+    50%. When both sides share a dimension (here, 'total'), that dimension must
+    be the headline regardless of which number is most extreme."""
+    game_trends = {
+        'game': {'home': {'team': 'Falcons', 'odds': {'h2h': -150}}, 'away': {'team': 'Bears', 'odds': {'h2h': 130}}},
+        'homeTeamTrends': [{'type': 'over_streak', 'count': 3, 'description': 'd'}],
+        'awayTeamTrends': [{'type': 'under_streak', 'count': 4, 'description': 'd'}],
+        'headToHeadTrends': [],
+        'homeTeamHomeTrends': [],
+        'awayTeamAwayTrends': [],
+        'homeAtHomeH2HTrends': [],
+    }
+    stats = {
+        'sample_size': 69,
+        'straight_up': {'home_side_win_rate': 0.58, 'sample_size': 69},  # furthest from 50% -- must NOT win
+        'total': {'over_rate': 0.5797101449275363, 'sample_size': 69},   # shared dimension -- must win
+    }
+    with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
+         patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
+         patch('api.services.historical.trend_enrichment.get_collision_stats', return_value=stats):
+        results = enrich_game_trends([game_trends], 'nfl')
+
+    collisions = results[0]['collisionTrends']
+    assert len(collisions) == 1
+    c = collisions[0]
+    assert "the OVER continues 58% of the time" in c['description']
+    assert "win" not in c['description']
+    assert c['continuation_rate'] == pytest.approx(0.5797101449275363)
 
 
 def test_collision_trends_capped_when_more_than_3_pairs_qualify():

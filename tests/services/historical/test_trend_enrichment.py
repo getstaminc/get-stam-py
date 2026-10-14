@@ -153,6 +153,41 @@ def test_collision_headline_uses_total_when_both_sides_are_over_under_streaks():
     assert c['continuation_rate'] == pytest.approx(0.5797101449275363)
 
 
+def test_collision_headline_excludes_unrelated_metric_on_mixed_dimension_pair():
+    """A second user-reported case: a no_cover_streak (ATS) meeting an under_streak
+    (total) headlined with 'the trend-matching side's win continues 0% of the time'
+    -- the straight-up winner, which is unrelated to either side's trend (ATS and
+    total), but happened to be the most extreme of the three numbers purely from
+    small-sample noise (0 of 4). straight_up must never be eligible here; the
+    headline must come from whichever of ATS/total (the two that ARE relevant) is
+    more extreme, even though straight_up's deviation from 50% is larger."""
+    game_trends = {
+        'game': {'home': {'team': 'Falcons', 'odds': {'h2h': -150}}, 'away': {'team': 'Bears', 'odds': {'h2h': 130}}},
+        'homeTeamHomeTrends': [{'type': 'no_cover_streak', 'count': 6, 'description': 'd'}],
+        'awayTeamAwayTrends': [{'type': 'under_streak', 'count': 4, 'description': 'd'}],
+        'homeTeamTrends': [], 'awayTeamTrends': [],
+        'headToHeadTrends': [], 'homeAtHomeH2HTrends': [],
+    }
+    stats = {
+        'sample_size': 4,
+        'straight_up': {'home_side_win_rate': 0.0, 'sample_size': 4},  # most extreme, but IRRELEVANT -- must not be picked
+        'ats': {'home_side_cover_rate': 0.25, 'sample_size': 4},        # relevant (home side's trend is ATS)
+        'total': {'over_rate': 0.4, 'sample_size': 4},                  # relevant (away side's trend is total)
+    }
+    with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
+         patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
+         patch('api.services.historical.trend_enrichment.get_collision_stats', return_value=stats):
+        results = enrich_game_trends([game_trends], 'nfl')
+
+    collisions = results[0]['collisionTrends']
+    assert len(collisions) == 1
+    c = collisions[0]
+    # Between the two relevant metrics (ats=0.25, total=0.4), ats deviates more from 0.5 -> wins.
+    assert "win" not in c['description']
+    assert c['continuation_rate'] == pytest.approx(0.25)
+    assert "trend-matching side's ats continues 25% of the time" in c['description']
+
+
 def test_collision_trends_capped_when_more_than_3_pairs_qualify():
     """Fix #1 / #7: with more than 3 qualifying pairs, only the top 3 by sample_size
     survive, sorted descending -- the rest are dropped even though they qualified."""

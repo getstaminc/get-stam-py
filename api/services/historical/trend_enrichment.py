@@ -49,14 +49,16 @@ def _trend_dimension(trend_type: str) -> str:
 def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = None):
     """Pick the metric to drive the headline sentence and confidence badge.
 
-    If both sides of the collision share the same outcome dimension (e.g. an
-    OVER streak meeting an UNDER streak -- both 'total'), that dimension is
-    the headline whenever it's available, since it's literally what the
-    collision is about. A headline about which team wins straight-up is not
-    an answer to "does the over or the under continue." Only when the two
-    sides are about different dimensions (or the shared one has no data) do
-    we fall back to whichever of straight_up/ats/total deviates most from
-    50%; the rest become secondary_rates.
+    A metric is only eligible to headline if it's actually about one of the
+    two trends colliding -- e.g. the straight-up winner must never headline
+    an ATS-vs-total collision just because it happens to be the most extreme
+    number, which it very often will be by small-sample noise alone, since
+    it's unrelated to either side. If both sides share a dimension (e.g. an
+    OVER streak meeting an UNDER streak -- both 'total'), that's the only
+    eligible metric. If they're different dimensions (e.g. a cover streak
+    meeting an UNDER streak), both of those two are eligible and whichever
+    deviates more from 50% wins; a third, unrelated metric (here, who wins
+    the game outright) is never a candidate. The rest become secondary_rates.
     """
     candidates = []
     if stats.get('straight_up'):
@@ -68,17 +70,11 @@ def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = No
     if not candidates:
         return None
 
-    shared_dimension = None
-    if home_type and away_type:
-        home_dim, away_dim = _trend_dimension(home_type), _trend_dimension(away_type)
-        if home_dim and home_dim == away_dim:
-            shared_dimension = home_dim
-    if shared_dimension:
-        for c in candidates:
-            if c[0] == shared_dimension:
-                return c
+    relevant_dims = {d for d in (_trend_dimension(home_type), _trend_dimension(away_type)) if d}
+    relevant_candidates = [c for c in candidates if c[0] in relevant_dims]
+    pool = relevant_candidates or candidates  # degrade gracefully if neither relevant metric has data
 
-    return max(candidates, key=lambda c: abs(c[1] - 0.5))
+    return max(pool, key=lambda c: abs(c[1] - 0.5))
 
 
 def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:

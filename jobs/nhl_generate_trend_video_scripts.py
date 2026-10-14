@@ -1,0 +1,428 @@
+"""
+NHL Trend Video Script Generator
+
+For every NHL game that would appear on the homepage's "Today's Trends"
+section (not completed, hasTrends), calls Claude to write two spoken video
+scripts covering the game's trends and betting lines:
+
+- "script": ~90-130 seconds, talks openly about moneyline/puck line/totals.
+- "script_tiktok": ~90-130 seconds, same substance but avoids gambling
+  terminology (no "moneyline"/"puck line"/"over-under") for platforms like
+  TikTok that restrict gambling talk — favorite/underdog and high/low
+  scoring framing instead, no raw odds numbers.
+
+Writes one JSON file per game to output/scripts/<date>/<game_id>.json —
+the same directory MLB/NFL/NCAAF write into, since downstream steps
+(screenshots, video assembly, YouTube upload, email) are already
+sport-agnostic and just glob everything in that folder for the date.
+
+Unlike NFL/NCAAF, NHL plays most days during the season (closer to MLB's
+cadence) — see jobs/plan_daily_trend_videos.py for the weekly schedule,
+which runs this every day with no lookahead/fallback needed.
+
+No starting-goalie matchup data source exists yet (NHL's equivalent of
+mlb_pitchers.py) — scripts are built from trends + betting lines only.
+
+Usage:
+  venv/bin/python jobs/nhl_generate_trend_video_scripts.py [YYYY-MM-DD]
+
+If no date is given, defaults to today in US/Eastern.
+"""
+
+import os
+import sys
+import json
+import re
+from datetime import datetime
+from pathlib import Path
+
+import pytz
+import anthropic
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from dotenv import load_dotenv
+load_dotenv()
+
+from api.services.game_service import GameService
+from api.services.historical.nhl_trends_service import NHLTrendsService
+from api.services.historical.trend_enrichment import enrich_game_trends
+from api.services.historical.trend_scoring import rank_game_trends, get_confidence_score
+from jobs.trend_video_common import (
+    select_top_games,
+    LOOKAHEAD_PROMPT_NOTE,
+    annotate_live_series,
+    gather_extra_context,
+    format_extra_context,
+)
+
+eastern_tz = pytz.timezone("US/Eastern")
+
+MODEL = "claude-sonnet-5"
+OUTPUT_ROOT = Path(__file__).resolve().parent.parent / "output" / "scripts"
+REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trends_referenced", "estimated_word_count")
+
+# Default when run() isn't given an explicit max_games (e.g. manual/testing
+# invocation) — set MAX_VIDEO_GAMES_PER_DAY_NHL to change. The daily
+# automated run always passes an explicit max per jobs/plan_daily_trend_videos.py
+# (2, per the user's request — NHL is new to this pipeline, starting small).
+MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY_NHL", "2"))
+
+SCRIPT_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "hook": {"type": "string", "description": "The opening 1-2 sentences, standalone (8-20 words). Single line, no newline characters."},
+        "script": {"type": "string", "description": "The complete script including the hook (250-320 words), as one continuous paragraph of spoken prose. Do not include any newline or line-break characters — separate ideas with sentences and punctuation only."},
+        "primary_trend_type": {"type": "string", "description": "The exact 'type' value of the trend the script is built around, copied verbatim from the given trend list."},
+        "secondary_trends_referenced": {"type": "array", "items": {"type": "string"}, "description": "Exact 'type' values mentioned besides the primary, verbatim from the given trend list (empty array if none)."},
+        "estimated_word_count": {"type": "integer", "description": "Word count of the 'script' field."},
+    },
+    "required": ["hook", "script", "primary_trend_type", "secondary_trends_referenced", "estimated_word_count"],
+    "additionalProperties": False,
+}
+
+SYSTEM_PROMPT = """You are a sports broadcast scriptwriter for GetSTAM, a sports betting trends platform. You write conversational, first-person spoken video scripts (90-130 seconds) for social media (TikTok/Reels/Shorts) that break down one upcoming NHL game the way a sharp, confident bettor would talk through their notes out loud — not like an ad, and not like a robotic stat recital.
+
+Voice and structure:
+- Open by naming the matchup, then work through both teams' recent form. It's fine — good, even — to note a bit of tension or nuance (e.g. one team's recent streak vs. what happened the last time these two played), the way a real analyst would say "pretty interesting" about a wrinkle in the data.
+- Weave the betting lines (moneyline, puck line, total) in naturally as you talk, not as a rattled-off list. The "spread" in hockey is the puck line (almost always +/-1.5 goals) — call it the puck line, not "the spread".
+- Use casual, natural spoken phrasing: contractions, short reactions ("Pretty good.", "Interesting."), transitions like "If you look at..." or "But if you go back...". Sentence fragments are fine when they sound like real speech.
+- Every trend comes with a confidence score (0-4) showing how often this exact pattern has historically held up — calibrate how sure you sound to match it, not just what you say. A 0-1 score means the historical rate is close to a coin flip (roughly 50-55%): say that plainly, and don't force a confident lean on the trend alone — either point to a different factor that actually tips it (a lopsided line move, a goaltending situation if mentioned) or be upfront that it's a genuine toss-up. A 2-3 score supports a real but moderate lean ("I'd favor," "I lean towards") — not a lock. A 3-4 score is a strong historical signal — be genuinely assertive there.
+- Treat the primary trend as evidence to weigh, not an automatic pick — don't default to "the streak just continues." Sometimes the sharper read is that the trend is misleading given a stronger countervailing factor, and sometimes the honest take really is that it's close to 50/50.
+- Close with ONE clear takeaway either way — even "this one's a genuine coin flip, but here's the tiebreaker" counts as a clear takeaway. Ground it only in the moneyline/puck line/total actually given to you — never invent a market or number you weren't given. Show a bit of the reasoning rather than just asserting it — e.g. "history gives this about a 51% edge, close to a coin flip, but..." — so the confidence you project actually matches the strength of the signal.
+- After the takeaway, invite engagement (e.g. ask viewers how they see the game going, in the comments).
+- End with a short branded sign-off mentioning getstam.com and inviting a follow for more games — vary the phrasing naturally rather than repeating the exact same sentence every time.
+
+Write the "script" field as one continuous paragraph — no line breaks or newline characters, ever. Never invent stats, records, or odds beyond what's given to you. No bullet points, no headers, no emoji, no hashtags — this is spoken word only."""
+
+TIKTOK_SYSTEM_PROMPT = """You are a sports broadcast scriptwriter for GetSTAM, a sports betting trends platform. You write conversational, first-person spoken video scripts (90-130 seconds) for TikTok that break down one upcoming NHL game the way a sharp, confident fan would talk through their notes out loud — not like an ad, and not like a robotic stat recital.
+
+TikTok restricts gambling content, so this version must stay strictly in plain sports-commentary language:
+- Never use the words/phrases: "moneyline", "money line", "spread", "puck line", "against the spread", "cover"/"covers", "over/under", "over-under", "total" (as a betting term), "bet", "betting", "wager", "odds", "line", "pick", "lean", "sportsbook", "gambling", "handicap".
+- Instead: say a team is "favored" or "the underdog" (no odds numbers). Say a team's games have been "high-scoring" or "low-scoring" lately instead of talking about overs/unders. Never state a specific price, puck-line number, or total number — qualitative only.
+
+Voice and structure:
+- Open by naming the matchup, then work through both teams' recent form, including a bit of tension or nuance where it exists (e.g. a team is hot right now but has struggled specifically against this opponent).
+- Use casual, natural spoken phrasing: contractions, short reactions ("Pretty good.", "Interesting."), transitions like "If you look at..." or "But if you go back...". Sentence fragments are fine when they sound like real speech.
+- Every trend comes with a confidence score (0-4) showing how often this exact pattern has historically held up — calibrate how sure you sound to match it. A 0-1 score means the historical rate is close to a coin flip (roughly 50-55%): say that plainly rather than forcing a confident prediction off a weak trend alone — point to a different factor that actually tips it, or be upfront it's a genuine toss-up. A 2-3 score supports a real but moderate favor toward one side — not a lock. A 3-4 score is a strong historical signal — be genuinely assertive there.
+- Treat the trend as evidence to weigh, not an automatic prediction — don't default to assuming a streak just continues. Sometimes the sharper read is that the trend is misleading given a stronger countervailing factor, and sometimes the honest take really is that it's close to 50/50.
+- Close with ONE clear prediction on how the game goes (who wins, and whether you expect a high- or low-scoring game) either way — even "this one's a genuine toss-up, but here's the tiebreaker" counts as a clear prediction — framed as your read of the matchup, not as betting advice. Show a bit of the reasoning rather than just asserting it, so the confidence you project actually matches the strength of the signal.
+- After the prediction, invite engagement (e.g. ask viewers how they see the game going, in the comments).
+- End with a short branded sign-off mentioning getstam.com and inviting a follow for more games — vary the phrasing naturally rather than repeating the exact same sentence every time.
+
+Write the "script" field as one continuous paragraph — no line breaks or newline characters, ever. Never invent stats or records beyond what's given to you. No bullet points, no headers, no emoji, no hashtags — this is spoken word only."""
+
+# Words/phrases that must never appear in the TikTok script, checked after generation
+# as a safety net (the prompt already omits odds numbers and forbids this vocabulary,
+# but the model could still slip since these are common English words in other senses).
+_TIKTOK_BANNED_PATTERN = re.compile(
+    r"\b(money\s*line|puck line|against the spread|spread|cover|covers|covering|over[\s/-]under|"
+    r"bet|betting|bettor|wager|odds|sportsbook|gambling|handicap|pick'?em)\b",
+    re.IGNORECASE,
+)
+
+
+def sanitize_trend_for_tiktok(trend):
+    """Return a copy of trend with an over/under-free description.
+
+    over_streak/under_streak descriptions (both the base text and the enriched
+    historical-context suffix) contain literal "OVER"/"UNDER" wording — see
+    trend_enrichment.py's _enrich_desc and trend_context_service.py's
+    get_streak_context. Reconstruct a clean sentence from the structured
+    fields instead of trying to scrub the existing prose. (NHL has no
+    cover_streak/no_cover_streak trend type — the puck line is almost always
+    a fixed +/-1.5, so trend_context_service.py's SPORT_CONFIG doesn't track
+    spread history for NHL — so unlike NFL/NCAAF this never needs that branch.)
+    """
+    if trend["type"] not in ("over_streak", "under_streak"):
+        return trend
+
+    sanitized = dict(trend)
+    direction = "high-scoring" if trend["type"] == "over_streak" else "low-scoring"
+    desc = f"This team's games have been {direction} lately — {trend['count']} straight"
+    rate = trend.get("continuation_rate")
+    if rate is not None:
+        desc += f", and that pattern has continued about {round(rate * 100)}% of the time historically"
+    sanitized["description"] = desc
+    return sanitized
+
+
+def build_user_prompt(game, ranked_trends, lookahead=False, extra_context=None):
+    home = game["home"]
+    away = game["away"]
+    totals = game.get("totals") or {}
+
+    trend_lines = "\n".join(
+        f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
+        for i, t in enumerate(ranked_trends, start=1)
+    )
+    extra_context_section = format_extra_context(extra_context)
+
+    prompt = f"""Upcoming NHL game: {away['team']} at {home['team']}, {game.get('commence_time')} ET.
+
+Betting lines:
+- Moneyline: {away['team']} {away['odds'].get('h2h')}, {home['team']} {home['odds'].get('h2h')}
+- Puck line: {home['team']} {home['odds'].get('spread_point')} ({home['odds'].get('spread_price')})
+- Total: {totals.get('over_point')} (over {totals.get('over_price')} / under {totals.get('under_price')})
+
+Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
+{trend_lines}
+{extra_context_section}
+Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form and the betting lines, built primarily around trend #1 but free to reference others that add to the story. End with one clear betting takeaway grounded in the lines above, an invitation to comment, and a branded sign-off.
+
+For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
+    if lookahead:
+        prompt += LOOKAHEAD_PROMPT_NOTE
+    return prompt
+
+
+def _favorite_underdog_line(game):
+    home = game["home"]
+    away = game["away"]
+    home_ml = (home.get("odds") or {}).get("h2h")
+    away_ml = (away.get("odds") or {}).get("h2h")
+    if home_ml is None or away_ml is None:
+        return "No favorite/underdog information available."
+    favorite, underdog = (home["team"], away["team"]) if home_ml < away_ml else (away["team"], home["team"])
+    return f"{favorite} is favored tonight; {underdog} is the underdog. Do not state odds numbers or prices."
+
+
+def build_tiktok_user_prompt(game, ranked_trends, lookahead=False, extra_context=None):
+    sanitized_trends = [sanitize_trend_for_tiktok(t) for t in ranked_trends]
+    trend_lines = "\n".join(
+        f"{i}. [type: {t['type']}] [score {t['_score']}] {t['description']}"
+        for i, t in enumerate(sanitized_trends, start=1)
+    )
+    extra_context_section = format_extra_context(extra_context)
+
+    prompt = f"""Upcoming NHL game: {game['away']['team']} at {game['home']['team']}, {game.get('commence_time')} ET.
+
+{_favorite_underdog_line(game)}
+
+Ranked trends for this game (most significant first; confidence score 0-4, higher = stronger signal):
+{trend_lines}
+{extra_context_section}
+Write a 90-130 second spoken video script (target 250-320 words) that works through both teams' form, built primarily around trend #1 but free to reference others that add to the story. End with one clear prediction (who wins, high- or low-scoring), an invitation to comment, and a branded sign-off. Remember: no gambling terminology, no odds numbers.
+
+For "primary_trend_type" and "secondary_trends_referenced", copy the exact "type:" values verbatim from the trend list above — do not paraphrase them."""
+    if lookahead:
+        prompt += LOOKAHEAD_PROMPT_NOTE
+    return prompt
+
+
+def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+    try:
+        message = client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            thinking={"type": "disabled"},
+            output_config={"format": {"type": "json_schema", "schema": SCRIPT_JSON_SCHEMA}},
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except anthropic.APIError as e:
+        return None, str(e)
+
+    text_block = next((b for b in message.content if b.type == "text"), None)
+    if text_block is None:
+        return None, "Claude response contained no text block"
+    text = text_block.text
+
+    try:
+        data = json.loads(text, strict=False)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            return None, "Claude response was not valid JSON"
+        try:
+            data = json.loads(match.group(0), strict=False)
+        except json.JSONDecodeError as e:
+            return None, f"Claude response was not valid JSON: {e}"
+
+    for key in ("hook", "script"):
+        if isinstance(data.get(key), str):
+            data[key] = re.sub(r"\s*[\r\n]+\s*", " ", data[key]).strip()
+
+    missing = [k for k in REQUIRED_SCRIPT_KEYS if k not in data]
+    if missing:
+        return None, f"Claude response missing required key(s): {missing}"
+
+    if data["primary_trend_type"] not in valid_types:
+        return None, f"primary_trend_type {data['primary_trend_type']!r} did not match any given trend type {valid_types}"
+
+    if banned_pattern is not None:
+        hit = banned_pattern.search(data["script"]) or banned_pattern.search(data["hook"])
+        if hit:
+            return None, f"Script contained banned gambling term: {hit.group(0)!r}"
+
+    return data, None
+
+
+def call_claude(game, ranked_trends, lookahead=False, extra_context=None):
+    prompt = build_user_prompt(game, ranked_trends, lookahead=lookahead, extra_context=extra_context)
+    valid_types = {t["type"] for t in ranked_trends}
+    return _generate_script(SYSTEM_PROMPT, prompt, valid_types)
+
+
+def call_claude_tiktok(game, ranked_trends, lookahead=False, extra_context=None):
+    prompt = build_tiktok_user_prompt(game, ranked_trends, lookahead=lookahead, extra_context=extra_context)
+    valid_types = {t["type"] for t in ranked_trends}
+    return _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
+
+
+def write_output_file(date_str, game_id, payload):
+    out_dir = OUTPUT_ROOT / date_str
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{game_id}.json"
+    with open(out_path, "w") as f:
+        json.dump(payload, f, indent=2, default=str)
+    return out_path
+
+
+def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
+    """Generate NHL trend video scripts for date_str.
+
+    max_games: cap on how many games get a video (defaults to
+        MAX_VIDEO_GAMES_PER_DAY_NHL for manual/standalone runs — the daily
+        automated run always passes this explicitly, see plan_daily_trend_videos.py).
+    lookahead/time_pref: accepted for interface parity with the other
+        generators (plan_daily_trend_videos.py calls all of them the same
+        way), but NHL's schedule slot never sets lookahead=True in
+        practice — NHL plays most days, so it always covers that day's own
+        slate, same as MLB.
+
+    Returns (date_str, scripts_generated) so callers can track which dates
+    actually received content.
+    """
+    if not date_str:
+        date_str = datetime.now(eastern_tz).strftime("%Y-%m-%d")
+    if max_games is None:
+        max_games = MAX_VIDEO_GAMES_PER_DAY
+
+    print(f"Fetching NHL games for {date_str}...")
+    result, err = GameService.get_games_for_date("icehockey_nhl", date_str)
+    if err:
+        print(f"Error fetching games: {err}")
+        return date_str, 0
+    games = (result or {}).get("games", [])
+    print(f"Found {len(games)} games.")
+
+    trend_results, err = NHLTrendsService.analyze_multiple_games_trends(games, limit=20, min_trend_length=5)
+    if err:
+        print(f"Error analyzing trends: {err}")
+        return date_str, 0
+    trend_results = enrich_game_trends(trend_results, "nhl")
+
+    todays_trend_games = [r for r in trend_results if not r["game"]["completed"] and r["hasTrends"]]
+    print(f"{len(todays_trend_games)} game(s) have active trends for Today's Trends.")
+
+    for entry in todays_trend_games:
+        ranked = rank_game_trends(entry)
+        entry["_top_trend_score"] = get_confidence_score(ranked[0]) if ranked else 0
+    total_qualifying = len(todays_trend_games)
+    todays_trend_games = select_top_games(todays_trend_games, max_games, time_pref=time_pref, eastern_tz=eastern_tz)
+    if total_qualifying > max_games:
+        pref_note = f" (time preference: {time_pref})" if time_pref else ""
+        print(f"Limiting to the top {max_games} game(s) by trend strength (of {total_qualifying}){pref_note}.")
+
+    games_processed = 0
+    scripts_generated = 0
+    scripts_failed = 0
+    tiktok_generated = 0
+    tiktok_failed = 0
+
+    for entry in todays_trend_games:
+        game = entry["game"]
+        game_id = game["game_id"]
+        games_processed += 1
+
+        try:
+            home_team = game["home"]["team"]
+            away_team = game["away"]["team"]
+            ranked = rank_game_trends(entry)
+            ranked = annotate_live_series(ranked, "nhl", home_team, away_team, date_str)
+            top_trends = ranked[:5]
+            for t in top_trends:
+                t["_score"] = round(get_confidence_score(t), 1)
+
+            extra_context = gather_extra_context(entry, "nhl", game, home_team, away_team, tiktok=False)
+            extra_context_tiktok = gather_extra_context(entry, "nhl", game, home_team, away_team, tiktok=True)
+
+            script_data, gen_err = call_claude(game, top_trends, lookahead=lookahead, extra_context=extra_context)
+            tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, lookahead=lookahead, extra_context=extra_context_tiktok)
+
+            payload = {
+                "job": "nhl_generate_trend_video_scripts",
+                "generated_at": datetime.now(eastern_tz).isoformat(),
+                "sport": "nhl",
+                "date": date_str,
+                "lookahead": lookahead,
+                "game_id": game_id,
+                "matchup": {
+                    "away_team": game["away"]["team"],
+                    "home_team": game["home"]["team"],
+                    "commence_time": game.get("commence_time"),
+                },
+                "odds": {"home": game["home"]["odds"], "away": game["away"]["odds"], "totals": game.get("totals")},
+                "trends_considered": top_trends,
+                "extra_context": extra_context,
+                "extra_context_tiktok": extra_context_tiktok,
+                "primary_trend": top_trends[0] if top_trends else None,
+                "model": MODEL,
+                "script": script_data,
+                "generation_error": gen_err,
+                "script_tiktok": tiktok_data,
+                "generation_error_tiktok": tiktok_err,
+            }
+
+            out_path = write_output_file(date_str, game_id, payload)
+
+            label = f"{game['away']['team']} @ {game['home']['team']}"
+            if gen_err:
+                scripts_failed += 1
+                print(f"  [FAILED] {label}: {gen_err} -> {out_path}")
+            else:
+                scripts_generated += 1
+                print(f"  [OK] {label} -> {out_path}")
+
+            if tiktok_err:
+                tiktok_failed += 1
+                print(f"  [TIKTOK FAILED] {label}: {tiktok_err}")
+            else:
+                tiktok_generated += 1
+                print(f"  [TIKTOK OK] {label}")
+
+        except Exception as e:
+            scripts_failed += 1
+            tiktok_failed += 1
+            print(f"  [ERROR] game_id={game_id}: {e}")
+            try:
+                write_output_file(date_str, game_id, {
+                    "job": "nhl_generate_trend_video_scripts",
+                    "generated_at": datetime.now(eastern_tz).isoformat(),
+                    "sport": "nhl",
+                    "date": date_str,
+                    "game_id": game_id,
+                    "script": None,
+                    "generation_error": str(e),
+                    "script_tiktok": None,
+                    "generation_error_tiktok": str(e),
+                })
+            except Exception:
+                pass
+            continue
+
+    print(
+        f"\nDone. games_processed={games_processed} "
+        f"scripts_generated={scripts_generated} scripts_failed={scripts_failed} "
+        f"tiktok_generated={tiktok_generated} tiktok_failed={tiktok_failed}"
+    )
+
+    return date_str, scripts_generated
+
+
+if __name__ == "__main__":
+    date_arg = sys.argv[1] if len(sys.argv) > 1 else None
+    run(date_arg)

@@ -12,17 +12,23 @@ Weekly plan (python's date.weekday(): Monday=0 ... Sunday=6). Every
 max/preference below is a soft tiebreak around trend score, not a hard
 filter — see trend_video_common.select_top_games.
 
-  Monday    — MLB today (max 3); NFL today (max 3, Monday night game)
-  Tuesday   — MLB today (max 3) only
-  Wednesday — MLB today (max 3) only
+  Monday    — MLB today (max 3); NFL today (max 3, Monday night game);
+              NHL today (max 2)
+  Tuesday   — MLB today (max 3); NHL today (max 2)
+  Wednesday — MLB today (max 3); NHL today (max 2)
   Thursday  — MLB today (max 3); NFL today (max 3, Thursday night game);
-              NCAAF today (max 3)
+              NCAAF today (max 3); NHL today (max 2)
   Friday    — MLB today (max 3); NCAAF today (max 3); NCAAF look-ahead to
-              Saturday (max 3, prefer earlier kickoffs)
+              Saturday (max 3, prefer earlier kickoffs); NHL today (max 2)
   Saturday  — NCAAF today (max 3, prefer later kickoffs — not noon/1pm ET);
-              NFL look-ahead to Sunday (max 2, prefer the early game block)
+              NFL look-ahead to Sunday (max 2, prefer the early game block);
+              NHL today (max 2)
   Sunday    — MLB today (max 3); NFL today (max 3, prefer the afternoon
-              block or later)
+              block or later); NHL today (max 2)
+
+NHL plays most days during the season (closer to MLB's cadence than NFL/
+NCAAF), so — like MLB — it runs every day with no lookahead/fallback
+needed; an off day just produces nothing for it that day.
 
 Usage:
   venv/bin/python jobs/plan_daily_trend_videos.py [YYYY-MM-DD]
@@ -49,6 +55,7 @@ load_dotenv()
 import jobs.mlb_generate_trend_video_scripts as mlb_job
 import jobs.nfl_generate_trend_video_scripts as nfl_job
 import jobs.ncaaf_generate_trend_video_scripts as ncaaf_job
+import jobs.nhl_generate_trend_video_scripts as nhl_job
 from jobs.trend_video_common import next_weekday
 
 eastern_tz = pytz.timezone("US/Eastern")
@@ -81,6 +88,11 @@ def build_plan(date_str):
         plan.append(("ncaaf", ncaaf_job, date_str, {"max_games": 3, "time_pref": time_pref}))
     if weekday == FRIDAY:
         plan.append(("ncaaf", ncaaf_job, saturday, {"max_games": 3, "lookahead": True, "time_pref": "earlier_in_day"}))
+
+    # NHL: every day, like MLB — no lookahead, reads its own env-var default
+    # the same way MLB's slot does (so MAX_VIDEO_GAMES_PER_DAY_NHL can be
+    # tuned without a code change, e.g. during a future postseason).
+    plan.append(("nhl", nhl_job, date_str, {"max_games": nhl_job.MAX_VIDEO_GAMES_PER_DAY}))
 
     return plan
 

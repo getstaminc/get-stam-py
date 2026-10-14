@@ -111,6 +111,7 @@ _SPORT_META = {
     "mlb": {"hashtag": "MLB", "keyword": "baseball"},
     "nfl": {"hashtag": "NFL", "keyword": "football"},
     "ncaaf": {"hashtag": "CFB", "keyword": "college football"},
+    "nhl": {"hashtag": "NHL", "keyword": "hockey"},
 }
 
 

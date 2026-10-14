@@ -93,14 +93,10 @@ def test_collision_trends_skipped_when_primary_metric_sample_below_three():
     enough on its own -- a collision can have a healthy overall sample_size but a
     primary metric (the one actually picked for the headline/sort/description) backed
     by far fewer instances, e.g. because ats/total exclude pushes and missing lines.
-    Here overall sample_size=6 passes the floor, but the metric furthest from 50%
-    (ats, at 100%) is backed by only 1 instance -- that must still be suppressed,
-    exactly like a sub-3 overall sample_size would be.
-
-    Uses mismatched trend-type dimensions (win_streak vs cover_streak) so the
-    same-dimension-priority rule (see test_collision_headline_uses_total_when_both_sides_are_over_under_streaks)
-    doesn't force straight_up here -- this test is specifically about the
-    deviation-based fallback path."""
+    Here overall sample_size=6 passes the floor, but the primary metric -- forced to
+    straight_up because that's home's own trend dimension (win_streak) -- is backed
+    by only 1 instance -- that must still be suppressed, exactly like a sub-3 overall
+    sample_size would be."""
     game_trends = {
         'game': {'home': {'team': 'Huskers', 'odds': {'h2h': -150}}, 'away': {'team': 'Sooners', 'odds': {'h2h': 130}}},
         'homeTeamTrends': [{'type': 'win_streak', 'count': 5, 'description': 'd'}],
@@ -112,8 +108,8 @@ def test_collision_trends_skipped_when_primary_metric_sample_below_three():
     }
     stats = {
         'sample_size': 6,
-        'straight_up': {'home_side_win_rate': 0.5, 'sample_size': 6},
-        'ats': {'home_side_cover_rate': 1.0, 'sample_size': 1},
+        'straight_up': {'home_side_win_rate': 1.0, 'sample_size': 1},  # home's own dimension -- always primary, but tiny sample
+        'ats': {'home_side_cover_rate': 0.5, 'sample_size': 6},
     }
     with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
          patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
@@ -200,6 +196,36 @@ def test_collision_headline_excludes_unrelated_metric_on_mixed_dimension_pair():
     # Both sides are venue_specific (no swap possible), so the headline names real
     # teams and states both sides' complementary cover rates.
     assert "Falcons' cover continues 25% of the time (Bears covers 75% of the time)" in c['description']
+
+
+def test_collision_headline_always_matches_home_sides_own_trend_dimension():
+    """User-reported case: a covering streak (home, ATS) meeting a losing streak
+    (away, straight_up) headlined with the win rate (68%) because it happened to
+    be more statistically extreme than the cover rate. The language must match
+    the trend -- home's trend here is a COVERING streak, so the headline must
+    always be about covering, never about winning outright, even though the
+    win-rate number deviates further from 50%."""
+    game_trends = {
+        'game': {'home': {'team': 'Giants', 'odds': {'h2h': -150}}, 'away': {'team': 'Saints', 'odds': {'h2h': 130}}},
+        'homeTeamTrends': [{'type': 'cover_streak', 'count': 3, 'description': 'd'}],
+        'awayTeamTrends': [{'type': 'loss_streak', 'count': 3, 'description': 'd'}],
+        'headToHeadTrends': [], 'homeTeamHomeTrends': [], 'awayTeamAwayTrends': [], 'homeAtHomeH2HTrends': [],
+    }
+    stats = {
+        'sample_size': 161,
+        'straight_up': {'home_side_win_rate': 0.68, 'sample_size': 161},  # more extreme, but NOT home's own trend
+        'ats': {'home_side_cover_rate': 0.55, 'sample_size': 161},        # home's own trend dimension -- must win regardless
+    }
+    with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
+         patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
+         patch('api.services.historical.trend_enrichment.get_collision_stats', return_value=stats):
+        results = enrich_game_trends([game_trends], 'nfl')
+
+    c = results[0]['collisionTrends'][0]
+    assert c['continuation_rate'] == pytest.approx(0.55)
+    assert "cover continues 55% of the time" in c['description']
+    assert "win continues" not in c['description']
+    assert "(Giants to cover)" in c['description']
 
 
 def test_collision_bet_recommendation_flips_to_away_team_when_rate_below_half():

@@ -49,16 +49,16 @@ def _trend_dimension(trend_type: str) -> str:
 def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = None):
     """Pick the metric to drive the headline sentence and confidence badge.
 
-    A metric is only eligible to headline if it's actually about one of the
-    two trends colliding -- e.g. the straight-up winner must never headline
-    an ATS-vs-total collision just because it happens to be the most extreme
-    number, which it very often will be by small-sample noise alone, since
-    it's unrelated to either side. If both sides share a dimension (e.g. an
-    OVER streak meeting an UNDER streak -- both 'total'), that's the only
-    eligible metric. If they're different dimensions (e.g. a cover streak
-    meeting an UNDER streak), both of those two are eligible and whichever
-    deviates more from 50% wins; a third, unrelated metric (here, who wins
-    the game outright) is never a candidate. The rest become secondary_rates.
+    The language must match the trend: the sentence always names the home
+    side's own trend (see _build_collision_entry), so the metric must be the
+    one that trend is actually about -- a covering streak means the headline
+    is about covering, never about winning outright, even if the win-rate
+    number happens to be more statistically extreme. Only when home's own
+    dimension has no data at all (e.g. a sport without a modeled spread) do
+    we fall back to the away side's dimension, then to whichever available
+    metric deviates most from 50%. A metric unrelated to either side (e.g.
+    the straight-up winner on an ATS-vs-total collision) is never a
+    candidate at all. The rest become secondary_rates.
     """
     candidates = []
     if stats.get('straight_up'):
@@ -70,9 +70,15 @@ def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = No
     if not candidates:
         return None
 
-    relevant_dims = {d for d in (_trend_dimension(home_type), _trend_dimension(away_type)) if d}
+    home_dim = _trend_dimension(home_type)
+    for c in candidates:
+        if c[0] == home_dim:
+            return c
+
+    away_dim = _trend_dimension(away_type)
+    relevant_dims = {d for d in (home_dim, away_dim) if d}
     relevant_candidates = [c for c in candidates if c[0] in relevant_dims]
-    pool = relevant_candidates or candidates  # degrade gracefully if neither relevant metric has data
+    pool = relevant_candidates or candidates  # degrade gracefully if no relevant metric has data
 
     return max(pool, key=lambda c: abs(c[1] - 0.5))
 

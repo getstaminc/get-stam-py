@@ -81,9 +81,9 @@ def _possessive(team: str) -> str:
     return f"{team}'" if team.endswith('s') else f"{team}'s"
 
 
-def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
+def _trend_word(trend: dict) -> str:
     tt, n = trend['type'], trend['count']
-    word = {
+    return {
         'win_streak': f'{n}-game win streak',
         'loss_streak': f'{n}-game loss streak',
         'cover_streak': f'{n}-game covering streak',
@@ -91,7 +91,10 @@ def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
         'over_streak': f'{n}-game OVER streak',
         'under_streak': f'{n}-game UNDER streak',
     }.get(tt, f'{tt} of {n}')
-    return f"{_possessive(team)} {word}{venue_suffix}"
+
+
+def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
+    return f"{_possessive(team)} {_trend_word(trend)}{venue_suffix}"
 
 
 def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: str, away_trend: dict, away_venue: str, stats: dict):
@@ -129,9 +132,14 @@ def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: s
         # attribute the pooled rate to one specific team.
         can_swap = home_venue == 'general' and away_venue == 'general'
         if can_swap:
+            # This rate is always about whichever side carries the home-position
+            # trend (the metric is tracked as "home_side_...", which get_collision_stats
+            # re-attributes to whichever physical team actually has that trend even
+            # when a swap matched) -- name that trend explicitly rather than the
+            # unhelpfully vague "trend-matching side."
             sentence = (
                 f"Historically when this collision has happened, the "
-                f"trend-matching side's {metric_word} continues {pct} of the time"
+                f"{_trend_word(home_trend)} team's {metric_word} continues {pct} of the time"
             )
         else:
             opponent_pct = f"{round((1 - primary_rate) * 100)}%"

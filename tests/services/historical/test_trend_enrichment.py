@@ -403,5 +403,5 @@ def test_collision_trends_unmocked_end_to_end_through_real_collision_service():
     assert c['away_trend'] == {'team': 'Aggies', 'type': 'loss_streak', 'count': 5, 'venue': 'general'}
     assert "Wildcats' 5-game win streak" in c['description']
     assert "Aggies' 5-game loss streak" in c['description']
-    assert "trend-matching side's win continues 67% of the time" in c['description']
+    assert "5-game win streak team's win continues 67% of the time" in c['description']
     assert c['description'].endswith(' — 3 historical meetings')

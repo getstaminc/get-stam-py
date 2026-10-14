@@ -164,19 +164,25 @@ def test_collision_headline_excludes_unrelated_metric_on_mixed_dimension_pair():
     total), but happened to be the most extreme of the three numbers purely from
     small-sample noise (0 of 4). straight_up must never be eligible here; the
     headline must come from whichever of ATS/total (the two that ARE relevant) is
-    more extreme, even though straight_up's deviation from 50% is larger."""
+    more extreme, even though straight_up's deviation from 50% is larger.
+
+    Uses no_cover_streak (ats) vs loss_streak (straight_up) -- NOT an over/under
+    trend on either side -- since total trends can no longer collide with
+    non-total trends at all (see test_total_trends_only_collide_with_other_total_trends);
+    the spurious irrelevant metric here is 'total' instead, to keep exercising
+    the "exclude metrics unrelated to either actual colliding trend" guard."""
     game_trends = {
         'game': {'home': {'team': 'Falcons', 'odds': {'h2h': -150}}, 'away': {'team': 'Bears', 'odds': {'h2h': 130}}},
         'homeTeamHomeTrends': [{'type': 'no_cover_streak', 'count': 6, 'description': 'd'}],
-        'awayTeamAwayTrends': [{'type': 'under_streak', 'count': 4, 'description': 'd'}],
+        'awayTeamAwayTrends': [{'type': 'loss_streak', 'count': 4, 'description': 'd'}],
         'homeTeamTrends': [], 'awayTeamTrends': [],
         'headToHeadTrends': [], 'homeAtHomeH2HTrends': [],
     }
     stats = {
         'sample_size': 4,
-        'straight_up': {'home_side_win_rate': 0.0, 'sample_size': 4},  # most extreme, but IRRELEVANT -- must not be picked
-        'ats': {'home_side_cover_rate': 0.25, 'sample_size': 4},        # relevant (home side's trend is ATS)
-        'total': {'over_rate': 0.4, 'sample_size': 4},                  # relevant (away side's trend is total)
+        'straight_up': {'home_side_win_rate': 0.6, 'sample_size': 4},   # relevant (away side's trend is straight_up)
+        'ats': {'home_side_cover_rate': 0.25, 'sample_size': 4},        # relevant (home side's trend is ATS) -- most extreme of the relevant two
+        'total': {'over_rate': 0.95, 'sample_size': 4},                 # most extreme overall, but IRRELEVANT -- must not be picked
     }
     with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
          patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
@@ -186,12 +192,66 @@ def test_collision_headline_excludes_unrelated_metric_on_mixed_dimension_pair():
     collisions = results[0]['collisionTrends']
     assert len(collisions) == 1
     c = collisions[0]
-    # Between the two relevant metrics (ats=0.25, total=0.4), ats deviates more from 0.5 -> wins.
-    assert "win" not in c['description']
+    # Between the two relevant metrics (ats=0.25, straight_up=0.6), ats deviates
+    # more from 0.5 (0.25 vs 0.1) -> wins, even though the irrelevant 'total'
+    # (0.95, dev 0.45) is more extreme than both.
+    assert "OVER" not in c['description']
     assert c['continuation_rate'] == pytest.approx(0.25)
     # Both sides are venue_specific (no swap possible), so the headline names real
     # teams and states both sides' complementary cover rates.
     assert "Falcons' cover continues 25% of the time (Bears covers 75% of the time)" in c['description']
+
+
+def test_total_trends_only_collide_with_other_total_trends():
+    """User requirement: an over/under streak may only collide with another
+    over/under streak -- never with a spread (ats) or moneyline (straight_up)
+    trend. Spread and moneyline may still collide with each other.
+
+    3 home criteria (win_streak, cover_streak, over_streak) x 2 away criteria
+    (loss_streak, under_streak) = 6 pairings. Of these, 3 involve a total
+    trend paired with a non-total trend (win+under, cover+under, over+loss)
+    and must be skipped before get_collision_stats is even called; the other
+    3 (win+loss, cover+loss -- non-total mixing with non-total -- and
+    over+under -- total with total) are all allowed through."""
+    game_trends = {
+        'game': {'home': {'team': 'Falcons', 'odds': {'h2h': -150}}, 'away': {'team': 'Bears', 'odds': {'h2h': 130}}},
+        'homeTeamTrends': [
+            {'type': 'win_streak', 'count': 5, 'description': 'd'},
+            {'type': 'cover_streak', 'count': 4, 'description': 'd'},
+            {'type': 'over_streak', 'count': 3, 'description': 'd'},
+        ],
+        'awayTeamTrends': [
+            {'type': 'loss_streak', 'count': 5, 'description': 'd'},
+            {'type': 'under_streak', 'count': 4, 'description': 'd'},
+        ],
+        'headToHeadTrends': [],
+        'homeTeamHomeTrends': [],
+        'awayTeamAwayTrends': [],
+        'homeAtHomeH2HTrends': [],
+    }
+    calls = []
+
+    def fake_stats(sport, home_c, away_c):
+        calls.append((home_c['trend_type'], away_c['trend_type']))
+        return {'sample_size': 10, 'straight_up': {'home_side_win_rate': 0.6, 'sample_size': 10}}
+
+    with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
+         patch('api.services.historical.trend_enrichment.get_streak_stats', return_value=None), \
+         patch('api.services.historical.trend_enrichment.get_collision_stats', side_effect=fake_stats):
+        enrich_game_trends([game_trends], 'nfl')
+
+    # win+under, cover+under, and over+loss each pair a total trend with a
+    # non-total one -- skipped. win+loss and cover+loss are non-total paired
+    # with non-total (spread/moneyline mixing, which the user is fine with) --
+    # allowed. over+under is total paired with total -- allowed.
+    assert set(calls) == {
+        ('win_streak', 'loss_streak'),
+        ('cover_streak', 'loss_streak'),
+        ('over_streak', 'under_streak'),
+    }
+    assert ('win_streak', 'under_streak') not in calls
+    assert ('cover_streak', 'under_streak') not in calls
+    assert ('over_streak', 'loss_streak') not in calls
 
 
 def test_collision_trends_capped_when_more_than_3_pairs_qualify():
@@ -202,18 +262,20 @@ def test_collision_trends_capped_when_more_than_3_pairs_qualify():
         'homeTeamTrends': [
             {'type': 'win_streak', 'count': 5, 'description': 'd'},
             {'type': 'cover_streak', 'count': 4, 'description': 'd'},
-            {'type': 'over_streak', 'count': 3, 'description': 'd'},
+            {'type': 'no_cover_streak', 'count': 3, 'description': 'd'},
         ],
         'awayTeamTrends': [
             {'type': 'loss_streak', 'count': 5, 'description': 'd'},
-            {'type': 'no_cover_streak', 'count': 4, 'description': 'd'},
+            {'type': 'cover_streak', 'count': 4, 'description': 'd'},
         ],
         'headToHeadTrends': [],
         'homeTeamHomeTrends': [],
         'awayTeamAwayTrends': [],
         'homeAtHomeH2HTrends': [],
     }
-    # 3 home criteria x 2 away criteria = 6 calls, each given a distinct (and all-qualifying) sample_size.
+    # 3 home criteria x 2 away criteria = 6 calls, none of them total trends, so
+    # none are skipped by the total-only-collides-with-total filter. Each given
+    # a distinct (and all-qualifying) sample_size.
     sample_sizes = [10, 3, 20, 4, 5, 15]
     call_order = {'n': 0}
 

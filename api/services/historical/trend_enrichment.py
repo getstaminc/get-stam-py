@@ -242,6 +242,13 @@ def enrich_game_trends(results: list, sport: str) -> list:
         collision_trends = []
         for hc in home_criteria:
             for ac in away_criteria:
+                # A total (over/under) trend may only collide with another total
+                # trend -- never with a spread (ats) or moneyline (straight_up)
+                # trend. Spread and moneyline may still collide with each other.
+                home_is_total = _trend_dimension(hc['trend_type']) == 'total'
+                away_is_total = _trend_dimension(ac['trend_type']) == 'total'
+                if home_is_total != away_is_total:
+                    continue
                 try:
                     stats = get_collision_stats(
                         sport,

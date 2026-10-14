@@ -53,7 +53,7 @@ def test_collision_trends_attached_when_stats_available():
     assert c['home_trend'] == {'team': 'Huskers', 'type': 'win_streak', 'count': 5, 'venue': 'venue_specific'}
     assert c['away_trend'] == {'team': 'Sooners', 'type': 'loss_streak', 'count': 5, 'venue': 'venue_specific'}
     assert "Huskers' 5-game win streak at home" in c['description']
-    assert "Sooners' 5-game skid on the road" in c['description']
+    assert "Sooners' 5-game loss streak on the road" in c['description']
 
     assert c['straight_up_rate'] == 0.62
     assert c['ats_rate'] == 0.55
@@ -402,6 +402,6 @@ def test_collision_trends_unmocked_end_to_end_through_real_collision_service():
     assert c['home_trend'] == {'team': 'Wildcats', 'type': 'win_streak', 'count': 5, 'venue': 'general'}
     assert c['away_trend'] == {'team': 'Aggies', 'type': 'loss_streak', 'count': 5, 'venue': 'general'}
     assert "Wildcats' 5-game win streak" in c['description']
-    assert "Aggies' 5-game skid" in c['description']
+    assert "Aggies' 5-game loss streak" in c['description']
     assert "trend-matching side's win continues 67% of the time" in c['description']
     assert c['description'].endswith(' — 3 historical meetings')

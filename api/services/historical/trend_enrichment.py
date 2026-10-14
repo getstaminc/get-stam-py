@@ -85,7 +85,7 @@ def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
     tt, n = trend['type'], trend['count']
     word = {
         'win_streak': f'{n}-game win streak',
-        'loss_streak': f'{n}-game skid',
+        'loss_streak': f'{n}-game loss streak',
         'cover_streak': f'{n}-game covering streak',
         'no_cover_streak': f'{n}-game run of failing to cover',
         'over_streak': f'{n}-game OVER streak',

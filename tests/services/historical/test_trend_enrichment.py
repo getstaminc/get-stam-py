@@ -185,7 +185,7 @@ def test_collision_headline_excludes_unrelated_metric_on_mixed_dimension_pair():
     # Between the two relevant metrics (ats=0.25, total=0.4), ats deviates more from 0.5 -> wins.
     assert "win" not in c['description']
     assert c['continuation_rate'] == pytest.approx(0.25)
-    assert "trend-matching side's ats continues 25% of the time" in c['description']
+    assert "trend-matching side's cover continues 25% of the time" in c['description']
 
 
 def test_collision_trends_capped_when_more_than_3_pairs_qualify():

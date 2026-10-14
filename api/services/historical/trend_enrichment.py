@@ -110,7 +110,10 @@ def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: s
             f"continues {pct} of the time"
         )
     else:
-        metric_word = _collision_rate_label(primary_key).lower()
+        # A noun that can sensibly "continue" in prose -- 'ats'/'ATS' can't
+        # (it isn't a thing that continues), but 'cover' reads naturally
+        # parallel to 'win': "the trend-matching side's cover continues X%".
+        metric_word = {'straight_up': 'win', 'ats': 'cover'}[primary_key]
         sentence = (
             f"Historically when this collision has happened, the "
             f"trend-matching side's {metric_word} continues {pct} of the time"

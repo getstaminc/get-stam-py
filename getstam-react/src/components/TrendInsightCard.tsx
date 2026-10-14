@@ -53,7 +53,10 @@ const parseDescription = (description: string) => {
 
 export const getConfidenceScore = (trend: TrendResult): number => {
   const { continuation_rate, sample_size = 0, count } = trend;
-  if (continuation_rate != null && sample_size >= 5) {
+  // >= 3, not >= 5: collision trends can carry a real (if small) sample as low as 3
+  // (trend_collision_service's own floor) -- below that, there ARE no real stats to
+  // fall back from, which is what the count-based branch below is actually for.
+  if (continuation_rate != null && sample_size >= 3) {
     const deviation = Math.abs(continuation_rate - 0.5);
     if (deviation >= 0.15 && sample_size >= 10) return 4;
     if (deviation >= 0.08 && sample_size >= 5)  return 3;
@@ -68,7 +71,8 @@ export const getConfidenceScore = (trend: TrendResult): number => {
 export const getConfidence = (trend: TrendResult): { label: string; color: string } | null => {
   const { continuation_rate, sample_size = 0, count } = trend;
 
-  if (continuation_rate != null && sample_size >= 5) {
+  // >= 3, not >= 5: see getConfidenceScore above for why.
+  if (continuation_rate != null && sample_size >= 3) {
     if (continuation_rate < 0.5) return null; // below 50% = likely to break; percentage shows it
     const deviation = continuation_rate - 0.5;
     if (deviation >= 0.15 && sample_size >= 10) return { label: "High Confidence", color: "#d97706" };

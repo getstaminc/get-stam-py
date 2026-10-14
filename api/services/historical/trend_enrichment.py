@@ -77,6 +77,10 @@ def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = No
     return max(pool, key=lambda c: abs(c[1] - 0.5))
 
 
+def _possessive(team: str) -> str:
+    return f"{team}'" if team.endswith('s') else f"{team}'s"
+
+
 def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
     tt, n = trend['type'], trend['count']
     word = {
@@ -87,8 +91,7 @@ def _collision_phrase(team: str, trend: dict, venue_suffix: str = "") -> str:
         'over_streak': f'{n}-game OVER streak',
         'under_streak': f'{n}-game UNDER streak',
     }.get(tt, f'{tt} of {n}')
-    team_possessive = f"{team}'" if team.endswith('s') else f"{team}'s"
-    return f"{team_possessive} {word}{venue_suffix}"
+    return f"{_possessive(team)} {word}{venue_suffix}"
 
 
 def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: str, away_trend: dict, away_venue: str, stats: dict):
@@ -112,12 +115,31 @@ def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: s
     else:
         # A noun that can sensibly "continue" in prose -- 'ats'/'ATS' can't
         # (it isn't a thing that continues), but 'cover' reads naturally
-        # parallel to 'win': "the trend-matching side's cover continues X%".
+        # parallel to 'win': "...'s cover continues X%".
         metric_word = {'straight_up': 'win', 'ats': 'cover'}[primary_key]
-        sentence = (
-            f"Historically when this collision has happened, the "
-            f"trend-matching side's {metric_word} continues {pct} of the time"
-        )
+        # A swap can only ever happen when BOTH criteria are 'general' (see
+        # get_collision_stats). Whenever either side is venue_specific, no
+        # swap was possible, so every matching game is a "straight" match --
+        # home_side is GUARANTEED to be the literal home team, so we can
+        # safely name real teams and state both sides' rates (they're
+        # complementary within the same non-push denominator). Only when
+        # BOTH sides are general (a real swap could have happened, so a
+        # single matched instance might be either team) do we fall back to
+        # the generic "trend-matching side" framing, since we can't safely
+        # attribute the pooled rate to one specific team.
+        can_swap = home_venue == 'general' and away_venue == 'general'
+        if can_swap:
+            sentence = (
+                f"Historically when this collision has happened, the "
+                f"trend-matching side's {metric_word} continues {pct} of the time"
+            )
+        else:
+            opponent_pct = f"{round((1 - primary_rate) * 100)}%"
+            sentence = (
+                f"Historically when this collision has happened, "
+                f"{_possessive(home)} {metric_word} continues {pct} of the time "
+                f"({away} {metric_word}s {opponent_pct} of the time)"
+            )
 
     secondary_rates = []
     for key in ('straight_up', 'ats', 'total'):

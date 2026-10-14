@@ -37,8 +37,12 @@ def test_collision_trends_attached_when_stats_available():
     assert c['sample_size'] == 14
     assert c['continuation_rate'] == 0.62  # straight_up is furthest from 0.5 among the three -> primary
 
-    # Fix #3: headline uses "the trend-matching side's win", not "the home side's win"
-    assert "the trend-matching side's win continues 62% of the time" in c['description']
+    # Both criteria here are venue_specific, so no swap was possible and home_side is
+    # guaranteed to be the literal home team -- the headline names real teams and
+    # states both sides' (complementary) rates, rather than the generic
+    # "trend-matching side" phrasing used when a swap could have happened.
+    assert "Huskers' win continues 62% of the time (Sooners wins 38% of the time)" in c['description']
+    assert "trend-matching side" not in c['description']
     assert "home side's" not in c['description']
 
     # Fix #4: the sample size is surfaced as a third " — "-delimited segment
@@ -185,7 +189,9 @@ def test_collision_headline_excludes_unrelated_metric_on_mixed_dimension_pair():
     # Between the two relevant metrics (ats=0.25, total=0.4), ats deviates more from 0.5 -> wins.
     assert "win" not in c['description']
     assert c['continuation_rate'] == pytest.approx(0.25)
-    assert "trend-matching side's cover continues 25% of the time" in c['description']
+    # Both sides are venue_specific (no swap possible), so the headline names real
+    # teams and states both sides' complementary cover rates.
+    assert "Falcons' cover continues 25% of the time (Bears covers 75% of the time)" in c['description']
 
 
 def test_collision_trends_capped_when_more_than_3_pairs_qualify():

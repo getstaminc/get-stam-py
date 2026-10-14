@@ -226,8 +226,8 @@ def test_collision_bet_recommendation_flips_to_away_team_when_rate_below_half():
 
     c = results[0]['collisionTrends'][0]
     assert "cover continues 46% of the time" in c['description']
-    assert "(bet: Saints to cover)" in c['description']
-    assert "bet: Giants" not in c['description']
+    assert "(Saints to cover)" in c['description']
+    assert "Giants to cover" not in c['description']
 
 
 def test_total_trends_only_collide_with_other_total_trends():
@@ -432,5 +432,5 @@ def test_collision_trends_unmocked_end_to_end_through_real_collision_service():
     assert "Wildcats' 5-game win streak" in c['description']
     assert "Aggies' 5-game loss streak" in c['description']
     assert "5-game win streak team's win continues 67% of the time" in c['description']
-    assert "(bet: Wildcats to win)" in c['description']  # rate >= 50% -> bet the trend-carrying team (home today)
+    assert "(Wildcats to win)" in c['description']  # rate >= 50% -> the trend-carrying team (home today)
     assert c['description'].endswith(' — 3 historical meetings')

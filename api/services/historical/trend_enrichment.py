@@ -147,7 +147,7 @@ def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: s
             sentence = (
                 f"Historically when this collision has happened, the "
                 f"{_trend_word(home_trend)} team's {metric_word} continues {pct} of the time "
-                f"(bet: {bet_team} to {bet_verb})"
+                f"({bet_team} to {bet_verb})"
             )
         else:
             opponent_pct = f"{round((1 - primary_rate) * 100)}%"

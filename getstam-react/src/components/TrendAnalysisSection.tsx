@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Typography, CircularProgress } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
+import { GameWithTrends, TrendResult, MarketOverview, MarketOverviewEntry } from "../utils/trendAnalysis";
 import { getConfidenceScore, getConfidence } from "./TrendInsightCard";
 
 interface TrendAnalysisSectionProps {
@@ -116,6 +116,73 @@ const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | n
   );
 };
 
+const MARKET_PLAIN_LABELS: Record<string, string> = {
+  moneyline: "Who wins",
+  spread: "Against the spread",
+  total: "Total points",
+};
+
+// Below this, a lean reads as close to a coin flip rather than a real edge.
+const COIN_FLIP_THRESHOLD = 0.55;
+
+const marketSentence = (marketKey: string, entry: MarketOverviewEntry, home: string, away: string): string => {
+  const pct = Math.round(entry.probability * 100);
+  const isCloseCall = entry.probability < COIN_FLIP_THRESHOLD;
+  const gameWord = entry.sample_size === 1 ? "game" : "games";
+
+  if (marketKey === "total") {
+    return isCloseCall
+      ? `Close to a coin flip, with a slight lean toward the ${entry.lean} (${pct}% across ${entry.sample_size} similar historical ${gameWord}).`
+      : `History leans toward the ${entry.lean} (${pct}% across ${entry.sample_size} similar historical ${gameWord}).`;
+  }
+
+  const other = entry.lean === home ? away : home;
+  const otherPct = 100 - pct;
+  return isCloseCall
+    ? `Close to a coin flip — ${entry.lean} ${pct}% vs. ${other} ${otherPct}%, based on ${entry.sample_size} historical ${gameWord}.`
+    : `History favors ${entry.lean} (${pct}% across ${entry.sample_size} similar historical ${gameWord}).`;
+};
+
+const GameSummaryBanner: React.FC<{ overview: MarketOverview; home: string; away: string; dataSinceYear?: number | null }> = ({ overview, home, away, dataSinceYear }) => {
+  const rows = (["moneyline", "spread", "total"] as const)
+    .map((key) => ({ key, entry: overview[key] }))
+    .filter((r): r is { key: "moneyline" | "spread" | "total"; entry: MarketOverviewEntry } => !!r.entry);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Box sx={{
+      mb: 3, p: 2.5,
+      background: "linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)",
+      borderRadius: "16px", border: "1px solid #bfdbfe",
+    }}>
+      <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#1e293b", mb: 0.5 }}>
+        What the numbers suggest
+      </Typography>
+      <Typography sx={{ fontSize: "0.8rem", color: "#64748b", mb: 1.75 }}>
+        A quick read on this matchup, based on every historical trend below.
+      </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+        {rows.map(({ key, entry }) => (
+          <Box key={key}>
+            <Typography component="span" sx={{ fontWeight: 700, fontSize: "0.875rem", color: "#1e293b" }}>
+              {MARKET_PLAIN_LABELS[key]}:{" "}
+            </Typography>
+            <Typography component="span" sx={{ fontSize: "0.875rem", color: "#475569" }}>
+              {marketSentence(key, entry, home, away)}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+      <Typography sx={{ fontSize: "0.75rem", color: "#94a3b8", mt: 1.75, fontStyle: "italic" }}>
+        These reflect historical patterns{dataSinceYear ? ` since ${dataSinceYear}` : ""}, not predictions —
+        the more games behind a number, the more weight it tends to carry. The full trend-by-trend
+        breakdown behind this summary is below.
+      </Typography>
+    </Box>
+  );
+};
+
 const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({ gameTrends, loading, game, minTrendLength, dataSinceYear }) => {
   if (loading) {
     return (
@@ -149,6 +216,14 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({ gameTrends,
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, pt: 4, mb: 2 }}>
+      {gameTrends.marketOverview && (
+        <GameSummaryBanner
+          overview={gameTrends.marketOverview}
+          home={home?.team || ""}
+          away={away?.team || ""}
+          dataSinceYear={dataSinceYear}
+        />
+      )}
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: "#1e293b" }}>
         Trend Analysis
       </Typography>

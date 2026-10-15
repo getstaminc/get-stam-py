@@ -63,6 +63,15 @@ def test_collision_trends_attached_when_stats_available():
         {'label': 'Total', 'rate': 0.48, 'sample_size': 14},
     ]
 
+    # The collision entry alone (home_trend type win_streak -> moneyline) is enough
+    # to populate marketOverview, even with get_streak_stats mocked to None so the
+    # single-team trends in this fixture contribute nothing.
+    overview = results[0]['marketOverview']
+    assert overview['moneyline']['lean'] == 'Huskers'
+    assert overview['moneyline']['probability'] == pytest.approx(0.62)
+    assert 'spread' not in overview
+    assert 'total' not in overview
+
 
 def test_collision_trends_empty_when_no_stats():
     with patch('api.services.historical.trend_enrichment.get_streak_context', return_value=''), \
@@ -71,6 +80,7 @@ def test_collision_trends_empty_when_no_stats():
         results = enrich_game_trends([_game_trends()], 'ncaaf')
 
     assert results[0]['collisionTrends'] == []
+    assert results[0]['marketOverview'] is None
 
 
 def test_collision_trends_skipped_when_sample_size_below_three():

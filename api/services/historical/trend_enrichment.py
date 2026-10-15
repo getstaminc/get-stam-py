@@ -8,6 +8,7 @@ the same rich format.
 
 from .trend_context_service import get_streak_context, get_streak_stats
 from .trend_collision_service import get_collision_stats, trend_dimension
+from .trend_overview_service import build_market_overview
 
 
 def _enrich_desc(t: dict, team: str, venue: str) -> str:
@@ -291,5 +292,7 @@ def enrich_game_trends(results: list, sport: str) -> list:
 
         collision_trends.sort(key=lambda c: c['sample_size'], reverse=True)
         game_trends['collisionTrends'] = collision_trends[:3]
+
+        game_trends['marketOverview'] = build_market_overview(game_trends)
 
     return results

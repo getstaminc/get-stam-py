@@ -9,6 +9,20 @@ export interface SecondaryRate {
   sample_size: number;
 }
 
+export interface MarketOverviewEntry {
+  lean: string; // a team name for moneyline/spread, or "Over"/"Under" for total
+  probability: number; // 0-1, the blended probability of `lean`
+  trend_count: number;
+  sample_size: number;
+  supporting_description: string;
+}
+
+export interface MarketOverview {
+  moneyline?: MarketOverviewEntry;
+  spread?: MarketOverviewEntry;
+  total?: MarketOverviewEntry;
+}
+
 export interface TrendResult {
   type: TrendType;
   count: number;
@@ -27,6 +41,7 @@ export interface GameWithTrends {
   awayTeamAwayTrends?: TrendResult[];
   homeAtHomeH2HTrends?: TrendResult[];
   collisionTrends?: TrendResult[];
+  marketOverview?: MarketOverview | null;
   hasTrends: boolean;
 }
 

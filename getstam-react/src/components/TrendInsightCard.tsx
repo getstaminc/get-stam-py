@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, Typography, Button } from "@mui/material";
 import { Link } from "react-router-dom";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import { TrendResult } from "../utils/trendAnalysis";
+import { TrendResult, MarketOverview } from "../utils/trendAnalysis";
 import { getTeamPageLink } from "../utils/teamSlugUtils";
 import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
 
@@ -15,6 +15,7 @@ const TEAM_PAGE_SPORTS = new Set(["nba", "nfl", "mlb", "nhl", "ncaaf", "ncaab"])
 export interface TrendInsightCardProps {
   game: any;
   trends: TrendResult[]; // pre-sorted descending by count
+  marketOverview?: MarketOverview | null;
   pitcherData?: {
     home_pitcher?: string;
     away_pitcher?: string;
@@ -26,6 +27,41 @@ export interface TrendInsightCardProps {
   onViewDetails?: () => void;
   playerStreaks?: TeamStreaks[];
 }
+
+const MARKET_ROWS: { key: keyof MarketOverview; label: string }[] = [
+  { key: "moneyline", label: "Moneyline" },
+  { key: "spread", label: "Spread" },
+  { key: "total", label: "Total" },
+];
+
+const MarketOverviewCard: React.FC<{ overview: MarketOverview }> = ({ overview }) => {
+  const rows = MARKET_ROWS.filter((r) => overview[r.key]);
+  if (rows.length === 0) return null;
+  return (
+    <Box sx={{
+      mx: 2, mb: 1.5, p: 1.5,
+      background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0",
+      display: "flex", flexDirection: "column", gap: 0.75,
+    }}>
+      <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8" }}>
+        Overview
+      </Typography>
+      {rows.map(({ key, label }) => {
+        const entry = overview[key]!;
+        const pct = Math.round(entry.probability * 100);
+        return (
+          <Box key={key} sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <Typography sx={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>{label}</Typography>
+            <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
+              {entry.lean} <Box component="span" sx={{ color: "#16a34a" }}>{pct}%</Box>
+              <Box component="span" sx={{ color: "#94a3b8", fontWeight: 500, fontSize: "0.72rem" }}> ({entry.trend_count} trends, n={entry.sample_size})</Box>
+            </Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
 
 const POSITIVE_TYPES = new Set(["win_streak", "cover_streak", "over_streak"]);
 
@@ -112,7 +148,10 @@ const OddsRow: React.FC<{ left: string; label: string; right: string; sub?: stri
   </Box>
 );
 
-const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitcherData, detailsLink, sport, onViewDetails, playerStreaks }) => {
+const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, marketOverview, pitcherData, detailsLink, sport, onViewDetails, playerStreaks }) => {
+  const hasOverview = !!marketOverview && MARKET_ROWS.some((r) => marketOverview![r.key]);
+  const [showAllTrends, setShowAllTrends] = useState(!hasOverview);
+
   const { home, away, totals, draw } = game;
   if (trends.length === 0) return null;
 
@@ -200,7 +239,25 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
         </Box>
       </Box>
 
+      {hasOverview && <MarketOverviewCard overview={marketOverview!} />}
+
+      {hasOverview && (
+        <Box sx={{ mx: 2, mb: 1, display: "flex", justifyContent: "flex-end" }}>
+          <Typography
+            component="button"
+            onClick={() => setShowAllTrends((v) => !v)}
+            sx={{
+              fontSize: "0.72rem", fontWeight: 700, color: "#1976d2",
+              background: "none", border: "none", cursor: "pointer", p: 0,
+            }}
+          >
+            {showAllTrends ? "Hide details" : `Show all ${trends.length} trends`}
+          </Typography>
+        </Box>
+      )}
+
       {/* Trend insight boxes */}
+      {showAllTrends && (
       <Box sx={{ mx: 2, mb: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
         {trends.map((trend, idx) => {
           const positive = POSITIVE_TYPES.has(trend.type);
@@ -270,6 +327,7 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, pitch
           </Box>
         )}
       </Box>
+      )}
 
       {/* Divider + Odds */}
       {!isGameOver && (

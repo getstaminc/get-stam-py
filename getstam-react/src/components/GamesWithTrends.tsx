@@ -182,6 +182,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
               key={game.game_id}
               game={{ home: game.home, away: game.away, totals: game.totals, ...(game.draw ? { draw: game.draw } : {}) }}
               trends={allTrends}
+              marketOverview={gwt.marketOverview}
               pitcherData={getPitcherDataForGame?.(game)}
               detailsLink={detailsLink}
               sport={urlSport}

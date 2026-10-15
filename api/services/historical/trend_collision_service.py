@@ -3,9 +3,21 @@
 where that same collision occurred league-wide and report what happened.
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .trend_context_service import SPORT_CONFIG, get_sport_context, get_trend_types
+
+
+def trend_dimension(trend_type: str) -> Optional[str]:
+    """Which of the three outcome metrics (straight_up/ats/total) a trend type
+    is about. Lives here (rather than in trend_enrichment.py, the other module
+    that needs it) so trend_overview_service.py can import it from a common
+    lower-level module without a circular import."""
+    return {
+        'win_streak': 'straight_up', 'loss_streak': 'straight_up',
+        'cover_streak': 'ats', 'no_cover_streak': 'ats',
+        'over_streak': 'total', 'under_streak': 'total',
+    }.get(trend_type)
 
 
 def _typed_results(games: List[Dict], trend_type: str) -> List[Tuple[Any, bool]]:

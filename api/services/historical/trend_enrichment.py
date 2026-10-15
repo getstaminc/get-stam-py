@@ -7,7 +7,7 @@ the same rich format.
 """
 
 from .trend_context_service import get_streak_context, get_streak_stats
-from .trend_collision_service import get_collision_stats
+from .trend_collision_service import get_collision_stats, trend_dimension
 
 
 def _enrich_desc(t: dict, team: str, venue: str) -> str:
@@ -36,16 +36,6 @@ def _collision_rate_label(key: str) -> str:
     return {'straight_up': 'Win', 'ats': 'ATS', 'total': 'Total'}[key]
 
 
-def _trend_dimension(trend_type: str) -> str:
-    """Which of the three outcome metrics (straight_up/ats/total) a trend type
-    is about."""
-    return {
-        'win_streak': 'straight_up', 'loss_streak': 'straight_up',
-        'cover_streak': 'ats', 'no_cover_streak': 'ats',
-        'over_streak': 'total', 'under_streak': 'total',
-    }.get(trend_type)
-
-
 def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = None):
     """Pick the metric to drive the headline sentence and confidence badge.
 
@@ -70,12 +60,12 @@ def _pick_primary_metric(stats: dict, home_type: str = None, away_type: str = No
     if not candidates:
         return None
 
-    home_dim = _trend_dimension(home_type)
+    home_dim = trend_dimension(home_type)
     for c in candidates:
         if c[0] == home_dim:
             return c
 
-    away_dim = _trend_dimension(away_type)
+    away_dim = trend_dimension(away_type)
     relevant_dims = {d for d in (home_dim, away_dim) if d}
     relevant_candidates = [c for c in candidates if c[0] in relevant_dims]
     pool = relevant_candidates or candidates  # degrade gracefully if no relevant metric has data
@@ -267,8 +257,8 @@ def enrich_game_trends(results: list, sport: str) -> list:
                 # A total (over/under) trend may only collide with another total
                 # trend -- never with a spread (ats) or moneyline (straight_up)
                 # trend. Spread and moneyline may still collide with each other.
-                home_is_total = _trend_dimension(hc['trend_type']) == 'total'
-                away_is_total = _trend_dimension(ac['trend_type']) == 'total'
+                home_is_total = trend_dimension(hc['trend_type']) == 'total'
+                away_is_total = trend_dimension(ac['trend_type']) == 'total'
                 if home_is_total != away_is_total:
                     continue
                 try:

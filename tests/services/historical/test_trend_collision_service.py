@@ -1,8 +1,19 @@
 import pytest
 
-from api.services.historical.trend_collision_service import _build_entering_streaks
+from api.services.historical.trend_collision_service import _build_entering_streaks, trend_dimension
 
 TREND_TYPES = ('over_streak', 'under_streak', 'win_streak', 'loss_streak', 'cover_streak', 'no_cover_streak')
+
+
+def test_trend_dimension_maps_all_six_types():
+    assert trend_dimension('win_streak') == 'straight_up'
+    assert trend_dimension('loss_streak') == 'straight_up'
+    assert trend_dimension('cover_streak') == 'ats'
+    assert trend_dimension('no_cover_streak') == 'ats'
+    assert trend_dimension('over_streak') == 'total'
+    assert trend_dimension('under_streak') == 'total'
+    assert trend_dimension('draw_streak') is None
+    assert trend_dimension('not_a_real_type') is None
 
 
 def _game(game_id, date, hs, aw, tl, ln, is_home):

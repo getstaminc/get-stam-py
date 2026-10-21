@@ -440,6 +440,7 @@ def convert_team_name(full_team_name):
         'Tampa Bay Lightning': 'Lightning',
         'Toronto Maple Leafs': 'Maple Leafs',
         'Utah Mammoth': 'Mammoth',
+        'Utah Hockey Club': 'Mammoth',  # name used for the franchise's inaugural 2024-25 season, before the 'Utah Mammoth' rebrand
         'Vancouver Canucks': 'Canucks',
         'Vegas Golden Knights': 'Knights',
         'Washington Capitals': 'Capitals',

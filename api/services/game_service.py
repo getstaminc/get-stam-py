@@ -18,8 +18,16 @@ from ..utils.date_utils import (
     is_today
 )
 from ..utils.odds_formatter import extract_scores, process_odds_data
+from .opening_lines_service import OpeningLinesService
 
 eastern_tz = pytz.timezone('US/Eastern')
+
+# Sports that have opening-line data captured by jobs/capture_opening_lines.py.
+# Values are the Odds-API sport key GameService already works with — see
+# docs/superpowers/plans/2026-10-21-line-movement.md Task 1's note.
+OPENING_LINE_SPORTS = {
+    'americanfootball_nfl', 'americanfootball_ncaaf', 'baseball_mlb', 'icehockey_nhl',
+}
 
 class GameService:
     @staticmethod
@@ -41,8 +49,16 @@ class GameService:
         if selected_date_start and not filtered_scores:
             next_game_date = get_next_game_date_within_7_days(scores, selected_date_start)
 
+        opening_lines = {}
+        if sport_key in OPENING_LINE_SPORTS:
+            opening_lines = OpeningLinesService.get_opening_lines(
+                sport_key, [g['id'] for g in filtered_scores]
+            )
+
         formatted_games = [
-            GameService._format_game_data(match, odds, selected_date_start)
+            GameService._format_game_data(
+                match, odds, selected_date_start, opening_lines.get(match['id'])
+            )
             for match in filtered_scores
         ]
 
@@ -62,11 +78,16 @@ class GameService:
         if not game:
             return None, 'Game not found'
 
-        formatted_game = GameService._format_game_data(game, odds)
+        opening_row = None
+        if sport_key in OPENING_LINE_SPORTS:
+            opening_lines = OpeningLinesService.get_opening_lines(sport_key, [game_id])
+            opening_row = opening_lines.get(game_id)
+
+        formatted_game = GameService._format_game_data(game, odds, opening_row=opening_row)
         return {'game': formatted_game}, None
 
     @staticmethod
-    def _format_game_data(match, odds, selected_date_start=None):
+    def _format_game_data(match, odds, selected_date_start=None, opening_row=None):
         """Format a single game's data"""
         home_team = match.get('home_team', 'N/A')
         away_team = match.get('away_team', 'N/A')
@@ -100,6 +121,30 @@ class GameService:
         # Only add draw if this is a soccer_epl game and draw odds exist
         if match.get('sport_key') == 'soccer_epl' and draw_odds and draw_odds.get('h2h') is not None:
             game_obj["draw"] = {"h2h": draw_odds["h2h"]}
+
+        if opening_row:
+            game_obj["opening"] = {
+                "home": {
+                    "spread_point": opening_row.get("home_spread_point"),
+                    "spread_price": opening_row.get("home_spread_price"),
+                    "h2h": opening_row.get("home_moneyline"),
+                },
+                "away": {
+                    "spread_point": opening_row.get("away_spread_point"),
+                    "spread_price": opening_row.get("away_spread_price"),
+                    "h2h": opening_row.get("away_moneyline"),
+                },
+                "totals": {
+                    "over_point": opening_row.get("total_point"),
+                    "over_price": opening_row.get("over_price"),
+                    "under_point": opening_row.get("total_point"),
+                    "under_price": opening_row.get("under_price"),
+                },
+                "snapshot_time": (
+                    opening_row["opening_snapshot_time"].isoformat()
+                    if opening_row.get("opening_snapshot_time") else None
+                ),
+            }
         return game_obj
 
     @staticmethod

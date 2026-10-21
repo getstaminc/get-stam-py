@@ -272,14 +272,19 @@ def process_game_reverse(conn, game_id: str, game_date: date) -> int:
             """), {'player_id': player_id}).fetchone()
             confirmed_espn_id = player_row[0] if player_row else None
 
-            if confirmed_espn_id and player_row[1] in (team1_id, team2_id):
+            # prop_records is already scoped to this game's two teams (the SQL above
+            # filters on team1_id/team2_id), so a confirmed ESPN-linked player who isn't
+            # in this game's boxscore is a genuine DNP -- no extra team_id re-check is
+            # needed (and nhl_players.team_id is never populated anywhere, so that
+            # re-check could never pass regardless).
+            if confirmed_espn_id:
                 conn.execute(text("""
                     UPDATE nhl_player_props
                     SET espn_event_id = :espn_event_id, did_not_play = true,
                         actuals_unavailable_reason = 'did_not_play', updated_at = CURRENT_TIMESTAMP
                     WHERE id = :record_id
                 """), {'espn_event_id': game_id, 'record_id': props_id})
-            elif not confirmed_espn_id:
+            else:
                 home_name = conn.execute(text("SELECT team_name FROM teams WHERE team_id = :id"), {'id': odds_home_team_id}).fetchone()
                 away_name = conn.execute(text("SELECT team_name FROM teams WHERE team_id = :id"), {'id': odds_away_team_id}).fetchone()
                 existing = conn.execute(text("""

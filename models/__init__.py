@@ -15,10 +15,11 @@ from .nfl_player_alias import NFLPlayerAlias
 from .nfl_player_name_mismatch import NFLPlayerNameMismatch
 from .nfl_player_prop import NFLPlayerProp
 from .nfl_defense_prop import NFLDefenseProp
+from .nhl_game import NHL_Game
 from .team import Team
 from .blog_post import BlogPost
 from .user import User
 from .processed_stripe_event import ProcessedStripeEvent
 from .access_code import AccessCode
 
-__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'NFLPlayer', 'NFLPlayerAlias', 'NFLPlayerNameMismatch', 'NFLPlayerProp', 'NFLDefenseProp', 'Team', 'BlogPost', 'User', 'ProcessedStripeEvent', 'AccessCode']
+__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'NFLPlayer', 'NFLPlayerAlias', 'NFLPlayerNameMismatch', 'NFLPlayerProp', 'NFLDefenseProp', 'NHL_Game', 'Team', 'BlogPost', 'User', 'ProcessedStripeEvent', 'AccessCode']

@@ -51,9 +51,13 @@ class GameService:
 
         opening_lines = {}
         if sport_key in OPENING_LINE_SPORTS:
-            opening_lines = OpeningLinesService.get_opening_lines(
-                sport_key, [g['id'] for g in filtered_scores]
-            )
+            try:
+                opening_lines = OpeningLinesService.get_opening_lines(
+                    sport_key, [g['id'] for g in filtered_scores]
+                )
+            except Exception as e:
+                print(f"Error fetching opening lines: {str(e)}")
+                opening_lines = {}
 
         formatted_games = [
             GameService._format_game_data(
@@ -80,8 +84,12 @@ class GameService:
 
         opening_row = None
         if sport_key in OPENING_LINE_SPORTS:
-            opening_lines = OpeningLinesService.get_opening_lines(sport_key, [game_id])
-            opening_row = opening_lines.get(game_id)
+            try:
+                opening_lines = OpeningLinesService.get_opening_lines(sport_key, [game_id])
+                opening_row = opening_lines.get(game_id)
+            except Exception as e:
+                print(f"Error fetching opening lines: {str(e)}")
+                opening_row = None
 
         formatted_game = GameService._format_game_data(game, odds, opening_row=opening_row)
         return {'game': formatted_game}, None

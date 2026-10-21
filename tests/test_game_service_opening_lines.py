@@ -75,3 +75,28 @@ def test_get_single_game_attaches_opening_line():
 
     assert error is None
     assert result["game"]["opening"]["home"]["h2h"] == -155
+
+
+def test_get_games_for_date_tolerates_opening_lines_db_error():
+    """A DB failure fetching opening lines (unreachable Postgres, missing migration,
+    etc.) must not 500 the whole odds endpoint — it should degrade to no opening
+    line data, same as 'not captured yet'."""
+    with patch("api.services.game_service.get_odds_data", return_value=(FAKE_SCORES, FAKE_ODDS)), \
+         patch("api.services.game_service.OpeningLinesService.get_opening_lines",
+               side_effect=Exception("db unreachable")):
+        result, error = GameService.get_games_for_date("americanfootball_nfl")
+
+    assert error is None
+    assert result["games"][0]["game_id"] == "evt1"
+    assert "opening" not in result["games"][0]
+
+
+def test_get_single_game_tolerates_opening_lines_db_error():
+    with patch("api.services.game_service.get_odds_data", return_value=(FAKE_SCORES, FAKE_ODDS)), \
+         patch("api.services.game_service.OpeningLinesService.get_opening_lines",
+               side_effect=Exception("db unreachable")):
+        result, error = GameService.get_single_game("americanfootball_nfl", "evt1")
+
+    assert error is None
+    assert result["game"]["game_id"] == "evt1"
+    assert "opening" not in result["game"]

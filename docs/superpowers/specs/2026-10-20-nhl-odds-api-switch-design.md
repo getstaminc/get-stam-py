@@ -26,6 +26,33 @@ following similar but not identical patterns. This work:
   `plays` (play-by-play, including `strength.text` e.g. "Power Play") —
   confirmed via live pings against a real completed game
   (2026-10-18, CBJ @ MIN, event 401892533).
+- **Period goals**: each competitor in `header.competitions[0].competitors`
+  has a `linescores` array (one entry per period, plus a bonus entry for a
+  shootout-deciding goal) — confirmed live.
+- **Overtime / shootout**: `header.competitions[0].status.type.detail` is
+  literally `"Final/OT"` or `"Final/SO"` (plain `"Final"` otherwise) —
+  confirmed against several real OT/SO games. In one case (DET 4 @ SJ 3,
+  2026-10-17) SDQL's own `overtime`/`shoot_out` flags looked wrong — its
+  period-score sum didn't match the final score — while ESPN's `linescores`
+  and `status.detail` were internally consistent, so this is likely more
+  reliable than SDQL here, not less.
+- **Playoffs**: `header.season.type` field confirmed present (1=preseason,
+  2=regular, 3=postseason per ESPN convention); not yet verified against an
+  actual playoff game since the NHL postseason doesn't start until spring.
+- **Starting goalie**: verified via play-by-play, not boxscore. The
+  boxscore's `starter` field on goalie entries exists but came back `null`
+  on every game checked. Instead, the first period-1 `plays` entry of type
+  `"Shot"` (or `"Goal"`) for each team has a `participants` entry with
+  `type: "saver"` naming the *opposing* goalie who faced it — that's the
+  opposing team's starting goalie. Verified against a real goalie-change
+  game (FLA @ BUF, 2026-10-12, event 401892485): this correctly identified
+  Buffalo's starter as Colten Ellis (not reliever Ukko-Pekka Luukkonen) and
+  Florida's starter as Jacob Markstrom (not Akira Schmid) — both teams
+  pulled their starter that game, confirming the method survives the exact
+  case it needs to handle.
+- **`game_site`** (home/neutral) isn't being carried forward — not needed:
+  `home_team_id`/`away_team_id` already disambiguate home vs. away, so a
+  hardcoded `'home'` going forward is fine.
 - **Odds API NHL player-prop markets confirmed live** (current season, 8
   bookmakers): `player_goals`, `player_assists`, `player_points`,
   `player_shots_on_goal`, `player_total_saves`, `player_goal_scorer_anytime`,
@@ -73,10 +100,14 @@ following similar but not identical patterns. This work:
   moneyline, totals for total) for the target date, matched by team name via
   `convert_team_name`, same matching shape as the existing prototype. Then
   ESPN `scoreboard?dates=YYYYMMDD` + `summary?event=<id>&enable=boxscore,plays`
-  to fill: period goals (boxscore linescore), starting goalies (goalie
-  boxscore group), powerplay goals (count `plays` where
-  `strength.text == "Power Play"`, grouped by scoring team), overtime/shootout
-  (period count / period labels), playoffs (ESPN season `type` field).
+  to fill: period goals (`linescores` per competitor), starting goalies
+  (first period-1 `plays` entry of type "Shot"/"Goal", `saver` participant
+  identifies the opposing team's starter), powerplay goals (count `plays`
+  where `strength.text == "Power Play"`, grouped by scoring team),
+  overtime/shootout (`status.type.detail` contains "OT"/"SO"), playoffs
+  (`header.season.type == 3`). `game_site` is hardcoded `'home'` going
+  forward — not needed since `home_team_id`/`away_team_id` already
+  disambiguate.
 - Migration adds a nullable, unique `odds_event_id` column to `nhl_games` for
   idempotent dedup on re-run (the existing `sdql_game_id` unique index stays,
   untouched, still unused going forward).

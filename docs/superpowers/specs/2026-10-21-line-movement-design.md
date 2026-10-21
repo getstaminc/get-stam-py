@@ -1,4 +1,4 @@
-# Line Movement (Open vs. Now) for NFL, NHL, MLB
+# Line Movement (Open vs. Now) for NFL, NHL, MLB, NCAAF
 
 ## Context
 
@@ -11,7 +11,7 @@ snapshotted roughly 1 hour before kickoff, after the game is in `nfl_games` / `n
 
 The goal is an ESPN-style Open vs. Now comparison (see
 `https://www.espn.com/nfl/game/_/gameId/401873010/patriots-bears`) for spread, total, and
-moneyline, for NFL, NHL, and MLB.
+moneyline, for NFL, NHL, MLB, and NCAAF.
 
 The-odds-api.com's historical/snapshot endpoint
 (`/v4/historical/sports/{sport}/odds`) is already paid for and in production use (e.g.
@@ -45,8 +45,13 @@ continuously-polling job.
   already hides the odds block once a game is live or final (`!isGameOver && !isLive`).
   Line movement doesn't change that visibility rule — it only adds an "Open" row
   alongside the existing pregame odds rows. No change to completed-game display.
-- **Only NFL, NHL, MLB.** Not NBA (still on SDQL, not the Odds API, per
-  `jobs/nba_seed_yesterdays_games.py`), not soccer/NCAAF/NCAAB.
+- **NFL, NHL, MLB, and NCAAF.** Not NBA (still on SDQL, not the Odds API, per
+  `jobs/nba_seed_yesterdays_games.py`), not soccer/NCAAB. NCAAF's *completed*-game
+  seed job (`jobs/ncaaf_seed_yesterdays_games.py`) is also still SDQL-based and has no
+  `odds_event_id` — irrelevant here since this feature only reads live/upcoming odds
+  from the Odds API and never touches the `*_games` tables (no backfill, per below).
+  NCAAF's live odds already come from the Odds API today
+  (`americanfootball_ncaaf` in `SPORT_URL_TO_API_KEY`), same as NFL.
 
 ## Components
 
@@ -57,7 +62,7 @@ New table `game_opening_lines`, one immutable row per captured game:
 | column | type | notes |
 |---|---|---|
 | `id` | serial PK | |
-| `sport` | varchar | `nfl` / `nhl` / `mlb` — matches existing DB sport-key convention |
+| `sport` | varchar | `nfl` / `nhl` / `mlb` / `ncaaf` — matches existing DB sport-key convention |
 | `odds_event_id` | varchar | the Odds API event id; unique together with `sport` |
 | `home_team` | varchar | Odds-API full name, for debugging |
 | `away_team` | varchar | Odds-API full name, for debugging |
@@ -90,11 +95,11 @@ New `jobs/capture_opening_lines.py`, intended to run nightly via Heroku Schedule
 manually documented in this repo's command docs, scheduled via the Heroku Scheduler
 add-on).
 
-For each of `nfl`, `nhl`, `mlb`:
+For each of `nfl`, `nhl`, `mlb`, `ncaaf`:
 
 1. Fetch upcoming games in that sport's lookahead window via the existing live odds
    flow (`get_odds_data` / `GameService.get_games_for_date`-equivalent):
-   - NFL: next 21 days
+   - NFL, NCAAF: next 21 days
    - MLB, NHL: next 3 days
 2. Skip any event already present in `game_opening_lines` for that sport.
 3. For the remainder, skip any event whose live odds are currently all-null (market
@@ -102,10 +107,10 @@ For each of `nfl`, `nhl`, `mlb`:
 4. For the rest, scan backward from `commence_time` using the Historical Odds API
    (`/v4/historical/sports/{sport_key}/odds`, same shape as
    `get_historical_odds_at_time` in `jobs/mlb_seed_yesterdays_games_odds_api.py`):
-   - NFL: daily steps, starting at `commence_time - 21d`, stepping forward until a
-     snapshot contains odds for this event (draftkings bookmaker, `h2h,spreads,totals`
-     markets — same bookmaker/market set the rest of the codebase already uses for
-     these sports).
+   - NFL, NCAAF: daily steps, starting at `commence_time - 21d`, stepping forward
+     until a snapshot contains odds for this event (draftkings bookmaker,
+     `h2h,spreads,totals` markets — same bookmaker/market set the rest of the codebase
+     already uses for these sports).
    - MLB/NHL: 12-hour steps, starting at `commence_time - 3d`.
    - The first snapshot where the event has bookmaker data is the opening line.
      Record `opening_snapshot_time` as that snapshot's timestamp.
@@ -135,8 +140,8 @@ all event ids in the response (single `IN (...)` query, not N queries), and atta
 Omitted entirely when no row exists yet (not yet opened, or not yet captured by a
 nightly run) — frontend treats absence as "no Open row to show," not an error.
 
-Scoped to `sport in {nfl, nhl, mlb}`; other sports' formatted games never get an
-`opening` key.
+Scoped to `sport in {nfl, nhl, mlb, ncaaf}`; other sports' formatted games never get
+an `opening` key.
 
 ### 4. Frontend
 
@@ -152,7 +157,7 @@ responses `GameOdds` already consumes.
 
 ## Explicitly out of scope
 
-- NBA, soccer, NCAAF, NCAAB.
+- NBA, soccer, NCAAB.
 - Backfilling opening lines for games already completed/stored in `nfl_games` /
   `nhl_games` / `mlb_games` before this ships.
 - A full movement timeline/chart (multiple snapshots over time) — only Open vs. Now,

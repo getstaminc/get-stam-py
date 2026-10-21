@@ -412,7 +412,7 @@ def convert_team_name(full_team_name):
 
         #NHL
         'Anaheim Ducks': 'Ducks',
-        'Arizona Coyotes': 'Coyotes',
+        'Arizona Coyotes': 'Mammoth',  # pre-2024 name for the same franchise; teams table/nhl_games store this team as 'Mammoth' even for pre-relocation rows
         'Boston Bruins': 'Bruins',
         'Buffalo Sabres': 'Sabres',
         'Calgary Flames': 'Flames',

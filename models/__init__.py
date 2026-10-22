@@ -25,5 +25,6 @@ from .blog_post import BlogPost
 from .user import User
 from .processed_stripe_event import ProcessedStripeEvent
 from .access_code import AccessCode
+from .game_opening_line import GameOpeningLine
 
-__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'NFLPlayer', 'NFLPlayerAlias', 'NFLPlayerNameMismatch', 'NFLPlayerProp', 'NFLDefenseProp', 'NHL_Game', 'NHLPlayer', 'NHLPlayerAlias', 'NHLPlayerNameMismatch', 'NHLPlayerProp', 'Team', 'BlogPost', 'User', 'ProcessedStripeEvent', 'AccessCode']
+__all__ = ['NBA_Game', 'NBAPlayer', 'NBAPlayerAlias', 'NBAPlayerNameMismatch', 'NBAPlayerProp', 'MLBPlayer', 'MLBPlayerAlias', 'MLBPlayerNameMismatch', 'MLBBatterProp', 'MLBPitcherProp', 'MLBGame', 'NFLPlayer', 'NFLPlayerAlias', 'NFLPlayerNameMismatch', 'NFLPlayerProp', 'NFLDefenseProp', 'NHL_Game', 'NHLPlayer', 'NHLPlayerAlias', 'NHLPlayerNameMismatch', 'NHLPlayerProp', 'Team', 'BlogPost', 'User', 'ProcessedStripeEvent', 'AccessCode', 'GameOpeningLine']

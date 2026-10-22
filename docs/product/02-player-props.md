@@ -1,3 +1,38 @@
+# Advanced Player Prop Analyzer
+
+> **GetSTAM product specification** · Draft for review · October 2026  
+> **Visuals are conceptual mockups, not production screenshots or live data.**
+
+## 1. Overview
+
+Help users compare today's sportsbook lines against actual historical player performances.
+
+## 2. Proposed user interface
+
+![Advanced Player Prop Analyzer interface concept](images/player-props.svg)
+
+*Figure 1 — Proposed GetSTAM interface. Visual elements and figures are illustrative.*
+
+### How a user would experience this
+
+Choose sport, game, player and prop; inspect hit counts against the selected line; expand each game result; adjust opponent and venue filters.
+
+## 3. Feature comparison
+
+| Feature | Free | GetSTAM Pro |
+|---|---|---|
+| Recent game logs | Last 5 | Last 5 / 10 / 20 and more |\n| Opponent and venue splits | — | Yes |\n| Custom line comparison | Preview | Yes |\n| Saved research | — | Yes |
+
+## 4. Product and implementation notes
+
+Audit player IDs, game dates, line units and market availability. Calculate counts in backend. Never describe historical outcomes against today's line as actual past betting returns.
+
+## 5. Acceptance criteria
+
+Historical results link to underlying games; pushes and missing observations handled; mobile design and tests included.
+
+## 6. Detailed technical planning
+
 # 02 — Advanced Player Prop Analyzer
 
 **Status:** Proposed · **Priority:** P1 · **Audience:** Sports research users
@@ -47,3 +82,7 @@ Supported sports and markets; historical coverage; data rights; free usage limit
 
 ## Related work
 [Product roadmap](05-product-roadmap.md) · [GetSTAM Pro](03-getstam-pro.md) · [AI Research Assistant](04-ai-research-assistant.md)
+
+---
+
+**Review checklist:** Confirm feature scope, visual design, free/paid boundary, and acceptance criteria before implementation.

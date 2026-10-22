@@ -281,6 +281,64 @@ class NFLService(BaseHistoricalService):
             return None, f"Error fetching head-to-head games by name: {str(e)}"
 
     @staticmethod
+    def get_team_records(
+        team_names: List[str],
+        season_start: Optional[date] = None,
+        as_of_date: Optional[date] = None,
+    ) -> Dict[str, Dict[str, int]]:
+        """Batch win/loss/tie record for each of `team_names` (DB short names,
+        e.g. 'Saints') for the current NFL season. Returns {team_name: {wins,
+        losses, ties}} — a team with no games yet this season is simply absent
+        from the result, not a zeroed entry."""
+        if not team_names:
+            return {}
+
+        today = date.today()
+        if season_start is None:
+            season_year = today.year if today.month >= 7 else today.year - 1
+            season_start = date(season_year, 8, 1)
+        if as_of_date is None:
+            as_of_date = today
+
+        try:
+            conn = NFLService._get_connection()
+            if not conn:
+                return {}
+
+            query = """
+                SELECT team,
+                       SUM(CASE WHEN points > opp_points THEN 1 ELSE 0 END) AS wins,
+                       SUM(CASE WHEN points < opp_points THEN 1 ELSE 0 END) AS losses,
+                       SUM(CASE WHEN points = opp_points THEN 1 ELSE 0 END) AS ties
+                FROM (
+                    SELECT home_team_name AS team, home_points AS points, away_points AS opp_points
+                    FROM nfl_games
+                    WHERE home_team_name = ANY(%s) AND game_date >= %s AND game_date <= %s
+                    UNION ALL
+                    SELECT away_team_name AS team, away_points AS points, home_points AS opp_points
+                    FROM nfl_games
+                    WHERE away_team_name = ANY(%s) AND game_date >= %s AND game_date <= %s
+                ) team_games
+                GROUP BY team
+            """
+            params = (team_names, season_start, as_of_date, team_names, season_start, as_of_date)
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+
+            return {
+                row["team"]: {"wins": row["wins"], "losses": row["losses"], "ties": row["ties"]}
+                for row in rows
+            }
+        except Exception as e:
+            print(f"Error fetching NFL team records: {e}")
+            return {}
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
     def _get_team_id_by_name(team_name: str, sport_key: str) -> Optional[int]:
         """Helper method to get team_id by team_name for NFL."""
         try:

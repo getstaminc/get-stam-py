@@ -49,3 +49,23 @@ describe("GameOdds opening line", () => {
     expect(screen.getByText("-3 (-105)")).toBeInTheDocument();
   });
 });
+
+describe("GameOdds team record", () => {
+  it("shows each team's win-loss record under its name when present", () => {
+    const game: GameWithDraw = {
+      ...baseGame,
+      home: { ...baseGame.home, record: { wins: 4, losses: 2, ties: 0 } },
+      away: { ...baseGame.away, record: { wins: 3, losses: 3, ties: 1 } },
+    };
+    renderGame(game);
+
+    expect(screen.getByText("(4-2)")).toBeInTheDocument();
+    expect(screen.getByText("(3-3-1)")).toBeInTheDocument();
+  });
+
+  it("renders no record line when a team has no record yet", () => {
+    renderGame(baseGame);
+
+    expect(screen.queryByText(/^\(\d/)).not.toBeInTheDocument();
+  });
+});

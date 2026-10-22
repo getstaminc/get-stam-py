@@ -197,10 +197,17 @@ export interface OpeningLineData {
   snapshot_time: string | null;
 }
 
+export interface TeamRecord {
+  wins: number;
+  losses: number;
+  ties: number;
+}
+
 export interface TeamData {
   team: string;
   score: number | null;
   odds: TeamOdds;
+  record?: TeamRecord;
 }
 
 export interface GameWithDraw {

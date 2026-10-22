@@ -103,6 +103,92 @@ def _trend_alignment_note(entry, home_team, away_team, tiktok=False):
     )
 
 
+def _implied_prob(american_odds):
+    """American odds -> implied win probability (0-1), or None if missing."""
+    if american_odds is None:
+        return None
+    if american_odds < 0:
+        return -american_odds / (-american_odds + 100)
+    return 100 / (american_odds + 100)
+
+
+# How much a line has to move since opening before it's worth mentioning —
+# soft "significant enough" thresholds, not hard science. Tune here.
+LINE_MOVEMENT_THRESHOLDS = {
+    "spread": 1.5,            # points
+    "total": 2.0,             # points
+    "moneyline_prob": 0.05,   # implied win-probability swing (5 points)
+}
+
+
+def line_movement_note(game, home_team, away_team, tiktok=False):
+    """Football-only (see gather_extra_context) — compare game["opening"]
+    (captured by jobs/capture_opening_lines.py, see api/services/game_service.py)
+    against the current line and return a plain-text note on any movement
+    that clears LINE_MOVEMENT_THRESHOLDS, or None if there's no opening
+    snapshot yet or nothing has moved enough to be worth mentioning. Like
+    the other gather_extra_context notes, this is supporting color the
+    model can weave in, not a scored trend of its own — and it's never the
+    only thing a script is built around.
+    """
+    opening = game.get("opening")
+    if not opening:
+        return None
+
+    notes = []
+
+    open_spread = (opening.get("home") or {}).get("spread_point")
+    now_spread = (game.get("home", {}).get("odds") or {}).get("spread_point")
+    if open_spread is not None and now_spread is not None:
+        delta = now_spread - open_spread
+        if abs(delta) >= LINE_MOVEMENT_THRESHOLDS["spread"]:
+            # Spread is home's own number — it going DOWN means home is more
+            # favored (or less of an underdog), i.e. movement toward home.
+            moved_team = home_team if delta < 0 else away_team
+            if tiktok:
+                notes.append(f"The line has moved notably toward {moved_team} since it first opened.")
+            else:
+                notes.append(
+                    f"The spread has moved {abs(delta):.1f} points toward {moved_team} since opening "
+                    f"({open_spread:+.1f} -> {now_spread:+.1f} for {home_team})."
+                )
+
+    open_total = (opening.get("totals") or {}).get("over_point")
+    now_total = (game.get("totals") or {}).get("over_point")
+    if open_total is not None and now_total is not None:
+        delta = now_total - open_total
+        if abs(delta) >= LINE_MOVEMENT_THRESHOLDS["total"]:
+            direction = "up" if delta > 0 else "down"
+            if tiktok:
+                notes.append(f"The expected scoring total has moved {direction} noticeably since the line first opened.")
+            else:
+                notes.append(
+                    f"The total has moved {direction} {abs(delta):.1f} points since opening "
+                    f"({open_total} -> {now_total})."
+                )
+
+    open_prob = _implied_prob((opening.get("home") or {}).get("h2h"))
+    now_prob = _implied_prob((game.get("home", {}).get("odds") or {}).get("h2h"))
+    if open_prob is not None and now_prob is not None:
+        delta = now_prob - open_prob
+        if abs(delta) >= LINE_MOVEMENT_THRESHOLDS["moneyline_prob"]:
+            moved_team = home_team if delta > 0 else away_team
+            if tiktok:
+                notes.append(f"Market confidence has swung notably toward {moved_team} since this game first hit the board.")
+            else:
+                notes.append(
+                    f"The moneyline has shifted toward {moved_team} since opening "
+                    f"(implied win probability moved about {abs(delta) * 100:.0f} points)."
+                )
+
+    if not notes:
+        return None
+    return " ".join(notes)
+
+
+_LINE_MOVEMENT_SPORTS = ("nfl", "ncaaf")
+
+
 def gather_extra_context(entry, sport, game, home_team, away_team, tiktok=False):
     """Collect supporting-context notes for a game — plain descriptive
     strings the model can weave in if useful, NOT scored/ranked trends
@@ -110,6 +196,7 @@ def gather_extra_context(entry, sport, game, home_team, away_team, tiktok=False)
     rank_game_trends already picked). Covers:
       - the odds-whiplash situational patterns (find_odds_whiplash_trend)
       - the over/under trend-alignment note above
+      - significant opening-vs-now line movement (football only, per request)
     Returns a list of strings (possibly empty) — the caller only renders an
     "Additional context" prompt section when this is non-empty. (The third
     idea, live-series awareness, is handled separately by
@@ -132,6 +219,11 @@ def gather_extra_context(entry, sport, game, home_team, away_team, tiktok=False)
     alignment_note = _trend_alignment_note(entry, home_team, away_team, tiktok=tiktok)
     if alignment_note:
         notes.append(alignment_note)
+
+    if sport in _LINE_MOVEMENT_SPORTS:
+        movement_note = line_movement_note(game, home_team, away_team, tiktok=tiktok)
+        if movement_note:
+            notes.append(movement_note)
 
     return notes
 

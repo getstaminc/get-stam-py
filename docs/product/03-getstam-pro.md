@@ -1,3 +1,38 @@
+# GetSTAM Pro Subscription
+
+> **GetSTAM product specification** · Draft for review · October 2026  
+> **Visuals are conceptual mockups, not production screenshots or live data.**
+
+## 1. Overview
+
+Give subscribers faster, deeper research while preserving the existing free GetSTAM experience.
+
+## 2. Proposed user interface
+
+![GetSTAM Pro Subscription interface concept](images/getstam-pro.svg)
+
+*Figure 1 — Proposed GetSTAM interface. Visual elements and figures are illustrative.*
+
+### How a user would experience this
+
+From an advanced research preview, open a plan comparison, choose Pro, complete checkout, and return to the original research page.
+
+## 3. Feature comparison
+
+| Feature | Free | GetSTAM Pro |
+|---|---|---|
+| Live scores and odds | Yes | Yes |\n| Existing team trends | Yes | Yes |\n| Last five games and H2H | Yes | Yes |\n| Basic advanced trends | Yes | Yes |\n| Trend collision details | Preview | Full |\n| Advanced historical filters | — | Yes |\n| Player prop research | Limited | Full |\n| Custom alerts | — | Yes |\n| AI research assistant | — | Usage allowance |\n| Saved research | — | Yes |
+
+## 4. Product and implementation notes
+
+Proposed test price: **$14.99/month**, not validated. Use hosted checkout, verified billing webhooks, backend entitlements, cancellation flow, and quota enforcement.
+
+## 5. Acceptance criteria
+
+Free features remain accessible; direct API calls respect entitlements; billing retries, cancellations and refunds tested.
+
+## 6. Detailed technical planning
+
 # 03 — GetSTAM Pro: Monetization and Entitlements
 
 **Status:** Proposed · **Priority:** P2 (after proving research value)
@@ -49,3 +84,7 @@ Validate willingness to pay with a landing page/waitlist or small beta first. Co
 
 ## Related work
 [Player Props](02-player-props.md) · [AI Assistant](04-ai-research-assistant.md) · [Roadmap](05-product-roadmap.md)
+
+---
+
+**Review checklist:** Confirm feature scope, visual design, free/paid boundary, and acceptance criteria before implementation.

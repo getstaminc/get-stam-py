@@ -1,3 +1,38 @@
+# AI Research Assistant
+
+> **GetSTAM product specification** · Draft for review · October 2026  
+> **Visuals are conceptual mockups, not production screenshots or live data.**
+
+## 1. Overview
+
+Let users ask sports research questions in natural language and inspect the evidence behind every answer.
+
+## 2. Proposed user interface
+
+![AI Research Assistant interface concept](images/ai-research.svg)
+
+*Figure 1 — Proposed GetSTAM interface. Visual elements and figures are illustrative.*
+
+### How a user would experience this
+
+Type a research question, see the interpreted filters, receive matching players or games, and expand each result to verify dates, lines and samples.
+
+## 3. Feature comparison
+
+| Feature | Free | GetSTAM Pro |
+|---|---|---|
+| Example queries | Limited | More queries |\n| Game-level citations | Yes | Yes |\n| Advanced prop filters | — | Yes |\n| Saved conversations | — | Yes |\n| Custom research alerts | — | Future phase |
+
+## 4. Product and implementation notes
+
+Use typed tool calls into GetSTAM data; deterministic Python/SQL calculations; sourced answers; quotas and audit logging. Do not equate past hit rates with predicted probabilities.
+
+## 5. Acceptance criteria
+
+No fabricated data, each numerical answer verifiable, clear unsupported-query handling, prompt-injection and cost tests.
+
+## 6. Detailed technical planning
+
 # 04 — AI Betting Research Assistant
 
 **Status:** Proposed · **Priority:** P2 · **Positioning:** Evidence-backed research, not guaranteed picks
@@ -51,3 +86,7 @@ Caveats: injuries, missing games, line movement, small samples
 
 ## Dependencies
 Reliable [Player Props](02-player-props.md), historical data APIs, auth, [Pro entitlements](03-getstam-pro.md), and data licensing review.
+
+---
+
+**Review checklist:** Confirm feature scope, visual design, free/paid boundary, and acceptance criteria before implementation.

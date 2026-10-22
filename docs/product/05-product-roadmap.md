@@ -1,3 +1,38 @@
+# Product Roadmap
+
+> **GetSTAM product specification** · Draft for review · October 2026  
+> **Visuals are conceptual mockups, not production screenshots or live data.**
+
+## 1. Overview
+
+Sequence the existing advanced trends release, player props, subscriptions, and AI research into measurable product milestones.
+
+## 2. Proposed user interface
+
+![Product Roadmap interface concept](images/product-roadmap.svg)
+
+*Figure 1 — Proposed GetSTAM interface. Visual elements and figures are illustrative.*
+
+### How a user would experience this
+
+First release accurate advanced trends without breaking free features. Validate engagement with player props, test subscription demand, and launch evidence-backed AI only after reliable data and billing.
+
+## 3. Feature comparison
+
+| Feature | Status | Priority |
+|---|---|---|
+| Advanced trends | Existing branch | P0 |\n| Player prop analyzer | Proposed | P1 |\n| GetSTAM Pro | Proposed | P2 |\n| AI research assistant | Proposed | P2 |
+
+## 4. Product and implementation notes
+
+Epic [#111](https://github.com/getstaminc/get-stam-py/issues/111) reconciles `feature/advanced-trends-analytics-add-overview` with `main`. Keep separate feature branches and review PRs; never auto-merge.
+
+## 5. Acceptance criteria
+
+Each phase needs approved UI, accurate data, automated tests, metrics, and a rollback plan.
+
+## 6. Detailed technical planning
+
 # 05 — GetSTAM Product Roadmap and Release Plan
 
 **Status:** Planning document · **Last updated:** 2026-10-22
@@ -42,3 +77,7 @@ Which sport and market launch first? Which features users most frequently revisi
 
 ## Related documents
 [02 Player Props](02-player-props.md) · [03 GetSTAM Pro](03-getstam-pro.md) · [04 AI Assistant](04-ai-research-assistant.md)
+
+---
+
+**Review checklist:** Confirm feature scope, visual design, free/paid boundary, and acceptance criteria before implementation.

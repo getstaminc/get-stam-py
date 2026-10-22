@@ -177,10 +177,37 @@ export interface TotalsData {
   under_price: number | null;
 }
 
+export interface OpeningLineTeamOdds {
+  spread_point: number | null;
+  spread_price: number | null;
+  h2h: number | null;
+}
+
+export interface OpeningLineTotals {
+  over_point: number | null;
+  over_price: number | null;
+  under_point: number | null;
+  under_price: number | null;
+}
+
+export interface OpeningLineData {
+  home: OpeningLineTeamOdds;
+  away: OpeningLineTeamOdds;
+  totals: OpeningLineTotals;
+  snapshot_time: string | null;
+}
+
+export interface TeamRecord {
+  wins: number;
+  losses: number;
+  ties: number;
+}
+
 export interface TeamData {
   team: string;
   score: number | null;
   odds: TeamOdds;
+  record?: TeamRecord;
 }
 
 export interface GameWithDraw {
@@ -188,6 +215,7 @@ export interface GameWithDraw {
   away: TeamData;
   totals: TotalsData;
   draw?: DrawOdds;
+  opening?: OpeningLineData;
   [key: string]: any;
 }
 

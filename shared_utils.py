@@ -412,7 +412,7 @@ def convert_team_name(full_team_name):
 
         #NHL
         'Anaheim Ducks': 'Ducks',
-        'Arizona Coyotes': 'Coyotes',
+        'Arizona Coyotes': 'Mammoth',  # pre-2024 name for the same franchise; teams table/nhl_games store this team as 'Mammoth' even for pre-relocation rows
         'Boston Bruins': 'Bruins',
         'Buffalo Sabres': 'Sabres',
         'Calgary Flames': 'Flames',
@@ -440,6 +440,7 @@ def convert_team_name(full_team_name):
         'Tampa Bay Lightning': 'Lightning',
         'Toronto Maple Leafs': 'Maple Leafs',
         'Utah Mammoth': 'Mammoth',
+        'Utah Hockey Club': 'Mammoth',  # name used for the franchise's inaugural 2024-25 season, before the 'Utah Mammoth' rebrand
         'Vancouver Canucks': 'Canucks',
         'Vegas Golden Knights': 'Knights',
         'Washington Capitals': 'Capitals',

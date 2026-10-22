@@ -76,9 +76,16 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
     return `${h2h > 0 ? "+" : ""}${h2h}`;
   };
 
-  const formatOpeningSpread = (point: number | null | undefined, price: number | null | undefined) => {
-    if ((point === null || point === undefined) && (price === null || price === undefined)) return null;
-    return `Opened ${formatOdds(point ?? null, price ?? null)}`;
+  // Opening lines show the point only, never the price — the price moves too
+  // much on its own to be a meaningful "this is where it opened" reference.
+  const formatOpeningPoint = (point: number | null | undefined) => {
+    if (point === null || point === undefined) return null;
+    return `${point > 0 ? "+" : ""}${point}`;
+  };
+
+  const formatOpeningSpread = (point: number | null | undefined) => {
+    const pointStr = formatOpeningPoint(point);
+    return pointStr !== null ? `Opened ${pointStr}` : null;
   };
 
   const formatOpeningH2H = (h2h: number | null | undefined) => {
@@ -266,9 +273,9 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               <Typography sx={{ fontSize: "0.98rem", fontWeight: 600, color: "#334155" }}>
                 {formatOdds(home.odds?.spread_point ?? null, home.odds?.spread_price ?? null)}
               </Typography>
-              {opening && formatOpeningSpread(opening.home.spread_point, opening.home.spread_price) && (
+              {opening && formatOpeningSpread(opening.home.spread_point) && (
                 <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>
-                  {formatOpeningSpread(opening.home.spread_point, opening.home.spread_price)}
+                  {formatOpeningSpread(opening.home.spread_point)}
                 </Typography>
               )}
             </Box>
@@ -279,9 +286,9 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               <Typography sx={{ fontSize: "0.98rem", fontWeight: 600, color: "#334155" }}>
                 {formatOdds(away.odds?.spread_point ?? null, away.odds?.spread_price ?? null)}
               </Typography>
-              {opening && formatOpeningSpread(opening.away.spread_point, opening.away.spread_price) && (
+              {opening && formatOpeningSpread(opening.away.spread_point) && (
                 <Typography sx={{ fontSize: "0.72rem", color: "#64748b", textAlign: "right" }}>
-                  {formatOpeningSpread(opening.away.spread_point, opening.away.spread_price)}
+                  {formatOpeningSpread(opening.away.spread_point)}
                 </Typography>
               )}
             </Box>
@@ -308,7 +315,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               </Typography>
               {opening && opening.totals.over_point != null && (
                 <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>
-                  {`Opened Over ${formatOdds(opening.totals.over_point, opening.totals.over_price)}`}
+                  {`Opened Over ${formatOpeningPoint(opening.totals.over_point)}`}
                 </Typography>
               )}
             </Box>
@@ -323,7 +330,7 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               </Typography>
               {opening && opening.totals.under_point != null && (
                 <Typography sx={{ fontSize: "0.72rem", color: "#64748b", textAlign: "right" }}>
-                  {`Opened Under ${formatOdds(opening.totals.under_point, opening.totals.under_price)}`}
+                  {`Opened Under ${formatOpeningPoint(opening.totals.under_point)}`}
                 </Typography>
               )}
             </Box>

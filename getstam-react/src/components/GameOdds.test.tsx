@@ -34,18 +34,18 @@ describe("GameOdds opening line", () => {
     };
     renderGame(game);
 
-    expect(screen.getByText("Open -7 (-110)")).toBeInTheDocument();
-    expect(screen.getByText("Open +7 (-110)")).toBeInTheDocument();
-    expect(screen.getByText("Open -280")).toBeInTheDocument();
-    expect(screen.getByText("Open +230")).toBeInTheDocument();
-    expect(screen.getByText("Open Over +44.5 (-110)")).toBeInTheDocument();
-    expect(screen.getByText("Open Under +44.5 (-110)")).toBeInTheDocument();
+    expect(screen.getByText("Opened -7")).toBeInTheDocument();
+    expect(screen.getByText("Opened +7")).toBeInTheDocument();
+    expect(screen.getByText("Opened -280")).toBeInTheDocument();
+    expect(screen.getByText("Opened +230")).toBeInTheDocument();
+    expect(screen.getByText("Opened Over +44.5")).toBeInTheDocument();
+    expect(screen.getByText("Opened Under +44.5")).toBeInTheDocument();
   });
 
   it("renders current odds with no Open row when opening data is absent", () => {
     renderGame(baseGame);
 
-    expect(screen.queryByText(/^Open/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Opened/)).not.toBeInTheDocument();
     expect(screen.getByText("-3 (-105)")).toBeInTheDocument();
   });
 });

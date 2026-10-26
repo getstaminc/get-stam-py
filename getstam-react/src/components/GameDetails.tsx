@@ -417,7 +417,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
-        {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl') && !isFromDb ? (
+        {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl' || sportKey === 'basketball_nba') && !isFromDb ? (
           <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
             <Tab label="Recent Performance" />
             <Tab label="Player Props" />
@@ -425,7 +425,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         ) : null}
 
         {/* Tab 0: Recent Performance (Historical Games) */}
-        {(activeTab === 0 || !['baseball_mlb', 'americanfootball_nfl'].includes(sportKey)) && (
+        {(activeTab === 0 || !['baseball_mlb', 'americanfootball_nfl', 'basketball_nba'].includes(sportKey)) && (
           <>
             <Box sx={{ 
               display: 'flex', 

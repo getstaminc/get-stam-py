@@ -54,10 +54,11 @@ function renderTable(defaultExpanded = true, testGames?: MLBGame[]) {
 }
 
 describe('GameLogTable', () => {
-  it('shows the header summary and a TeamLogo abbreviation when expanded', () => {
+  it('shows the header summary (win-loss only) and a TeamLogo abbreviation when expanded', () => {
     renderTable(true);
     expect(screen.getByText('Milwaukee Brewers - Last 5 Games')).toBeInTheDocument();
-    expect(screen.getByText('1-0 · Over 1-0')).toBeInTheDocument();
+    expect(screen.getByText('1-0')).toBeInTheDocument();
+    expect(screen.queryByText(/Over/)).not.toBeInTheDocument();
     expect(screen.getByText('MIL')).toBeInTheDocument();
     expect(screen.getByText('10/15/2026')).toBeInTheDocument();
     expect(screen.getByText('+130')).toBeInTheDocument();
@@ -71,14 +72,41 @@ describe('GameLogTable', () => {
     expect(await screen.findByText('10/15/2026')).toBeInTheDocument();
   });
 
-  it('shows em-dash (—) for missing total data, not "P"', () => {
+  it('shows just the betting total line, with no O/U/push suffix', () => {
+    renderTable(true);
+    // total: 7.5, no suffix text alongside it
+    expect(screen.getByText('7.5')).toBeInTheDocument();
+    expect(screen.queryByText(/7\.5 ·/)).not.toBeInTheDocument();
+  });
+
+  it('shows N/A (not a misleading push/over/under label) when total data is missing', () => {
     renderTable(true, gamesWithMissingTotal);
-    // Game has home_runs (3) and away_runs (2), so team result is win (3 > 2)
-    // But total is null, so totalResult is null, so ouLabel should be '—' not 'P'
-    const bettingTotalCells = screen.getAllByText(/N\/A · —/);
-    expect(bettingTotalCells.length).toBeGreaterThan(0);
-    // Ensure the misleading 'P' for missing data does not appear
-    const allCells = screen.queryAllByText(/N\/A · P/);
-    expect(allCells.length).toBe(0);
+    const bettingTotalCell = screen.getAllByText('N/A');
+    expect(bettingTotalCell.length).toBeGreaterThan(0);
+    expect(screen.queryByText(/N\/A ·/)).not.toBeInTheDocument();
+  });
+
+  it('labels the line column "Line" for MLB and "Spread" for football', () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <GameLogTable title="MLB Game" games={games} teamName="Brewers" sportType="mlb" sport="mlb" />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Line')).toBeInTheDocument();
+    expect(screen.queryByText('Spread')).not.toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter>
+        <GameLogTable title="NFL Game" games={games as any} teamName="Brewers" sportType="nfl" sport="nfl" />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Spread')).toBeInTheDocument();
+    expect(screen.queryByText('Line')).not.toBeInTheDocument();
+  });
+
+  it('shows a color-meaning info icon next to the Team and Betting Total headers', () => {
+    renderTable(true);
+    expect(screen.getByTestId('team-legend-info')).toBeInTheDocument();
+    expect(screen.getByTestId('total-legend-info')).toBeInTheDocument();
   });
 });

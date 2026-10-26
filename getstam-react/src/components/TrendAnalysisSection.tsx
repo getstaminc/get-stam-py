@@ -172,12 +172,9 @@ const MarketTrendCard: React.FC<{
         '&:hover': { borderColor: '#c9ccc5', boxShadow: tokens.shadowHover },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: tokens.text.secondary }}>
-          {MARKET_CARD_TITLES[marketKey]}
-        </Typography>
-        <Typography sx={{ fontSize: '1.125rem', color: tokens.link }}>›</Typography>
-      </Box>
+      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: tokens.text.secondary }}>
+        {MARKET_CARD_TITLES[marketKey]}
+      </Typography>
       <Typography sx={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
         {pct}%
       </Typography>
@@ -239,7 +236,7 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
         border: `1px solid ${tokens.cardBorder}`,
         borderRadius: `${tokens.cardRadius}px`,
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: '1.1fr 1fr auto' },
+        gridTemplateColumns: { xs: '1fr', md: '1.1fr 1fr' },
         overflow: 'hidden',
         mb: 3,
       }}
@@ -342,8 +339,6 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
         </Box>
         <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mt: 1 }}>{sample_size} historical meetings</Typography>
       </Box>
-
-      <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', px: 2, color: tokens.link, fontSize: '1.375rem' }}>›</Box>
     </Box>
   );
 };
@@ -423,7 +418,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
                     key={idx}
                     sx={{
                       position: "relative",
-                      ...(isFadedCard ? { maxHeight: 110, overflow: "hidden", borderRadius: `${tokens.cardRadius}px` } : {}),
+                      ...(isFadedCard ? { maxHeight: 150, overflow: "hidden", borderRadius: `${tokens.cardRadius}px` } : {}),
                     }}
                   >
                     <TrendDetailCard trend={trend} dataSinceYear={dataSinceYear} />
@@ -446,7 +441,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
               })}
             </Box>
             {hasMore && (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 0.75 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 0.25 }}>
                 <Box
                   component="button"
                   onClick={() => setShowAllTrends((v) => !v)}

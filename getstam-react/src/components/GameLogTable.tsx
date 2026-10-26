@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { BaseGame, NFLGame, MLBGame, SoccerGame, HistoricalGame, SportType } from '../types/gameTypes';
 import { dbNameToSlug } from '../utils/teamSlugUtils';
 import TeamLogo from './TeamLogo';
 import { gameDetailsTokens as tokens } from '../utils/gameDetailsTokens';
+import Legend from './common/Legend';
 
 interface GameLogTableProps {
   title: string;
@@ -130,6 +132,36 @@ const getScoreLabel = (sportType: SportType): string => {
   return 'Points';
 };
 
+const getLineLabel = (sportType: SportType): string => {
+  if (sportType === 'mlb' || sportType === 'nhl') return 'Line';
+  return 'Spread';
+};
+
+const TEAM_LEGEND_ITEMS = [
+  { color: tokens.hit.bg, label: 'Win' },
+  { color: tokens.miss.bg, label: 'Loss' },
+  { color: tokens.trackBg2, label: 'Push' },
+];
+
+const TOTAL_LEGEND_ITEMS = [
+  { color: tokens.hit.bg, label: 'Went Over' },
+  { color: tokens.miss.bg, label: 'Went Under' },
+  { color: tokens.trackBg2, label: 'Push' },
+];
+
+const HeaderWithInfo: React.FC<{ label: string; legendItems: { color: string; label: string }[]; testId: string }> = ({
+  label,
+  legendItems,
+  testId,
+}) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+    {label}
+    <Tooltip title={<Legend title="Color Meanings:" items={legendItems} />} arrow placement="top">
+      <InfoOutlinedIcon data-testid={testId} sx={{ fontSize: 14, color: tokens.text.tertiary, cursor: 'help' }} />
+    </Tooltip>
+  </Box>
+);
+
 const formatDate = (dateString: string): string => {
   const parts = dateString.split('-');
   if (parts.length !== 3) return dateString;
@@ -189,21 +221,14 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
 
   let wins = 0;
   let losses = 0;
-  let overs = 0;
-  let unders = 0;
   games.forEach((game) => {
-    const gd = getGameData(game, sportType);
     const td = getTeamData(game, sportType, teamName);
     if (td.teamPoints != null && td.opponentPoints != null) {
       if (td.teamPoints > td.opponentPoints) wins++;
       else if (td.teamPoints < td.opponentPoints) losses++;
     }
-    if (gd.totalScore != null && gd.totalLine != null) {
-      if (gd.totalScore > gd.totalLine) overs++;
-      else if (gd.totalScore < gd.totalLine) unders++;
-    }
   });
-  const summary = `${wins}-${losses} · Over ${overs}-${unders}`;
+  const summary = `${wins}-${losses}`;
 
   const h2hOpponentName = isHeadToHead && games.length > 0 ? getTeamData(games[0], sportType, teamName).opponentName : null;
 
@@ -252,12 +277,16 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
               <TableRow>
                 <TableCell sx={{ width: 100, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Date</TableCell>
                 <TableCell sx={{ width: 70, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Site</TableCell>
-                <TableCell sx={{ width: '1fr', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Team</TableCell>
+                <TableCell sx={{ width: '1fr', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>
+                  <HeaderWithInfo label="Team" legendItems={TEAM_LEGEND_ITEMS} testId="team-legend-info" />
+                </TableCell>
                 <TableCell sx={{ width: 90, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>{getScoreLabel(sportType)}</TableCell>
-                <TableCell sx={{ width: 80, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Line</TableCell>
+                <TableCell sx={{ width: 80, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>{getLineLabel(sportType)}</TableCell>
                 <TableCell sx={{ width: '1fr', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Opponent</TableCell>
                 <TableCell sx={{ width: 110, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Opp {getScoreLabel(sportType)}</TableCell>
-                <TableCell sx={{ width: 120, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Betting Total</TableCell>
+                <TableCell sx={{ width: 120, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>
+                  <HeaderWithInfo label="Betting Total" legendItems={TOTAL_LEGEND_ITEMS} testId="total-legend-info" />
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -280,8 +309,6 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                     : gd.totalScore < gd.totalLine
                     ? 'loss'
                     : 'push';
-                const ouLabel = totalResult === 'win' ? 'O' : totalResult === 'loss' ? 'U' : totalResult === 'push' ? 'P' : '—';
-
                 return (
                   <TableRow key={(game as BaseGame).game_id ?? index} sx={{ '&:hover': { bgcolor: tokens.subtlePanelBg } }}>
                     <TableCell sx={{ fontSize: '0.8125rem', borderTop: `1px solid ${tokens.borders.lighter}` }}>
@@ -306,7 +333,7 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                       {td.opponentPoints ?? 'N/A'}
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 700, borderTop: `1px solid ${tokens.borders.lighter}`, ...resultColors(totalResult) }}>
-                      {gd.totalLine ?? 'N/A'} · {ouLabel} · {gd.totalScore ?? 'N/A'}
+                      {gd.totalLine ?? 'N/A'}
                     </TableCell>
                   </TableRow>
                 );

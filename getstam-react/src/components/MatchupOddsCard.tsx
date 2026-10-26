@@ -68,7 +68,10 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
           display: 'flex',
           alignItems: 'center',
           gap: 2,
-          justifyContent: side === 'away' ? 'flex-end' : 'flex-start',
+          // flexDirection: row-reverse flips which edge "flex-start"/"flex-end"
+          // point to, so the away side needs flex-start (not flex-end) to
+          // actually push the group to the right edge of its grid column.
+          justifyContent: side === 'away' ? 'flex-start' : 'flex-start',
           textAlign: side === 'away' ? 'right' : 'left',
           flexDirection: side === 'away' ? 'row-reverse' : 'row',
         }}
@@ -108,11 +111,11 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr 76px 1fr', sm: '1fr 140px 1fr' },
-        gap: 1,
+        gridTemplateColumns: { xs: '1fr 64px 1fr', sm: '1fr 90px 1fr' },
+        gap: 0.5,
         alignItems: 'center',
         px: { xs: 2, sm: 3 },
-        py: 1.5,
+        py: 1.25,
         borderTop: `1px solid ${tokens.borders.light}`,
         fontVariantNumeric: 'tabular-nums',
       }}

@@ -78,3 +78,15 @@ describe('GameDetails recent-performance panel', () => {
     expect(screen.getByRole('button', { name: /Away Last 5/i })).toBeInTheDocument();
   });
 });
+
+describe('GameDetails matchup card', () => {
+  it('renders MatchupOddsCard (TeamLogo abbreviations) instead of the old GameOdds card', () => {
+    render(
+      <MemoryRouter initialEntries={['/game-details/mlb/boston-red-sox-vs-athletics-2026-07-28']}>
+        <GameDetails game={fakeMlbGame as any} sportKey="baseball_mlb" />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('ATH')).toBeInTheDocument();
+    expect(screen.getByText('BOS')).toBeInTheDocument();
+  });
+});

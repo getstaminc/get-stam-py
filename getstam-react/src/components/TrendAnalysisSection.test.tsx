@@ -80,3 +80,33 @@ describe('TrendAnalysisSection collision card', () => {
     expect(screen.queryByText('Trend vs. Trend Collision')).not.toBeInTheDocument();
   });
 });
+
+describe('TrendAnalysisSection remaining trends list', () => {
+  it('shows a "More trends" heading and does not repeat the collision trend', () => {
+    const collisionTrend = {
+      type: 'win_streak' as const,
+      count: 5,
+      description: 'collision description',
+      continuation_rate: 0.72,
+      sample_size: 18,
+      home_trend: { team: 'Milwaukee Brewers', type: 'win_streak' as const, count: 5, venue: 'venue_specific' as const },
+      away_trend: { team: 'Tampa Bay Rays', type: 'loss_streak' as const, count: 3, venue: 'venue_specific' as const },
+    };
+    const otherTrend = {
+      type: 'cover_streak' as const,
+      count: 4,
+      description: 'Brewers covered 4 straight spreads',
+      continuation_rate: 0.6,
+      sample_size: 10,
+    };
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      collisionTrends: [collisionTrend],
+      homeTeamTrends: [otherTrend],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    expect(screen.getByText('More trends')).toBeInTheDocument();
+    expect(screen.getAllByText(/Brewers covered 4 straight spreads|collision description/).length).toBe(1);
+  });
+});

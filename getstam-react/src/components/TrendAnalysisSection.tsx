@@ -41,9 +41,9 @@ const parseFullDescription = (description: string) => {
 
 const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | null }> = ({ trend, dataSinceYear }) => {
   const positive = POSITIVE_TYPES.has(trend.type);
-  const trendColor = positive ? "#16a34a" : "#dc2626";
-  const borderColor = positive ? "#bbf7d0" : "#fecaca";
-  const bgColor = positive ? "#f0fdf4" : "#fff5f5";
+  const trendColor = positive ? tokens.hit.text : tokens.miss.text;
+  const borderColor = tokens.cardBorder;
+  const bgColor = tokens.cardBg;
   const confidence = getConfidence(trend);
   const { title, fullContext } = parseFullDescription(trend.description);
 
@@ -57,14 +57,14 @@ const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | n
     <Box sx={{
       px: 2, py: 2,
       background: bgColor,
-      borderRadius: "14px",
+      borderRadius: `${tokens.cardRadius}px`,
       border: `1px solid ${borderColor}`,
     }}>
       {/* Header: icon + title + badges */}
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
         <Box sx={{
           width: 44, height: 44, borderRadius: "50%", flexShrink: 0, mt: 0.25,
-          background: positive ? "#dcfce7" : "#fee2e2",
+          background: positive ? tokens.hit.bg : tokens.miss.bg,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           {positive
@@ -107,7 +107,7 @@ const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | n
               {pct}%
             </Typography>
           </Box>
-          <Box sx={{ height: 7, borderRadius: "999px", bgcolor: positive ? "#dcfce7" : "#fee2e2", overflow: "hidden" }}>
+          <Box sx={{ height: 7, borderRadius: "999px", bgcolor: positive ? tokens.hit.bg : tokens.miss.bg, overflow: "hidden" }}>
             <Box sx={{
               height: "100%",
               width: `${pct}%`,
@@ -363,8 +363,8 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
       {topCollisionTrend && <CollisionCard trend={topCollisionTrend} sportKey={sportKey} />}
       {allTrends.length > 0 && (
         <>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: "#1e293b" }}>
-            Trend Analysis
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: tokens.text.primary }}>
+            More trends
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             {allTrends.map((trend, idx) => (

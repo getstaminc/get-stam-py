@@ -69,11 +69,15 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
           alignItems: 'center',
           gap: 2,
           // flexDirection: row-reverse flips which edge "flex-start"/"flex-end"
-          // point to, so the away side needs flex-start (not flex-end) to
-          // actually push the group to the right edge of its grid column.
-          justifyContent: side === 'away' ? 'flex-start' : 'flex-start',
-          textAlign: side === 'away' ? 'right' : 'left',
-          flexDirection: side === 'away' ? 'row-reverse' : 'row',
+          // point to, so flex-start is what pushes a reversed row to the right.
+          justifyContent: 'flex-start',
+          // The mirrored (logo-on-right, text right-aligned) away layout only
+          // makes sense in the desktop side-by-side grid. On mobile everything
+          // stacks into one full-width column, so a mirrored away row stretches
+          // its logo and text to opposite edges of the whole card — stay
+          // left-aligned like the home row there instead.
+          textAlign: { xs: 'left', sm: side === 'away' ? 'right' : 'left' },
+          flexDirection: { xs: 'row', sm: side === 'away' ? 'row-reverse' : 'row' },
         }}
       >
         <TeamLogo sportKey={sportKeyForLogo} teamName={team.team} size={60} />

@@ -214,5 +214,27 @@ describe('TrendAnalysisSection remaining trends list', () => {
     expect(screen.getByText('Trend number 1')).toBeInTheDocument();
     expect(screen.getByText('Trend number 2')).toBeInTheDocument();
     expect(screen.queryByText('View More ▾')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('trend-fade-overlay')).not.toBeInTheDocument();
+  });
+
+  it('fades the last visible card while collapsed, and removes the fade once expanded', async () => {
+    const makeTrend = (n: number) => ({
+      type: 'cover_streak' as const,
+      count: 4,
+      description: `Trend number ${n}`,
+      continuation_rate: 0.6,
+      sample_size: 10,
+    });
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      homeTeamTrends: [makeTrend(1), makeTrend(2), makeTrend(3)],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    expect(screen.getByTestId('trend-fade-overlay')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('View More ▾'));
+
+    expect(screen.queryByTestId('trend-fade-overlay')).not.toBeInTheDocument();
   });
 });

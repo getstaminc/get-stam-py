@@ -401,38 +401,62 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
         </Box>
       )}
       {topCollisionTrend && <CollisionCard trend={topCollisionTrend} sportKey={sportKey} />}
-      {allTrends.length > 0 && (
-        <>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: tokens.text.primary }}>
+      {allTrends.length > 0 && (() => {
+        const hasMore = allTrends.length > 2;
+        const visibleTrends = showAllTrends ? allTrends : allTrends.slice(0, 2);
+        return (
+          <>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: tokens.text.primary }}>
               More trends
             </Typography>
-            {allTrends.length > 2 && (
-              <Box
-                component="button"
-                onClick={() => setShowAllTrends((v) => !v)}
-                sx={{
-                  all: "unset",
-                  cursor: "pointer",
-                  fontSize: "0.8125rem",
-                  fontWeight: 600,
-                  color: tokens.link,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                }}
-              >
-                {showAllTrends ? "View Less ▾" : "View More ▾"}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {visibleTrends.map((trend, idx) => {
+                const isFadedCard = !showAllTrends && hasMore && idx === visibleTrends.length - 1;
+                return (
+                  <Box key={idx} sx={{ position: "relative" }}>
+                    <TrendDetailCard trend={trend} dataSinceYear={dataSinceYear} />
+                    {isFadedCard && (
+                      <Box
+                        data-testid="trend-fade-overlay"
+                        sx={{
+                          position: "absolute",
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: "50%",
+                          background: `linear-gradient(to bottom, rgba(255,255,255,0), ${tokens.cardBg} 85%)`,
+                          borderRadius: `0 0 ${tokens.cardRadius}px ${tokens.cardRadius}px`,
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
+            {hasMore && (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5 }}>
+                <Box
+                  component="button"
+                  onClick={() => setShowAllTrends((v) => !v)}
+                  sx={{
+                    all: "unset",
+                    cursor: "pointer",
+                    fontSize: "0.8125rem",
+                    fontWeight: 600,
+                    color: tokens.link,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  {showAllTrends ? "View Less ▾" : "View More ▾"}
+                </Box>
               </Box>
             )}
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {(showAllTrends ? allTrends : allTrends.slice(0, 2)).map((trend, idx) => (
-              <TrendDetailCard key={idx} trend={trend} dataSinceYear={dataSinceYear} />
-            ))}
-          </Box>
-        </>
-      )}
+          </>
+        );
+      })()}
     </Box>
   );
 };

@@ -441,7 +441,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
               })}
             </Box>
             {hasMore && (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 0.25 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", mt: -1 }}>
                 <Box
                   component="button"
                   onClick={() => setShowAllTrends((v) => !v)}

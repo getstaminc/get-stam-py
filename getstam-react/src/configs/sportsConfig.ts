@@ -12,7 +12,7 @@ const allSports: Sport[] = [
   { name: "MLB", path: "/mlb", inSeason: false },
   { name: "NBA", path: "/nba", inSeason: true },
   { name: "NCAAB", path: "/ncaab", inSeason: false },
-  { name: "NHL", path: "/nhl", inSeason: false },
+  { name: "NHL", path: "/nhl", inSeason: true },
   { name: "NFL", path: "/nfl", inSeason: true },
   { name: "NCAAF", path: "/ncaaf", inSeason: true },
   // Next World Cup is 2030 — flip `enabled` to true to bring it back

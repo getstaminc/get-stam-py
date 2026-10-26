@@ -87,7 +87,15 @@ class NBAPlayerTrendsService:
         if team_names:
             team_params = {f"team{i}": name for i, name in enumerate(team_names)}
             placeholders = ", ".join(f":{k}" for k in team_params)
-            team_filter = f"AND pp.player_team_name IN ({placeholders})"
+            # Prefer the player's CURRENT team (np.team_id -> teams.odds_api_team_name,
+            # kept current by jobs/nba_daily_player_team_assignment_job.py) over the
+            # row's own frozen player_team_name, so a mid-season trade doesn't leave a
+            # player's older games filed under their old team. Only fall back to the
+            # row's own value for players with no team_id yet.
+            team_filter = (
+                f"AND (t.odds_api_team_name IN ({placeholders}) "
+                f"OR (np.team_id IS NULL AND pp.player_team_name IN ({placeholders})))"
+            )
             params.update(team_params)
 
         stat_select = ", ".join(_ALL_STAT_COLS)
@@ -97,7 +105,7 @@ class NBAPlayerTrendsService:
             FROM (
                 SELECT
                     pp.player_id,
-                    pp.player_team_name AS team_name,
+                    COALESCE(t.odds_api_team_name, pp.player_team_name) AS team_name,
                     np.player_name,
                     pp.game_date,
                     {", ".join('pp.' + c for c in _ALL_STAT_COLS)},
@@ -106,6 +114,7 @@ class NBAPlayerTrendsService:
                     ) AS rn
                 FROM nba_player_props pp
                 JOIN nba_players np ON np.id = pp.player_id
+                LEFT JOIN teams t ON t.team_id = np.team_id AND t.sport = 'NBA'
                 WHERE pp.did_not_play IS NOT TRUE
                   AND COALESCE({', '.join('pp.' + c for c in _ACTUAL_COLS)}) IS NOT NULL
                   {team_filter}

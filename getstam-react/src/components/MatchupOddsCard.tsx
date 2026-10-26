@@ -120,7 +120,6 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
         alignItems: 'center',
         px: { xs: 2, sm: 3 },
         py: 1.25,
-        borderTop: `1px solid ${tokens.borders.light}`,
         fontVariantNumeric: 'tabular-nums',
       }}
     >

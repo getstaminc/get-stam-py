@@ -137,22 +137,29 @@ const getLineLabel = (sportType: SportType): string => {
   return 'Spread';
 };
 
+// Brighter than the actual hit/miss cell-fill tokens on purpose — these are
+// small swatches in a tooltip popover, not a full table cell, so they need
+// more saturation to read clearly at that size.
+const LEGEND_SWATCH_HIT = '#c8e6c9';
+const LEGEND_SWATCH_MISS = '#ffcdd2';
+const LEGEND_SWATCH_PUSH = '#e0e0e0';
+
 const TEAM_LEGEND_ITEMS = [
-  { color: tokens.hit.bg, label: 'Win' },
-  { color: tokens.miss.bg, label: 'Loss' },
-  { color: tokens.trackBg2, label: 'Push' },
+  { color: LEGEND_SWATCH_HIT, label: 'Win' },
+  { color: LEGEND_SWATCH_MISS, label: 'Loss' },
+  { color: LEGEND_SWATCH_PUSH, label: 'Push' },
 ];
 
 const TOTAL_LEGEND_ITEMS = [
-  { color: tokens.hit.bg, label: 'Went Over' },
-  { color: tokens.miss.bg, label: 'Went Under' },
-  { color: tokens.trackBg2, label: 'Push' },
+  { color: LEGEND_SWATCH_HIT, label: 'Went Over' },
+  { color: LEGEND_SWATCH_MISS, label: 'Went Under' },
+  { color: LEGEND_SWATCH_PUSH, label: 'Push' },
 ];
 
 const SPREAD_LEGEND_ITEMS = [
-  { color: tokens.hit.bg, label: 'Covered' },
-  { color: tokens.miss.bg, label: "Didn't Cover" },
-  { color: tokens.trackBg2, label: 'Pushed' },
+  { color: LEGEND_SWATCH_HIT, label: 'Covered' },
+  { color: LEGEND_SWATCH_MISS, label: "Didn't Cover" },
+  { color: LEGEND_SWATCH_PUSH, label: 'Pushed' },
 ];
 
 const HeaderWithInfo: React.FC<{ label: string; legendItems: { color: string; label: string }[]; testId: string }> = ({

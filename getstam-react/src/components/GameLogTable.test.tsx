@@ -152,7 +152,7 @@ describe('GameLogTable', () => {
       </MemoryRouter>
     );
     // Cowboys (away): 25 pts + (-3) line = 22 > Eagles' 14 -> covered
-    expect(screen.getByText('-3')).toHaveStyle({ backgroundColor: '#c8e6c9' });
+    expect(screen.getByText('-3')).toHaveStyle({ backgroundColor: '#e3f4ea' });
 
     rerender(
       <MemoryRouter>
@@ -161,6 +161,6 @@ describe('GameLogTable', () => {
     );
     // Brewers (away): 6 runs + 130 line = 136 > Dodgers' 4 -> would "cover", but
     // MLB/NHL never color this cell (their Line isn't a true ATS spread).
-    expect(screen.getByText('+130')).not.toHaveStyle({ backgroundColor: '#c8e6c9' });
+    expect(screen.getByText('+130')).not.toHaveStyle({ backgroundColor: '#e3f4ea' });
   });
 });

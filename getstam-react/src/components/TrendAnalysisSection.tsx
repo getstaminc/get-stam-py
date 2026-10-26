@@ -68,8 +68,8 @@ const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | n
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           {positive
-            ? <TrendingUpIcon sx={{ color: "#16a34a", fontSize: 24 }} />
-            : <TrendingDownIcon sx={{ color: "#dc2626", fontSize: 24 }} />}
+            ? <TrendingUpIcon sx={{ color: tokens.hit.text, fontSize: 24 }} />
+            : <TrendingDownIcon sx={{ color: tokens.miss.text, fontSize: 24 }} />}
         </Box>
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -206,6 +206,14 @@ const describeCollisionSide = (trend: CollisionTeamTrend | undefined, side: 'hom
   return `${COLLISION_PHRASE[trend.type](trend.count)}${venueSuffix}`;
 };
 
+type CollisionDimension = 'straight_up' | 'ats' | 'total';
+
+const collisionDimension = (type: TrendType): CollisionDimension => {
+  if (type === 'win_streak' || type === 'loss_streak') return 'straight_up';
+  if (type === 'cover_streak' || type === 'no_cover_streak') return 'ats';
+  return 'total'; // over_streak | under_streak
+};
+
 const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ trend, sportKey }) => {
   const { home_trend, away_trend, continuation_rate, sample_size } = trend;
   if (!home_trend || !away_trend || continuation_rate == null || sample_size == null) return null;
@@ -215,6 +223,8 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
   const dbSport = getSportType(sportKey);
   const homeColor = getTeamColors(dbSport, convertTeamNameBySport(sportKey, home_trend.team));
   const awayColor = getTeamColors(dbSport, convertTeamNameBySport(sportKey, away_trend.team));
+  const dimension = collisionDimension(home_trend.type);
+  const verb = dimension === 'ats' ? 'cover' : 'win';
 
   return (
     <Box
@@ -274,27 +284,55 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
         </Box>
       </Box>
 
-      <Box sx={{ bgcolor: tokens.subtlePanelBg, borderLeft: { md: `1px solid ${tokens.borders.light}` }, p: '18px 22px' }}>
+      <Box data-testid="collision-split-panel" sx={{ bgcolor: tokens.subtlePanelBg, borderLeft: { md: `1px solid ${tokens.borders.light}` }, p: '18px 22px' }}>
         <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mb: 1 }}>
           Historically when this collision has happened
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'nowrap', gap: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-            <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
-              {pct}%
-            </Typography>
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{home_trend.team} win</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{away_trend.team} win</Typography>
-            <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
-              {otherPct}%
-            </Typography>
-          </Box>
+          {dimension === 'total' ? (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                  {pct}%
+                </Typography>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>OVER</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>UNDER</Typography>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                  {otherPct}%
+                </Typography>
+              </Box>
+            </>
+          ) : (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                  {pct}%
+                </Typography>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{home_trend.team} {verb}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{away_trend.team} {verb}</Typography>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                  {otherPct}%
+                </Typography>
+              </Box>
+            </>
+          )}
         </Box>
         <Box sx={{ display: 'flex', height: 8, borderRadius: '4px', overflow: 'hidden', gap: '2px', mt: 1 }}>
-          <Box sx={{ width: `${pct}%`, bgcolor: homeColor.primary }} />
-          <Box sx={{ flex: 1, bgcolor: awayColor.secondary }} />
+          {dimension === 'total' ? (
+            <>
+              <Box data-testid="collision-bar-left" sx={{ width: `${pct}%`, bgcolor: tokens.neutralBar }} />
+              <Box data-testid="collision-bar-right" sx={{ flex: 1, bgcolor: tokens.trackBg2 }} />
+            </>
+          ) : (
+            <>
+              <Box data-testid="collision-bar-left" sx={{ width: `${pct}%`, bgcolor: homeColor.primary }} />
+              <Box data-testid="collision-bar-right" sx={{ flex: 1, bgcolor: awayColor.primary }} />
+            </>
+          )}
         </Box>
         <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mt: 1 }}>{sample_size} historical meetings</Typography>
       </Box>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import TrendAnalysisSection from './TrendAnalysisSection';
 import { GameWithTrends } from '../utils/trendAnalysis';
 
@@ -78,6 +78,66 @@ describe('TrendAnalysisSection collision card', () => {
   it('renders nothing for the collision card when there are no collision trends', () => {
     render(<TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
     expect(screen.queryByText('Trend vs. Trend Collision')).not.toBeInTheDocument();
+  });
+
+  it('labels a cover-rate collision as "cover", not "win", and colors both bar segments with team primaries', () => {
+    const coverCollisionTrend = {
+      type: 'cover_streak' as const,
+      count: 5,
+      description: "Brewers' 5-game cover streak meets Yankees' 3-game no-cover streak — ...",
+      continuation_rate: 0.72,
+      sample_size: 18,
+      home_trend: { team: 'Milwaukee Brewers', type: 'cover_streak' as const, count: 5, venue: 'general' as const },
+      away_trend: { team: 'New York Yankees', type: 'no_cover_streak' as const, count: 3, venue: 'general' as const },
+    };
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      collisionTrends: [coverCollisionTrend],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    const panel = within(screen.getByTestId('collision-split-panel'));
+    expect(panel.getByText('Milwaukee Brewers cover')).toBeInTheDocument();
+    expect(panel.getByText('New York Yankees cover')).toBeInTheDocument();
+    expect(panel.queryByText('Milwaukee Brewers win')).not.toBeInTheDocument();
+    expect(panel.queryByText('New York Yankees win')).not.toBeInTheDocument();
+
+    // Fix 3: the away segment should use the away team's primary color (never a
+    // white/near-invisible secondary). Yankees' secondary is white (#FFFFFF),
+    // so this case would have been invisible on the panel background pre-fix.
+    const rightBar = screen.getByTestId('collision-bar-right');
+    expect(rightBar).toHaveStyle({ backgroundColor: '#0C2340' });
+    const leftBar = screen.getByTestId('collision-bar-left');
+    expect(leftBar).toHaveStyle({ backgroundColor: '#13294B' });
+  });
+
+  it('shows OVER/UNDER framing with no team attribution and neutral bar colors for a total-based collision', () => {
+    const totalCollisionTrend = {
+      type: 'over_streak' as const,
+      count: 5,
+      description: "Brewers games have gone OVER 5 straight meets Rays games going OVER 3 straight — ...",
+      continuation_rate: 0.65,
+      sample_size: 12,
+      home_trend: { team: 'Milwaukee Brewers', type: 'over_streak' as const, count: 5, venue: 'general' as const },
+      away_trend: { team: 'Tampa Bay Rays', type: 'over_streak' as const, count: 3, venue: 'general' as const },
+    };
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      collisionTrends: [totalCollisionTrend],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    const panel = within(screen.getByTestId('collision-split-panel'));
+    expect(panel.getByText('OVER')).toBeInTheDocument();
+    expect(panel.getByText('UNDER')).toBeInTheDocument();
+    expect(panel.queryByText('Milwaukee Brewers win')).not.toBeInTheDocument();
+    expect(panel.queryByText('Tampa Bay Rays win')).not.toBeInTheDocument();
+    expect(panel.queryByText('Milwaukee Brewers cover')).not.toBeInTheDocument();
+
+    const leftBar = screen.getByTestId('collision-bar-left');
+    const rightBar = screen.getByTestId('collision-bar-right');
+    expect(leftBar).toHaveStyle({ backgroundColor: '#4a5361' });
+    expect(rightBar).toHaveStyle({ backgroundColor: '#eceee9' });
   });
 });
 

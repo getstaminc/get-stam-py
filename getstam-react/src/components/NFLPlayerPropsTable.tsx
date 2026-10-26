@@ -78,7 +78,7 @@ const NFLPlayerPropsTable: React.FC<NFLPlayerPropsTableProps> = ({ players }) =>
             <TableCell sx={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Player</TableCell>
             <TableCell sx={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Prop</TableCell>
             <TableCell sx={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Streak</TableCell>
-            <TableCell sx={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Continues</TableCell>
+            <TableCell sx={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Hit Rate</TableCell>
             <TableCell sx={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Last 5</TableCell>
           </TableRow>
         </TableHead>

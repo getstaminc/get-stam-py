@@ -11,6 +11,7 @@ import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
 import NFLPlayerPropsTable from "./NFLPlayerPropsTable";
 import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
 import PlayerStreakHighlight from "./PlayerStreakHighlight";
+import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
 
 type Game = {
   home: TeamData;
@@ -460,7 +461,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
               <Box
                 sx={{
                   display: 'inline-flex',
-                  bgcolor: '#f1f3ef',
+                  bgcolor: tokens.chipTrackBg,
                   borderRadius: '10px',
                   p: '4px',
                   gap: '4px',
@@ -485,8 +486,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       py: '7px',
                       borderRadius: '7px',
                       textAlign: 'center',
-                      bgcolor: historicalSubTab === opt.value ? '#fff' : 'transparent',
-                      boxShadow: historicalSubTab === opt.value ? '0 1px 2px rgba(0,0,0,.12)' : 'none',
+                      bgcolor: historicalSubTab === opt.value ? tokens.cardBg : 'transparent',
+                      boxShadow: historicalSubTab === opt.value ? tokens.shadowActiveSegment : 'none',
                     }}
                   >
                     {opt.label}

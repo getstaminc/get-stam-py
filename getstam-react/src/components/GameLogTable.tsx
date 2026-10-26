@@ -171,7 +171,7 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
 
   if (loading) {
     return (
-      <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, p: 2 }}>
+      <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, p: 2, mb: 2 }}>
         <Typography sx={{ fontSize: '0.875rem', fontWeight: 700 }}>{title}</Typography>
         <Typography sx={{ fontSize: '0.8125rem', color: tokens.text.secondary }}>Loading…</Typography>
       </Box>
@@ -180,7 +180,7 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
 
   if (!games || games.length === 0) {
     return (
-      <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, p: 2 }}>
+      <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, p: 2, mb: 2 }}>
         <Typography sx={{ fontSize: '0.875rem', fontWeight: 700 }}>{title}</Typography>
         <Typography sx={{ fontSize: '0.8125rem', color: tokens.text.secondary }}>No games found</Typography>
       </Box>
@@ -208,7 +208,7 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
   const h2hOpponentName = isHeadToHead && games.length > 0 ? getTeamData(games[0], sportType, teamName).opponentName : null;
 
   return (
-    <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, overflow: 'hidden' }}>
+    <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, overflow: 'hidden', mb: 2 }}>
       <Box
         component="button"
         onClick={() => setExpanded((e) => !e)}

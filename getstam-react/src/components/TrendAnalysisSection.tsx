@@ -413,7 +413,13 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
               {visibleTrends.map((trend, idx) => {
                 const isFadedCard = !showAllTrends && hasMore && idx === visibleTrends.length - 1;
                 return (
-                  <Box key={idx} sx={{ position: "relative" }}>
+                  <Box
+                    key={idx}
+                    sx={{
+                      position: "relative",
+                      ...(isFadedCard ? { maxHeight: 110, overflow: "hidden", borderRadius: `${tokens.cardRadius}px` } : {}),
+                    }}
+                  >
                     <TrendDetailCard trend={trend} dataSinceYear={dataSinceYear} />
                     {isFadedCard && (
                       <Box
@@ -423,9 +429,8 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          height: "70%",
-                          background: `linear-gradient(to bottom, rgba(255,255,255,0), ${tokens.cardBg} 75%)`,
-                          borderRadius: `0 0 ${tokens.cardRadius}px ${tokens.cardRadius}px`,
+                          height: "100%",
+                          background: `linear-gradient(to bottom, rgba(255,255,255,0) 0%, ${tokens.cardBg} 55%)`,
                           pointerEvents: "none",
                         }}
                       />
@@ -435,19 +440,25 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
               })}
             </Box>
             {hasMore && (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 0.75 }}>
                 <Box
                   component="button"
                   onClick={() => setShowAllTrends((v) => !v)}
                   sx={{
-                    all: "unset",
                     cursor: "pointer",
-                    fontSize: "0.8125rem",
-                    fontWeight: 600,
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    fontFamily: "inherit",
                     color: tokens.link,
+                    bgcolor: tokens.cardBg,
+                    border: `1.5px solid ${tokens.cardBorder}`,
+                    borderRadius: "10px",
+                    px: 3,
+                    py: 1.25,
                     display: "flex",
                     alignItems: "center",
-                    gap: 0.5,
+                    gap: 0.75,
+                    "&:hover": { borderColor: tokens.link },
                   }}
                 >
                   {showAllTrends ? "View Less ▾" : "View More ▾"}

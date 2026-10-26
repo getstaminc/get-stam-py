@@ -67,21 +67,21 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
+          gap: { xs: 0.75, sm: 2 },
           // flexDirection: row-reverse flips which edge "flex-start"/"flex-end"
           // point to, so flex-start is what pushes a reversed row to the right.
           justifyContent: 'flex-start',
-          // The mirrored (logo-on-right, text right-aligned) away layout only
-          // makes sense in the desktop side-by-side grid. On mobile everything
-          // stacks into one full-width column, so a mirrored away row stretches
-          // its logo and text to opposite edges of the whole card — stay
-          // left-aligned like the home row there instead.
-          textAlign: { xs: 'left', sm: side === 'away' ? 'right' : 'left' },
-          flexDirection: { xs: 'row', sm: side === 'away' ? 'row-reverse' : 'row' },
+          // Mobile keeps the matchup header as a real 3-column grid (home | date
+          // | away), same as desktop — just with each team's logo stacked above
+          // its name (centered) instead of side-by-side, since there isn't room
+          // for a full horizontal row in a narrow column. Desktop keeps the
+          // mirrored (logo-on-right for away) horizontal row.
+          textAlign: { xs: 'center', sm: side === 'away' ? 'right' : 'left' },
+          flexDirection: { xs: 'column', sm: side === 'away' ? 'row-reverse' : 'row' },
         }}
       >
         <TeamLogo sportKey={sportKeyForLogo} teamName={team.team} size={60} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: { xs: 'center', sm: 'stretch' } }}>
           <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
             {sport ? (
               <Link to={getTeamPageLink(sport, team.team)} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -161,10 +161,10 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: '1fr auto 1fr' },
-          gap: 3,
+          gridTemplateColumns: '1fr auto 1fr',
+          gap: { xs: 1, sm: 3 },
           alignItems: 'center',
-          px: { xs: 2, sm: 3 },
+          px: { xs: 1.5, sm: 3 },
           py: 2.5,
         }}
       >

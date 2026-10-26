@@ -23,12 +23,12 @@ export const gameDetailsTokens = {
   linkHover: '#163f8f',
   collisionIcon: '#5b3fd6',
   hit: {
-    bg: '#e3f4ea',
+    bg: '#c8e6c9',
     text: '#14713d',
     dot: '#1f9d55',
   },
   miss: {
-    bg: '#fbe7e7',
+    bg: '#ffcdd2',
     text: '#b42f2f',
   },
   neutralBar: '#4a5361',

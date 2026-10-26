@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Button } from "@mui/material";
 import GameOdds from "./GameOdds";
-import HistoricalGames from "./HistoricalGames";
+import GameLogTable from "./GameLogTable";
 import { getSportType } from "../types/gameTypes";
 import TeamRankings from "./TeamRankings";
 import { convertTeamNameBySport } from "../utils/teamNameConverter";
@@ -342,10 +342,6 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     }
   };
 
-  const handleHistoricalSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setHistoricalSubTab(newValue);
-  };
-
   const hasScore =
     home.score !== null &&
     home.score !== undefined &&
@@ -468,79 +464,66 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
             {/* Historical Games Sub-Tabs */}
             <Paper sx={{ mt: 3 }}>
-              <Tabs
-                value={historicalSubTab}
-                onChange={handleHistoricalSubTabChange}
-                variant="fullWidth"
+              <Box
                 sx={{
-                  borderBottom: 1,
-                  borderColor: 'divider',
-                  '& .MuiTab-root': {
-                    minWidth: { xs: 'auto', sm: 160 },
-                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                    padding: { xs: '8px 4px', sm: '12px 16px' },
-                    borderRight: { xs: '1px solid #e0e0e0', sm: 'none' },
-                    '&:last-child': {
-                      borderRight: 'none'
-                    },
-                    '&.Mui-selected': {
-                      backgroundColor: { xs: '#f5f5f5', sm: 'transparent' },
-                      borderRight: { xs: '1px solid #1976d2', sm: 'none' }
-                    }
-                  },
-                  '& .MuiTabs-flexContainer': {
-                    borderBottom: { xs: '1px solid #e0e0e0', sm: 'none' }
-                  }
+                  display: 'inline-flex',
+                  bgcolor: '#f1f3ef',
+                  borderRadius: '10px',
+                  p: '4px',
+                  gap: '4px',
+                  mb: 2,
                 }}
               >
-                <Tab label={`Last ${gamesLimit}`} />
-                <Tab 
-                  label={
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                        {`${homeTeamName} Home Last ${gamesLimit}`}
-                      </Box>
-                      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-                        {`${homeTeamName.length > 10 ? homeTeamName.substring(0, 10) + '...' : homeTeamName} Home`}
-                      </Box>
-                    </Box>
-                  }
-                />
-                <Tab 
-                  label={
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                        {`${awayTeamName} Away Last ${gamesLimit}`}
-                      </Box>
-                      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-                        {`${awayTeamName.length > 10 ? awayTeamName.substring(0, 10) + '...' : awayTeamName} Away`}
-                      </Box>
-                    </Box>
-                  }
-                />
-              </Tabs>
+                {[
+                  { value: 0, label: `Last ${gamesLimit}` },
+                  { value: 1, label: `${homeTeamName} Home Last ${gamesLimit}` },
+                  { value: 2, label: `${awayTeamName} Away Last ${gamesLimit}` },
+                ].map((opt) => (
+                  <Box
+                    key={opt.value}
+                    component="button"
+                    onClick={() => setHistoricalSubTab(opt.value)}
+                    sx={{
+                      all: 'unset',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      px: '14px',
+                      py: '7px',
+                      borderRadius: '7px',
+                      textAlign: 'center',
+                      bgcolor: historicalSubTab === opt.value ? '#fff' : 'transparent',
+                      boxShadow: historicalSubTab === opt.value ? '0 1px 2px rgba(0,0,0,.12)' : 'none',
+                    }}
+                  >
+                    {opt.label}
+                  </Box>
+                ))}
+              </Box>
 
               <Box sx={{ p: { xs: 2, sm: 3 } }}>
                 {/* Tab 0: Last N Games (Original) */}
                 {historicalSubTab === 0 && (
                   <>
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${homeTeamName} - Last ${gamesLimit} Games`}
                       games={homeTeamHistory?.games || []}
                       loading={homeTeamHistory === null}
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} - Last ${gamesLimit} Games`}
                       games={awayTeamHistory?.games || []}
                       loading={awayTeamHistory === null}
                       teamName={convertTeamNameBySport(sportKey, awayTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
                       games={headToHeadHistory?.games || []}
                       loading={headToHeadHistory === null}
@@ -548,6 +531,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
                   </>
                 )}
@@ -555,15 +539,16 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                 {/* Tab 1: Home Team Home Games */}
                 {historicalSubTab === 1 && (
                   <>
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${homeTeamName} - Last ${gamesLimit} Home Games`}
                       games={homeTeamHomeGames?.games || []}
                       loading={homeTeamHomeGames === null}
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${homeTeamName} vs ${awayTeamName} - Last ${gamesLimit} Home H2H`}
                       games={homeTeamHomeVsAway?.games || []}
                       loading={homeTeamHomeVsAway === null}
@@ -571,6 +556,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
                   </>
                 )}
@@ -578,15 +564,16 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                 {/* Tab 2: Away Team Away Games */}
                 {historicalSubTab === 2 && (
                   <>
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} - Last ${gamesLimit} Away Games`}
                       games={awayTeamAwayGames?.games || []}
                       loading={awayTeamAwayGames === null}
                       teamName={convertTeamNameBySport(sportKey, awayTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} Away H2H`}
                       games={awayTeamAwayVsHome?.games || []}
                       loading={awayTeamAwayVsHome === null}
@@ -594,6 +581,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
                   </>
                 )}

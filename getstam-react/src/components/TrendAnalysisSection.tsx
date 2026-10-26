@@ -2,8 +2,13 @@ import React from "react";
 import { Box, Typography, CircularProgress } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import { GameWithTrends, TrendResult, MarketOverview, MarketOverviewEntry } from "../utils/trendAnalysis";
+import { GameWithTrends, TrendResult, MarketOverviewEntry } from "../utils/trendAnalysis";
 import { getConfidenceScore, getConfidence } from "./TrendInsightCard";
+import TeamLogo from './TeamLogo';
+import { gameDetailsTokens as tokens } from '../utils/gameDetailsTokens';
+import { getTeamColors } from '../utils/teamColors';
+import { convertTeamNameBySport } from '../utils/teamNameConverter';
+import { getSportType } from '../types/gameTypes';
 
 interface TrendAnalysisSectionProps {
   gameTrends: GameWithTrends | null;
@@ -11,6 +16,7 @@ interface TrendAnalysisSectionProps {
   game: any;
   minTrendLength: number;
   dataSinceYear?: number | null;
+  sportKey?: string;
 }
 
 const POSITIVE_TYPES = new Set(["win_streak", "cover_streak", "over_streak"]);
@@ -116,74 +122,83 @@ const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | n
   );
 };
 
-const MARKET_PLAIN_LABELS: Record<string, string> = {
-  moneyline: "Who wins",
-  spread: "Against the spread",
-  total: "Total points",
+const MARKET_CARD_TITLES: Record<'moneyline' | 'spread' | 'total', string> = {
+  moneyline: 'Moneyline Trends',
+  spread: 'Spread Trends',
+  total: 'Total Trends',
 };
 
-// Below this, a lean reads as close to a coin flip rather than a real edge.
-const COIN_FLIP_THRESHOLD = 0.55;
+const formatSigned = (n: number): string => `${n > 0 ? '+' : ''}${n}`;
 
-const marketSentence = (marketKey: string, entry: MarketOverviewEntry, home: string, away: string): string => {
+const spreadPointForTeam = (game: any, teamName: string): number | null => {
+  if (game?.home?.team === teamName) return game?.home?.odds?.spread_point ?? null;
+  if (game?.away?.team === teamName) return game?.away?.odds?.spread_point ?? null;
+  return null;
+};
+
+const marketCardLabel = (marketKey: 'moneyline' | 'spread' | 'total', entry: MarketOverviewEntry, game: any): string => {
+  if (marketKey === 'moneyline') return `${entry.lean} win`;
+  if (marketKey === 'total') return entry.lean;
+  const point = spreadPointForTeam(game, entry.lean);
+  return point != null ? `${entry.lean} cover ${formatSigned(point)}` : `${entry.lean} cover the spread`;
+};
+
+const MarketTrendCard: React.FC<{
+  marketKey: 'moneyline' | 'spread' | 'total';
+  entry: MarketOverviewEntry;
+  game: any;
+  sportKey: string;
+}> = ({ marketKey, entry, game, sportKey }) => {
   const pct = Math.round(entry.probability * 100);
-  const isCloseCall = entry.probability < COIN_FLIP_THRESHOLD;
-  const gameWord = entry.sample_size === 1 ? "game" : "games";
-
-  if (marketKey === "total") {
-    return isCloseCall
-      ? `Close to a coin flip, with a slight lean toward the ${entry.lean} (${pct}% across ${entry.sample_size} similar historical ${gameWord}).`
-      : `History leans toward the ${entry.lean} (${pct}% across ${entry.sample_size} similar historical ${gameWord}).`;
-  }
-
-  const other = entry.lean === home ? away : home;
-  const otherPct = 100 - pct;
-  return isCloseCall
-    ? `Close to a coin flip — ${entry.lean} ${pct}% vs. ${other} ${otherPct}%, based on ${entry.sample_size} historical ${gameWord}.`
-    : `History favors ${entry.lean} (${pct}% across ${entry.sample_size} similar historical ${gameWord}).`;
-};
-
-const GameSummaryBanner: React.FC<{ overview: MarketOverview; home: string; away: string; dataSinceYear?: number | null }> = ({ overview, home, away, dataSinceYear }) => {
-  const rows = (["moneyline", "spread", "total"] as const)
-    .map((key) => ({ key, entry: overview[key] }))
-    .filter((r): r is { key: "moneyline" | "spread" | "total"; entry: MarketOverviewEntry } => !!r.entry);
-
-  if (rows.length === 0) return null;
+  const wins = Math.round(entry.probability * entry.sample_size);
+  const losses = entry.sample_size - wins;
+  const dbSport = getSportType(sportKey);
+  const barColor =
+    marketKey === 'total'
+      ? tokens.neutralBar
+      : getTeamColors(dbSport, convertTeamNameBySport(sportKey, entry.lean)).primary;
 
   return (
-    <Box sx={{
-      mb: 3, p: 2.5,
-      background: "linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)",
-      borderRadius: "16px", border: "1px solid #bfdbfe",
-    }}>
-      <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#1e293b", mb: 0.5 }}>
-        What the numbers suggest
-      </Typography>
-      <Typography sx={{ fontSize: "0.8rem", color: "#64748b", mb: 1.75 }}>
-        A quick read on this matchup, based on every historical trend below.
-      </Typography>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-        {rows.map(({ key, entry }) => (
-          <Box key={key}>
-            <Typography component="span" sx={{ fontWeight: 700, fontSize: "0.875rem", color: "#1e293b" }}>
-              {MARKET_PLAIN_LABELS[key]}:{" "}
-            </Typography>
-            <Typography component="span" sx={{ fontSize: "0.875rem", color: "#475569" }}>
-              {marketSentence(key, entry, home, away)}
-            </Typography>
-          </Box>
-        ))}
+    <Box
+      sx={{
+        bgcolor: tokens.cardBg,
+        border: `1px solid ${tokens.cardBorder}`,
+        borderRadius: `${tokens.cardRadius}px`,
+        p: '18px 18px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        '&:hover': { borderColor: '#c9ccc5', boxShadow: tokens.shadowHover },
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: tokens.text.secondary }}>
+          {MARKET_CARD_TITLES[marketKey]}
+        </Typography>
+        <Typography sx={{ fontSize: '1.125rem', color: tokens.link }}>›</Typography>
       </Box>
-      <Typography sx={{ fontSize: "0.75rem", color: "#94a3b8", mt: 1.75, fontStyle: "italic" }}>
-        These reflect historical patterns{dataSinceYear ? ` since ${dataSinceYear}` : ""}, not predictions —
-        the more games behind a number, the more weight it tends to carry. The full trend-by-trend
-        breakdown behind this summary is below.
+      <Typography sx={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+        {pct}%
       </Typography>
+      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600 }}>{marketCardLabel(marketKey, entry, game)}</Typography>
+      <Typography sx={{ fontSize: '0.8125rem', color: tokens.text.secondary }}>
+        {wins}-{losses} ({entry.sample_size} games)
+      </Typography>
+      <Box sx={{ height: 6, borderRadius: '3px', bgcolor: tokens.trackBg2, overflow: 'hidden', mt: 0.5 }}>
+        <Box sx={{ height: '100%', width: `${pct}%`, bgcolor: barColor, borderRadius: '3px' }} />
+      </Box>
     </Box>
   );
 };
 
-const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({ gameTrends, loading, game, minTrendLength, dataSinceYear }) => {
+const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
+  gameTrends,
+  loading,
+  game,
+  minTrendLength,
+  dataSinceYear,
+  sportKey = 'baseball_mlb',
+}) => {
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1.5, pt: 4, pb: 2, maxWidth: 900, mx: "auto" }}>
@@ -194,8 +209,6 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({ gameTrends,
   }
 
   if (!gameTrends) return null;
-
-  const { home, away, totals } = game;
 
   // Collect all trends, dedup venue-specific vs general (prefer venue-specific)
   const homeSpecificTypes = new Set((gameTrends.homeTeamHomeTrends || []).map(t => t.type));
@@ -212,26 +225,33 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({ gameTrends,
     .filter(t => t.count >= minTrendLength)
     .sort((a, b) => getConfidenceScore(b) - getConfidenceScore(a) || b.count - a.count);
 
-  if (allTrends.length === 0) return null;
+  const marketRows = (['moneyline', 'spread', 'total'] as const)
+    .map((key) => ({ key, entry: gameTrends.marketOverview?.[key] }))
+    .filter((r): r is { key: 'moneyline' | 'spread' | 'total'; entry: MarketOverviewEntry } => !!r.entry);
+
+  if (allTrends.length === 0 && marketRows.length === 0) return null;
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, pt: 4, mb: 2 }}>
-      {gameTrends.marketOverview && (
-        <GameSummaryBanner
-          overview={gameTrends.marketOverview}
-          home={home?.team || ""}
-          away={away?.team || ""}
-          dataSinceYear={dataSinceYear}
-        />
+      {marketRows.length > 0 && (
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', mb: 3 }}>
+          {marketRows.map(({ key, entry }) => (
+            <MarketTrendCard key={key} marketKey={key} entry={entry} game={game} sportKey={sportKey} />
+          ))}
+        </Box>
       )}
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: "#1e293b" }}>
-        Trend Analysis
-      </Typography>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {allTrends.map((trend, idx) => (
-          <TrendDetailCard key={idx} trend={trend} dataSinceYear={dataSinceYear} />
-        ))}
-      </Box>
+      {allTrends.length > 0 && (
+        <>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: "#1e293b" }}>
+            Trend Analysis
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            {allTrends.map((trend, idx) => (
+              <TrendDetailCard key={idx} trend={trend} dataSinceYear={dataSinceYear} />
+            ))}
+          </Box>
+        </>
+      )}
     </Box>
   );
 };

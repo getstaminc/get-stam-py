@@ -23,6 +23,13 @@ export interface MarketOverview {
   total?: MarketOverviewEntry;
 }
 
+export interface CollisionTeamTrend {
+  team: string;
+  type: TrendType;
+  count: number;
+  venue: 'general' | 'venue_specific';
+}
+
 export interface TrendResult {
   type: TrendType;
   count: number;
@@ -30,6 +37,11 @@ export interface TrendResult {
   continuation_rate?: number;
   sample_size?: number;
   secondary_rates?: SecondaryRate[];
+  // Only present on entries from collisionTrends — see
+  // api/services/historical/trend_enrichment.py:_build_collision_entry,
+  // which already returns these fields; this just types what's already there.
+  home_trend?: CollisionTeamTrend;
+  away_trend?: CollisionTeamTrend;
 }
 
 export interface GameWithTrends {

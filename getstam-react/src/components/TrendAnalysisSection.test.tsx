@@ -48,3 +48,35 @@ describe('TrendAnalysisSection market cards', () => {
     expect(screen.queryByText('What the numbers suggest')).not.toBeInTheDocument();
   });
 });
+
+describe('TrendAnalysisSection collision card', () => {
+  const collisionTrend = {
+    type: 'win_streak' as const,
+    count: 5,
+    description: "Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road — ...",
+    continuation_rate: 0.72,
+    sample_size: 18,
+    home_trend: { team: 'Milwaukee Brewers', type: 'win_streak' as const, count: 5, venue: 'venue_specific' as const },
+    away_trend: { team: 'Tampa Bay Rays', type: 'loss_streak' as const, count: 3, venue: 'venue_specific' as const },
+  };
+
+  it('renders both teams, their streak text, and the split percentage', () => {
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      collisionTrends: [collisionTrend],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    expect(screen.getByText('Trend vs. Trend Collision')).toBeInTheDocument();
+    expect(screen.getByText('Won 5 straight at home')).toBeInTheDocument();
+    expect(screen.getByText('Lost 3 straight on the road')).toBeInTheDocument();
+    expect(screen.getByText('72%')).toBeInTheDocument();
+    expect(screen.getByText('28%')).toBeInTheDocument();
+    expect(screen.getByText('18 historical meetings')).toBeInTheDocument();
+  });
+
+  it('renders nothing for the collision card when there are no collision trends', () => {
+    render(<TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+    expect(screen.queryByText('Trend vs. Trend Collision')).not.toBeInTheDocument();
+  });
+});

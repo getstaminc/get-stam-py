@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Typography, CircularProgress } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import { GameWithTrends, TrendResult, MarketOverviewEntry } from "../utils/trendAnalysis";
+import { GameWithTrends, TrendResult, MarketOverviewEntry, TrendType, CollisionTeamTrend } from "../utils/trendAnalysis";
 import { getConfidenceScore, getConfidence } from "./TrendInsightCard";
 import TeamLogo from './TeamLogo';
 import { gameDetailsTokens as tokens } from '../utils/gameDetailsTokens';
@@ -191,6 +191,119 @@ const MarketTrendCard: React.FC<{
   );
 };
 
+const COLLISION_PHRASE: Record<TrendType, (n: number) => string> = {
+  win_streak: (n) => `Won ${n} straight`,
+  loss_streak: (n) => `Lost ${n} straight`,
+  cover_streak: (n) => `Covered ${n} straight spreads`,
+  no_cover_streak: (n) => `Failed to cover ${n} straight spreads`,
+  over_streak: (n) => `Hit the OVER ${n} straight`,
+  under_streak: (n) => `Hit the UNDER ${n} straight`,
+};
+
+const describeCollisionSide = (trend: CollisionTeamTrend | undefined, side: 'home' | 'away'): string => {
+  if (!trend) return '';
+  const venueSuffix = trend.venue === 'venue_specific' ? (side === 'home' ? ' at home' : ' on the road') : '';
+  return `${COLLISION_PHRASE[trend.type](trend.count)}${venueSuffix}`;
+};
+
+const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ trend, sportKey }) => {
+  const { home_trend, away_trend, continuation_rate, sample_size } = trend;
+  if (!home_trend || !away_trend || continuation_rate == null || sample_size == null) return null;
+
+  const pct = Math.round(continuation_rate * 100);
+  const otherPct = 100 - pct;
+  const dbSport = getSportType(sportKey);
+  const homeColor = getTeamColors(dbSport, convertTeamNameBySport(sportKey, home_trend.team));
+  const awayColor = getTeamColors(dbSport, convertTeamNameBySport(sportKey, away_trend.team));
+
+  return (
+    <Box
+      sx={{
+        bgcolor: tokens.cardBg,
+        border: `1px solid ${tokens.cardBorder}`,
+        borderRadius: `${tokens.cardRadius}px`,
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '1.1fr 1fr auto' },
+        overflow: 'hidden',
+        mb: 3,
+      }}
+    >
+      <Box sx={{ p: '18px 22px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: tokens.collisionIcon, display: 'grid', placeItems: 'center' }}>
+            <Box sx={{ width: 10, height: 10, bgcolor: '#fff', transform: 'rotate(45deg)' }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700 }}>Trend vs. Trend Collision</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary }}>When both teams' trends meet</Typography>
+          </Box>
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 1, mt: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <TeamLogo sportKey={sportKey} teamName={home_trend.team} size={40} />
+            <Box>
+              <Typography sx={{ fontSize: '0.875rem', fontWeight: 700 }}>{home_trend.team}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary }}>
+                {describeCollisionSide(home_trend, 'home')}
+              </Typography>
+            </Box>
+          </Box>
+          <Typography
+            sx={{
+              fontSize: '0.6875rem',
+              fontWeight: 700,
+              color: tokens.text.muted,
+              bgcolor: tokens.chipTrackBg,
+              borderRadius: '999px',
+              px: 1,
+              py: 0.5,
+              textAlign: 'center',
+            }}
+          >
+            VS
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, justifyContent: 'flex-end', textAlign: 'right' }}>
+            <Box>
+              <Typography sx={{ fontSize: '0.875rem', fontWeight: 700 }}>{away_trend.team}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary }}>
+                {describeCollisionSide(away_trend, 'away')}
+              </Typography>
+            </Box>
+            <TeamLogo sportKey={sportKey} teamName={away_trend.team} size={40} />
+          </Box>
+        </Box>
+      </Box>
+
+      <Box sx={{ bgcolor: tokens.subtlePanelBg, borderLeft: { md: `1px solid ${tokens.borders.light}` }, p: '18px 22px' }}>
+        <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mb: 1 }}>
+          Historically when this collision has happened
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'nowrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+            <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+              {pct}%
+            </Typography>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{home_trend.team} win</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{away_trend.team} win</Typography>
+            <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+              {otherPct}%
+            </Typography>
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', height: 8, borderRadius: '4px', overflow: 'hidden', gap: '2px', mt: 1 }}>
+          <Box sx={{ width: `${pct}%`, bgcolor: homeColor.primary }} />
+          <Box sx={{ flex: 1, bgcolor: awayColor.secondary }} />
+        </Box>
+        <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mt: 1 }}>{sample_size} historical meetings</Typography>
+      </Box>
+
+      <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', px: 2, color: tokens.link, fontSize: '1.375rem' }}>›</Box>
+    </Box>
+  );
+};
+
 const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
   gameTrends,
   loading,
@@ -213,10 +326,15 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
   // Collect all trends, dedup venue-specific vs general (prefer venue-specific)
   const homeSpecificTypes = new Set((gameTrends.homeTeamHomeTrends || []).map(t => t.type));
   const awaySpecificTypes = new Set((gameTrends.awayTeamAwayTrends || []).map(t => t.type));
+  // The top collision trend gets its own dedicated CollisionCard above this list
+  // (see topCollisionTrend below), so it's excluded here to avoid showing the
+  // same trend twice — any remaining collision trends still appear generically.
+  const topCollisionTrend = (gameTrends.collisionTrends || [])[0] ?? null;
+  const remainingCollisionTrends = (gameTrends.collisionTrends || []).slice(1);
   const allTrends: TrendResult[] = [
     ...(gameTrends.headToHeadTrends || []),
     ...(gameTrends.homeAtHomeH2HTrends || []),
-    ...(gameTrends.collisionTrends || []),
+    ...remainingCollisionTrends,
     ...(gameTrends.homeTeamHomeTrends || []),
     ...(gameTrends.awayTeamAwayTrends || []),
     ...(gameTrends.homeTeamTrends || []).filter(t => !homeSpecificTypes.has(t.type)),
@@ -229,7 +347,9 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
     .map((key) => ({ key, entry: gameTrends.marketOverview?.[key] }))
     .filter((r): r is { key: 'moneyline' | 'spread' | 'total'; entry: MarketOverviewEntry } => !!r.entry);
 
-  if (allTrends.length === 0 && marketRows.length === 0) return null;
+  // Collision trends are a separate concept from both market rows and the general
+  // trends list, so the collision card's own visibility must not depend on this guard.
+  if (allTrends.length === 0 && marketRows.length === 0 && !topCollisionTrend) return null;
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, pt: 4, mb: 2 }}>
@@ -240,6 +360,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
           ))}
         </Box>
       )}
+      {topCollisionTrend && <CollisionCard trend={topCollisionTrend} sportKey={sportKey} />}
       {allTrends.length > 0 && (
         <>
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: "#1e293b" }}>

@@ -309,6 +309,18 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                     : gd.totalScore < gd.totalLine
                     ? 'loss'
                     : 'push';
+                // Against-the-spread result for the Line/Spread cell. MLB/NHL's
+                // "Line" isn't a true ATS spread (it's closer to a moneyline/run
+                // line context), so it stays uncolored for those two sports.
+                const lineResult: 'win' | 'loss' | 'push' | null =
+                  td.teamPoints == null || td.teamLine == null || td.opponentPoints == null
+                    ? null
+                    : td.teamPoints + td.teamLine > td.opponentPoints
+                    ? 'win'
+                    : td.teamPoints + td.teamLine < td.opponentPoints
+                    ? 'loss'
+                    : 'push';
+                const showLineColor = sportType !== 'mlb' && sportType !== 'nhl';
                 return (
                   <TableRow key={(game as BaseGame).game_id ?? index} sx={{ '&:hover': { bgcolor: tokens.subtlePanelBg } }}>
                     <TableCell sx={{ fontSize: '0.8125rem', borderTop: `1px solid ${tokens.borders.lighter}` }}>
@@ -323,7 +335,15 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                     <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 700, borderTop: `1px solid ${tokens.borders.lighter}`, ...resultColors(teamResult) }}>
                       {td.teamPoints ?? 'N/A'}
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem', borderTop: `1px solid ${tokens.borders.lighter}`, fontVariantNumeric: 'tabular-nums' }}>
+                    <TableCell
+                      sx={{
+                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        borderTop: `1px solid ${tokens.borders.lighter}`,
+                        fontVariantNumeric: 'tabular-nums',
+                        ...(showLineColor ? resultColors(lineResult) : {}),
+                      }}
+                    >
                       {formatSigned(td.teamLine)}
                     </TableCell>
                     <TableCell sx={{ fontSize: '0.8125rem', borderTop: `1px solid ${tokens.borders.lighter}` }}>

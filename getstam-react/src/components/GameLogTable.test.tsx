@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import GameLogTable from './GameLogTable';
-import { MLBGame } from '../types/gameTypes';
+import { MLBGame, NFLGame } from '../types/gameTypes';
 
 const games: MLBGame[] = [
   {
@@ -35,6 +35,25 @@ const gamesWithMissingTotal: MLBGame[] = [
     away_line: -140,
     total: null as any, // Missing total line
     playoffs: false,
+  },
+];
+
+const nflGames: NFLGame[] = [
+  {
+    game_id: 3,
+    game_date: '2026-10-18',
+    start_time: '',
+    team_side: 'away',
+    home_team_name: 'Philadelphia Eagles',
+    away_team_name: 'Dallas Cowboys',
+    home_points: 14,
+    away_points: 25,
+    home_line: 3,
+    away_line: -3,
+    home_money_line: 150,
+    away_money_line: -180,
+    total_points: 39,
+    total: 39.5,
   },
 ];
 
@@ -108,5 +127,24 @@ describe('GameLogTable', () => {
     renderTable(true);
     expect(screen.getByTestId('team-legend-info')).toBeInTheDocument();
     expect(screen.getByTestId('total-legend-info')).toBeInTheDocument();
+  });
+
+  it('colors the Line/Spread cell for the ATS result, except for MLB/NHL', () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <GameLogTable title="NFL Game" games={nflGames} teamName="Cowboys" sportType="nfl" sport="nfl" />
+      </MemoryRouter>
+    );
+    // Cowboys (away): 25 pts + (-3) line = 22 > Eagles' 14 -> covered
+    expect(screen.getByText('-3')).toHaveStyle({ backgroundColor: '#e3f4ea' });
+
+    rerender(
+      <MemoryRouter>
+        <GameLogTable title="MLB Game" games={games} teamName="Brewers" sportType="mlb" sport="mlb" />
+      </MemoryRouter>
+    );
+    // Brewers (away): 6 runs + 130 line = 136 > Dodgers' 4 -> would "cover", but
+    // MLB/NHL never color this cell (their Line isn't a true ATS spread).
+    expect(screen.getByText('+130')).not.toHaveStyle({ backgroundColor: '#e3f4ea' });
   });
 });

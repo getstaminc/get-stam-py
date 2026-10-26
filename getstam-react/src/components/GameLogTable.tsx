@@ -162,6 +162,11 @@ const SPREAD_LEGEND_ITEMS = [
   { color: LEGEND_SWATCH_PUSH, label: 'Pushed' },
 ];
 
+const MONEYLINE_LEGEND_ITEMS = [
+  { color: LEGEND_SWATCH_HIT, label: 'Won' },
+  { color: LEGEND_SWATCH_MISS, label: 'Lost' },
+];
+
 const HeaderWithInfo: React.FC<{ label: string; legendItems: { color: string; label: string }[]; testId: string }> = ({
   label,
   legendItems,
@@ -244,9 +249,10 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
   const summary = `${wins}-${losses}`;
 
   const h2hOpponentName = isHeadToHead && games.length > 0 ? getTeamData(games[0], sportType, teamName).opponentName : null;
-  // MLB/NHL's "Line" isn't a true ATS spread, so neither the cell fill nor the
-  // legend icon apply there — matches HistoricalGames.tsx's HeaderWithSpreadInfo.
-  const showLineColor = sportType !== 'mlb' && sportType !== 'nhl';
+  // MLB/NHL's "Line" is a moneyline, not a true ATS spread — still colored,
+  // but by straight-up win/loss (whether the moneyline bet hit) rather than
+  // by covering a spread.
+  const isMoneyline = sportType === 'mlb' || sportType === 'nhl';
 
   return (
     <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, overflow: 'hidden', mb: 2 }}>
@@ -298,11 +304,11 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                 </TableCell>
                 <TableCell sx={{ width: 90, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>{getScoreLabel(sportType)}</TableCell>
                 <TableCell sx={{ width: 80, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>
-                  {showLineColor ? (
-                    <HeaderWithInfo label={getLineLabel(sportType)} legendItems={SPREAD_LEGEND_ITEMS} testId="spread-legend-info" />
-                  ) : (
-                    getLineLabel(sportType)
-                  )}
+                  <HeaderWithInfo
+                    label={getLineLabel(sportType)}
+                    legendItems={isMoneyline ? MONEYLINE_LEGEND_ITEMS : SPREAD_LEGEND_ITEMS}
+                    testId="spread-legend-info"
+                  />
                 </TableCell>
                 <TableCell sx={{ width: '1fr', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Opponent</TableCell>
                 <TableCell sx={{ width: 110, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Opp {getScoreLabel(sportType)}</TableCell>
@@ -331,17 +337,18 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                     : gd.totalScore < gd.totalLine
                     ? 'loss'
                     : 'push';
-                // Against-the-spread result for the Line/Spread cell. MLB/NHL's
-                // "Line" isn't a true ATS spread (it's closer to a moneyline/run
-                // line context), so it stays uncolored for those two sports.
-                const lineResult: 'win' | 'loss' | 'push' | null =
-                  td.teamPoints == null || td.teamLine == null || td.opponentPoints == null
-                    ? null
-                    : td.teamPoints + td.teamLine > td.opponentPoints
-                    ? 'win'
-                    : td.teamPoints + td.teamLine < td.opponentPoints
-                    ? 'loss'
-                    : 'push';
+                // Against-the-spread result for the Line/Spread cell. For
+                // MLB/NHL, "Line" is a moneyline rather than a true ATS
+                // spread, so it hits/misses on the straight-up result instead.
+                const lineResult: 'win' | 'loss' | 'push' | null = isMoneyline
+                  ? teamResult
+                  : td.teamPoints == null || td.teamLine == null || td.opponentPoints == null
+                  ? null
+                  : td.teamPoints + td.teamLine > td.opponentPoints
+                  ? 'win'
+                  : td.teamPoints + td.teamLine < td.opponentPoints
+                  ? 'loss'
+                  : 'push';
                 return (
                   <TableRow key={(game as BaseGame).game_id ?? index} sx={{ '&:hover': { bgcolor: tokens.subtlePanelBg } }}>
                     <TableCell sx={{ fontSize: '0.8125rem', borderTop: `1px solid ${tokens.borders.lighter}` }}>
@@ -362,7 +369,7 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                         fontWeight: 700,
                         borderTop: `1px solid ${tokens.borders.lighter}`,
                         fontVariantNumeric: 'tabular-nums',
-                        ...(showLineColor ? resultColors(lineResult) : {}),
+                        ...resultColors(lineResult),
                       }}
                     >
                       {formatSigned(td.teamLine)}

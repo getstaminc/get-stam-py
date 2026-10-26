@@ -129,7 +129,7 @@ describe('GameLogTable', () => {
     expect(screen.getByTestId('total-legend-info')).toBeInTheDocument();
   });
 
-  it('shows the Spread legend icon for football but not for MLB/NHL', () => {
+  it('shows the Line/Spread legend icon for football and for MLB/NHL', () => {
     const { rerender } = render(
       <MemoryRouter>
         <GameLogTable title="NFL Game" games={nflGames} teamName="Cowboys" sportType="nfl" sport="nfl" />
@@ -142,10 +142,10 @@ describe('GameLogTable', () => {
         <GameLogTable title="MLB Game" games={games} teamName="Brewers" sportType="mlb" sport="mlb" />
       </MemoryRouter>
     );
-    expect(screen.queryByTestId('spread-legend-info')).not.toBeInTheDocument();
+    expect(screen.getByTestId('spread-legend-info')).toBeInTheDocument();
   });
 
-  it('colors the Line/Spread cell for the ATS result, except for MLB/NHL', () => {
+  it('colors the Line/Spread cell for the ATS result (football) or the moneyline result (MLB/NHL)', () => {
     const { rerender } = render(
       <MemoryRouter>
         <GameLogTable title="NFL Game" games={nflGames} teamName="Cowboys" sportType="nfl" sport="nfl" />
@@ -159,8 +159,7 @@ describe('GameLogTable', () => {
         <GameLogTable title="MLB Game" games={games} teamName="Brewers" sportType="mlb" sport="mlb" />
       </MemoryRouter>
     );
-    // Brewers (away): 6 runs + 130 line = 136 > Dodgers' 4 -> would "cover", but
-    // MLB/NHL never color this cell (their Line isn't a true ATS spread).
-    expect(screen.getByText('+130')).not.toHaveStyle({ backgroundColor: '#e3f4ea' });
+    // Brewers (away): 6 runs > Dodgers' 4 -> won straight up -> moneyline hit
+    expect(screen.getByText('+130')).toHaveStyle({ backgroundColor: '#e3f4ea' });
   });
 });

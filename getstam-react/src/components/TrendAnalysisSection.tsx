@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, Typography, CircularProgress } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -350,6 +350,8 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
   dataSinceYear,
   sportKey = 'baseball_mlb',
 }) => {
+  const [showAllTrends, setShowAllTrends] = useState(false);
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1.5, pt: 4, pb: 2, maxWidth: 900, mx: "auto" }}>
@@ -401,11 +403,31 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
       {topCollisionTrend && <CollisionCard trend={topCollisionTrend} sportKey={sportKey} />}
       {allTrends.length > 0 && (
         <>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: tokens.text.primary }}>
-            More trends
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: tokens.text.primary }}>
+              More trends
+            </Typography>
+            {allTrends.length > 2 && (
+              <Box
+                component="button"
+                onClick={() => setShowAllTrends((v) => !v)}
+                sx={{
+                  all: "unset",
+                  cursor: "pointer",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  color: tokens.link,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                }}
+              >
+                {showAllTrends ? "View Less ▾" : "View More ▾"}
+              </Box>
+            )}
+          </Box>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {allTrends.map((trend, idx) => (
+            {(showAllTrends ? allTrends : allTrends.slice(0, 2)).map((trend, idx) => (
               <TrendDetailCard key={idx} trend={trend} dataSinceYear={dataSinceYear} />
             ))}
           </Box>

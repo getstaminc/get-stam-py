@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import TrendAnalysisSection from './TrendAnalysisSection';
 import { GameWithTrends } from '../utils/trendAnalysis';
 
@@ -168,5 +169,50 @@ describe('TrendAnalysisSection remaining trends list', () => {
 
     expect(screen.getByText('More trends')).toBeInTheDocument();
     expect(screen.getAllByText(/Brewers covered 4 straight spreads|collision description/).length).toBe(1);
+  });
+
+  it('collapses to 2 trends with a "View More ▾" toggle when there are more than 2', async () => {
+    const makeTrend = (n: number) => ({
+      type: 'cover_streak' as const,
+      count: 4,
+      description: `Trend number ${n}`,
+      continuation_rate: 0.6,
+      sample_size: 10,
+    });
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      homeTeamTrends: [makeTrend(1), makeTrend(2), makeTrend(3)],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    expect(screen.getByText('Trend number 1')).toBeInTheDocument();
+    expect(screen.getByText('Trend number 2')).toBeInTheDocument();
+    expect(screen.queryByText('Trend number 3')).not.toBeInTheDocument();
+    expect(screen.getByText('View More ▾')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('View More ▾'));
+
+    expect(screen.getByText('Trend number 3')).toBeInTheDocument();
+    expect(screen.getByText('View Less ▾')).toBeInTheDocument();
+    expect(screen.queryByText('View More ▾')).not.toBeInTheDocument();
+  });
+
+  it('shows no toggle when there are 2 or fewer trends', () => {
+    const makeTrend = (n: number) => ({
+      type: 'cover_streak' as const,
+      count: 4,
+      description: `Trend number ${n}`,
+      continuation_rate: 0.6,
+      sample_size: 10,
+    });
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      homeTeamTrends: [makeTrend(1), makeTrend(2)],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    expect(screen.getByText('Trend number 1')).toBeInTheDocument();
+    expect(screen.getByText('Trend number 2')).toBeInTheDocument();
+    expect(screen.queryByText('View More ▾')).not.toBeInTheDocument();
   });
 });

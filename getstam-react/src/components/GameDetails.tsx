@@ -10,6 +10,7 @@ import PlayerPropsTable from "./PlayerPropsTable";
 import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
 import NFLPlayerPropsTable from "./NFLPlayerPropsTable";
 import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
+import PlayerStreakHighlight from "./PlayerStreakHighlight";
 
 type Game = {
   home: TeamData;
@@ -406,6 +407,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           return (
             <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
+              <PlayerStreakHighlight groups={groups} />
               <PlayerStreaksStrip groups={groups} showAll />
             </Box>
           );

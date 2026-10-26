@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Box, Chip, Typography } from "@mui/material";
+import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
 
 export interface PlayerStreak {
   player_id?: number;
@@ -38,7 +39,7 @@ const NFL_STAT_LABEL: Record<string, string> = {
   reception_yds: "Rec Yds",
 };
 
-function getStatLabel(stat: string, line?: number, direction?: "over" | "under"): string {
+export function getStatLabel(stat: string, line?: number, direction?: "over" | "under"): string {
   const lineStr = line != null ? line : "?";
   // NFL: over/under a prop line
   if (stat === "anytime_td") return direction === "under" ? "No TD" : "Anytime TD";
@@ -62,8 +63,8 @@ function StreakPill({ s }: { s: PlayerStreak }) {
   const isUnder = s.direction === "under";
   const isPositive = !isUnder && (s.stat.endsWith("_cover") || s.direction === "over");
   const emoji = STAT_EMOJI[s.stat] ?? (isUnder ? "🥶" : "🔥");
-  const bgcolor = isUnder ? "#fef2f2" : isPositive ? "#f0fdf4" : "#fff";
-  const borderColor = isUnder ? "#fecaca" : isPositive ? "#bbf7d0" : "#e2e8f0";
+  const bgcolor = isUnder ? tokens.miss.bg : isPositive ? tokens.hit.bg : tokens.cardBg;
+  const borderColor = isUnder ? "#fecaca" : isPositive ? "#bbf7d0" : tokens.cardBorder;
   const pct = s.continuation_rate != null ? `${Math.round(s.continuation_rate * 100)}%` : null;
   const continued = s.continuation_rate != null && s.sample_size != null
     ? Math.round(s.continuation_rate * s.sample_size)

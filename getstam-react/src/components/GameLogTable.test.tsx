@@ -129,6 +129,22 @@ describe('GameLogTable', () => {
     expect(screen.getByTestId('total-legend-info')).toBeInTheDocument();
   });
 
+  it('shows the Spread legend icon for football but not for MLB/NHL', () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <GameLogTable title="NFL Game" games={nflGames} teamName="Cowboys" sportType="nfl" sport="nfl" />
+      </MemoryRouter>
+    );
+    expect(screen.getByTestId('spread-legend-info')).toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter>
+        <GameLogTable title="MLB Game" games={games} teamName="Brewers" sportType="mlb" sport="mlb" />
+      </MemoryRouter>
+    );
+    expect(screen.queryByTestId('spread-legend-info')).not.toBeInTheDocument();
+  });
+
   it('colors the Line/Spread cell for the ATS result, except for MLB/NHL', () => {
     const { rerender } = render(
       <MemoryRouter>

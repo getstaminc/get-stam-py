@@ -260,4 +260,26 @@ describe('TrendAnalysisSection remaining trends list', () => {
 
     expect(screen.queryByTestId('trend-fade-overlay')).not.toBeInTheDocument();
   });
+
+  it('only fades the bottom portion of the card, not the whole thing', () => {
+    const makeTrend = (n: number) => ({
+      type: 'cover_streak' as const,
+      count: 4,
+      description: `Trend number ${n}`,
+      continuation_rate: 0.6,
+      sample_size: 10,
+    });
+    const trends: GameWithTrends = {
+      ...gameTrends,
+      homeTeamTrends: [makeTrend(1), makeTrend(2), makeTrend(3)],
+    };
+    render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
+
+    // The title of the last visible (faded) card must still be readable text in
+    // the DOM — this guards against the overlay covering 100% of the card height
+    // (which visually washes out the title from the very top).
+    expect(screen.getByText('Trend number 2')).toBeVisible();
+    const overlay = screen.getByTestId('trend-fade-overlay');
+    expect(overlay).not.toHaveStyle({ height: '100%' });
+  });
 });

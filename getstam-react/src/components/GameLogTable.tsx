@@ -149,6 +149,12 @@ const TOTAL_LEGEND_ITEMS = [
   { color: tokens.trackBg2, label: 'Push' },
 ];
 
+const SPREAD_LEGEND_ITEMS = [
+  { color: tokens.hit.bg, label: 'Covered' },
+  { color: tokens.miss.bg, label: "Didn't Cover" },
+  { color: tokens.trackBg2, label: 'Pushed' },
+];
+
 const HeaderWithInfo: React.FC<{ label: string; legendItems: { color: string; label: string }[]; testId: string }> = ({
   label,
   legendItems,
@@ -231,6 +237,9 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
   const summary = `${wins}-${losses}`;
 
   const h2hOpponentName = isHeadToHead && games.length > 0 ? getTeamData(games[0], sportType, teamName).opponentName : null;
+  // MLB/NHL's "Line" isn't a true ATS spread, so neither the cell fill nor the
+  // legend icon apply there — matches HistoricalGames.tsx's HeaderWithSpreadInfo.
+  const showLineColor = sportType !== 'mlb' && sportType !== 'nhl';
 
   return (
     <Box sx={{ border: `1px solid ${tokens.borders.lighter}`, borderRadius: `${tokens.tableRadius}px`, overflow: 'hidden', mb: 2 }}>
@@ -281,7 +290,13 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                   <HeaderWithInfo label="Team" legendItems={TEAM_LEGEND_ITEMS} testId="team-legend-info" />
                 </TableCell>
                 <TableCell sx={{ width: 90, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>{getScoreLabel(sportType)}</TableCell>
-                <TableCell sx={{ width: 80, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>{getLineLabel(sportType)}</TableCell>
+                <TableCell sx={{ width: 80, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>
+                  {showLineColor ? (
+                    <HeaderWithInfo label={getLineLabel(sportType)} legendItems={SPREAD_LEGEND_ITEMS} testId="spread-legend-info" />
+                  ) : (
+                    getLineLabel(sportType)
+                  )}
+                </TableCell>
                 <TableCell sx={{ width: '1fr', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Opponent</TableCell>
                 <TableCell sx={{ width: 110, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>Opp {getScoreLabel(sportType)}</TableCell>
                 <TableCell sx={{ width: 120, fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', color: tokens.text.tertiary }}>
@@ -320,7 +335,6 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                     : td.teamPoints + td.teamLine < td.opponentPoints
                     ? 'loss'
                     : 'push';
-                const showLineColor = sportType !== 'mlb' && sportType !== 'nhl';
                 return (
                   <TableRow key={(game as BaseGame).game_id ?? index} sx={{ '&:hover': { bgcolor: tokens.subtlePanelBg } }}>
                     <TableCell sx={{ fontSize: '0.8125rem', borderTop: `1px solid ${tokens.borders.lighter}` }}>

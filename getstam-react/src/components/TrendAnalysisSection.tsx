@@ -418,11 +418,14 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
                     key={idx}
                     sx={{
                       position: "relative",
-                      ...(isFadedCard ? { maxHeight: 150, overflow: "hidden", borderRadius: `${tokens.cardRadius}px` } : {}),
+                      ...(isFadedCard ? { maxHeight: 190, overflow: "hidden", borderRadius: `${tokens.cardRadius}px` } : {}),
                     }}
                   >
                     <TrendDetailCard trend={trend} dataSinceYear={dataSinceYear} />
                     {isFadedCard && (
+                      // Only the bottom portion fades — the top (title, badge, start
+                      // of the prose) stays fully readable so you can actually see
+                      // text in this card, not just a wash of white.
                       <Box
                         data-testid="trend-fade-overlay"
                         sx={{
@@ -430,8 +433,8 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          height: "100%",
-                          background: `linear-gradient(to bottom, rgba(255,255,255,0) 0%, ${tokens.cardBg} 55%)`,
+                          height: "45%",
+                          background: `linear-gradient(to bottom, rgba(255,255,255,0), ${tokens.cardBg} 80%)`,
                           pointerEvents: "none",
                         }}
                       />
@@ -441,7 +444,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
               })}
             </Box>
             {hasMore && (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: -1 }}>
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
                 <Box
                   component="button"
                   onClick={() => setShowAllTrends((v) => !v)}

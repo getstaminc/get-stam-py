@@ -3,11 +3,12 @@
 from flask import Blueprint, request, jsonify
 from cache import cache
 from ...services.historical.nhl_trends_service import NHLTrendsService
+from ...services.historical.trend_enrichment import enrich_game_trends
 
 nhl_trends_bp = Blueprint('nhl_trends', __name__)
 
 def make_nhl_trends_cache_key(*args, **kwargs):
-    """Create a custom cache key based on game IDs only."""
+    """Create a custom cache key based on game IDs, enrich flag, and min trend length."""
     data = request.get_json() or {}
     games = data.get('games', [])
 
@@ -19,8 +20,10 @@ def make_nhl_trends_cache_key(*args, **kwargs):
     import hashlib
     game_ids_str = '|'.join(str(gid) for gid in game_ids)
     game_ids_hash = hashlib.md5(game_ids_str.encode()).hexdigest()[:8]
+    enrich_flag = 'e1' if data.get('enrich') else 'e0'
+    min_len = data.get('minTrendLength', data.get('min_trend_length', 3))
 
-    return f"nhl_trends:{game_ids_hash}"
+    return f"nhl_trends:{game_ids_hash}:{enrich_flag}:m{min_len}"
 
 @nhl_trends_bp.route('/api/historical/trends/nhl', methods=['POST'])
 @cache.cached(timeout=3600, make_cache_key=make_nhl_trends_cache_key)
@@ -30,10 +33,11 @@ def analyze_nhl_trends():
         data = request.get_json()
         if not data or 'games' not in data:
             return jsonify({'error': 'Games data is required'}), 400
-        
+
         games = data['games']
         limit = data.get('limit', 5)
-        min_trend_length = data.get('min_trend_length', 3)
+        min_trend_length = data.get('minTrendLength', data.get('min_trend_length', 3))
+        enrich = data.get('enrich', False)
 
         # Analyze trends for all games
         results, error = NHLTrendsService.analyze_multiple_games_trends(
@@ -42,7 +46,10 @@ def analyze_nhl_trends():
 
         if error:
             return jsonify({'error': error}), 500
-        
+
+        if enrich and results:
+            enrich_game_trends(results, 'nhl')
+
         return jsonify({
             'success': True,
             'data': results,

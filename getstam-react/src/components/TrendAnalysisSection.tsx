@@ -423,8 +423,8 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          height: "50%",
-                          background: `linear-gradient(to bottom, rgba(255,255,255,0), ${tokens.cardBg} 85%)`,
+                          height: "70%",
+                          background: `linear-gradient(to bottom, rgba(255,255,255,0), ${tokens.cardBg} 75%)`,
                           borderRadius: `0 0 ${tokens.cardRadius}px ${tokens.cardRadius}px`,
                           pointerEvents: "none",
                         }}

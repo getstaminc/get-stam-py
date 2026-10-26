@@ -280,7 +280,7 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                     : gd.totalScore < gd.totalLine
                     ? 'loss'
                     : 'push';
-                const ouLabel = totalResult === 'win' ? 'O' : totalResult === 'loss' ? 'U' : 'P';
+                const ouLabel = totalResult === 'win' ? 'O' : totalResult === 'loss' ? 'U' : totalResult === 'push' ? 'P' : '—';
 
                 return (
                   <TableRow key={(game as BaseGame).game_id ?? index} sx={{ '&:hover': { bgcolor: tokens.subtlePanelBg } }}>

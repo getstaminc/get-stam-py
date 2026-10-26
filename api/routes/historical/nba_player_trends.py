@@ -1,0 +1,37 @@
+"""NBA player prop over/under streak trends endpoint."""
+
+import hashlib
+from flask import Blueprint, request, jsonify
+from cache import cache
+from ...services.historical.nba_player_trends_service import NBAPlayerTrendsService
+
+
+bp = Blueprint('nba_player_trends', __name__)
+
+
+def _make_cache_key(*args, **kwargs):
+    data = request.get_json() or {}
+    team_names = sorted(data.get('team_names') or [])
+    min_streak = data.get('min_streak', 3)
+    raw = f"{'|'.join(team_names)}:{min_streak}"
+    h = hashlib.md5(raw.encode()).hexdigest()[:8]
+    return f"nba_player_trends:{h}"
+
+
+@bp.route('/api/historical/player-trends/nba', methods=['POST'])
+@cache.cached(timeout=3600, make_cache_key=_make_cache_key)
+def nba_player_trends():
+    """Return active over/under prop-line streaks for NBA players."""
+    try:
+        data = request.get_json() or {}
+        team_names = data.get('team_names') or None
+        min_streak = int(data.get('min_streak', 3))
+
+        service = NBAPlayerTrendsService()
+        result = service.get_player_streaks(team_names=team_names, min_streak=min_streak)
+
+        return jsonify({'success': True, 'data': result})
+
+    except Exception as e:
+        print(f"Error in nba_player_trends: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500

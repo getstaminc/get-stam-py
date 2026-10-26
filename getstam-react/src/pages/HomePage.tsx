@@ -17,20 +17,21 @@ const API_BASE_URL =
     : "https://www.getstam.com");
 const API_KEY = process.env.REACT_APP_API_KEY || "";
 
-// Config for each sport that may appear on the homepage. Deliberately just MLB + NFL —
-// NBA/NHL/NCAAF/NCAAB/World Cup are intentionally left off the homepage feed.
+// Config for each sport that may appear on the homepage. MLB + NFL + NBA —
+// NHL/NCAAF/NCAAB/World Cup are intentionally left off the homepage feed.
 const SPORT_CONFIG: Record<
   string,
   { apiKey: string; historicalKey: string; minTrendLength: number }
 > = {
   MLB: { apiKey: "baseball_mlb",         historicalKey: "mlb", minTrendLength: 5 },
   NFL: { apiKey: "americanfootball_nfl", historicalKey: "nfl", minTrendLength: 3 },
+  NBA: { apiKey: "basketball_nba",       historicalKey: "nba", minTrendLength: 3 },
 };
 
-// Fixed homepage lead order — NFL first, then MLB — regardless of trend-strength
-// scores. Sports not listed here fall where their max trend score puts them (below
-// the ones that are listed).
-const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 2, MLB: 1 };
+// Fixed homepage lead order — NFL first, then NBA, then MLB — regardless of
+// trend-strength scores. Sports not listed here fall where their max trend score
+// puts them (below the ones that are listed).
+const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 3, NBA: 2, MLB: 1 };
 const homepagePriority = (name: string) => HOMEPAGE_PRIORITY[name] ?? 0;
 
 // Soccer gets its own per-league homepage sections (EPL, LA LIGA, etc. rather than one

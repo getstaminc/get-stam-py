@@ -5,11 +5,13 @@ import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
 export interface PlayerStreak {
   player_id?: number;
   player_name: string;
-  // MLB: hits/hr/rbi (+ _cover).  NFL: pass_yds/pass_tds/rush_yds/reception_yds/anytime_td
+  // MLB: hits/hr/rbi (+ _cover).  NFL: pass_yds/pass_tds/rush_yds/reception_yds/anytime_td.
+  // NBA: points/rebounds/assists/threes.
   stat:
     | "hits" | "hr" | "rbi" | "hits_cover" | "hr_cover" | "rbi_cover"
-    | "pass_yds" | "pass_tds" | "rush_yds" | "reception_yds" | "anytime_td";
-  // NFL: which side of the prop line the run is on. MLB entries omit this.
+    | "pass_yds" | "pass_tds" | "rush_yds" | "reception_yds" | "anytime_td"
+    | "points" | "rebounds" | "assists" | "threes";
+  // NFL/NBA: which side of the prop line the run is on. MLB entries omit this.
   direction?: "over" | "under";
   streak_count: number;
   line?: number;
@@ -39,6 +41,14 @@ const NFL_STAT_LABEL: Record<string, string> = {
   reception_yds: "Rec Yds",
 };
 
+// NBA prop stat -> short label
+const NBA_STAT_LABEL: Record<string, string> = {
+  points: "Points",
+  rebounds: "Rebounds",
+  assists: "Assists",
+  threes: "Threes",
+};
+
 export function getStatLabel(stat: string, line?: number, direction?: "over" | "under"): string {
   const lineStr = line != null ? line : "?";
   // NFL: over/under a prop line
@@ -46,6 +56,11 @@ export function getStatLabel(stat: string, line?: number, direction?: "over" | "
   if (stat in NFL_STAT_LABEL) {
     const side = direction === "under" ? "Under" : "Over";
     return `${side} ${lineStr} ${NFL_STAT_LABEL[stat]}`;
+  }
+  // NBA: over/under a prop line, same framing as NFL
+  if (stat in NBA_STAT_LABEL) {
+    const side = direction === "under" ? "Under" : "Over";
+    return `${side} ${lineStr} ${NBA_STAT_LABEL[stat]}`;
   }
   // MLB
   if (stat === "hits_cover") return `Over ${lineStr} Hits`;

@@ -129,12 +129,13 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const [nflHasLoaded, setNflHasLoaded] = useState<boolean>(false);
   const [nflPropsSubTab, setNflPropsSubTab] = useState<number>(0); // 0: Home, 1: Away
 
-  // Load player props when Player Props tab is clicked (home team by default)
+  // NBA: load player props on mount (not just on tab click) — the Player Streaks
+  // strip filters itself to players who have an active prop line for this game.
   useEffect(() => {
-    if (activeTab === 1 && sportKey === 'basketball_nba' && !hasLoadedPlayerProps) {
+    if (sportKey === 'basketball_nba' && !hasLoadedPlayerProps) {
       fetchPlayerProps(0); // Load home team (tab 0) first
     }
-  }, [activeTab, sportKey, hasLoadedPlayerProps]);
+  }, [sportKey, hasLoadedPlayerProps]);
 
   // Load team data when team tab is clicked
   useEffect(() => {
@@ -188,7 +189,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   useEffect(() => {
     const streaksSport =
       sportKey === 'baseball_mlb' ? 'mlb' :
-      sportKey === 'americanfootball_nfl' ? 'nfl' : null;
+      sportKey === 'americanfootball_nfl' ? 'nfl' :
+      sportKey === 'basketball_nba' ? 'nba' : null;
     if (!streaksSport) return;
     const homeTeam = home.team || (game as any).home_team_name;
     const awayTeam = away.team || (game as any).away_team_name;
@@ -201,7 +203,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         'Content-Type': 'application/json',
         'X-API-KEY': process.env.REACT_APP_API_KEY || '',
       },
-      body: JSON.stringify({ team_names: teamNames, min_streak: streaksSport === 'nfl' ? 3 : 5 }),
+      body: JSON.stringify({ team_names: teamNames, min_streak: streaksSport === 'mlb' ? 5 : 3 }),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data?.data) setPlayerStreaksByTeam(data.data); })
@@ -358,19 +360,23 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
-      {/* MLB / NFL Player Streaks */}
-      {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl') && (
+      {/* MLB / NFL / NBA Player Streaks */}
+      {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl' || sportKey === 'basketball_nba') && (
         (() => {
           const homeTeam = home.team || (game as any).home_team_name || "";
           const awayTeam = away.team || (game as any).away_team_name || "";
 
-          // NFL: only show a streak if the player has an active prop line for this
-          // game. Match on player_id from the live props response; wait for it to
-          // load (and skip the strip entirely if props are unavailable).
+          // NFL/NBA: only show a streak if the player has an active prop line for
+          // this game. Match on player_id from the live props response; wait for
+          // it to load (and skip the strip entirely if props are unavailable).
           const isNfl = sportKey === 'americanfootball_nfl';
+          const isNba = sportKey === 'basketball_nba';
+          const propsData = isNfl ? nflPlayerPropsData : isNba ? playerPropsData : null;
+          const propsLoading = isNfl ? nflPlayerPropsLoading : isNba ? playerPropsLoading : false;
+          const propsLoaded = isNfl ? nflHasLoaded : isNba ? hasLoadedPlayerProps : true;
 
-          // Still fetching streaks (or, for NFL, the prop lines we filter against).
-          const streaksBusy = playerStreaksLoading || (isNfl && (nflPlayerPropsLoading || !nflHasLoaded));
+          // Still fetching streaks (or, for NFL/NBA, the prop lines we filter against).
+          const streaksBusy = playerStreaksLoading || ((isNfl || isNba) && (propsLoading || !propsLoaded));
           if (streaksBusy) {
             return (
               <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
@@ -383,18 +389,18 @@ const GameDetails: React.FC<GameDetailsProps> = ({
             );
           }
 
-          if (isNfl && (!nflPlayerPropsData || nflPlayerPropsData.error)) return null;
-          const nflPropIds = isNfl
+          if ((isNfl || isNba) && (!propsData || propsData.error)) return null;
+          const activePropIds = (isNfl || isNba)
             ? new Set(
                 ['home_team', 'away_team'].flatMap(side =>
-                  Object.values(nflPlayerPropsData?.[side]?.players ?? {})
+                  Object.values(propsData?.[side]?.players ?? {})
                     .map((p: any) => p?.player_id)
                     .filter((id: any) => id != null)
                 )
               )
             : null;
           const filterStreaks = (streaks: PlayerStreak[]) =>
-            nflPropIds ? streaks.filter(s => s.player_id != null && nflPropIds.has(s.player_id)) : streaks;
+            activePropIds ? streaks.filter(s => s.player_id != null && activePropIds.has(s.player_id)) : streaks;
 
           const groups = [
             { team: homeTeam, streaks: filterStreaks(playerStreaksByTeam[homeTeam] ?? []) },

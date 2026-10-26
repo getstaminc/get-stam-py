@@ -48,6 +48,29 @@ describe('TrendAnalysisSection market cards', () => {
     );
     expect(screen.queryByText('What the numbers suggest')).not.toBeInTheDocument();
   });
+
+  it('shows the supporting trend explanation under each market card when present', () => {
+    const trendsWithContext: GameWithTrends = {
+      ...gameTrends,
+      marketOverview: {
+        moneyline: {
+          lean: 'Milwaukee Brewers',
+          probability: 0.64,
+          trend_count: 1,
+          sample_size: 25,
+          supporting_description:
+            'Milwaukee Brewers won 5 straight — Historically when a team hits 5 straight wins, the streak continues 64% of the time — Milwaukee Brewers are today\'s favorite',
+        },
+      },
+    };
+    render(
+      <TrendAnalysisSection gameTrends={trendsWithContext} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+
+    expect(
+      screen.getByText(/Historically when a team hits 5 straight wins, the streak continues 64% of the time/)
+    ).toBeInTheDocument();
+  });
 });
 
 describe('TrendAnalysisSection collision card', () => {

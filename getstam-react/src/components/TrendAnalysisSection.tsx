@@ -157,6 +157,7 @@ const MarketTrendCard: React.FC<{
     marketKey === 'total'
       ? tokens.neutralBar
       : getTeamColors(dbSport, convertTeamNameBySport(sportKey, entry.lean)).primary;
+  const { fullContext } = parseFullDescription(entry.supporting_description || '');
 
   return (
     <Box
@@ -187,6 +188,11 @@ const MarketTrendCard: React.FC<{
       <Box sx={{ height: 6, borderRadius: '3px', bgcolor: tokens.trackBg2, overflow: 'hidden', mt: 0.5 }}>
         <Box sx={{ height: '100%', width: `${pct}%`, bgcolor: barColor, borderRadius: '3px' }} />
       </Box>
+      {fullContext && (
+        <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, lineHeight: 1.45, mt: 0.75 }}>
+          {fullContext}
+        </Typography>
+      )}
     </Box>
   );
 };

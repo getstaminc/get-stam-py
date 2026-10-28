@@ -17,20 +17,24 @@ const API_BASE_URL =
     : "https://www.getstam.com");
 const API_KEY = process.env.REACT_APP_API_KEY || "";
 
-// Config for each sport that may appear on the homepage. Deliberately just MLB + NFL —
-// NBA/NHL/NCAAF/NCAAB/World Cup are intentionally left off the homepage feed.
+// Config for each sport that may appear on the homepage. MLB + NFL + NBA + NHL —
+// NCAAF/NCAAB/World Cup are intentionally left off the homepage feed. A sport
+// here still only renders if sportsConfig.ts marks it inSeason (e.g. MLB).
 const SPORT_CONFIG: Record<
   string,
   { apiKey: string; historicalKey: string; minTrendLength: number }
 > = {
   MLB: { apiKey: "baseball_mlb",         historicalKey: "mlb", minTrendLength: 5 },
   NFL: { apiKey: "americanfootball_nfl", historicalKey: "nfl", minTrendLength: 3 },
+  NBA: { apiKey: "basketball_nba",       historicalKey: "nba", minTrendLength: 3 },
+  NHL: { apiKey: "icehockey_nhl",        historicalKey: "nhl", minTrendLength: 3 },
 };
 
-// Fixed homepage lead order — NFL first, then MLB — regardless of trend-strength
-// scores. Sports not listed here fall where their max trend score puts them (below
-// the ones that are listed).
-const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 2, MLB: 1 };
+// Fixed homepage lead order — NFL first, then NBA, then NHL, then MLB —
+// regardless of trend-strength scores. Sports not listed here fall where their
+// max trend score puts them (below the ones that are listed). A section with
+// no active games/trends still renders nothing (see SportSection below).
+const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 4, NBA: 3, NHL: 2, MLB: 1 };
 const homepagePriority = (name: string) => HOMEPAGE_PRIORITY[name] ?? 0;
 
 // Soccer gets its own per-league homepage sections (EPL, LA LIGA, etc. rather than one
@@ -146,7 +150,7 @@ function SportSection({
           if (!cancelled) setPlayerStreaksByTeam(streaks);
         }
         const allOf = (gwt: GameWithTrends): TrendResult[] => [
-          ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]),
+          ...(gwt.headToHeadTrends||[]), ...(gwt.homeAtHomeH2HTrends||[]), ...(gwt.collisionTrends||[]),
           ...(gwt.homeTeamHomeTrends||[]), ...(gwt.awayTeamAwayTrends||[]),
           ...(gwt.homeTeamTrends||[]), ...(gwt.awayTeamTrends||[]),
         ];
@@ -201,6 +205,7 @@ function SportSection({
           const allTrends: TrendResult[] = [
             ...(gwt.headToHeadTrends || []),
             ...(gwt.homeAtHomeH2HTrends || []),
+            ...(gwt.collisionTrends || []),
             ...(gwt.homeTeamHomeTrends || []),
             ...(gwt.awayTeamAwayTrends || []),
             ...(gwt.homeTeamTrends || []).filter(t => !homeSpecificTypes.has(t.type)),

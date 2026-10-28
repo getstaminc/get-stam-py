@@ -11,6 +11,7 @@ import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 import SEO from "../components/SEO";
 import { GameWithTrends } from "../utils/trendAnalysis";
 import { buildMatchupSlug, parseMatchupSlug } from "../utils/teamSlugUtils";
+import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -554,12 +555,19 @@ const GameDetailsPage: React.FC = () => {
         description={seoDescription}
         canonicalPath={canonicalPath}
       />
+      <Box sx={{ display: { xs: 'none', sm: 'block' }, maxWidth: 900, mx: 'auto', px: { xs: 1, sm: 0 }, pt: 2, fontSize: '0.75rem', color: tokens.text.secondary }}>
+        {displaySport} › Games ›{' '}
+        <Box component="span" sx={{ color: tokens.text.primary, fontWeight: 600 }}>
+          {awayTeam} vs {homeTeam}
+        </Box>
+      </Box>
       <TrendAnalysisSection
         gameTrends={gameTrends}
         loading={trendsLoading}
         game={gameData}
         minTrendLength={minTrendLength}
         dataSinceYear={dataSinceYear}
+        sportKey={sportKey || "baseball_mlb"}
       />
       <GameDetails
         game={gameData}

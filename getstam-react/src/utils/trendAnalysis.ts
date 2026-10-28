@@ -3,12 +3,55 @@ import { convertTeamNameBySport } from './teamNameConverter';
 // Types for trend analysis
 export type TrendType = 'win_streak' | 'loss_streak' | 'cover_streak' | 'no_cover_streak' | 'over_streak' | 'under_streak';
 
+export interface SecondaryRate {
+  label: string;
+  rate: number;
+  sample_size: number;
+}
+
+export interface ContributingTrend {
+  title: string;
+  rate: number | null; // 0-1, this trend's own continuation rate (unflipped)
+  sample_size: number;
+  weight: number; // 0-1, this trend's share of the blend's total sample_size
+}
+
+export interface MarketOverviewEntry {
+  lean: string; // a team name for moneyline/spread, or "Over"/"Under" for total
+  probability: number; // 0-1, the blended probability of `lean`
+  trend_count: number;
+  sample_size: number;
+  // Up to 4 of the trends that fed the blended probability above, sorted by
+  // sample_size descending -- lets the card trace the headline % back to
+  // its inputs instead of pairing it with one unrelated trend's own stats.
+  contributing_trends: ContributingTrend[];
+}
+
+export interface MarketOverview {
+  moneyline?: MarketOverviewEntry;
+  spread?: MarketOverviewEntry;
+  total?: MarketOverviewEntry;
+}
+
+export interface CollisionTeamTrend {
+  team: string;
+  type: TrendType;
+  count: number;
+  venue: 'general' | 'venue_specific';
+}
+
 export interface TrendResult {
   type: TrendType;
   count: number;
   description: string;
   continuation_rate?: number;
   sample_size?: number;
+  secondary_rates?: SecondaryRate[];
+  // Only present on entries from collisionTrends — see
+  // api/services/historical/trend_enrichment.py:_build_collision_entry,
+  // which already returns these fields; this just types what's already there.
+  home_trend?: CollisionTeamTrend;
+  away_trend?: CollisionTeamTrend;
 }
 
 export interface GameWithTrends {
@@ -19,6 +62,8 @@ export interface GameWithTrends {
   homeTeamHomeTrends?: TrendResult[];
   awayTeamAwayTrends?: TrendResult[];
   homeAtHomeH2HTrends?: TrendResult[];
+  collisionTrends?: TrendResult[];
+  marketOverview?: MarketOverview | null;
   hasTrends: boolean;
 }
 

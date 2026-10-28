@@ -16,9 +16,9 @@ const gameTrends: GameWithTrends = {
   awayTeamTrends: [],
   headToHeadTrends: [],
   marketOverview: {
-    moneyline: { lean: 'Milwaukee Brewers', probability: 0.64, trend_count: 1, sample_size: 25, supporting_description: '' },
-    spread: { lean: 'Milwaukee Brewers', probability: 0.58, trend_count: 1, sample_size: 24, supporting_description: '' },
-    total: { lean: 'Over', probability: 0.6, trend_count: 1, sample_size: 20, supporting_description: '' },
+    moneyline: { lean: 'Milwaukee Brewers', probability: 0.64, trend_count: 1, sample_size: 25, contributing_trends: [] },
+    spread: { lean: 'Milwaukee Brewers', probability: 0.58, trend_count: 1, sample_size: 24, contributing_trends: [] },
+    total: { lean: 'Over', probability: 0.6, trend_count: 1, sample_size: 20, contributing_trends: [] },
   },
   hasTrends: true,
 };
@@ -49,17 +49,19 @@ describe('TrendAnalysisSection market cards', () => {
     expect(screen.queryByText('What the numbers suggest')).not.toBeInTheDocument();
   });
 
-  it('shows the supporting trend explanation under each market card when present', () => {
+  it('shows the contributing-trends breakdown under each market card when present', () => {
     const trendsWithContext: GameWithTrends = {
       ...gameTrends,
       marketOverview: {
         moneyline: {
           lean: 'Milwaukee Brewers',
           probability: 0.64,
-          trend_count: 1,
+          trend_count: 2,
           sample_size: 25,
-          supporting_description:
-            'Milwaukee Brewers won 5 straight — Historically when a team hits 5 straight wins, the streak continues 64% of the time — Milwaukee Brewers are today\'s favorite',
+          contributing_trends: [
+            { title: 'Milwaukee Brewers won 5 straight', rate: 0.64, sample_size: 20, weight: 0.8 },
+            { title: 'H2H trend vs Rays', rate: 0.5, sample_size: 5, weight: 0.2 },
+          ],
         },
       },
     };
@@ -67,9 +69,9 @@ describe('TrendAnalysisSection market cards', () => {
       <TrendAnalysisSection gameTrends={trendsWithContext} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
     );
 
-    expect(
-      screen.getByText(/Historically when a team hits 5 straight wins, the streak continues 64% of the time/)
-    ).toBeInTheDocument();
+    expect(screen.getByText('Blended from 2 trends:')).toBeInTheDocument();
+    expect(screen.getByText(/Milwaukee Brewers won 5 straight — 64% \(20 games\) · 80% weight/)).toBeInTheDocument();
+    expect(screen.getByText(/H2H trend vs Rays — 50% \(5 games\) · 20% weight/)).toBeInTheDocument();
   });
 });
 

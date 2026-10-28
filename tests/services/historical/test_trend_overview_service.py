@@ -152,10 +152,27 @@ def test_draw_streak_and_missing_stats_are_skipped_gracefully():
     assert build_market_overview(game_trends) is None
 
 
-def test_supporting_description_cites_the_largest_sample_trend():
+def test_contributing_trends_lists_each_input_with_its_own_rate_and_weight():
     game_trends = _base_game_trends(
-        homeTeamTrends=[{'type': 'win_streak', 'count': 4, 'description': 'small one', 'continuation_rate': 0.9, 'sample_size': 5}],
+        homeTeamTrends=[{'type': 'win_streak', 'count': 4, 'description': 'small one — extra context', 'continuation_rate': 0.9, 'sample_size': 5}],
         awayTeamTrends=[{'type': 'loss_streak', 'count': 3, 'description': 'big one', 'continuation_rate': 0.55, 'sample_size': 500}],
     )
     overview = build_market_overview(game_trends)
-    assert overview['moneyline']['supporting_description'] == 'big one'
+    contributing = overview['moneyline']['contributing_trends']
+    assert len(contributing) == 2
+    # sorted by sample_size descending -- the bigger trend first
+    assert contributing[0] == {'title': 'big one', 'rate': 0.55, 'sample_size': 500, 'weight': pytest.approx(500 / 505)}
+    # title is just the part before " — ", own rate/sample_size untouched by blending
+    assert contributing[1] == {'title': 'small one', 'rate': 0.9, 'sample_size': 5, 'weight': pytest.approx(5 / 505)}
+
+
+def test_contributing_trends_capped_at_four_entries():
+    game_trends = _base_game_trends(
+        homeTeamTrends=[
+            {'type': 'win_streak', 'count': 3, 'description': f'trend{i}', 'continuation_rate': 0.6, 'sample_size': 10 + i}
+            for i in range(6)
+        ],
+    )
+    overview = build_market_overview(game_trends)
+    assert len(overview['moneyline']['contributing_trends']) == 4
+    assert overview['moneyline']['trend_count'] == 6

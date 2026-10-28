@@ -9,12 +9,22 @@ export interface SecondaryRate {
   sample_size: number;
 }
 
+export interface ContributingTrend {
+  title: string;
+  rate: number | null; // 0-1, this trend's own continuation rate (unflipped)
+  sample_size: number;
+  weight: number; // 0-1, this trend's share of the blend's total sample_size
+}
+
 export interface MarketOverviewEntry {
   lean: string; // a team name for moneyline/spread, or "Over"/"Under" for total
   probability: number; // 0-1, the blended probability of `lean`
   trend_count: number;
   sample_size: number;
-  supporting_description: string;
+  // Up to 4 of the trends that fed the blended probability above, sorted by
+  // sample_size descending -- lets the card trace the headline % back to
+  // its inputs instead of pairing it with one unrelated trend's own stats.
+  contributing_trends: ContributingTrend[];
 }
 
 export interface MarketOverview {

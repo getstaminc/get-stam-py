@@ -66,9 +66,14 @@ def build_market_overview(game_trends: Dict) -> Optional[Dict[str, Dict[str, Any
     have at least one usable trend), or None if nothing was usable at all.
 
     Each market entry: {'lean', 'probability', 'trend_count', 'sample_size',
-    'supporting_description'}. 'lean' is a team name for moneyline/spread, or
+    'contributing_trends'}. 'lean' is a team name for moneyline/spread, or
     'Over'/'Under' for total. 'probability' is the blended probability of
     whichever side/direction is leaned toward (always >= 0.5).
+    'contributing_trends' is up to 4 of the individual trends that fed the
+    blend, sorted by sample_size descending, each as
+    {'title', 'rate', 'sample_size', 'weight'} -- 'rate' is that trend's own
+    continuation_rate (unflipped, same number shown on its own card) and
+    'weight' is its share (0-1) of the blend's total sample_size.
     """
     buckets: Dict[str, List[Tuple[float, int, Dict]]] = {'straight_up': [], 'ats': [], 'total': []}
 
@@ -103,7 +108,6 @@ def build_market_overview(game_trends: Dict) -> Optional[Dict[str, Dict[str, Any
             continue
 
         blended = sum(prob * n for prob, n, _ in entries) / total_n
-        top_trend = max(entries, key=lambda e: e[1])[2]
 
         if dim == 'total':
             lean = 'Over' if blended >= 0.5 else 'Under'
@@ -112,12 +116,29 @@ def build_market_overview(game_trends: Dict) -> Optional[Dict[str, Dict[str, Any
             lean = home if blended >= 0.5 else away
             lean_probability = blended if blended >= 0.5 else 1 - blended
 
+        # Every trend that fed the blended number above, each with its OWN
+        # continuation rate/sample size (same numbers shown on that trend's
+        # full card elsewhere on the page) plus its weight in the blend --
+        # so the headline % is traceable to its inputs. (Previously this card
+        # showed a single unrelated trend's description/stats here, which
+        # rarely agreed with the blended % and read as if it explained it.)
+        contributing = sorted(entries, key=lambda e: e[1], reverse=True)[:4]
+        contributing_trends = [
+            {
+                'title': (t.get('description', '') or '').split(' — ')[0],
+                'rate': t.get('continuation_rate'),
+                'sample_size': n,
+                'weight': n / total_n,
+            }
+            for _, n, t in contributing
+        ]
+
         overview[label] = {
             'lean': lean,
             'probability': lean_probability,
             'trend_count': len(entries),
             'sample_size': total_n,
-            'supporting_description': top_trend.get('description', ''),
+            'contributing_trends': contributing_trends,
         }
 
     return overview or None

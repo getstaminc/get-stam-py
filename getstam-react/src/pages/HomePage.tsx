@@ -26,7 +26,10 @@ const SPORT_CONFIG: Record<
 > = {
   MLB: { apiKey: "baseball_mlb",         historicalKey: "mlb", minTrendLength: 5 },
   NFL: { apiKey: "americanfootball_nfl", historicalKey: "nfl", minTrendLength: 3 },
-  NBA: { apiKey: "basketball_nba",       historicalKey: "nba", minTrendLength: 3 },
+  // NBA plays so often that 3+ game streaks are common and flood this page
+  // with noise -- 5+ keeps only the more notable ones (NFL's weekly cadence
+  // doesn't have the same problem, so it stays at 3).
+  NBA: { apiKey: "basketball_nba",       historicalKey: "nba", minTrendLength: 5 },
   NHL: { apiKey: "icehockey_nhl",        historicalKey: "nhl", minTrendLength: 3 },
 };
 

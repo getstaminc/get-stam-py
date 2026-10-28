@@ -19,10 +19,18 @@ load_dotenv()
 SPORT_CONFIG: Dict[str, Dict[str, str]] = {
     'mlb':   {'table': 'mlb_games',   'home_score': 'home_runs',   'away_score': 'away_runs',   'total_col': 'total', 'time_col': 'start_time'},
     'nhl':   {'table': 'nhl_games',   'home_score': 'home_goals',  'away_score': 'away_goals',  'total_col': 'total'},
-    'nba':   {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time'},
+    'nba':   {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
+              'home_spread': 'home_line', 'away_spread': 'away_line'},
     # home_spread/away_spread enable cover_streak/no_cover_streak analysis for a sport.
-    # Omitted for mlb/nhl/nba: MLB's home_line/away_line columns are a duplicate of the
-    # moneyline (not a real spread) — see GameFAQSection.tsx's same caveat.
+    # Omitted for mlb: home_line/away_line columns are a duplicate of the moneyline
+    # (not a real spread) — see GameFAQSection.tsx's same caveat.
+    # Omitted for nhl: nhl_games has no home_line/away_line column at all (moneyline
+    # only) -- verified against the schema, not assumed.
+    # NBA's home_line/away_line (checked directly: e.g. -14.5, -7.5, 3.5) ARE a real
+    # spread, distinct from home_money_line/away_money_line -- it was wrongly grouped
+    # with mlb/nhl here, which meant every NBA cover_streak/no_cover_streak trend
+    # silently got no continuation-rate context (get_streak_context returned '' because
+    # 'ln' was never selected, so every game was skipped as missing spread data).
     'ncaaf': {'table': 'ncaaf_games', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
               'home_spread': 'home_line', 'away_spread': 'away_line'},
     'nfl':   {'table': 'nfl_games',   'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',

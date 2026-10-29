@@ -59,6 +59,12 @@ from jobs.trend_video_common import (
 eastern_tz = pytz.timezone("US/Eastern")
 
 MODEL = "claude-sonnet-5"
+
+# The TikTok-safe script occasionally fails validation (e.g. Claude uses a
+# banned gambling word like "covering" on its own, independent of anything
+# in the prompt) — worth a couple of automatic retries before giving up,
+# since re-generating the same prompt usually produces clean wording.
+MAX_TIKTOK_ATTEMPTS = 3
 OUTPUT_ROOT = Path(__file__).resolve().parent.parent / "output" / "scripts"
 REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trends_referenced", "estimated_word_count")
 
@@ -270,7 +276,14 @@ def call_claude(game, ranked_trends, lookahead=False, extra_context=None):
 def call_claude_tiktok(game, ranked_trends, lookahead=False, extra_context=None):
     prompt = build_tiktok_user_prompt(game, ranked_trends, lookahead=lookahead, extra_context=extra_context)
     valid_types = {t["type"] for t in ranked_trends}
-    return _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
+    last_err = None
+    for attempt in range(1, MAX_TIKTOK_ATTEMPTS + 1):
+        data, err = _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
+        if data is not None:
+            return data, None
+        last_err = err
+        print(f"  [TIKTOK RETRY] attempt {attempt}/{MAX_TIKTOK_ATTEMPTS} failed: {err}")
+    return None, last_err
 
 
 def write_output_file(date_str, game_id, payload):

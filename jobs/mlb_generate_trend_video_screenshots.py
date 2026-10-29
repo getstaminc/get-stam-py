@@ -56,22 +56,32 @@ VIEWPORT = {"width": 1080, "height": 1920}
 # we screenshot — these panels load asynchronously after route mount.
 RENDER_WAIT_MS = 3500
 
-# The "hero" shot is clipped to start at this heading so the site nav/logo
-# bar doesn't end up as the video's opening frame — every game-details page
-# renders a TrendAnalysisSection with this exact text right below the nav.
-HERO_CROP_ANCHOR_TEXT = "Trend Analysis"
-HERO_CROP_TOP_PADDING = 16  # px of breathing room above the heading
+# The "hero" shot is clipped to start at the page breadcrumb ("{SPORT} ›
+# Games › {away} vs {home}", GameDetailsPage.tsx) so the site nav/logo bar
+# doesn't end up as the video's opening frame. This replaced the old
+# "Trend Analysis" heading anchor (gone — the 2026-10 game-details redesign
+# removed that heading and TrendAnalysisSection can render nothing at all
+# for a game with no qualifying trends); the breadcrumb is the first thing
+# every game-details page renders below the nav, unconditionally, at our
+# 1080px-wide (desktop breakpoint) screenshot viewport.
+HERO_CROP_TOP_PADDING = 16  # px of breathing room above the breadcrumb
 
-# Give the "Home Last 5" / "Away Last 5" sub-tab content a moment to render
-# after clicking (data is generally already fetched, but MUI's tab-panel
-# swap + table reflow isn't instant).
+def hero_crop_anchor_text(sport, home_team, away_team):
+    return f"{sport.upper()} › Games › {away_team} vs {home_team}"
+
+# Give the "Home Last 5" / "Away Last 5" segmented sub-tab content a moment
+# to render after clicking (data is generally already fetched, but the
+# table reflow isn't instant).
 TAB_SWITCH_WAIT_MS = 1200
 
 # Matches the historical sub-tab labels/panel headings in GameDetails.tsx:
-# Tab labels are "{team} Home Last {n}" / "{team} Away Last {n}"; each panel
-# heading rendered inside is "{team} - Last {n} Home/Away Games" followed by
-# a second panel "{team} vs {opponent} - Last {n} Home/Away H2H". The site
-# defaults the "Show Games" limit to 5, which is also what was asked for here.
+# sub-tab labels are "{team} Home Last {n}" / "{team} Away Last {n}" —
+# rendered post-redesign as a segmented-control row of plain <button>s
+# (not MUI Tabs/role="tab" anymore, see capture_context_panel). Each panel
+# heading (now a GameLogTable, not HistoricalGames) is still
+# "{team} - Last {n} Home/Away Games" followed by a second panel
+# "{team} vs {opponent} - Last {n} Home/Away H2H". The site defaults the
+# "Show Games" limit to 5, which is also what was asked for here.
 GAMES_LIMIT = 5
 CONTEXT_CROP_TOP_PADDING = 16  # px of breathing room above the odds box
 
@@ -97,10 +107,17 @@ def load_games(date_str):
     return games
 
 
-def _paper_bottom(page, heading_text):
+def _table_bottom(page, heading_text):
+    """Bottom y-coordinate of the <table> belonging to the GameLogTable whose
+    title Typography is heading_text. GameLogTable (post-redesign) wraps each
+    table in a plain styled Box, not an MUI Paper, so there's no stable
+    '.MuiPaper-root' class to anchor on anymore — instead walk forward in DOM
+    order from the heading to the next <table> element, which is always the
+    one immediately belonging to that same GameLogTable section.
+    """
     heading = page.get_by_text(heading_text, exact=True).first
-    panel = heading.locator("xpath=ancestor::div[contains(@class,'MuiPaper-root')][1]")
-    box = panel.bounding_box()
+    table = heading.locator("xpath=following::table[1]")
+    box = table.bounding_box()
     return box["y"] + box["height"]
 
 
@@ -114,7 +131,10 @@ def capture_context_panel(page, odds_anchor_text, tab_name, h2h_heading_text, ou
     the viewport to fit it (Chromium's own screenshot region is otherwise
     limited to what's actually laid out) and restore it afterward.
     """
-    tab = page.get_by_role("tab", name=tab_name, exact=True)
+    # Post-redesign the sub-tab row is a segmented control of plain <button>
+    # elements (GameDetails.tsx), not MUI Tabs/role="tab" — so these are
+    # found by their native "button" role now, not "tab".
+    tab = page.get_by_role("button", name=tab_name, exact=True)
     tab.click()
     page.wait_for_timeout(TAB_SWITCH_WAIT_MS)
 
@@ -122,7 +142,7 @@ def capture_context_panel(page, odds_anchor_text, tab_name, h2h_heading_text, ou
     # present regardless of which historical sub-tab is active.
     odds_top = page.get_by_text(odds_anchor_text, exact=True).first.bounding_box()["y"]
     top = max(odds_top - CONTEXT_CROP_TOP_PADDING, 0)
-    bottom = _paper_bottom(page, h2h_heading_text)
+    bottom = _table_bottom(page, h2h_heading_text)
     height = bottom - top
 
     original_viewport = page.viewport_size
@@ -149,7 +169,7 @@ def capture_game(page, game, date_str):
     page.wait_for_timeout(RENDER_WAIT_MS)
 
     hero_path = out_dir / "hero.png"
-    anchor_locator = page.get_by_text(HERO_CROP_ANCHOR_TEXT, exact=True)
+    anchor_locator = page.get_by_text(hero_crop_anchor_text(sport, home_team, away_team), exact=True)
     box = anchor_locator.first.bounding_box() if anchor_locator.count() else None
     if box:
         top = max(box["y"] - HERO_CROP_TOP_PADDING, 0)

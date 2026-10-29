@@ -251,6 +251,95 @@ def back_to_back_note(sport, home_team, away_team, date_str, tiktok=False):
     return combined
 
 
+# {trend type: (spoken-word phrase, TikTok-safe phrase)} — the TikTok column
+# mirrors the exact vocabulary each sport generator's own
+# sanitize_trend_for_tiktok already uses for these same trend types (e.g.
+# nfl_generate_trend_video_scripts.py's cover_streak/over_streak branches),
+# so a collision note never reintroduces a banned word a per-sport sanitizer
+# would otherwise have scrubbed.
+_COLLISION_TREND_PHRASES = {
+    "win_streak": ("{n} straight wins", "{n} straight wins"),
+    "loss_streak": ("{n} straight losses", "{n} straight losses"),
+    "over_streak": ("{n} straight overs", "{n} straight high-scoring games"),
+    "under_streak": ("{n} straight unders", "{n} straight low-scoring games"),
+    "cover_streak": ("{n} straight covers", "{n} straight games beating expectations"),
+    "no_cover_streak": ("{n} straight missed covers", "{n} straight games falling short of expectations"),
+}
+
+
+def _possessive(team):
+    # Matches trend_enrichment.py's _possessive exactly (e.g. "Packers'" not
+    # "Packers's") — duplicated rather than imported since that one's a
+    # private helper in a different module layer (backend service vs. job
+    # prompt-text assembly).
+    return f"{team}'" if team.endswith("s") else f"{team}'s"
+
+
+def _collision_side_phrase(trend, venue_suffix, tiktok):
+    template = _COLLISION_TREND_PHRASES.get(trend["type"], ("{n}-game streak", "{n}-game streak"))
+    phrase = template[1 if tiktok else 0].format(n=trend["count"])
+    return f"{_possessive(trend['team'])} {phrase}{venue_suffix}"
+
+
+def collision_note(entry, tiktok=False):
+    """Surface this game's strongest Trend-vs-Trend Collision — two
+    independent streaks (one per side, each its own team/venue scope) that
+    have actually met before in real historical games, with their own
+    combined track record — the same featured collision shown on the
+    website's game-details page (TrendAnalysisSection.tsx's CollisionCard;
+    enrich_game_trends already computes and sorts entry['collisionTrends']
+    by sample size, so entry['collisionTrends'][0] is that same top entry).
+
+    Unlike back_to_back_note, this isn't sport-gated — a collision can tell
+    a materially different story than either trend alone (two individually
+    close-to-a-coin-flip streaks that, combined, have broken one way most of
+    the time) and is worth a mention for any sport whenever one exists,
+    regardless of how its confidence score stacks up against the other
+    candidate trends for the primary-trend slot.
+    """
+    collisions = entry.get("collisionTrends") or []
+    if not collisions:
+        return None
+    top = collisions[0]
+    home_trend, away_trend = top.get("home_trend"), top.get("away_trend")
+    rate, sample = top.get("continuation_rate"), top.get("sample_size")
+    if not home_trend or not away_trend or rate is None or not sample:
+        return None
+
+    home_suffix = " at home" if home_trend.get("venue") == "venue_specific" else ""
+    away_suffix = " on the road" if away_trend.get("venue") == "venue_specific" else ""
+    home_phrase = _collision_side_phrase(home_trend, home_suffix, tiktok)
+    away_phrase = _collision_side_phrase(away_trend, away_suffix, tiktok)
+
+    pct = round(rate * 100)
+    metric = top.get("primary_metric")
+    if metric == "total":
+        outcome = (
+            f"those games went high-scoring {pct}% of the time"
+            if rate >= 0.5 else
+            f"those games went low-scoring {100 - pct}% of the time"
+        )
+    elif metric == "ats":
+        outcome = (
+            f"{home_trend['team']} beat expectations {pct}% of the time"
+            if rate >= 0.5 else
+            f"{away_trend['team']} beat expectations {100 - pct}% of the time"
+        )
+    else:  # straight_up (or an unrecognized metric — still a safe fallback)
+        outcome = (
+            f"{home_trend['team']} won {pct}% of the time"
+            if rate >= 0.5 else
+            f"{away_trend['team']} won {100 - pct}% of the time"
+        )
+
+    return (
+        f"Notable trend collision worth calling out: {home_phrase} meeting {away_phrase} — "
+        f"these two specific trends have actually lined up against each other before, "
+        f"and in the {sample} times that's happened, {outcome}. This combined read can "
+        f"matter more than either trend on its own, so it's worth giving real weight in the story."
+    )
+
+
 def gather_extra_context(entry, sport, game, home_team, away_team, date_str, tiktok=False):
     """Collect supporting-context notes for a game — plain descriptive
     strings the model can weave in if useful, NOT scored/ranked trends
@@ -260,6 +349,7 @@ def gather_extra_context(entry, sport, game, home_team, away_team, date_str, tik
       - the over/under trend-alignment note above
       - significant opening-vs-now line movement (football only, per request)
       - back-to-back/travel/rest situations (NBA/NHL only, per request)
+      - the game's strongest trend-vs-trend collision, if any (all sports)
     Returns a list of strings (possibly empty) — the caller only renders an
     "Additional context" prompt section when this is non-empty. (The third
     idea, live-series awareness, is handled separately by
@@ -292,6 +382,10 @@ def gather_extra_context(entry, sport, game, home_team, away_team, date_str, tik
         b2b_note = back_to_back_note(sport, home_team, away_team, date_str, tiktok=tiktok)
         if b2b_note:
             notes.append(b2b_note)
+
+    collision = collision_note(entry, tiktok=tiktok)
+    if collision:
+        notes.append(collision)
 
     return notes
 

@@ -171,6 +171,13 @@ def _build_collision_entry(home: str, home_trend: dict, home_venue: str, away: s
         'description': f"{matchup} — {sentence} — {primary_sample} historical meetings",
         'continuation_rate': primary_rate,
         'sample_size': primary_sample,
+        # 'straight_up'/'ats'/'total' — which dimension primary_rate/sentence is
+        # actually about. 'type' above is a blunt win/loss simplification for the
+        # frontend's generic trend-up/trend-down icon only; callers that need the
+        # real metric (e.g. jobs/trend_video_common.py's collision_note, to avoid
+        # mislabeling a total- or ats-based collision as a win/loss trend) should
+        # use this field instead.
+        'primary_metric': primary_key,
         'home_trend': {'team': home, 'type': home_trend['type'], 'count': home_trend['count'], 'venue': home_venue},
         'away_trend': {'team': away, 'type': away_trend['type'], 'count': away_trend['count'], 'venue': away_venue},
         'straight_up_rate': stats['straight_up']['home_side_win_rate'] if stats.get('straight_up') else None,

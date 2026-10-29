@@ -6,7 +6,7 @@
     "heroku-postbuild": "cd getstam-react && npm install && npm run build"
   },
   "engines": {
-    "node": "18.x",
-    "npm": "9.x"
+    "node": "24.x",
+    "npm": "11.x"
   }
 }

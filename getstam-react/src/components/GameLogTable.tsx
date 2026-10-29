@@ -143,11 +143,12 @@ const getLineLabel = (sportType: SportType): string => {
 const LEGEND_SWATCH_HIT = '#c8e6c9';
 const LEGEND_SWATCH_MISS = '#ffcdd2';
 const LEGEND_SWATCH_PUSH = '#e0e0e0';
+const LEGEND_SWATCH_DRAW = '#bbdefb';
 
 const TEAM_LEGEND_ITEMS = [
   { color: LEGEND_SWATCH_HIT, label: 'Win' },
   { color: LEGEND_SWATCH_MISS, label: 'Loss' },
-  { color: LEGEND_SWATCH_PUSH, label: 'Push' },
+  { color: LEGEND_SWATCH_DRAW, label: 'Draw' },
 ];
 
 const TOTAL_LEGEND_ITEMS = [
@@ -190,9 +191,10 @@ const formatDate = (dateString: string): string => {
 
 const formatSigned = (n: number | null): string => (n == null ? 'N/A' : `${n > 0 ? '+' : ''}${n}`);
 
-const resultColors = (result: 'win' | 'loss' | 'push' | null) => {
+const resultColors = (result: 'win' | 'loss' | 'draw' | 'push' | null) => {
   if (result === 'win') return { bgcolor: tokens.hit.bg, color: tokens.hit.text };
   if (result === 'loss') return { bgcolor: tokens.miss.bg, color: tokens.miss.text };
+  if (result === 'draw') return { bgcolor: tokens.draw.bg, color: tokens.draw.text };
   if (result === 'push') return { bgcolor: tokens.trackBg2, color: tokens.text.secondary };
   return {};
 };
@@ -321,14 +323,17 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
               {games.map((game, index) => {
                 const gd = getGameData(game, sportType);
                 const td = getTeamData(game, sportType, teamName);
-                const teamResult: 'win' | 'loss' | 'push' | null =
+                // A tied score is a real game outcome (a draw), not a betting-line
+                // push -- kept distinct so it doesn't read as "no data" (see
+                // tokens.draw).
+                const teamResult: 'win' | 'loss' | 'draw' | null =
                   td.teamPoints == null || td.opponentPoints == null
                     ? null
                     : td.teamPoints > td.opponentPoints
                     ? 'win'
                     : td.teamPoints < td.opponentPoints
                     ? 'loss'
-                    : 'push';
+                    : 'draw';
                 const totalResult: 'win' | 'loss' | 'push' | null =
                   gd.totalScore == null || gd.totalLine == null
                     ? null
@@ -340,7 +345,7 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
                 // Against-the-spread result for the Line/Spread cell. For
                 // MLB/NHL, "Line" is a moneyline rather than a true ATS
                 // spread, so it hits/misses on the straight-up result instead.
-                const lineResult: 'win' | 'loss' | 'push' | null = isMoneyline
+                const lineResult: 'win' | 'loss' | 'draw' | 'push' | null = isMoneyline
                   ? teamResult
                   : td.teamPoints == null || td.teamLine == null || td.opponentPoints == null
                   ? null

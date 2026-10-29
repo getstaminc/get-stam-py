@@ -31,6 +31,14 @@ export const gameDetailsTokens = {
     bg: '#fbe7e7',
     text: '#b42f2f',
   },
+  // A draw/tie is a real game outcome, not a neutral "no info" state -- kept
+  // visually distinct from trackBg2 (used for betting-line pushes) so it
+  // doesn't read as blank/missing data, especially in sports like soccer
+  // where draws are common.
+  draw: {
+    bg: '#e3ecfb',
+    text: '#1d4ed8',
+  },
   neutralBar: '#4a5361',
   shadowHover: '0 4px 14px rgba(0,0,0,.06)',
   shadowActiveSegment: '0 1px 2px rgba(0,0,0,.12)',

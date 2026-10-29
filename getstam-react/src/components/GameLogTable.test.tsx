@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import GameLogTable from './GameLogTable';
-import { MLBGame, NFLGame } from '../types/gameTypes';
+import { MLBGame, NFLGame, SoccerGame } from '../types/gameTypes';
 
 const games: MLBGame[] = [
   {
@@ -35,6 +35,30 @@ const gamesWithMissingTotal: MLBGame[] = [
     away_line: -140,
     total: null as any, // Missing total line
     playoffs: false,
+  },
+];
+
+const drawnSoccerGame: SoccerGame[] = [
+  {
+    game_id: 4,
+    game_date: '2026-09-12',
+    start_time: '',
+    team_side: 'home',
+    home_team_name: 'Le Havre',
+    away_team_name: 'Angers',
+    home_goals: 0,
+    away_goals: 0,
+    total_goals: 0,
+    home_spread: 0,
+    away_spread: 0,
+    home_money_line: 150,
+    away_money_line: 200,
+    draw_money_line: 220,
+    total_over_point: 2.5,
+    total_under_point: 2.5,
+    total_over_price: -110,
+    total_under_price: -110,
+    league: 'ligue1',
   },
 ];
 
@@ -161,5 +185,17 @@ describe('GameLogTable', () => {
     );
     // Brewers (away): 6 runs > Dodgers' 4 -> won straight up -> moneyline hit
     expect(screen.getByText('+130')).toHaveStyle({ backgroundColor: '#e3f4ea' });
+  });
+
+  it('colors a tied game as a draw (distinct blue), not the push gray used for betting-line ties', () => {
+    render(
+      <MemoryRouter>
+        <GameLogTable title="Le Havre - Last 5 Games" games={drawnSoccerGame} teamName="Le Havre" sportType="soccer" sport="epl" />
+      </MemoryRouter>
+    );
+    const teamCells = screen.getAllByText('Le Havre').map((el) => el.closest('td')).filter(Boolean);
+    expect(teamCells.length).toBe(1);
+    expect(teamCells[0]).toHaveStyle({ backgroundColor: '#e3ecfb' });
+    expect(teamCells[0]).not.toHaveStyle({ backgroundColor: '#eceee9' });
   });
 });

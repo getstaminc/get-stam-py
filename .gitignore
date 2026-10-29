@@ -35,3 +35,9 @@ piper_voices/
 # Ignore Node.js files (not relevant for Python project)
 package-lock.json
 node_modules/
+
+# Subagent-driven-development scratch workspace (ledgers, briefs, review packages)
+.superpowers/
+
+# Local git worktrees for isolated feature work
+.worktrees/

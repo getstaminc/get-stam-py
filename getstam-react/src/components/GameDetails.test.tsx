@@ -58,3 +58,35 @@ describe("GameDetails player props game_id contract", () => {
     });
   });
 });
+
+describe('GameDetails recent-performance panel', () => {
+  it('renders the segmented Last 5 / Home / Away control and GameLogTable headers', () => {
+    render(
+      <MemoryRouter initialEntries={['/game-details/mlb/boston-red-sox-vs-athletics-2026-07-28']}>
+        <GameDetails
+          game={fakeMlbGame as any}
+          sportKey="baseball_mlb"
+          homeTeamHistory={{ games: [], count: 0, sport: 'mlb', limit: 5 }}
+          awayTeamHistory={{ games: [], count: 0, sport: 'mlb', limit: 5 }}
+          headToHeadHistory={{ games: [], count: 0, sport: 'mlb', limit: 5 }}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: 'Last 5' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Home Last 5/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Away Last 5/i })).toBeInTheDocument();
+  });
+});
+
+describe('GameDetails matchup card', () => {
+  it('renders MatchupOddsCard (TeamLogo abbreviations) instead of the old GameOdds card', () => {
+    render(
+      <MemoryRouter initialEntries={['/game-details/mlb/boston-red-sox-vs-athletics-2026-07-28']}>
+        <GameDetails game={fakeMlbGame as any} sportKey="baseball_mlb" />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('ATH')).toBeInTheDocument();
+    expect(screen.getByText('BOS')).toBeInTheDocument();
+  });
+});

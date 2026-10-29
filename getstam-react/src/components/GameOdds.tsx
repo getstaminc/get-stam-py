@@ -93,6 +93,12 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
     return `Opened ${formatH2H(h2h)}`;
   };
 
+  const formatRecord = (record?: { wins: number; losses: number; ties: number }) => {
+    if (!record) return null;
+    const { wins, losses, ties } = record;
+    return ties > 0 ? `(${wins}-${losses}-${ties})` : `(${wins}-${losses})`;
+  };
+
   const statusLabel = (isGameOver || isLive) ? `${home.score} - ${away.score}` : "Scheduled";
 
   return (
@@ -136,6 +142,11 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               home.team
             )}
           </Typography>
+          {formatRecord(home.record) && (
+            <Typography sx={{ fontSize: "0.82rem", color: "#64748b", mt: 0.1 }}>
+              {formatRecord(home.record)}
+            </Typography>
+          )}
           {pitcherData?.home_pitcher && (
             <Box sx={{ mt: 0.25 }}>
               <Typography sx={{ fontSize: "0.86rem", color: "#5b7cff", fontStyle: "italic" }}>
@@ -192,6 +203,11 @@ const GameOdds: React.FC<GameOddsProps> = ({ game, pitcherData, detailsLink, onV
               away.team
             )}
           </Typography>
+          {formatRecord(away.record) && (
+            <Typography sx={{ fontSize: "0.82rem", color: "#64748b", mt: 0.1 }}>
+              {formatRecord(away.record)}
+            </Typography>
+          )}
           {pitcherData?.away_pitcher && (
             <Box sx={{ mt: 0.25 }}>
               <Typography sx={{ fontSize: "0.86rem", color: "#5b7cff", fontStyle: "italic" }}>

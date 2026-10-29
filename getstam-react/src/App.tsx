@@ -7,6 +7,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import TabsNavigation from "./components/TabsNavigation";
 import SiteFooter from "./components/SiteFooter";
+import ScrollToTop from "./components/ScrollToTop";
 import { usePageView } from "./hooks/usePageView";
 import { GameProvider } from "./contexts/GameContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -35,6 +36,7 @@ function AppContent() {
   usePageView();
   return (
     <>
+      <ScrollToTop />
       <Box sx={{ textAlign: "center", mt: 2 }}>
         <Link
           to="/"

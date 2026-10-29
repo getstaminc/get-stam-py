@@ -1,14 +1,17 @@
 import React, { useState } from "react";
 import { Box, Chip, Typography } from "@mui/material";
+import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
 
 export interface PlayerStreak {
   player_id?: number;
   player_name: string;
-  // MLB: hits/hr/rbi (+ _cover).  NFL: pass_yds/pass_tds/rush_yds/reception_yds/anytime_td
+  // MLB: hits/hr/rbi (+ _cover).  NFL: pass_yds/pass_tds/rush_yds/reception_yds/anytime_td.
+  // NBA: points/rebounds/assists/threes.
   stat:
     | "hits" | "hr" | "rbi" | "hits_cover" | "hr_cover" | "rbi_cover"
-    | "pass_yds" | "pass_tds" | "rush_yds" | "reception_yds" | "anytime_td";
-  // NFL: which side of the prop line the run is on. MLB entries omit this.
+    | "pass_yds" | "pass_tds" | "rush_yds" | "reception_yds" | "anytime_td"
+    | "points" | "rebounds" | "assists" | "threes";
+  // NFL/NBA: which side of the prop line the run is on. MLB entries omit this.
   direction?: "over" | "under";
   streak_count: number;
   line?: number;
@@ -38,13 +41,26 @@ const NFL_STAT_LABEL: Record<string, string> = {
   reception_yds: "Rec Yds",
 };
 
-function getStatLabel(stat: string, line?: number, direction?: "over" | "under"): string {
+// NBA prop stat -> short label
+const NBA_STAT_LABEL: Record<string, string> = {
+  points: "Points",
+  rebounds: "Rebounds",
+  assists: "Assists",
+  threes: "Threes",
+};
+
+export function getStatLabel(stat: string, line?: number, direction?: "over" | "under"): string {
   const lineStr = line != null ? line : "?";
   // NFL: over/under a prop line
   if (stat === "anytime_td") return direction === "under" ? "No TD" : "Anytime TD";
   if (stat in NFL_STAT_LABEL) {
     const side = direction === "under" ? "Under" : "Over";
     return `${side} ${lineStr} ${NFL_STAT_LABEL[stat]}`;
+  }
+  // NBA: over/under a prop line, same framing as NFL
+  if (stat in NBA_STAT_LABEL) {
+    const side = direction === "under" ? "Under" : "Over";
+    return `${side} ${lineStr} ${NBA_STAT_LABEL[stat]}`;
   }
   // MLB
   if (stat === "hits_cover") return `Over ${lineStr} Hits`;
@@ -62,8 +78,8 @@ function StreakPill({ s }: { s: PlayerStreak }) {
   const isUnder = s.direction === "under";
   const isPositive = !isUnder && (s.stat.endsWith("_cover") || s.direction === "over");
   const emoji = STAT_EMOJI[s.stat] ?? (isUnder ? "🥶" : "🔥");
-  const bgcolor = isUnder ? "#fef2f2" : isPositive ? "#f0fdf4" : "#fff";
-  const borderColor = isUnder ? "#fecaca" : isPositive ? "#bbf7d0" : "#e2e8f0";
+  const bgcolor = isUnder ? tokens.miss.bg : isPositive ? tokens.hit.bg : tokens.cardBg;
+  const borderColor = isUnder ? "#fecaca" : isPositive ? "#bbf7d0" : tokens.cardBorder;
   const pct = s.continuation_rate != null ? `${Math.round(s.continuation_rate * 100)}%` : null;
   const continued = s.continuation_rate != null && s.sample_size != null
     ? Math.round(s.continuation_rate * s.sample_size)

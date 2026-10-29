@@ -20,10 +20,18 @@ load_dotenv()
 SPORT_CONFIG: Dict[str, Dict[str, str]] = {
     'mlb':   {'table': 'mlb_games',   'home_score': 'home_runs',   'away_score': 'away_runs',   'total_col': 'total', 'time_col': 'start_time'},
     'nhl':   {'table': 'nhl_games',   'home_score': 'home_goals',  'away_score': 'away_goals',  'total_col': 'total'},
-    'nba':   {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time'},
+    'nba':   {'table': 'nba_games_1', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
+              'home_spread': 'home_line', 'away_spread': 'away_line'},
     # home_spread/away_spread enable cover_streak/no_cover_streak analysis for a sport.
-    # Omitted for mlb/nhl/nba: MLB's home_line/away_line columns are a duplicate of the
-    # moneyline (not a real spread) — see GameFAQSection.tsx's same caveat.
+    # Omitted for mlb: home_line/away_line columns are a duplicate of the moneyline
+    # (not a real spread) — see GameFAQSection.tsx's same caveat.
+    # Omitted for nhl: nhl_games has no home_line/away_line column at all (moneyline
+    # only) -- verified against the schema, not assumed.
+    # NBA's home_line/away_line (checked directly: e.g. -14.5, -7.5, 3.5) ARE a real
+    # spread, distinct from home_money_line/away_money_line -- it was wrongly grouped
+    # with mlb/nhl here, which meant every NBA cover_streak/no_cover_streak trend
+    # silently got no continuation-rate context (get_streak_context returned '' because
+    # 'ln' was never selected, so every game was skipped as missing spread data).
     'ncaaf': {'table': 'ncaaf_games', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
               'home_spread': 'home_line', 'away_spread': 'away_line'},
     'nfl':   {'table': 'nfl_games',   'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
@@ -196,7 +204,7 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
         league_filter = cfg.get('league_filter')
         league_where = " AND league = %s" if league_filter else ""
         query = f"""
-            SELECT game_date, home_team_name, away_team_name,
+            SELECT game_id, game_date, home_team_name, away_team_name,
                    {cfg['home_score']} AS hs,
                    {cfg['away_score']} AS aw,
                    {cfg['total_col']}  AS tl,
@@ -219,25 +227,26 @@ def _load_sport_context(sport: str) -> Optional[Dict]:
         for row in rows:
             ht, at = row['home_team_name'], row['away_team_name']
             hln, aln = row.get('hln'), row.get('aln')
+            gid = row['game_id']
             # 'ln' is the home team's own spread (for home_h2h/gen_h2h, perspective is home);
             # 'aln' is kept alongside so the away-perspective flip in _continuation_stats can use it.
-            g = {'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'], 'game_date': row['game_date'],
+            g = {'game_id': gid, 'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'], 'game_date': row['game_date'],
                  'hml': row['hml'], 'aml': row['aml'], 'ln': hln, 'aln': aln}
             home_h2h_games[(ht, at)].append(g)
             gen_h2h_games[(min(ht, at), max(ht, at))].append(g)
             # Team-perspective: each team's own score, own ML, own spread, and
-            # whether they were home or away, first (is_home powers
-            # get_odds_whiplash_context/find_odds_whiplash_trend below, which
-            # need to know venue as well as result/price).
+            # whether they were home or away (is_home powers
+            # get_odds_whiplash_context/find_odds_whiplash_trend/
+            # get_back_to_back_context below, which need venue as well as
+            # result/price; 'game_id' lets a venue-filtered subsequence be
+            # cross-referenced back to the row it came from).
             team_games[ht].append({
-                'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'],
-                'game_date': row['game_date'], 'hml': row['hml'], 'ln': hln,
-                'is_home': True,
+                'game_id': gid, 'hs': row['hs'], 'aw': row['aw'], 'tl': row['tl'],
+                'game_date': row['game_date'], 'hml': row['hml'], 'ln': hln, 'is_home': True,
             })
             team_games[at].append({
-                'hs': row['aw'], 'aw': row['hs'], 'tl': row['tl'],
-                'game_date': row['game_date'], 'hml': row['aml'], 'ln': aln,
-                'is_home': False,
+                'game_id': gid, 'hs': row['aw'], 'aw': row['hs'], 'tl': row['tl'],
+                'game_date': row['game_date'], 'hml': row['aml'], 'ln': aln, 'is_home': False,
             })
 
         TREND_TYPES = ('over_streak', 'under_streak', 'win_streak', 'loss_streak')
@@ -411,6 +420,24 @@ def _continuation_stats_team(
 
 def _pct(c: int, t: int) -> str:
     return f"{round(c / t * 100)}%"
+
+
+def get_trend_types(sport: str) -> Tuple[str, ...]:
+    """The trend types this sport's continuation/collision engines support.
+    Cover/no-cover is only included for sports with a real (non-moneyline-duplicate)
+    spread column configured in SPORT_CONFIG."""
+    cfg = SPORT_CONFIG.get(sport, {})
+    base = ('over_streak', 'under_streak', 'win_streak', 'loss_streak')
+    if cfg.get('home_spread') and cfg.get('away_spread'):
+        return base + ('cover_streak', 'no_cover_streak')
+    return base
+
+
+def get_sport_context(sport: str) -> Optional[Dict]:
+    """Public accessor for the cached per-sport game context (team_games,
+    home_h2h_games, etc.) — for other modules (e.g. trend_collision_service)
+    that need the raw loaded data rather than a continuation-rate query."""
+    return _load_sport_context(sport)
 
 
 def get_streak_stats(

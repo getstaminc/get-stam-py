@@ -36,6 +36,7 @@ from api.routes.historical.nba_games import nba_historical_bp
 from api.routes.historical.nba_trends import nba_trends_bp
 from api.routes.historical.mlb_player_trends import bp as mlb_player_trends_bp
 from api.routes.historical.nfl_player_trends import bp as nfl_player_trends_bp
+from api.routes.historical.nba_player_trends import bp as nba_player_trends_bp
 from api.routes.historical.ncaab_trends import ncaab_trends_bp
 from api.routes.historical.meta import historical_meta_bp
 from api.routes.mlb_pitchers import mlb_pitchers_bp
@@ -119,6 +120,7 @@ app.register_blueprint(ncaab_trends_bp)
 app.register_blueprint(nhl_trends_bp)
 app.register_blueprint(mlb_player_trends_bp)
 app.register_blueprint(nfl_player_trends_bp)
+app.register_blueprint(nba_player_trends_bp)
 app.register_blueprint(historical_meta_bp)
 app.register_blueprint(mlb_pitchers_bp)
 app.register_blueprint(mlb_mismatch_bp)

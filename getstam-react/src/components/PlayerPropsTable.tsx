@@ -3,6 +3,7 @@ import { Box, Paper, Button, Table, TableBody, TableCell, TableHead, TableRow, T
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { gameDetailsTokens as tokens } from '../utils/gameDetailsTokens';
 // Legend for player props columns
 const PlayerPropsLegend = () => (
   <Box sx={{ p: 1 }}>
@@ -76,9 +77,9 @@ const PlayerPropsTable: React.FC<{ players: any }> = ({ players }) => {
 
   const getColor = (actual: any, odds: any) => {
     if (actual == null || odds == null || isNaN(Number(actual)) || isNaN(Number(odds))) return { bgColor: undefined, color: undefined };
-    if (Number(actual) > Number(odds)) return { bgColor: '#c8e6c9', color: '#000' };
-    if (Number(actual) < Number(odds)) return { bgColor: '#ffcdd2', color: '#000' };
-    return { bgColor: '#e0e0e0', color: '#000' };
+    if (Number(actual) > Number(odds)) return { bgColor: tokens.hit.bg, color: '#000' };
+    if (Number(actual) < Number(odds)) return { bgColor: tokens.miss.bg, color: '#000' };
+    return { bgColor: tokens.trackBg2, color: '#000' };
   };
 
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);

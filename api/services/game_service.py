@@ -29,6 +29,9 @@ OPENING_LINE_SPORTS = {
     'americanfootball_nfl', 'americanfootball_ncaaf', 'baseball_mlb', 'icehockey_nhl',
 }
 
+# Sports that show a team's current-season win-loss record under its name.
+TEAM_RECORD_SPORTS = {'americanfootball_nfl'}
+
 class GameService:
     @staticmethod
     def get_games_for_date(sport_key, current_date=None):
@@ -59,9 +62,30 @@ class GameService:
                 print(f"Error fetching opening lines: {str(e)}")
                 opening_lines = {}
 
+        game_team_records = {}
+        if sport_key in TEAM_RECORD_SPORTS:
+            try:
+                from .historical.nfl_service import NFLService
+                from shared_utils import convert_team_name
+                db_names = set()
+                for g in filtered_scores:
+                    db_names.add(convert_team_name(g.get('home_team', '')))
+                    db_names.add(convert_team_name(g.get('away_team', '')))
+                team_records = NFLService.get_team_records(list(db_names))
+                for g in filtered_scores:
+                    game_team_records[g['id']] = {
+                        'home': team_records.get(convert_team_name(g.get('home_team', ''))),
+                        'away': team_records.get(convert_team_name(g.get('away_team', ''))),
+                    }
+            except Exception as e:
+                print(f"Error fetching team records: {str(e)}")
+                game_team_records = {}
+
         formatted_games = [
             GameService._format_game_data(
-                match, odds, selected_date_start, opening_lines.get(match['id'])
+                match, odds, selected_date_start, opening_lines.get(match['id']),
+                home_record=game_team_records.get(match['id'], {}).get('home'),
+                away_record=game_team_records.get(match['id'], {}).get('away'),
             )
             for match in filtered_scores
         ]
@@ -91,11 +115,30 @@ class GameService:
                 print(f"Error fetching opening lines: {str(e)}")
                 opening_row = None
 
-        formatted_game = GameService._format_game_data(game, odds, opening_row=opening_row)
+        home_record = None
+        away_record = None
+        if sport_key in TEAM_RECORD_SPORTS:
+            try:
+                from .historical.nfl_service import NFLService
+                from shared_utils import convert_team_name
+                db_home = convert_team_name(game.get('home_team', ''))
+                db_away = convert_team_name(game.get('away_team', ''))
+                team_records = NFLService.get_team_records([db_home, db_away])
+                home_record = team_records.get(db_home)
+                away_record = team_records.get(db_away)
+            except Exception as e:
+                print(f"Error fetching team records: {str(e)}")
+                home_record = None
+                away_record = None
+
+        formatted_game = GameService._format_game_data(
+            game, odds, opening_row=opening_row, home_record=home_record, away_record=away_record
+        )
         return {'game': formatted_game}, None
 
     @staticmethod
-    def _format_game_data(match, odds, selected_date_start=None, opening_row=None):
+    def _format_game_data(match, odds, selected_date_start=None, opening_row=None,
+                           home_record=None, away_record=None):
         """Format a single game's data"""
         home_team = match.get('home_team', 'N/A')
         away_team = match.get('away_team', 'N/A')
@@ -129,6 +172,11 @@ class GameService:
         # Only add draw if this is a soccer_epl game and draw odds exist
         if match.get('sport_key') == 'soccer_epl' and draw_odds and draw_odds.get('h2h') is not None:
             game_obj["draw"] = {"h2h": draw_odds["h2h"]}
+
+        if home_record:
+            game_obj["home"]["record"] = home_record
+        if away_record:
+            game_obj["away"]["record"] = away_record
 
         if opening_row:
             game_obj["opening"] = {

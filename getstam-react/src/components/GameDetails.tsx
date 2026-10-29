@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Button } from "@mui/material";
-import GameOdds from "./GameOdds";
-import HistoricalGames from "./HistoricalGames";
+import MatchupOddsCard from "./MatchupOddsCard";
+import GameLogTable from "./GameLogTable";
 import { getSportType } from "../types/gameTypes";
 import TeamRankings from "./TeamRankings";
 import { convertTeamNameBySport } from "../utils/teamNameConverter";
@@ -10,6 +10,8 @@ import PlayerPropsTable from "./PlayerPropsTable";
 import MLBPlayerPropsTable from "./MLBPlayerPropsTable";
 import NFLPlayerPropsTable from "./NFLPlayerPropsTable";
 import PlayerStreaksStrip, { PlayerStreak } from "./PlayerStreaksStrip";
+import PlayerStreakHighlight from "./PlayerStreakHighlight";
+import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
 
 type Game = {
   home: TeamData;
@@ -127,12 +129,13 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   const [nflHasLoaded, setNflHasLoaded] = useState<boolean>(false);
   const [nflPropsSubTab, setNflPropsSubTab] = useState<number>(0); // 0: Home, 1: Away
 
-  // Load player props when Player Props tab is clicked (home team by default)
+  // NBA: load player props on mount (not just on tab click) — the Player Streaks
+  // strip filters itself to players who have an active prop line for this game.
   useEffect(() => {
-    if (activeTab === 1 && sportKey === 'basketball_nba' && !hasLoadedPlayerProps) {
+    if (sportKey === 'basketball_nba' && !hasLoadedPlayerProps) {
       fetchPlayerProps(0); // Load home team (tab 0) first
     }
-  }, [activeTab, sportKey, hasLoadedPlayerProps]);
+  }, [sportKey, hasLoadedPlayerProps]);
 
   // Load team data when team tab is clicked
   useEffect(() => {
@@ -186,7 +189,8 @@ const GameDetails: React.FC<GameDetailsProps> = ({
   useEffect(() => {
     const streaksSport =
       sportKey === 'baseball_mlb' ? 'mlb' :
-      sportKey === 'americanfootball_nfl' ? 'nfl' : null;
+      sportKey === 'americanfootball_nfl' ? 'nfl' :
+      sportKey === 'basketball_nba' ? 'nba' : null;
     if (!streaksSport) return;
     const homeTeam = home.team || (game as any).home_team_name;
     const awayTeam = away.team || (game as any).away_team_name;
@@ -199,7 +203,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         'Content-Type': 'application/json',
         'X-API-KEY': process.env.REACT_APP_API_KEY || '',
       },
-      body: JSON.stringify({ team_names: teamNames, min_streak: streaksSport === 'nfl' ? 3 : 5 }),
+      body: JSON.stringify({ team_names: teamNames, min_streak: streaksSport === 'mlb' ? 5 : 3 }),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data?.data) setPlayerStreaksByTeam(data.data); })
@@ -341,10 +345,6 @@ const GameDetails: React.FC<GameDetailsProps> = ({
     }
   };
 
-  const handleHistoricalSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setHistoricalSubTab(newValue);
-  };
-
   const hasScore =
     home.score !== null &&
     home.score !== undefined &&
@@ -360,19 +360,23 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
   return (
     <Box sx={{ px: { xs: 1, sm: 0 } }}>
-      {/* MLB / NFL Player Streaks */}
-      {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl') && (
+      {/* MLB / NFL / NBA Player Streaks */}
+      {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl' || sportKey === 'basketball_nba') && (
         (() => {
           const homeTeam = home.team || (game as any).home_team_name || "";
           const awayTeam = away.team || (game as any).away_team_name || "";
 
-          // NFL: only show a streak if the player has an active prop line for this
-          // game. Match on player_id from the live props response; wait for it to
-          // load (and skip the strip entirely if props are unavailable).
+          // NFL/NBA: only show a streak if the player has an active prop line for
+          // this game. Match on player_id from the live props response; wait for
+          // it to load (and skip the strip entirely if props are unavailable).
           const isNfl = sportKey === 'americanfootball_nfl';
+          const isNba = sportKey === 'basketball_nba';
+          const propsData = isNfl ? nflPlayerPropsData : isNba ? playerPropsData : null;
+          const propsLoading = isNfl ? nflPlayerPropsLoading : isNba ? playerPropsLoading : false;
+          const propsLoaded = isNfl ? nflHasLoaded : isNba ? hasLoadedPlayerProps : true;
 
-          // Still fetching streaks (or, for NFL, the prop lines we filter against).
-          const streaksBusy = playerStreaksLoading || (isNfl && (nflPlayerPropsLoading || !nflHasLoaded));
+          // Still fetching streaks (or, for NFL/NBA, the prop lines we filter against).
+          const streaksBusy = playerStreaksLoading || ((isNfl || isNba) && (propsLoading || !propsLoaded));
           if (streaksBusy) {
             return (
               <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
@@ -385,18 +389,18 @@ const GameDetails: React.FC<GameDetailsProps> = ({
             );
           }
 
-          if (isNfl && (!nflPlayerPropsData || nflPlayerPropsData.error)) return null;
-          const nflPropIds = isNfl
+          if ((isNfl || isNba) && (!propsData || propsData.error)) return null;
+          const activePropIds = (isNfl || isNba)
             ? new Set(
                 ['home_team', 'away_team'].flatMap(side =>
-                  Object.values(nflPlayerPropsData?.[side]?.players ?? {})
+                  Object.values(propsData?.[side]?.players ?? {})
                     .map((p: any) => p?.player_id)
                     .filter((id: any) => id != null)
                 )
               )
             : null;
           const filterStreaks = (streaks: PlayerStreak[]) =>
-            nflPropIds ? streaks.filter(s => s.player_id != null && nflPropIds.has(s.player_id)) : streaks;
+            activePropIds ? streaks.filter(s => s.player_id != null && activePropIds.has(s.player_id)) : streaks;
 
           const groups = [
             { team: homeTeam, streaks: filterStreaks(playerStreaksByTeam[homeTeam] ?? []) },
@@ -406,26 +410,20 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           return (
             <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, px: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" sx={{ mb: 1 }}>Player Streaks</Typography>
+              <PlayerStreakHighlight groups={groups} />
               <PlayerStreaksStrip groups={groups} showAll />
             </Box>
           );
         })()
       )}
 
-      <Paper elevation={0} sx={{
-        p: { xs: 2, sm: 3 },
-        mt: 4,
-        maxWidth: 900,
-        mx: { xs: 1, sm: "auto" },
-        backgroundColor: "transparent"
-      }}>
-        {/* Odds section */}
-        <GameOdds game={game} pitcherData={pitcherData} sport={teamPageSport} />
-      </Paper>
+      <Box sx={{ mt: 4, maxWidth: 900, mx: "auto", px: { xs: 1, sm: 0 } }}>
+        <MatchupOddsCard game={game} pitcherData={pitcherData} sport={teamPageSport} />
+      </Box>
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>
-        {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl') && !isFromDb ? (
+        {(sportKey === 'baseball_mlb' || sportKey === 'americanfootball_nfl' || sportKey === 'basketball_nba') && !isFromDb ? (
           <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
             <Tab label="Recent Performance" />
             <Tab label="Player Props" />
@@ -433,7 +431,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
         ) : null}
 
         {/* Tab 0: Recent Performance (Historical Games) */}
-        {(activeTab === 0 || !['baseball_mlb', 'americanfootball_nfl'].includes(sportKey)) && (
+        {(activeTab === 0 || !['baseball_mlb', 'americanfootball_nfl', 'basketball_nba'].includes(sportKey)) && (
           <>
             <Box sx={{ 
               display: 'flex', 
@@ -466,79 +464,66 @@ const GameDetails: React.FC<GameDetailsProps> = ({
 
             {/* Historical Games Sub-Tabs */}
             <Paper sx={{ mt: 3 }}>
-              <Tabs
-                value={historicalSubTab}
-                onChange={handleHistoricalSubTabChange}
-                variant="fullWidth"
+              <Box
                 sx={{
-                  borderBottom: 1,
-                  borderColor: 'divider',
-                  '& .MuiTab-root': {
-                    minWidth: { xs: 'auto', sm: 160 },
-                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                    padding: { xs: '8px 4px', sm: '12px 16px' },
-                    borderRight: { xs: '1px solid #e0e0e0', sm: 'none' },
-                    '&:last-child': {
-                      borderRight: 'none'
-                    },
-                    '&.Mui-selected': {
-                      backgroundColor: { xs: '#f5f5f5', sm: 'transparent' },
-                      borderRight: { xs: '1px solid #1976d2', sm: 'none' }
-                    }
-                  },
-                  '& .MuiTabs-flexContainer': {
-                    borderBottom: { xs: '1px solid #e0e0e0', sm: 'none' }
-                  }
+                  display: 'inline-flex',
+                  bgcolor: tokens.chipTrackBg,
+                  borderRadius: '10px',
+                  p: '4px',
+                  gap: '4px',
+                  mb: 2,
                 }}
               >
-                <Tab label={`Last ${gamesLimit}`} />
-                <Tab 
-                  label={
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                        {`${homeTeamName} Home Last ${gamesLimit}`}
-                      </Box>
-                      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-                        {`${homeTeamName.length > 10 ? homeTeamName.substring(0, 10) + '...' : homeTeamName} Home`}
-                      </Box>
-                    </Box>
-                  }
-                />
-                <Tab 
-                  label={
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                        {`${awayTeamName} Away Last ${gamesLimit}`}
-                      </Box>
-                      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-                        {`${awayTeamName.length > 10 ? awayTeamName.substring(0, 10) + '...' : awayTeamName} Away`}
-                      </Box>
-                    </Box>
-                  }
-                />
-              </Tabs>
+                {[
+                  { value: 0, label: `Last ${gamesLimit}` },
+                  { value: 1, label: `${homeTeamName} Home Last ${gamesLimit}` },
+                  { value: 2, label: `${awayTeamName} Away Last ${gamesLimit}` },
+                ].map((opt) => (
+                  <Box
+                    key={opt.value}
+                    component="button"
+                    onClick={() => setHistoricalSubTab(opt.value)}
+                    sx={{
+                      all: 'unset',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      px: '14px',
+                      py: '7px',
+                      borderRadius: '7px',
+                      textAlign: 'center',
+                      bgcolor: historicalSubTab === opt.value ? tokens.cardBg : 'transparent',
+                      boxShadow: historicalSubTab === opt.value ? tokens.shadowActiveSegment : 'none',
+                    }}
+                  >
+                    {opt.label}
+                  </Box>
+                ))}
+              </Box>
 
               <Box sx={{ p: { xs: 2, sm: 3 } }}>
                 {/* Tab 0: Last N Games (Original) */}
                 {historicalSubTab === 0 && (
                   <>
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${homeTeamName} - Last ${gamesLimit} Games`}
                       games={homeTeamHistory?.games || []}
                       loading={homeTeamHistory === null}
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} - Last ${gamesLimit} Games`}
                       games={awayTeamHistory?.games || []}
                       loading={awayTeamHistory === null}
                       teamName={convertTeamNameBySport(sportKey, awayTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} H2H`}
                       games={headToHeadHistory?.games || []}
                       loading={headToHeadHistory === null}
@@ -546,6 +531,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
                   </>
                 )}
@@ -553,15 +539,16 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                 {/* Tab 1: Home Team Home Games */}
                 {historicalSubTab === 1 && (
                   <>
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${homeTeamName} - Last ${gamesLimit} Home Games`}
                       games={homeTeamHomeGames?.games || []}
                       loading={homeTeamHomeGames === null}
                       teamName={convertTeamNameBySport(sportKey, homeTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${homeTeamName} vs ${awayTeamName} - Last ${gamesLimit} Home H2H`}
                       games={homeTeamHomeVsAway?.games || []}
                       loading={homeTeamHomeVsAway === null}
@@ -569,6 +556,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
                   </>
                 )}
@@ -576,15 +564,16 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                 {/* Tab 2: Away Team Away Games */}
                 {historicalSubTab === 2 && (
                   <>
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} - Last ${gamesLimit} Away Games`}
                       games={awayTeamAwayGames?.games || []}
                       loading={awayTeamAwayGames === null}
                       teamName={convertTeamNameBySport(sportKey, awayTeamName)}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
-                    <HistoricalGames
+                    <GameLogTable
                       title={`${awayTeamName} vs ${homeTeamName} - Last ${gamesLimit} Away H2H`}
                       games={awayTeamAwayVsHome?.games || []}
                       loading={awayTeamAwayVsHome === null}
@@ -592,6 +581,7 @@ const GameDetails: React.FC<GameDetailsProps> = ({
                       isHeadToHead={true}
                       sportType={getSportType(sportKey)}
                       sport={teamPageSport}
+                      defaultExpanded={true}
                     />
                   </>
                 )}

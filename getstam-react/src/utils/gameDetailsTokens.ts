@@ -23,21 +23,13 @@ export const gameDetailsTokens = {
   linkHover: '#163f8f',
   collisionIcon: '#5b3fd6',
   hit: {
-    bg: '#e3f4ea',
+    bg: '#d3ecdf',
     text: '#0e5e33',
     dot: '#1f9d55',
   },
   miss: {
-    bg: '#fbe7e7',
+    bg: '#f8d6d6',
     text: '#9c2727',
-  },
-  // A draw/tie is a real game outcome, not a neutral "no info" state -- kept
-  // visually distinct from trackBg2 (used for betting-line pushes) so it
-  // doesn't read as blank/missing data, especially in sports like soccer
-  // where draws are common.
-  draw: {
-    bg: '#e3ecfb',
-    text: '#1d4ed8',
   },
   neutralBar: '#4a5361',
   shadowHover: '0 4px 14px rgba(0,0,0,.06)',

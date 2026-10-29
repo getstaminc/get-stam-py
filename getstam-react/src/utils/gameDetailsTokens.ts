@@ -24,12 +24,12 @@ export const gameDetailsTokens = {
   collisionIcon: '#5b3fd6',
   hit: {
     bg: '#e3f4ea',
-    text: '#14713d',
+    text: '#0e5e33',
     dot: '#1f9d55',
   },
   miss: {
     bg: '#fbe7e7',
-    text: '#b42f2f',
+    text: '#9c2727',
   },
   // A draw/tie is a real game outcome, not a neutral "no info" state -- kept
   // visually distinct from trackBg2 (used for betting-line pushes) so it

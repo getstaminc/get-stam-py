@@ -13,22 +13,26 @@ max/preference below is a soft tiebreak around trend score, not a hard
 filter — see trend_video_common.select_top_games.
 
   Monday    — MLB today (max 3); NFL today (max 3, Monday night game);
-              NHL today (max 2)
-  Tuesday   — MLB today (max 3); NHL today (max 2)
-  Wednesday — MLB today (max 3); NHL today (max 2)
+              NHL today (max 1); NBA today (max 1)
+  Tuesday   — MLB today (max 3); NHL today (max 1); NBA today (max 1)
+  Wednesday — MLB today (max 3); NHL today (max 1); NBA today (max 1)
   Thursday  — MLB today (max 3); NFL today (max 3, Thursday night game);
-              NCAAF today (max 3); NHL today (max 2)
+              NCAAF today (max 3); NHL today (max 1); NBA today (max 1)
   Friday    — MLB today (max 3); NCAAF today (max 3); NCAAF look-ahead to
-              Saturday (max 3, prefer earlier kickoffs); NHL today (max 2)
+              Saturday (max 3, prefer earlier kickoffs); NHL today (max 1);
+              NBA today (max 1)
   Saturday  — NCAAF today (max 3, prefer later kickoffs — not noon/1pm ET);
               NFL look-ahead to Sunday (max 2, prefer the early game block);
-              NHL today (max 2)
+              NHL today (max 1); NBA today (max 1)
   Sunday    — MLB today (max 3); NFL today (max 3, prefer the afternoon
-              block or later); NHL today (max 2)
+              block or later); NHL today (max 1); NBA today (max 1)
 
-NHL plays most days during the season (closer to MLB's cadence than NFL/
-NCAAF), so — like MLB — it runs every day with no lookahead/fallback
-needed; an off day just produces nothing for it that day.
+NHL and NBA both play most days during the season (closer to MLB's cadence
+than NFL/NCAAF), so — like MLB — they run every day with no lookahead/
+fallback needed; an off day just produces nothing for them that day. Both
+are capped at 1 video/day (NHL was reduced from 2; NBA is new and starting
+small) now that NBA/NHL scripts also weigh back-to-back/rest/travel context
+(see trend_video_common.back_to_back_note) on top of the usual trends.
 
 Usage:
   venv/bin/python jobs/plan_daily_trend_videos.py [YYYY-MM-DD]
@@ -56,6 +60,7 @@ import jobs.mlb_generate_trend_video_scripts as mlb_job
 import jobs.nfl_generate_trend_video_scripts as nfl_job
 import jobs.ncaaf_generate_trend_video_scripts as ncaaf_job
 import jobs.nhl_generate_trend_video_scripts as nhl_job
+import jobs.nba_generate_trend_video_scripts as nba_job
 from jobs.trend_video_common import next_weekday
 
 eastern_tz = pytz.timezone("US/Eastern")
@@ -89,10 +94,12 @@ def build_plan(date_str):
     if weekday == FRIDAY:
         plan.append(("ncaaf", ncaaf_job, saturday, {"max_games": 3, "lookahead": True, "time_pref": "earlier_in_day"}))
 
-    # NHL: every day, like MLB — no lookahead, reads its own env-var default
-    # the same way MLB's slot does (so MAX_VIDEO_GAMES_PER_DAY_NHL can be
-    # tuned without a code change, e.g. during a future postseason).
+    # NHL and NBA: every day, like MLB — no lookahead, each reads its own
+    # env-var default the same way MLB's slot does (so
+    # MAX_VIDEO_GAMES_PER_DAY_NHL/_NBA can be tuned without a code change,
+    # e.g. during a future postseason). Both default to 1/day for now.
     plan.append(("nhl", nhl_job, date_str, {"max_games": nhl_job.MAX_VIDEO_GAMES_PER_DAY}))
+    plan.append(("nba", nba_job, date_str, {"max_games": nba_job.MAX_VIDEO_GAMES_PER_DAY}))
 
     return plan
 

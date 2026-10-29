@@ -388,8 +388,8 @@ def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
             for t in top_trends:
                 t["_score"] = round(get_confidence_score(t), 1)
 
-            extra_context = gather_extra_context(entry, "mlb", game, home_team, away_team, tiktok=False)
-            extra_context_tiktok = gather_extra_context(entry, "mlb", game, home_team, away_team, tiktok=True)
+            extra_context = gather_extra_context(entry, "mlb", game, home_team, away_team, date_str, tiktok=False)
+            extra_context_tiktok = gather_extra_context(entry, "mlb", game, home_team, away_team, date_str, tiktok=True)
 
             pitcher_matchup = find_pitcher_matchup(game, pitcher_data_for_date)
             script_data, gen_err = call_claude(game, top_trends, pitcher_matchup, lookahead=lookahead, extra_context=extra_context)

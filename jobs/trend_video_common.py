@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from api.services.historical.trend_context_service import (
     find_odds_whiplash_trend,
     get_recent_series_games,
+    get_back_to_back_context,
 )
 
 
@@ -187,9 +188,70 @@ def line_movement_note(game, home_team, away_team, tiktok=False):
 
 
 _LINE_MOVEMENT_SPORTS = ("nfl", "ncaaf")
+_BACK_TO_BACK_SPORTS = ("nba", "nhl")
+
+# Minimum number of back-to-back instances this season before mentioning the
+# team's specific record in them — below this, the note still flags the
+# back-to-back/travel/rest situation, just without an overstated small-sample record.
+_MIN_B2B_SAMPLE_FOR_RECORD = 3
 
 
-def gather_extra_context(entry, sport, game, home_team, away_team, tiktok=False):
+def back_to_back_note(sport, home_team, away_team, date_str, tiktok=False):
+    """NBA/NHL only (see gather_extra_context) — flag when either team is
+    playing on zero days rest (a back-to-back), especially noting likely
+    travel (their home/away status flipped since their last game — a
+    same-city back-to-back is the one case this can't be sure about, see
+    get_back_to_back_context) and how much more rested the opponent is by
+    comparison. Surfaces the team's record in the second game of a
+    back-to-back this season once there's enough sample
+    (_MIN_B2B_SAMPLE_FOR_RECORD) to say anything meaningful. For NBA
+    specifically — where load-management/rest for players on the second
+    night of a back-to-back is common — adds an explicit reminder to check
+    the lineup before tip-off.
+    """
+    home_ctx = get_back_to_back_context(sport, home_team, date_str)
+    away_ctx = get_back_to_back_context(sport, away_team, date_str)
+
+    notes = []
+    for team, ctx, is_home_today, opp_name, opp_ctx in (
+        (home_team, home_ctx, True, away_team, away_ctx),
+        (away_team, away_ctx, False, home_team, home_ctx),
+    ):
+        if not ctx or not ctx.get("is_back_to_back"):
+            continue
+
+        travel_bit = ""
+        if ctx.get("last_game_was_home") is not None and ctx["last_game_was_home"] != is_home_today:
+            travel_bit = " after traveling"
+
+        rest_bit = ""
+        if (
+            opp_ctx and opp_ctx.get("days_rest") is not None and ctx.get("days_rest") is not None
+            and opp_ctx["days_rest"] > ctx["days_rest"]
+        ):
+            rest_bit = f", while {opp_name} is coming in more rested"
+
+        record_bit = ""
+        record = ctx.get("season_record")
+        if record and record[1] >= _MIN_B2B_SAMPLE_FOR_RECORD:
+            wins, total = record
+            record_bit = f" — they're {wins}-{total - wins} in these spots this season"
+
+        notes.append(f"{team} is playing on zero days rest (a back-to-back){travel_bit}{rest_bit}{record_bit}.")
+
+    if not notes:
+        return None
+
+    combined = " ".join(notes)
+    if sport == "nba":
+        combined += (
+            " Worth telling viewers to check the lineup before tip-off — teams often rest "
+            "or limit players' minutes on the second night of a back-to-back."
+        )
+    return combined
+
+
+def gather_extra_context(entry, sport, game, home_team, away_team, date_str, tiktok=False):
     """Collect supporting-context notes for a game — plain descriptive
     strings the model can weave in if useful, NOT scored/ranked trends
     competing for the primary-trend slot (that stays whatever
@@ -197,6 +259,7 @@ def gather_extra_context(entry, sport, game, home_team, away_team, tiktok=False)
       - the odds-whiplash situational patterns (find_odds_whiplash_trend)
       - the over/under trend-alignment note above
       - significant opening-vs-now line movement (football only, per request)
+      - back-to-back/travel/rest situations (NBA/NHL only, per request)
     Returns a list of strings (possibly empty) — the caller only renders an
     "Additional context" prompt section when this is non-empty. (The third
     idea, live-series awareness, is handled separately by
@@ -224,6 +287,11 @@ def gather_extra_context(entry, sport, game, home_team, away_team, tiktok=False)
         movement_note = line_movement_note(game, home_team, away_team, tiktok=tiktok)
         if movement_note:
             notes.append(movement_note)
+
+    if sport in _BACK_TO_BACK_SPORTS:
+        b2b_note = back_to_back_note(sport, home_team, away_team, date_str, tiktok=tiktok)
+        if b2b_note:
+            notes.append(b2b_note)
 
     return notes
 

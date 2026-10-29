@@ -65,8 +65,9 @@ REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trend
 # Default when run() isn't given an explicit max_games (e.g. manual/testing
 # invocation) — set MAX_VIDEO_GAMES_PER_DAY_NHL to change. The daily
 # automated run always passes an explicit max per jobs/plan_daily_trend_videos.py
-# (2, per the user's request — NHL is new to this pipeline, starting small).
-MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY_NHL", "2"))
+# (1/day, per the user's request — reduced down from 2 now that NBA also
+# runs daily and NHL scripts weigh back-to-back/rest/travel context too).
+MAX_VIDEO_GAMES_PER_DAY = int(os.getenv("MAX_VIDEO_GAMES_PER_DAY_NHL", "1"))
 
 SCRIPT_JSON_SCHEMA = {
     "type": "object",
@@ -347,8 +348,8 @@ def run(date_str=None, max_games=None, lookahead=False, time_pref=None):
             for t in top_trends:
                 t["_score"] = round(get_confidence_score(t), 1)
 
-            extra_context = gather_extra_context(entry, "nhl", game, home_team, away_team, tiktok=False)
-            extra_context_tiktok = gather_extra_context(entry, "nhl", game, home_team, away_team, tiktok=True)
+            extra_context = gather_extra_context(entry, "nhl", game, home_team, away_team, date_str, tiktok=False)
+            extra_context_tiktok = gather_extra_context(entry, "nhl", game, home_team, away_team, date_str, tiktok=True)
 
             script_data, gen_err = call_claude(game, top_trends, lookahead=lookahead, extra_context=extra_context)
             tiktok_data, tiktok_err = call_claude_tiktok(game, top_trends, lookahead=lookahead, extra_context=extra_context_tiktok)

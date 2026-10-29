@@ -6,7 +6,7 @@ E.g. "Total went OVER 6 straight at home vs Mariners — OVER in 3 of 4 similar 
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from collections import defaultdict
 from urllib.parse import urlparse
@@ -672,7 +672,8 @@ def find_odds_whiplash_trend(
     ctx = _load_sport_context(sport)
     if not ctx:
         return None
-    games = ctx.get('team_games', {}).get(team_name)
+    from shared_utils import convert_team_name
+    games = ctx.get('team_games', {}).get(convert_team_name(team_name))
     if not games:
         return None
 
@@ -742,12 +743,84 @@ def get_recent_series_games(
     ctx = _load_sport_context(sport)
     if not ctx:
         return []
-    games = ctx.get('gen_h2h_games', {}).get((min(team_a, team_b), max(team_a, team_b)), [])
+    from shared_utils import convert_team_name
+    a, b = convert_team_name(team_a), convert_team_name(team_b)
+    games = ctx.get('gen_h2h_games', {}).get((min(a, b), max(a, b)), [])
     try:
         before = datetime.strptime(before_date_str, "%Y-%m-%d").date()
     except ValueError:
         return []
     cutoff = before - timedelta(days=lookback_days)
     return [g for g in games if cutoff <= g['game_date'] < before]
+
+
+# ---------------------------------------------------------------------------
+# Back-to-back / rest detection (NBA/NHL) — is a team on zero days rest
+# heading into this game, how rested is the opponent, and how has this team
+# done historically in the second game of a back-to-back this season?
+# ---------------------------------------------------------------------------
+
+def _season_start(game_date: date) -> date:
+    """First-cut season boundary: Aug 1 of the current year if the game
+    falls Aug-Dec, else Aug 1 of the previous year. Cleanly separates
+    NBA/NHL's Oct-June season from the prior season's playoffs without a
+    real schedule-calendar lookup — exact enough for a "this season" record,
+    not meant to be to-the-day accurate."""
+    year = game_date.year if game_date.month >= 8 else game_date.year - 1
+    return date(year, 8, 1)
+
+
+def get_back_to_back_context(sport: str, team_name: str, game_date_str: str) -> Optional[Dict[str, Any]]:
+    """For `team_name` heading into a game on game_date_str, return:
+      - is_back_to_back: played a game exactly 1 day before game_date_str
+      - days_rest: days since their last completed game (None if no prior
+        game is in the loaded history at all)
+      - last_game_was_home: was their most recent game at home? (the caller
+        compares this against TODAY's home/away — known from the live odds
+        payload, not from history — to infer likely travel: a back-to-back
+        where home/away status flips is almost certainly a different city;
+        home-then-home is the one case this can't mistake for travel)
+      - season_record: (wins, total) in the second game of a back-to-back,
+        this season only (see _season_start) — None if the sample is 0.
+
+    Returns None if there's no game history for this team at all.
+    """
+    ctx = _load_sport_context(sport)
+    if not ctx:
+        return None
+    from shared_utils import convert_team_name
+    games = ctx.get('team_games', {}).get(convert_team_name(team_name))
+    if not games:
+        return None
+
+    try:
+        game_date = datetime.strptime(game_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+    # team_games is chronological (game_date ASC) — see _load_sport_context.
+    prior_games = [g for g in games if g['game_date'] < game_date]
+    if not prior_games:
+        return {'is_back_to_back': False, 'days_rest': None, 'last_game_was_home': None, 'season_record': None}
+
+    last_game = prior_games[-1]
+    days_rest = (game_date - last_game['game_date']).days
+    is_b2b = days_rest == 1
+
+    season_cutoff = _season_start(game_date)
+    season_games = [g for g in games if g['game_date'] >= season_cutoff]
+    b2b_wins = b2b_total = 0
+    for i in range(1, len(season_games)):
+        if (season_games[i]['game_date'] - season_games[i - 1]['game_date']).days == 1:
+            b2b_total += 1
+            if season_games[i]['hs'] > season_games[i]['aw']:
+                b2b_wins += 1
+
+    return {
+        'is_back_to_back': is_b2b,
+        'days_rest': days_rest,
+        'last_game_was_home': last_game.get('is_home'),
+        'season_record': (b2b_wins, b2b_total) if b2b_total > 0 else None,
+    }
 
 

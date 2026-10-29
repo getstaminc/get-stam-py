@@ -42,6 +42,35 @@ describe('TrendAnalysisSection market cards', () => {
     expect(screen.getByText('Over')).toBeInTheDocument();
   });
 
+  it('sizes the market cards grid to the actual number of cards, not a fixed 3 columns', () => {
+    const { rerender } = render(
+      <TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+    // gameTrends fixture has all 3 markets
+    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(3, 1fr)' });
+
+    const twoMarkets: GameWithTrends = {
+      ...gameTrends,
+      marketOverview: {
+        spread: gameTrends.marketOverview!.spread,
+        total: gameTrends.marketOverview!.total,
+      },
+    };
+    rerender(
+      <TrendAnalysisSection gameTrends={twoMarkets} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(2, 1fr)' });
+
+    const oneMarket: GameWithTrends = {
+      ...gameTrends,
+      marketOverview: { total: gameTrends.marketOverview!.total },
+    };
+    rerender(
+      <TrendAnalysisSection gameTrends={oneMarket} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(1, 1fr)' });
+  });
+
   it('no longer renders the old "What the numbers suggest" banner', () => {
     render(
       <TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />

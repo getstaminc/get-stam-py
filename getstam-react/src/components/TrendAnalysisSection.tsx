@@ -410,7 +410,10 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, pt: 4, mb: 2 }}>
       {marketRows.length > 0 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', mb: 3 }}>
+        <Box
+          data-testid="market-cards-grid"
+          sx={{ display: 'grid', gridTemplateColumns: `repeat(${marketRows.length}, 1fr)`, gap: '14px', mb: 3 }}
+        >
           {marketRows.map(({ key, entry }) => (
             <MarketTrendCard key={key} marketKey={key} entry={entry} game={game} sportKey={sportKey} />
           ))}

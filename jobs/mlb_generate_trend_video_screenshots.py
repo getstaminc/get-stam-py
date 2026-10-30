@@ -66,6 +66,10 @@ RENDER_WAIT_MS = 3500
 # 1080px-wide (desktop breakpoint) screenshot viewport.
 HERO_CROP_TOP_PADDING = 16  # px of breathing room above the breadcrumb
 
+# px of breathing room below the Trend vs. Trend Collision card, when the
+# hero crop has to grow past the default viewport height to include it.
+HERO_CROP_COLLISION_BOTTOM_PADDING = 24
+
 def hero_crop_anchor_text(sport, home_team, away_team):
     return f"{sport.upper()} › Games › {away_team} vs {home_team}"
 
@@ -173,10 +177,30 @@ def capture_game(page, game, date_str):
     box = anchor_locator.first.bounding_box() if anchor_locator.count() else None
     if box:
         top = max(box["y"] - HERO_CROP_TOP_PADDING, 0)
+        height = VIEWPORT["height"] - top
+
+        # If this game has a Trend vs. Trend Collision card (TrendAnalysisSection.tsx's
+        # CollisionCard — only renders when enrich_game_trends found one), make sure
+        # it's never cut off the bottom of the opening shot: grow the crop (and,
+        # same trick as capture_context_panel, the viewport) to reach past it when it
+        # falls below the default fold. Most games render it comfortably within the
+        # default viewport height already; this only kicks in when it doesn't.
+        collision_panel = page.get_by_test_id("collision-split-panel")
+        if collision_panel.count():
+            card_box = collision_panel.first.locator("xpath=..").bounding_box()
+            if card_box:
+                card_bottom = card_box["y"] + card_box["height"]
+                height = max(height, (card_bottom - top) + HERO_CROP_COLLISION_BOTTOM_PADDING)
+
+        original_viewport = page.viewport_size
+        if height > original_viewport["height"]:
+            page.set_viewport_size({"width": original_viewport["width"], "height": int(top + height) + 50})
         page.screenshot(
             path=str(hero_path),
-            clip={"x": 0, "y": top, "width": VIEWPORT["width"], "height": VIEWPORT["height"] - top},
+            clip={"x": 0, "y": top, "width": VIEWPORT["width"], "height": height},
         )
+        if height > original_viewport["height"]:
+            page.set_viewport_size(original_viewport)
     else:
         # Fallback: anchor text not found (unexpected page state) — take the
         # full viewport rather than fail the whole game.

@@ -160,4 +160,12 @@ for this_date in "${TREND_DATES[@]}"; do
   run_step "mlb_email_daily_videos.py" "$this_date" 2
 done
 
+# Prune output/videos, output/screenshots, output/audio folders older than 7
+# days (jobs/cleanup_old_output.py) — by now every date just processed has
+# already been uploaded and emailed, so nothing from today's run is at risk.
+# No date argument (not per-date like the steps above) — it sweeps the whole
+# output tree in one pass. Not fatal if it errors; don't abort the run over it.
+echo "--- Cleaning up output older than 7 days ---"
+"$PYTHON" "$REPO_ROOT/jobs/cleanup_old_output.py"
+
 echo "=== Daily trend video pipeline finished at $(date) ==="

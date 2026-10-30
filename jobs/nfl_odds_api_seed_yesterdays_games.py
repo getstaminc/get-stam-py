@@ -273,7 +273,12 @@ def seed_yesterdays_nfl_games():
                 home_second_half = away_second_half = None
                 home_overtime = away_overtime = None
 
-            game_site = "neutral" if enrichment["neutral_site"] else "home"
+            # enrichment["neutral_site"] is None when ESPN enrichment couldn't be matched
+            # at all (vs. False meaning ESPN matched and confirmed it's not neutral) --
+            # must stay NULL in that case rather than silently defaulting to "home", per
+            # the plan's constraint that a failed ESPN match should leave fields NULL,
+            # not record incorrect data.
+            game_site = None if enrichment["neutral_site"] is None else ("neutral" if enrichment["neutral_site"] else "home")
             commence_utc = datetime.fromisoformat(game["commence_time"].replace("Z", "+00:00"))
             start_time = shared_utils.convert_to_eastern(commence_utc).time()
 

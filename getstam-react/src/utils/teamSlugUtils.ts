@@ -1,5 +1,7 @@
 // Slug utilities for team pages — built from the same data as teamNameConverter.ts
 
+import { encodeGameId } from './gameIdCrypto';
+
 // Maps from oddsApiName → dbName for each sport
 const NBA_TEAMS: Record<string, string> = {
   'Atlanta Hawks': 'Hawks',
@@ -564,6 +566,24 @@ export function getMatchupPageLink(
   occurrence: number = 1
 ): string {
   return `/game-details/${sport}/${buildMatchupSlug(awayName, homeName, commenceTime, occurrence)}`;
+}
+
+// Single source of truth for "which Game Details link should this card use" --
+// previously duplicated at each call site (GamesPage, GamesWithTrends, HomePage),
+// which is exactly how HomePage ended up missing the MATCHUP_SLUG_SPORTS guard:
+// it built a pretty slug URL for soccer games too, even though soccer has no
+// slug-resolution support on either the frontend (SPORT_MAPS) or backend
+// (SPORT_TEAMS in api/utils/team_slugs.py), so clicking "Game Details" from the
+// home page's soccer cards 404'd. Only sports in MATCHUP_SLUG_SPORTS get the
+// slug route; everything else (and any game missing team names/commence_time)
+// falls back to the query-param route, which every sport supports.
+export function buildGameDetailsLink(
+  sportUrlKey: string,
+  game: { game_id: unknown; home?: { team?: string }; away?: { team?: string }; commence_time?: string }
+): string {
+  return MATCHUP_SLUG_SPORTS.has(sportUrlKey) && game.home?.team && game.away?.team && game.commence_time
+    ? getMatchupPageLink(sportUrlKey, game.away.team, game.home.team, game.commence_time)
+    : `/game-details/${sportUrlKey}?game_id=${encodeGameId(String(game.game_id))}`;
 }
 
 export interface ParsedMatchupSlug {

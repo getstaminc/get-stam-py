@@ -6,9 +6,8 @@ import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
 import TrendInsightCard, { getConfidenceScore } from "../components/TrendInsightCard";
 import { PlayerStreak, TeamStreaks } from "../components/PlayerStreaksStrip";
-import { encodeGameId } from "../utils/gameIdCrypto";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
-import { getMatchupPageLink } from "../utils/teamSlugUtils";
+import { buildGameDetailsLink } from "../utils/teamSlugUtils";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_BASE_URL ||
@@ -227,10 +226,7 @@ function SportSection({
                 { team: game.away?.team ?? "", streaks: playerStreaksByTeam[game.away?.team] ?? [] },
               ].filter(g => g.team && g.streaks.length > 0)
             : [];
-          const detailsLink =
-            game.home?.team && game.away?.team && game.commence_time
-              ? getMatchupPageLink(urlKey, game.away.team, game.home.team, game.commence_time)
-              : `/game-details/${urlKey}?game_id=${encodeGameId(game.game_id)}`;
+          const detailsLink = buildGameDetailsLink(urlKey, game);
           return (
             <TrendInsightCard
               key={game.game_id}

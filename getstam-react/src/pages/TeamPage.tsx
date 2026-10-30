@@ -4,8 +4,7 @@ import { Box, Typography, CircularProgress, Divider } from "@mui/material";
 import SEO from "../components/SEO";
 import MatchupOddsCard from "../components/MatchupOddsCard";
 import GameLogTable from "../components/GameLogTable";
-import { getTeamBySlug, getMatchupPageLink } from "../utils/teamSlugUtils";
-import { encodeGameId } from "../utils/gameIdCrypto";
+import { getTeamBySlug, buildGameDetailsLink } from "../utils/teamSlugUtils";
 import { HistoricalGame, SportType, GameWithDraw } from "../types/gameTypes";
 
 const API_BASE_URL =
@@ -162,12 +161,7 @@ const TeamPage: React.FC = () => {
             <MatchupOddsCard
               game={oddsGame}
               sport={sport}
-              detailsLink={(() => {
-                const g = oddsGame as any;
-                return g.home?.team && g.away?.team && g.commence_time
-                  ? getMatchupPageLink(sport, g.away.team, g.home.team, g.commence_time)
-                  : `/game-details/${sport}?game_id=${encodeGameId(g.game_id)}`;
-              })()}
+              detailsLink={buildGameDetailsLink(sport, oddsGame as any)}
             />
           ) : (
             <Typography color="text.secondary">No game today</Typography>

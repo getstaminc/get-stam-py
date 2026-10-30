@@ -127,12 +127,11 @@ describe('TrendAnalysisSection collision card', () => {
     expect(screen.getByText('Lost 3 straight on the road')).toBeInTheDocument();
     expect(screen.getByText('72%')).toBeInTheDocument();
     expect(screen.getByText('28%')).toBeInTheDocument();
-    expect(screen.getByText('18 historical meetings')).toBeInTheDocument();
-    // The stats panel's % figures must be traceable to which streaks produced
-    // them, not just labeled "this collision" -- so the matchup phrase (parsed
-    // from the backend's trend.description) shows above them.
+    // The sample-size line must be traceable to which streaks produced it, not
+    // just "N historical meetings" on its own -- the matchup phrase (parsed
+    // from the backend's trend.description) is folded into that same sentence.
     expect(
-      screen.getByText("Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road")
+      screen.getByText("18 historical meetings when Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road")
     ).toBeInTheDocument();
   });
 
@@ -230,10 +229,11 @@ describe('TrendAnalysisSection remaining trends list', () => {
     expect(screen.getByText('More trends')).toBeInTheDocument();
     // otherTrend shows once, in the More Trends list.
     expect(screen.getAllByText('Brewers covered 4 straight spreads').length).toBe(1);
-    // collisionTrend's matchup phrase shows once, in the CollisionCard -- it must not
-    // also be duplicated into the More Trends list below.
+    // collisionTrend's matchup phrase shows once, folded into the CollisionCard's
+    // sample-size sentence -- it must not also be duplicated into the More Trends
+    // list below.
     expect(
-      screen.getAllByText("Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road").length
+      screen.getAllByText(/Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road/).length
     ).toBe(1);
   });
 

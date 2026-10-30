@@ -309,11 +309,6 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
       </Box>
 
       <Box data-testid="collision-split-panel" sx={{ bgcolor: tokens.subtlePanelBg, borderLeft: { md: `1px solid ${tokens.borders.light}` }, p: '18px 22px' }}>
-        {matchupPhrase && (
-          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: tokens.text.primary, mb: 0.25 }}>
-            {matchupPhrase}
-          </Typography>
-        )}
         <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mb: 1 }}>
           Historically when this collision has happened
         </Typography>
@@ -363,7 +358,9 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
             </>
           )}
         </Box>
-        <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mt: 1 }}>{sample_size} historical meetings</Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mt: 1 }}>
+          {sample_size} historical meetings{matchupPhrase ? ` when ${matchupPhrase}` : ''}
+        </Typography>
       </Box>
     </Box>
   );

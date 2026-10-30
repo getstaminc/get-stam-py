@@ -224,6 +224,24 @@ const describeCollisionSide = (trend: CollisionTeamTrend | undefined, side: 'hom
   return `${COLLISION_PHRASE[trend.type](trend.count)}${venueSuffix}`;
 };
 
+// Noun-phrase form for the sample-size qualifier below -- deliberately generic
+// (no team name), since the historical sample is pooled across whichever teams
+// ever hit this streak type/length, not literally "this matchup's" own history.
+const COLLISION_TYPE_NOUN: Record<TrendType, string> = {
+  win_streak: 'win streak',
+  loss_streak: 'loss streak',
+  cover_streak: 'covering streak',
+  no_cover_streak: 'run of failing to cover',
+  over_streak: 'OVER streak',
+  under_streak: 'UNDER streak',
+};
+
+const genericStreakPhrase = (trend: CollisionTeamTrend | undefined, side: 'home' | 'away'): string => {
+  if (!trend) return '';
+  const venueSuffix = trend.venue === 'venue_specific' ? (side === 'home' ? ' at home' : ' on the road') : '';
+  return `a ${trend.count}-game ${COLLISION_TYPE_NOUN[trend.type]}${venueSuffix} team`;
+};
+
 type CollisionDimension = 'straight_up' | 'ats' | 'total';
 
 const collisionDimension = (type: TrendType): CollisionDimension => {
@@ -236,11 +254,11 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
   const { home_trend, away_trend, continuation_rate, sample_size } = trend;
   if (!home_trend || !away_trend || continuation_rate == null || sample_size == null) return null;
 
-  // trend.description already has the full matchup phrase baked in by the
-  // backend (e.g. "Brewers' 5-game win streak at home meets Rays' 3-game
-  // loss streak on the road") -- show it so the % below is traceable to the
-  // specific streaks that produced it, not just a generic "this collision".
-  const { title: matchupPhrase } = parseFullDescription(trend.description);
+  // Generic (team-less) qualifier for the sample-size line below -- the
+  // historical sample is pooled across whichever teams ever hit this streak
+  // type/length, not literally this matchup's own head-to-head history, so
+  // naming today's two teams there would overstate what's being counted.
+  const matchupPhrase = `${genericStreakPhrase(home_trend, 'home')} meets ${genericStreakPhrase(away_trend, 'away')}`;
 
   const pct = Math.round(continuation_rate * 100);
   const otherPct = 100 - pct;

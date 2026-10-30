@@ -71,6 +71,7 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
 
     return (
       <Box
+        data-testid={`team-header-${side}`}
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -85,10 +86,14 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
           // mirrored (logo-on-right for away) horizontal row.
           textAlign: { xs: 'center', sm: side === 'away' ? 'right' : 'left' },
           flexDirection: { xs: 'column', sm: side === 'away' ? 'row-reverse' : 'row' },
+          // Without this, a flex item's default min-width is its content's
+          // intrinsic width, not 0 -- so the text column below would refuse to
+          // shrink/wrap and push this whole header past the grid track's bounds.
+          minWidth: 0,
         }}
       >
         <TeamLogo sportKey={sportKeyForLogo} teamName={team.team} size={60} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: { xs: 'center', sm: 'stretch' } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: { xs: 'center', sm: 'stretch' }, minWidth: 0 }}>
           <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
             {sport ? (
               <Link to={getTeamPageLink(sport, team.team)} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -166,9 +171,16 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
   return (
     <Box sx={{ bgcolor: tokens.cardBg, border: `1px solid ${tokens.cardBorder}`, borderRadius: `${tokens.cardRadius}px`, overflow: 'hidden' }}>
       <Box
+        data-testid="matchup-header-grid"
         sx={{
           display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
+          // minmax(0, 1fr), not bare 1fr -- a grid track's minimum size defaults
+          // to its content's intrinsic width, so a long team name (e.g. "Arizona
+          // Cardinals") would otherwise force the track wider than its share and
+          // overflow the card, which is exactly what happened once this card
+          // started appearing in a 2-up list grid instead of only as a single
+          // full-width Game Details header.
+          gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
           gap: { xs: 1, sm: 3 },
           alignItems: 'center',
           px: { xs: 1.5, sm: 3 },

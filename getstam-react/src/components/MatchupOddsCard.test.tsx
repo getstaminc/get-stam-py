@@ -126,4 +126,26 @@ describe('MatchupOddsCard', () => {
     const link = screen.getByText('View Details').closest('a');
     expect(link).toHaveAttribute('href', '/game-details/mlb?game_id=abc');
   });
+
+  it('constrains the header grid/flex tracks so a long team name cannot overflow the card', () => {
+    const longNameGame: GameWithDraw = {
+      ...game,
+      home: { ...game.home, team: 'Arizona Cardinals' },
+      away: { ...game.away, team: 'Tampa Bay Buccaneers' },
+    };
+    render(
+      <MemoryRouter>
+        <MatchupOddsCard game={longNameGame} sport="nfl" />
+      </MemoryRouter>
+    );
+    // minmax(0, 1fr), not bare 1fr -- otherwise a long team name forces the
+    // grid track (and the card) wider than the layout intends. Regression
+    // test for a real overflow seen once this card started appearing in a
+    // narrower 2-up list grid instead of only as a full-width page header.
+    expect(screen.getByTestId('matchup-header-grid')).toHaveStyle({
+      gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+    });
+    expect(screen.getByTestId('team-header-home')).toHaveStyle({ minWidth: 0 });
+    expect(screen.getByTestId('team-header-away')).toHaveStyle({ minWidth: 0 });
+  });
 });

@@ -273,12 +273,13 @@ def seed_yesterdays_nfl_games():
                 home_second_half = away_second_half = None
                 home_overtime = away_overtime = None
 
-            # enrichment["neutral_site"] is None when ESPN enrichment couldn't be matched
-            # at all (vs. False meaning ESPN matched and confirmed it's not neutral) --
-            # must stay NULL in that case rather than silently defaulting to "home", per
-            # the plan's constraint that a failed ESPN match should leave fields NULL,
-            # not record incorrect data.
-            game_site = None if enrichment["neutral_site"] is None else ("neutral" if enrichment["neutral_site"] else "home")
+            # nfl_games.game_site is NOT NULL, and nothing under api/ reads this column, so
+            # an unmatched ESPN enrichment (neutral_site is None) intentionally falls through
+            # to "home" rather than attempting a NULL insert that would raise NotNullViolation
+            # and roll back every other game already inserted this run. Same approach as
+            # jobs/nhl_odds_api_seed_yesterdays_games.py, which hardcodes game_site = "home"
+            # unconditionally since home_team_id/away_team_id already disambiguate home vs. away.
+            game_site = "neutral" if enrichment["neutral_site"] else "home"
             commence_utc = datetime.fromisoformat(game["commence_time"].replace("Z", "+00:00"))
             start_time = shared_utils.convert_to_eastern(commence_utc).time()
 

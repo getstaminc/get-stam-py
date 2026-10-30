@@ -292,7 +292,7 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
         </Box>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 1, mt: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <TeamLogo sportKey={sportKey} teamName={home_trend.team} size={40} />
+            <TeamLogo sportKey={sportKey} teamName={home_trend.team} size={34} />
             <Box>
               <Typography sx={{ fontSize: '0.875rem', fontWeight: 700 }}>{home_trend.team}</Typography>
               <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary }}>
@@ -321,7 +321,7 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
                 {describeCollisionSide(away_trend, 'away')}
               </Typography>
             </Box>
-            <TeamLogo sportKey={sportKey} teamName={away_trend.team} size={40} />
+            <TeamLogo sportKey={sportKey} teamName={away_trend.team} size={34} />
           </Box>
         </Box>
       </Box>

@@ -274,13 +274,13 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {isHeadToHead && h2hOpponentName ? (
             <Box sx={{ display: 'flex' }}>
-              <TeamLogo sportKey={sport || sportType} teamName={teamName} size={28} border="2px solid #fff" />
+              <TeamLogo sportKey={sport || sportType} teamName={teamName} size={24} border="2px solid #fff" />
               <Box sx={{ ml: '-8px' }}>
-                <TeamLogo sportKey={sport || sportType} teamName={h2hOpponentName} size={28} border="2px solid #fff" />
+                <TeamLogo sportKey={sport || sportType} teamName={h2hOpponentName} size={24} border="2px solid #fff" />
               </Box>
             </Box>
           ) : (
-            <TeamLogo sportKey={sport || sportType} teamName={teamName} size={28} />
+            <TeamLogo sportKey={sport || sportType} teamName={teamName} size={24} />
           )}
           <Box sx={{ textAlign: 'left' }}>
             <Typography sx={{ fontSize: '0.875rem', fontWeight: 700 }}>{title}</Typography>

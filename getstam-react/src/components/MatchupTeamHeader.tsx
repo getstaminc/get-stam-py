@@ -72,7 +72,7 @@ const MatchupTeamHeader: React.FC<MatchupTeamHeaderProps> = ({ team, side, sport
         minWidth: 0,
       }}
     >
-      <TeamLogo sportKey={sportKeyForLogo} teamName={team} size={60} />
+      <TeamLogo sportKey={sportKeyForLogo} teamName={team} size={52} />
       <Box
         sx={{
           display: 'flex',

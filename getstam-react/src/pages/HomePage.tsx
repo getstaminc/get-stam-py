@@ -404,7 +404,7 @@ export default function HomePage() {
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
           GetStam helps sports fans analyze historical betting trends, head-to-head
           records, moneyline performance, against-the-spread results, over/under trends, and
-          historical odds across MLB, NFL, NBA, NHL, and soccer.
+          historical odds across MLB, NFL, NBA, NHL, college football, and soccer.
         </Typography>
 
         {/* Sport sections — sorted by max confidence score once all have loaded */}

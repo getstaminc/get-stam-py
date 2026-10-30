@@ -38,7 +38,7 @@ SPORTS_CONFIG = [
     {"key": "nfl", "display": "NFL", "espn_slug": "football/nfl",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
      "table": "nfl_games", "date_col": "game_date", "league_filter": None,
-     "prop_check": {"mode": "event_id_join", "games_table": "nfl_games",
+     "prop_check": {"mode": "team_id_join", "games_table": "nfl_games",
                     "prop_tables": ["nfl_player_props"]}},
     {"key": "mlb", "display": "MLB", "espn_slug": "baseball/mlb",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
@@ -207,6 +207,9 @@ def _build_html(games_results, prop_results, target_date):
     for r in prop_results:
         if not r["applicable"]:
             continue
+        if r.get("error"):
+            prop_sections.append(f"<h4>{r['sport']}</h4><p style=\"color:#d93025\">⚠️ Check failed: {r['error']}</p>")
+            continue
         missing = r["missing_games"]
         total_missing += len(missing)
         if not missing:
@@ -277,7 +280,8 @@ def run():
                                   "error": str(e)})
 
     total_prop_gaps = sum(len(r["missing_games"]) for r in prop_results if r["applicable"])
-    subject_prefix = "🚨 " if (total_mismatches or total_prop_gaps) else ""
+    total_prop_errors = sum(1 for r in prop_results if r.get("error"))
+    subject_prefix = "🚨 " if (total_mismatches or total_prop_gaps or total_prop_errors) else ""
     subject = (f"{subject_prefix}Data Integrity Report {target_date} — "
                f"{total_mismatches} games mismatch(es), {total_prop_gaps} prop gap(s)")
     html = _build_html(games_results, prop_results, target_date)

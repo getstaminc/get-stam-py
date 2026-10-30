@@ -32,16 +32,24 @@ ESPN_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWe
 SPORTS_CONFIG = [
     {"key": "nba", "display": "NBA", "espn_slug": "basketball/nba",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
-     "table": "nba_games_1", "date_col": "game_date", "league_filter": None},
+     "table": "nba_games_1", "date_col": "game_date", "league_filter": None,
+     "prop_check": {"mode": "team_id_join", "games_table": "nba_games_1",
+                    "prop_tables": ["nba_player_props"]}},
     {"key": "nfl", "display": "NFL", "espn_slug": "football/nfl",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
-     "table": "nfl_games", "date_col": "game_date", "league_filter": None},
+     "table": "nfl_games", "date_col": "game_date", "league_filter": None,
+     "prop_check": {"mode": "event_id_join", "games_table": "nfl_games",
+                    "prop_tables": ["nfl_player_props"]}},
     {"key": "mlb", "display": "MLB", "espn_slug": "baseball/mlb",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
-     "table": "mlb_games", "date_col": "game_date", "league_filter": None},
+     "table": "mlb_games", "date_col": "game_date", "league_filter": None,
+     "prop_check": {"mode": "event_id_join", "games_table": "mlb_games",
+                    "prop_tables": ["mlb_batter_props", "mlb_pitcher_props"]}},
     {"key": "nhl", "display": "NHL", "espn_slug": "hockey/nhl",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
-     "table": "nhl_games", "date_col": "game_date", "league_filter": None},
+     "table": "nhl_games", "date_col": "game_date", "league_filter": None,
+     "prop_check": {"mode": "event_id_join", "games_table": "nhl_games",
+                    "prop_tables": ["nhl_player_props"]}},
     {"key": "ncaaf", "display": "NCAAF", "espn_slug": "football/college-football",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
      "table": "ncaaf_games", "date_col": "game_date", "league_filter": None},
@@ -125,6 +133,114 @@ def _check_games_count(engine, cfg, target_date, date_str):
     }
 
 
+def _check_prop_completeness(engine, cfg, target_date):
+    """For each DB game on target_date, check whether ANY row exists in
+    every configured prop table for that game. Returns games with zero
+    prop rows in at least one required table."""
+    prop_cfg = cfg.get("prop_check")
+    if not prop_cfg:
+        return {"sport": cfg["display"], "applicable": False, "missing_games": []}
+
+    missing_games = []
+    with engine.connect() as conn:
+        if prop_cfg["mode"] == "event_id_join":
+            rows = conn.execute(text(f"""
+                SELECT odds_event_id, home_team_name, away_team_name
+                FROM {prop_cfg['games_table']}
+                WHERE game_date = :d AND odds_event_id IS NOT NULL
+            """), {"d": target_date}).fetchall()
+            for event_id, home, away in rows:
+                for prop_table in prop_cfg["prop_tables"]:
+                    count = conn.execute(text(
+                        f"SELECT COUNT(*) FROM {prop_table} WHERE odds_event_id = :eid"
+                    ), {"eid": event_id}).scalar()
+                    if count == 0:
+                        missing_games.append({
+                            "home": home, "away": away, "missing_table": prop_table,
+                        })
+
+        elif prop_cfg["mode"] == "team_id_join":
+            rows = conn.execute(text(f"""
+                SELECT home_team_id, away_team_id, home_team_name, away_team_name
+                FROM {prop_cfg['games_table']}
+                WHERE game_date = :d
+            """), {"d": target_date}).fetchall()
+            for home_id, away_id, home_name, away_name in rows:
+                for prop_table in prop_cfg["prop_tables"]:
+                    count = conn.execute(text(f"""
+                        SELECT COUNT(*) FROM {prop_table}
+                        WHERE game_date = :d AND odds_home_team_id = :hid AND odds_away_team_id = :aid
+                    """), {"d": target_date, "hid": home_id, "aid": away_id}).scalar()
+                    if count == 0:
+                        missing_games.append({
+                            "home": home_name, "away": away_name, "missing_table": prop_table,
+                        })
+
+    return {"sport": cfg["display"], "applicable": True, "missing_games": missing_games}
+
+
+def _build_html(games_results, prop_results, target_date):
+    games_rows = "".join(
+        f"<tr><td>{r['sport']}</td>"
+        f"<td>{r['espn_count'] if r['espn_count'] is not None else 'ERROR'}</td>"
+        f"<td>{r['db_count'] if r['db_count'] is not None else 'ERROR'}</td>"
+        f"<td style=\"color:{'#d93025' if r['mismatch'] else '#188038'}\">"
+        f"{'MISMATCH' if r['mismatch'] else 'ok'}</td></tr>"
+        for r in games_results
+    )
+
+    mismatch_detail_sections = []
+    for r in games_results:
+        if not r["mismatch"] or not r.get("espn_games"):
+            continue
+        game_rows = "".join(
+            f"<li>{g['away']} @ {g['home']} (ESPN id {g['espn_id']}, status {g['status']})</li>"
+            for g in r["espn_games"]
+        )
+        mismatch_detail_sections.append(f"""
+            <h4>{r['sport']} — ESPN's finished games for {target_date}</h4>
+            <ul>{game_rows}</ul>
+        """)
+
+    prop_sections = []
+    total_missing = 0
+    for r in prop_results:
+        if not r["applicable"]:
+            continue
+        missing = r["missing_games"]
+        total_missing += len(missing)
+        if not missing:
+            prop_sections.append(f"<h4>{r['sport']}</h4><p>All games have prop rows in every required table.</p>")
+            continue
+        rows = "".join(
+            f"<tr><td>{m['away']} @ {m['home']}</td><td>{m['missing_table']}</td></tr>"
+            for m in missing
+        )
+        prop_sections.append(f"""
+            <h4>{r['sport']} ({len(missing)} gap(s))</h4>
+            <table border="1" cellpadding="6" cellspacing="0">
+                <tr><th>Game</th><th>Missing from</th></tr>
+                {rows}
+            </table>
+        """)
+
+    return f"""
+        <div style="font-family: sans-serif;">
+            <h2>Data Integrity Report — {target_date}</h2>
+
+            <h3>Games Count (ESPN vs. DB)</h3>
+            <table border="1" cellpadding="6" cellspacing="0">
+                <tr><th>Sport</th><th>ESPN finished</th><th>In our DB</th><th>Status</th></tr>
+                {games_rows}
+            </table>
+            {''.join(mismatch_detail_sections)}
+
+            <h3>Player Props Completeness ({total_missing} gap(s) across NBA/NFL/MLB/NHL)</h3>
+            {''.join(prop_sections)}
+        </div>
+    """
+
+
 def run():
     target_date = date.today() - timedelta(days=1)
     date_str = target_date.strftime("%Y%m%d")
@@ -147,6 +263,30 @@ def run():
 
     total_mismatches = sum(1 for r in games_results if r["mismatch"])
     print(f"[integrity-report] {total_mismatches} sport(s) with a games-count mismatch")
+
+    prop_results = []
+    for cfg in SPORTS_CONFIG:
+        try:
+            result = _check_prop_completeness(engine, cfg, target_date)
+            prop_results.append(result)
+            if result["applicable"]:
+                print(f"[integrity-report] {cfg['display']} props: {len(result['missing_games'])} gap(s)")
+        except Exception as e:
+            print(f"[integrity-report] {cfg['display']} prop-check error (non-fatal): {e}")
+            prop_results.append({"sport": cfg["display"], "applicable": True, "missing_games": [],
+                                  "error": str(e)})
+
+    total_prop_gaps = sum(len(r["missing_games"]) for r in prop_results if r["applicable"])
+    subject_prefix = "🚨 " if (total_mismatches or total_prop_gaps) else ""
+    subject = (f"{subject_prefix}Data Integrity Report {target_date} — "
+               f"{total_mismatches} games mismatch(es), {total_prop_gaps} prop gap(s)")
+    html = _build_html(games_results, prop_results, target_date)
+
+    ok, err = EmailService.send_digest_to_one(REPORT_RECIPIENT, subject, html)
+    if ok:
+        print(f"[integrity-report] Sent to {REPORT_RECIPIENT}")
+    else:
+        print(f"[integrity-report] Failed to send: {err}")
 
 
 if __name__ == "__main__":

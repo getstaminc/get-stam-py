@@ -51,7 +51,7 @@ SPORTS_CONFIG = [
      "prop_check": {"mode": "event_id_join", "games_table": "nhl_games",
                     "prop_tables": ["nhl_player_props"]}},
     {"key": "ncaaf", "display": "NCAAF", "espn_slug": "football/college-football",
-     "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {},
+     "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {"groups": 90},
      "table": "ncaaf_games", "date_col": "game_date", "league_filter": None},
     {"key": "ncaab", "display": "NCAAB", "espn_slug": "basketball/mens-college-basketball",
      "espn_final_statuses": {"STATUS_FINAL"}, "espn_extra_params": {"groups": 50},
@@ -82,15 +82,19 @@ def _get_engine():
 
 
 def _fetch_espn_final_games(slug, date_str, final_statuses, extra_params=None):
-    """Return list of {'espn_id','home','away','status'} for events ESPN
-    reports as finished on date_str (YYYYMMDD) for the given sport slug."""
+    """Return (finals, possibly_truncated) where finals is a list of
+    {'espn_id','home','away','status'} for events ESPN reports as finished
+    on date_str (YYYYMMDD) for the given sport slug. possibly_truncated is
+    True when the raw event count hit the request's limit, which signals
+    the response may be missing events beyond that limit."""
     url = f"https://site.api.espn.com/apis/site/v2/sports/{slug}/scoreboard"
-    params = {"dates": date_str, "limit": 100}
+    params = {"dates": date_str, "limit": 200}
     if extra_params:
         params.update(extra_params)
     resp = requests.get(url, headers=ESPN_HEADERS, params=params, timeout=30)
     resp.raise_for_status()
     events = resp.json().get("events", [])
+    possibly_truncated = len(events) == params["limit"]
 
     finals = []
     for event in events:
@@ -106,7 +110,7 @@ def _fetch_espn_final_games(slug, date_str, final_statuses, extra_params=None):
             "away": away.get("team", {}).get("displayName", "?"),
             "status": status,
         })
-    return finals
+    return finals, possibly_truncated
 
 
 def _get_db_game_count(engine, table, date_col, date_obj, league_filter=None):
@@ -120,7 +124,7 @@ def _get_db_game_count(engine, table, date_col, date_obj, league_filter=None):
 
 
 def _check_games_count(engine, cfg, target_date, date_str):
-    espn_games = _fetch_espn_final_games(
+    espn_games, possibly_truncated = _fetch_espn_final_games(
         cfg["espn_slug"], date_str, cfg["espn_final_statuses"], cfg["espn_extra_params"]
     )
     db_count = _get_db_game_count(engine, cfg["table"], cfg["date_col"], target_date, cfg["league_filter"])
@@ -130,6 +134,7 @@ def _check_games_count(engine, cfg, target_date, date_str):
         "db_count": db_count,
         "mismatch": len(espn_games) != db_count,
         "espn_games": espn_games,
+        "possibly_truncated": possibly_truncated,
     }
 
 
@@ -185,8 +190,14 @@ def _build_html(games_results, prop_results, target_date):
         f"<td>{r['espn_count'] if r['espn_count'] is not None else 'ERROR'}</td>"
         f"<td>{r['db_count'] if r['db_count'] is not None else 'ERROR'}</td>"
         f"<td style=\"color:{'#d93025' if r['mismatch'] else '#188038'}\">"
-        f"{'MISMATCH' if r['mismatch'] else 'ok'}</td></tr>"
+        f"{'MISMATCH' if r['mismatch'] else 'ok'}"
+        f"{' ⚠️ truncated' if r.get('possibly_truncated') else ''}</td></tr>"
         for r in games_results
+    )
+
+    games_error_sections = "".join(
+        f"<p style=\"color:#d93025\">⚠️ {r['sport']} check failed: {r['error']}</p>"
+        for r in games_results if r.get('error')
     )
 
     mismatch_detail_sections = []
@@ -236,6 +247,7 @@ def _build_html(games_results, prop_results, target_date):
                 <tr><th>Sport</th><th>ESPN finished</th><th>In our DB</th><th>Status</th></tr>
                 {games_rows}
             </table>
+            {games_error_sections}
             {''.join(mismatch_detail_sections)}
 
             <h3>Player Props Completeness ({total_missing} gap(s) across NBA/NFL/MLB/NHL)</h3>

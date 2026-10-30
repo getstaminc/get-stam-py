@@ -4,13 +4,9 @@ import { Link } from "react-router-dom";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { TrendResult, MarketOverview } from "../utils/trendAnalysis";
-import { getTeamPageLink } from "../utils/teamSlugUtils";
 import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
-
-// Sports with a team-page slug map (see teamSlugUtils.ts's SPORT_MAPS) — soccer/
-// international sports (e.g. World Cup) don't have one yet, so avoid linking to a
-// team page that doesn't exist for them.
-const TEAM_PAGE_SPORTS = new Set(["nba", "nfl", "mlb", "nhl", "ncaaf", "ncaab"]);
+import MatchupTeamHeader, { MATCHUP_CARD_CONTAINER_SX } from "./MatchupTeamHeader";
+import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
 
 export interface TrendInsightCardProps {
   game: any;
@@ -176,67 +172,54 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, marke
     : null;
 
   return (
-    <Box sx={{ background: "#fff", border: "1px solid rgba(220,227,234,0.95)", borderRadius: "18px", boxShadow: "0 8px 24px rgba(15,23,42,0.07)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <Box
+      sx={{
+        bgcolor: tokens.cardBg,
+        border: `1px solid ${tokens.cardBorder}`,
+        borderRadius: `${tokens.cardRadius}px`,
+        boxShadow: tokens.shadowHover,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        ...MATCHUP_CARD_CONTAINER_SX,
+      }}
+    >
 
       {/* Team header */}
-      <Box sx={{ px: 2, pt: 2, pb: 1.5, display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 1, alignItems: "start" }}>
-        {/* Home */}
-        <Box>
-          {TEAM_PAGE_SPORTS.has(sport) ? (
-            <Link to={getTeamPageLink(sport, home.team)} style={{ textDecoration: "none", color: "inherit" }}>
-              <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
-                {home.team}
-              </Typography>
-            </Link>
-          ) : (
-            <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2 }}>
-              {home.team}
-            </Typography>
-          )}
-          {pitcherData?.home_pitcher && (
-            <Typography sx={{ fontSize: "0.8rem", color: "#5b7cff", fontStyle: "italic", mt: 0.25 }}>
-              {pitcherData.home_pitcher}{pitcherData.home_pitcher_stats ? ` · ${pitcherData.home_pitcher_stats}` : ""}
-            </Typography>
-          )}
-          <Typography sx={{ fontSize: "0.82rem", color: "#94a3b8", mt: 0.25 }}>Home</Typography>
-        </Box>
+      <Box sx={{ px: 2, pt: 2, pb: 1.5, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)", gap: 1, alignItems: "start" }}>
+        <MatchupTeamHeader
+          side="home"
+          team={home.team}
+          sport={sport}
+          record={home.record}
+          pitcher={pitcherData?.home_pitcher}
+          pitcherStats={pitcherData?.home_pitcher_stats}
+        />
 
         {/* Status pill */}
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", pt: 0.5 }}>
-          <Box sx={{ px: 1.5, py: 0.35, borderRadius: "999px", border: "1px solid #e2e8f0", bgcolor: "#f8fafc" }}>
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#475569", whiteSpace: "nowrap" }}>{statusLabel}</Typography>
+          <Box sx={{ px: 1.5, py: 0.35, borderRadius: "999px", bgcolor: tokens.chipTrackBg }}>
+            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: tokens.text.secondary, whiteSpace: "nowrap" }}>{statusLabel}</Typography>
           </Box>
           {isGameOver && (
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.08em", color: "#94a3b8", mt: 0.25 }}>FINAL</Typography>
+            <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.08em", color: tokens.text.tertiary, mt: 0.25 }}>FINAL</Typography>
           )}
           {isLive && (
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.08em", color: "#d32f2f", mt: 0.25 }}>LIVE</Typography>
+            <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.08em", color: tokens.miss.text, mt: 0.25 }}>LIVE</Typography>
           )}
           {gameTime && (
-            <Typography sx={{ fontSize: "0.7rem", color: "#94a3b8", mt: 0.25, whiteSpace: "nowrap" }}>{gameTime}</Typography>
+            <Typography sx={{ fontSize: "0.7rem", color: tokens.text.tertiary, mt: 0.25, whiteSpace: "nowrap" }}>{gameTime}</Typography>
           )}
         </Box>
 
-        {/* Away */}
-        <Box sx={{ textAlign: "right" }}>
-          {TEAM_PAGE_SPORTS.has(sport) ? (
-            <Link to={getTeamPageLink(sport, away.team)} style={{ textDecoration: "none", color: "inherit" }}>
-              <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2, "&:hover": { color: "#1976d2" }, cursor: "pointer" }}>
-                {away.team}
-              </Typography>
-            </Link>
-          ) : (
-            <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.2 }}>
-              {away.team}
-            </Typography>
-          )}
-          {pitcherData?.away_pitcher && (
-            <Typography sx={{ fontSize: "0.8rem", color: "#5b7cff", fontStyle: "italic", mt: 0.25, textAlign: "right" }}>
-              {pitcherData.away_pitcher}{pitcherData.away_pitcher_stats ? ` · ${pitcherData.away_pitcher_stats}` : ""}
-            </Typography>
-          )}
-          <Typography sx={{ fontSize: "0.82rem", color: "#94a3b8", mt: 0.25, textAlign: "right" }}>Away</Typography>
-        </Box>
+        <MatchupTeamHeader
+          side="away"
+          team={away.team}
+          sport={sport}
+          record={away.record}
+          pitcher={pitcherData?.away_pitcher}
+          pitcherStats={pitcherData?.away_pitcher_stats}
+        />
       </Box>
 
       {hasOverview && <MarketOverviewCard overview={marketOverview!} />}
@@ -357,7 +340,7 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, marke
           component={Link}
           to={detailsLink}
           onClick={onViewDetails}
-          sx={{ height: 36, px: "16px", borderRadius: "999px", background: "#1976d2", color: "#fff", fontSize: "0.875rem", fontWeight: 700, textTransform: "none", "&:hover": { background: "#1565c0" } }}
+          sx={{ height: 36, px: "16px", borderRadius: "999px", background: tokens.link, color: "#fff", fontSize: "0.875rem", fontWeight: 700, textTransform: "none", "&:hover": { background: tokens.linkHover } }}
         >
           Game Details
         </Button>

@@ -2,9 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Typography, Button } from '@mui/material';
 import { GameWithDraw } from '../types/gameTypes';
-import { getTeamPageLink } from '../utils/teamSlugUtils';
 import { hasFinalScore, hasLiveScore } from '../utils/gameDisplay';
-import TeamLogo from './TeamLogo';
+import MatchupTeamHeader, { MATCHUP_CARD_CONTAINER_SX } from './MatchupTeamHeader';
 import { gameDetailsTokens as tokens } from '../utils/gameDetailsTokens';
 
 interface MatchupOddsCardProps {
@@ -40,25 +39,12 @@ const formatOpeningPoint = (point: number | null | undefined): string | null => 
   return `${point > 0 ? '+' : ''}${point}`;
 };
 
-const formatRecord = (record?: { wins: number; losses: number; ties: number }): string | null => {
-  if (!record) return null;
-  const { wins, losses, ties } = record;
-  return ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
-};
-
-// Keyed to this card's own rendered width (via container-type below), not the
-// viewport -- see the long comment on TeamHeader for why that distinction
-// matters here specifically.
-const WIDE_CARD_QUERY = '@container matchup-odds-card (min-width: 560px)';
-
 const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sport, detailsLink, onViewDetails }) => {
   const { home, away, totals, draw, opening } = game as GameWithDraw;
   const isGameOver = hasFinalScore(game);
   const isLive = hasLiveScore(game);
   const hasScore = isGameOver || isLive;
   const statusLabel = hasScore ? `${home.score} - ${away.score}` : 'Scheduled';
-  const sportKeyForLogo = sport || 'mlb';
-
   const commenceDate = game.commence_time ? new Date(game.commence_time as string) : null;
   const dateLabel = commenceDate
     ? commenceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -66,71 +52,6 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
   const timeLabel = commenceDate
     ? commenceDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
     : null;
-
-  const TeamHeader: React.FC<{ side: 'home' | 'away' }> = ({ side }) => {
-    const team = side === 'home' ? home : away;
-    const pitcher = side === 'home' ? pitcherData?.home_pitcher : pitcherData?.away_pitcher;
-    const pitcherStats = side === 'home' ? pitcherData?.home_pitcher_stats : pitcherData?.away_pitcher_stats;
-    const record = formatRecord(team.record);
-    const metaParts = [record, pitcherStats, side === 'home' ? 'Home' : 'Away'].filter(Boolean);
-
-    return (
-      <Box
-        data-testid={`team-header-${side}`}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          // This card renders at very different widths depending on context --
-          // a full ~900px single header on Game Details, but only ~420px per
-          // card in GamesPage's 2-up list grid. MUI's xs/sm breakpoints key off
-          // the *viewport*, not this card's own rendered width, so they can't
-          // tell those two apart (both happen on the same desktop-width
-          // window) -- that's what let a long team name's wrapped second line
-          // collide with the logo circle in the list context even after the
-          // grid-overflow fix. A CSS container query reacts to the card's
-          // actual width instead: stacked/centered by default (safe at any
-          // width, including real mobile viewports), widening into the
-          // side-by-side row only once the card itself has the room.
-          gap: 0.75,
-          // flexDirection: row-reverse flips which edge "flex-start"/"flex-end"
-          // point to, so flex-start is what pushes a reversed row to the right.
-          justifyContent: 'flex-start',
-          textAlign: 'center',
-          flexDirection: 'column',
-          [WIDE_CARD_QUERY]: {
-            gap: 2,
-            textAlign: side === 'away' ? 'right' : 'left',
-            flexDirection: side === 'away' ? 'row-reverse' : 'row',
-          },
-          // Without this, a flex item's default min-width is its content's
-          // intrinsic width, not 0 -- so the text column below would refuse to
-          // shrink/wrap and push this whole header past the grid track's bounds.
-          minWidth: 0,
-        }}
-      >
-        <TeamLogo sportKey={sportKeyForLogo} teamName={team.team} size={60} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center', [WIDE_CARD_QUERY]: { alignItems: 'stretch' }, minWidth: 0 }}>
-          <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
-            {sport ? (
-              <Link to={getTeamPageLink(sport, team.team)} style={{ textDecoration: 'none', color: 'inherit' }}>
-                {team.team}
-              </Link>
-            ) : (
-              team.team
-            )}
-          </Typography>
-          {pitcher && (
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: tokens.link }}>{pitcher}</Typography>
-          )}
-          {metaParts.length > 0 && (
-            <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary }}>
-              {metaParts.join(' · ')}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-    );
-  };
 
   const OddsRow: React.FC<{
     label: string;
@@ -191,8 +112,7 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
         border: `1px solid ${tokens.cardBorder}`,
         borderRadius: `${tokens.cardRadius}px`,
         overflow: 'hidden',
-        containerType: 'inline-size',
-        containerName: 'matchup-odds-card',
+        ...MATCHUP_CARD_CONTAINER_SX,
       }}
     >
       <Box
@@ -212,7 +132,14 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
           py: 2.5,
         }}
       >
-        <TeamHeader side="home" />
+        <MatchupTeamHeader
+          side="home"
+          team={home.team}
+          sport={sport}
+          record={home.record}
+          pitcher={pitcherData?.home_pitcher}
+          pitcherStats={pitcherData?.home_pitcher_stats}
+        />
         <Box sx={{ textAlign: 'center', px: 1 }}>
           {dateLabel && <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700 }}>{dateLabel}</Typography>}
           {timeLabel && !hasScore && <Typography sx={{ fontSize: '0.875rem', color: tokens.text.secondary }}>{timeLabel}</Typography>}
@@ -242,7 +169,14 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
             </Typography>
           )}
         </Box>
-        <TeamHeader side="away" />
+        <MatchupTeamHeader
+          side="away"
+          team={away.team}
+          sport={sport}
+          record={away.record}
+          pitcher={pitcherData?.away_pitcher}
+          pitcherStats={pitcherData?.away_pitcher_stats}
+        />
       </Box>
 
       {!hasScore && (

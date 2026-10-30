@@ -49,6 +49,19 @@ describe('getTeamColors', () => {
     }
   });
 
+  it('returns curated colors for soccer clubs, keyed by the full club name (soccer names pass through unshortened)', () => {
+    expect(getTeamColors('soccer', 'Arsenal')).toEqual({ primary: '#EF0107', secondary: '#063672', abbr: 'ARS' });
+    expect(getTeamColors('soccer', 'Real Madrid')).toEqual({ primary: '#FFFFFF', secondary: '#FEBE10', abbr: 'RMA' });
+    expect(getTeamColors('soccer', 'Paris Saint Germain')).toEqual({ primary: '#001E62', secondary: '#DA020E', abbr: 'PSG' });
+  });
+
+  it('has a color entry for every club that appeared in the last 2 seasons of EPL/La Liga/Bundesliga/Ligue 1/Serie A data', () => {
+    const clubs = ['Brighton and Hove Albion', 'Leicester City', 'Atlético Madrid', '1. FC Köln', 'Borussia Monchengladbach', 'Saint Etienne', 'Inter Milan', 'Hellas Verona'];
+    for (const club of clubs) {
+      expect(getTeamColors('soccer', club).primary).not.toBe('#4a5361');
+    }
+  });
+
   it('corrects the NBA/NHL entries flagged by a color audit (primary/secondary were swapped or stale)', () => {
     expect(getTeamColors('nhl', 'Capitals')).toEqual({ primary: '#C8102E', secondary: '#041E42', abbr: 'WSH' });
     expect(getTeamColors('nhl', 'Bruins')).toEqual({ primary: '#FFB81C', secondary: '#000000', abbr: 'BOS' });

@@ -46,6 +46,11 @@ const formatRecord = (record?: { wins: number; losses: number; ties: number }): 
   return ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
 };
 
+// Keyed to this card's own rendered width (via container-type below), not the
+// viewport -- see the long comment on TeamHeader for why that distinction
+// matters here specifically.
+const WIDE_CARD_QUERY = '@container matchup-odds-card (min-width: 560px)';
+
 const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sport, detailsLink, onViewDetails }) => {
   const { home, away, totals, draw, opening } = game as GameWithDraw;
   const isGameOver = hasFinalScore(game);
@@ -75,17 +80,28 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: { xs: 0.75, sm: 2 },
+          // This card renders at very different widths depending on context --
+          // a full ~900px single header on Game Details, but only ~420px per
+          // card in GamesPage's 2-up list grid. MUI's xs/sm breakpoints key off
+          // the *viewport*, not this card's own rendered width, so they can't
+          // tell those two apart (both happen on the same desktop-width
+          // window) -- that's what let a long team name's wrapped second line
+          // collide with the logo circle in the list context even after the
+          // grid-overflow fix. A CSS container query reacts to the card's
+          // actual width instead: stacked/centered by default (safe at any
+          // width, including real mobile viewports), widening into the
+          // side-by-side row only once the card itself has the room.
+          gap: 0.75,
           // flexDirection: row-reverse flips which edge "flex-start"/"flex-end"
           // point to, so flex-start is what pushes a reversed row to the right.
           justifyContent: 'flex-start',
-          // Mobile keeps the matchup header as a real 3-column grid (home | date
-          // | away), same as desktop — just with each team's logo stacked above
-          // its name (centered) instead of side-by-side, since there isn't room
-          // for a full horizontal row in a narrow column. Desktop keeps the
-          // mirrored (logo-on-right for away) horizontal row.
-          textAlign: { xs: 'center', sm: side === 'away' ? 'right' : 'left' },
-          flexDirection: { xs: 'column', sm: side === 'away' ? 'row-reverse' : 'row' },
+          textAlign: 'center',
+          flexDirection: 'column',
+          [WIDE_CARD_QUERY]: {
+            gap: 2,
+            textAlign: side === 'away' ? 'right' : 'left',
+            flexDirection: side === 'away' ? 'row-reverse' : 'row',
+          },
           // Without this, a flex item's default min-width is its content's
           // intrinsic width, not 0 -- so the text column below would refuse to
           // shrink/wrap and push this whole header past the grid track's bounds.
@@ -93,7 +109,7 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
         }}
       >
         <TeamLogo sportKey={sportKeyForLogo} teamName={team.team} size={60} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: { xs: 'center', sm: 'stretch' }, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center', [WIDE_CARD_QUERY]: { alignItems: 'stretch' }, minWidth: 0 }}>
           <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
             {sport ? (
               <Link to={getTeamPageLink(sport, team.team)} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -169,7 +185,16 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
   );
 
   return (
-    <Box sx={{ bgcolor: tokens.cardBg, border: `1px solid ${tokens.cardBorder}`, borderRadius: `${tokens.cardRadius}px`, overflow: 'hidden' }}>
+    <Box
+      sx={{
+        bgcolor: tokens.cardBg,
+        border: `1px solid ${tokens.cardBorder}`,
+        borderRadius: `${tokens.cardRadius}px`,
+        overflow: 'hidden',
+        containerType: 'inline-size',
+        containerName: 'matchup-odds-card',
+      }}
+    >
       <Box
         data-testid="matchup-header-grid"
         sx={{

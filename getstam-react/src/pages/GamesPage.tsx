@@ -11,7 +11,8 @@ import {
 } from "@mui/material";
 import { useGame } from "../contexts/GameContext";
 import { useAuth } from "../contexts/AuthContext";
-import GameOdds, { shouldDisplayGame } from "../components/GameOdds";
+import MatchupOddsCard from "../components/MatchupOddsCard";
+import { shouldDisplayGame } from "../utils/gameDisplay";
 import GamesWithTrends from "../components/GamesWithTrends";
 import PastGamesDisplay from "../components/PastGamesDisplay";
 import { GameWithTrends } from "../utils/trendAnalysis";
@@ -224,7 +225,7 @@ const GamesPage = () => {
   const [activeView, setActiveView] = useState<"all" | "trends">(isTrends ? "trends" : "all");
   const [games, setGames] = useState<any[]>([]);
   // Games with no posted odds AND no final score (e.g. scheduled a day or more out)
-  // render nothing in GameOdds — derive the visible subset here so the count/empty-
+  // render nothing in MatchupOddsCard — derive the visible subset here so the count/empty-
   // state/grid all agree, instead of "N games today" with a silently blank grid
   // underneath. Completed games still count as visible even once odds clear.
   const visibleGames = games.filter(shouldDisplayGame);
@@ -612,7 +613,7 @@ const GamesPage = () => {
                 ? getMatchupPageLink(urlSport, match.away.team, match.home.team, match.commence_time)
                 : `/game-details/${urlSport}?game_id=${encodeGameId(match.game_id)}`;
             return (
-              <GameOdds
+              <MatchupOddsCard
                 key={match.game_id}
                 game={{
                   home: match.home,

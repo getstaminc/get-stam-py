@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Typography, CircularProgress, Divider } from "@mui/material";
 import SEO from "../components/SEO";
-import GameOdds from "../components/GameOdds";
+import MatchupOddsCard from "../components/MatchupOddsCard";
 import GameLogTable from "../components/GameLogTable";
 import { getTeamBySlug, getMatchupPageLink } from "../utils/teamSlugUtils";
 import { encodeGameId } from "../utils/gameIdCrypto";
@@ -159,7 +159,7 @@ const TeamPage: React.FC = () => {
               <CircularProgress size={28} />
             </Box>
           ) : oddsGame ? (
-            <GameOdds
+            <MatchupOddsCard
               game={oddsGame}
               sport={sport}
               detailsLink={(() => {

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 import { GameWithDraw } from '../types/gameTypes';
 import { getTeamPageLink } from '../utils/teamSlugUtils';
+import { hasFinalScore, hasLiveScore } from '../utils/gameDisplay';
 import TeamLogo from './TeamLogo';
 import { gameDetailsTokens as tokens } from '../utils/gameDetailsTokens';
 
@@ -15,6 +16,10 @@ interface MatchupOddsCardProps {
     away_pitcher_stats?: string;
   };
   sport?: string;
+  // Only list/preview contexts (games list, Team page's Today's Game) pass
+  // these -- the Game Details page itself has nowhere further to link to.
+  detailsLink?: string;
+  onViewDetails?: () => void;
 }
 
 const formatH2H = (h2h: number | null | undefined): string => {
@@ -41,9 +46,11 @@ const formatRecord = (record?: { wins: number; losses: number; ties: number }): 
   return ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
 };
 
-const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sport }) => {
+const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sport, detailsLink, onViewDetails }) => {
   const { home, away, totals, draw, opening } = game as GameWithDraw;
-  const hasScore = home.score !== null && home.score !== undefined && away.score !== null && away.score !== undefined;
+  const isGameOver = hasFinalScore(game);
+  const isLive = hasLiveScore(game);
+  const hasScore = isGameOver || isLive;
   const statusLabel = hasScore ? `${home.score} - ${away.score}` : 'Scheduled';
   const sportKeyForLogo = sport || 'mlb';
 
@@ -187,6 +194,16 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
           >
             {statusLabel}
           </Typography>
+          {isGameOver && (
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.06em', color: tokens.text.tertiary, mt: 0.5 }}>
+              FINAL
+            </Typography>
+          )}
+          {isLive && (
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.06em', color: tokens.miss.text, mt: 0.5 }}>
+              LIVE
+            </Typography>
+          )}
         </Box>
         <TeamHeader side="away" />
       </Box>
@@ -219,6 +236,31 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
             homeOpened={opening && opening.totals.over_point != null ? `Over ${formatOpeningPoint(opening.totals.over_point)}` : null}
             awayOpened={opening && opening.totals.under_point != null ? `Under ${formatOpeningPoint(opening.totals.under_point)}` : null}
           />
+        </Box>
+      )}
+
+      {detailsLink && (
+        <Box sx={{ pb: 2.5, pt: hasScore ? 2 : 0, px: { xs: 1.5, sm: 3 }, textAlign: 'center' }}>
+          <Button
+            component={Link}
+            to={detailsLink}
+            variant="contained"
+            onClick={onViewDetails}
+            size="small"
+            sx={{
+              px: 3,
+              py: 0.75,
+              fontWeight: 600,
+              fontSize: '0.9375rem',
+              textTransform: 'none',
+              borderRadius: '10px',
+              textDecoration: 'none',
+              bgcolor: tokens.link,
+              '&:hover': { bgcolor: tokens.linkHover },
+            }}
+          >
+            View Details
+          </Button>
         </Box>
       )}
     </Box>

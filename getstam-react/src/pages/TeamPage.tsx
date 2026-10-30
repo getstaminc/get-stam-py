@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Box, Typography, CircularProgress, Divider } from "@mui/material";
 import SEO from "../components/SEO";
 import GameOdds from "../components/GameOdds";
-import HistoricalGames from "../components/HistoricalGames";
+import GameLogTable from "../components/GameLogTable";
 import { getTeamBySlug, getMatchupPageLink } from "../utils/teamSlugUtils";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import { HistoricalGame, SportType, GameWithDraw } from "../types/gameTypes";
@@ -185,8 +185,8 @@ const TeamPage: React.FC = () => {
         <Box sx={{ minHeight: 420 }}>
           {sportType ? (
             <>
-              <HistoricalGames
-                title=""
+              <GameLogTable
+                title={`${teamFullName} - Last ${historicalLimit} Games`}
                 games={historicalGames}
                 loading={historicalLoading}
                 teamName={teamInfo.dbName}

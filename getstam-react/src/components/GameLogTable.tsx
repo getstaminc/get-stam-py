@@ -32,10 +32,8 @@ type DerivedGameData = {
   totalLine: number | null;
 };
 
-// Same per-sport field mapping as components/HistoricalGames.tsx's getGameData —
-// duplicated here deliberately (see Task 7 Interfaces note / spec): GameLogTable
-// is a separate, Game-Details-only component so HistoricalGames can stay
-// untouched for TeamPage/BlogPostPage.
+// The shared recent-games table -- used on Game Details, Team pages, and the
+// daily-digest blog post preview.
 function getGameData(game: HistoricalGame, sportType: SportType): DerivedGameData {
   switch (sportType) {
     case 'nfl':

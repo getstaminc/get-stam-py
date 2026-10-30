@@ -236,6 +236,12 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
   const { home_trend, away_trend, continuation_rate, sample_size } = trend;
   if (!home_trend || !away_trend || continuation_rate == null || sample_size == null) return null;
 
+  // trend.description already has the full matchup phrase baked in by the
+  // backend (e.g. "Brewers' 5-game win streak at home meets Rays' 3-game
+  // loss streak on the road") -- show it so the % below is traceable to the
+  // specific streaks that produced it, not just a generic "this collision".
+  const { title: matchupPhrase } = parseFullDescription(trend.description);
+
   const pct = Math.round(continuation_rate * 100);
   const otherPct = 100 - pct;
   const dbSport = getSportType(sportKey);
@@ -303,6 +309,11 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
       </Box>
 
       <Box data-testid="collision-split-panel" sx={{ bgcolor: tokens.subtlePanelBg, borderLeft: { md: `1px solid ${tokens.borders.light}` }, p: '18px 22px' }}>
+        {matchupPhrase && (
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: tokens.text.primary, mb: 0.25 }}>
+            {matchupPhrase}
+          </Typography>
+        )}
         <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, mb: 1 }}>
           Historically when this collision has happened
         </Typography>

@@ -128,6 +128,12 @@ describe('TrendAnalysisSection collision card', () => {
     expect(screen.getByText('72%')).toBeInTheDocument();
     expect(screen.getByText('28%')).toBeInTheDocument();
     expect(screen.getByText('18 historical meetings')).toBeInTheDocument();
+    // The stats panel's % figures must be traceable to which streaks produced
+    // them, not just labeled "this collision" -- so the matchup phrase (parsed
+    // from the backend's trend.description) shows above them.
+    expect(
+      screen.getByText("Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road")
+    ).toBeInTheDocument();
   });
 
   it('renders nothing for the collision card when there are no collision trends', () => {
@@ -201,7 +207,7 @@ describe('TrendAnalysisSection remaining trends list', () => {
     const collisionTrend = {
       type: 'win_streak' as const,
       count: 5,
-      description: 'collision description',
+      description: "Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road — ...",
       continuation_rate: 0.72,
       sample_size: 18,
       home_trend: { team: 'Milwaukee Brewers', type: 'win_streak' as const, count: 5, venue: 'venue_specific' as const },
@@ -222,7 +228,13 @@ describe('TrendAnalysisSection remaining trends list', () => {
     render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
 
     expect(screen.getByText('More trends')).toBeInTheDocument();
-    expect(screen.getAllByText(/Brewers covered 4 straight spreads|collision description/).length).toBe(1);
+    // otherTrend shows once, in the More Trends list.
+    expect(screen.getAllByText('Brewers covered 4 straight spreads').length).toBe(1);
+    // collisionTrend's matchup phrase shows once, in the CollisionCard -- it must not
+    // also be duplicated into the More Trends list below.
+    expect(
+      screen.getAllByText("Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road").length
+    ).toBe(1);
   });
 
   it('collapses to 2 trends with a "View More ▾" toggle when there are more than 2', async () => {

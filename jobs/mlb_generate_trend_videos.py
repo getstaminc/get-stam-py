@@ -20,20 +20,32 @@ differently and may end up on different platforms.
 
 Requires:
 - ffmpeg on PATH (`brew install ffmpeg`)
-- TTS_ENGINE=piper (default, see below) — piper-tts (`pip install piper-tts`)
-  plus a downloaded .onnx voice model. Runs fully offline, no API/network
-  dependency at all. piper_voices/ is gitignored (models run ~100-200MB
-  each) — fetch the default voice with:
+- TTS_ENGINE=edge (default, see below) — edge-tts (`pip install edge-tts`,
+  >=7.3.0 — earlier versions 403 against Microsoft's current token scheme,
+  see below), free, uses Microsoft Edge's neural voices via an unofficial
+  API. No API key needed, but because it's unofficial/reverse-engineered,
+  it's prone to breaking whenever Microsoft changes something server-side —
+  it 403'd outright from 2026-10-12 until upstream shipped a fix (Sec-MS-GEC
+  v2 token support, edge-tts 7.3.0, released 2026-10-13); as of 2026-10-30
+  it's working again, but the project's own issue tracker shows this is a
+  recurring pattern, not a one-off. synthesize_voiceover() below handles
+  this by catching ANY edge-tts failure and automatically re-synthesizing
+  that voiceover with piper instead — no manual TTS_ENGINE flip needed when
+  edge has a bad day; piper is the automatic backup, not something you have
+  to remember to switch to.
+- piper-tts (`pip install piper-tts`) plus a downloaded .onnx voice model —
+  required regardless of TTS_ENGINE, since it's always the fallback when
+  TTS_ENGINE=edge, and used directly when TTS_ENGINE=piper. Runs fully
+  offline, no API/network dependency at all. piper_voices/ is gitignored
+  (models run ~100-200MB each) — fetch the default voice with:
     mkdir -p piper_voices && cd piper_voices
     curl -sL -o en_US-ryan-high.onnx "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx"
     curl -sL -o en_US-ryan-high.onnx.json "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx.json"
   Browse https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US for
   other voices.
-- TTS_ENGINE=edge (the original engine, kept as a fallback option) —
-  edge-tts (`pip install edge-tts`), free, uses Microsoft Edge's neural
-  voices via an unofficial API. No API key, but that API started rejecting
-  all requests with a 403 on 2026-10-12 with no fix available upstream —
-  this is exactly the kind of outage risk piper's offline model avoids.
+- Set TTS_ENGINE=piper to skip edge-tts entirely (fully offline, no network
+  dependency at all) — e.g. if edge-tts is in one of its down spells for an
+  extended stretch and you'd rather not pay the per-voiceover fallback delay.
 
 Usage:
     venv/bin/python jobs/mlb_generate_trend_videos.py [YYYY-MM-DD]
@@ -62,9 +74,14 @@ SCREENSHOTS_ROOT = Path(__file__).resolve().parent.parent / "output" / "screensh
 AUDIO_ROOT = Path(__file__).resolve().parent.parent / "output" / "audio"
 VIDEOS_ROOT = Path(__file__).resolve().parent.parent / "output" / "videos"
 
-# Which TTS engine to use — "piper" (offline, default since edge-tts's
-# 2026-10-12 outage) or "edge" (the original, free but outage-prone).
-TTS_ENGINE = os.getenv("TTS_ENGINE", "piper")
+# Which TTS engine to use — "edge" (default: Microsoft Edge's neural voices,
+# free, better-sounding than piper — see synthesize_voiceover, which
+# automatically falls back to piper on any edge-tts failure, so this stays
+# the default despite edge-tts's unofficial/reverse-engineered API being
+# prone to breaking when Microsoft changes something server-side, as it did
+# 2026-10-12 and again in mid-October; piper's offline model is the backup,
+# not the primary) or "piper" (skip edge entirely, offline-only).
+TTS_ENGINE = os.getenv("TTS_ENGINE", "edge")
 
 # --- edge-tts settings (only used when TTS_ENGINE=edge) ---
 # "Reliable, Authority" — reads as a confident sports analyst. Swap via env
@@ -151,8 +168,18 @@ def synthesize_voiceover(text, out_path):
     out_path.parent.mkdir(parents=True, exist_ok=True)
     if TTS_ENGINE == "piper":
         _synthesize_piper(text, out_path)
-    else:
+        return out_path
+
+    # TTS_ENGINE == "edge" (default): try the better-sounding neural voice
+    # first, but never let an edge-tts outage (unofficial API, breaks
+    # whenever Microsoft changes something server-side — see TTS_ENGINE's
+    # comment) take the whole daily pipeline down. Fall back to piper
+    # automatically and keep going rather than failing the video.
+    try:
         asyncio.run(_synthesize_edge(text, TTS_VOICE, TTS_RATE, out_path))
+    except Exception as e:
+        print(f"  [TTS] edge-tts failed ({e}); falling back to piper for this voiceover.")
+        _synthesize_piper(text, out_path)
     return out_path
 
 

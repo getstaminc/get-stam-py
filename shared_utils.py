@@ -427,6 +427,7 @@ def convert_team_name(full_team_name):
         'Los Angeles Kings': 'Kings',
         'Minnesota Wild': 'Wild',
         'Montréal Canadiens': 'Canadiens',
+        'Montreal Canadiens': 'Canadiens',  # ESPN's spelling (no accent) vs. the line above
         'Nashville Predators': 'Predators',
         'New Jersey Devils': 'Devils',
         'New York Islanders': 'Islanders',
@@ -437,6 +438,7 @@ def convert_team_name(full_team_name):
         'San Jose Sharks': 'Sharks',
         'Seattle Kraken': 'Kraken',
         'St Louis Blues': 'Blues',
+        'St. Louis Blues': 'Blues',  # ESPN's spelling (with period) vs. the line above
         'Tampa Bay Lightning': 'Lightning',
         'Toronto Maple Leafs': 'Maple Leafs',
         'Utah Mammoth': 'Mammoth',

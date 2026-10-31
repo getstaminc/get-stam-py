@@ -14,6 +14,11 @@ of the voiceover's length:
 
 Scenes 2 and 3 slide in from the previous scene (ffmpeg's xfade transition).
 
+The first INTRO_BADGE_SECONDS (2s) also burn in an away-team/"VS"/home-team
+badge — team-colored bars (api/utils/team_colors.py) across the vertical
+middle of the frame — so the matchup is identifiable without having to add
+it by hand in TikTok's/Instagram's own cover editor after uploading.
+
 Produces two videos per game — one for the standard "script" (gambling terms
 allowed) and one for "script_tiktok" (sanitized) — since they're worded
 differently and may end up on different platforms.
@@ -69,6 +74,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
+from shared_utils import convert_team_name
+from api.utils.team_colors import get_team_colors
+
 SCRIPTS_ROOT = Path(__file__).resolve().parent.parent / "output" / "scripts"
 SCREENSHOTS_ROOT = Path(__file__).resolve().parent.parent / "output" / "screenshots"
 AUDIO_ROOT = Path(__file__).resolve().parent.parent / "output" / "audio"
@@ -123,6 +131,93 @@ PAN_Y_FRACTION = 0.02
 # render_multi_scene_video's per_scene calculation.
 SLIDE_TRANSITION = "slideleft"
 SLIDE_DURATION = 0.6
+
+# --- intro team/VS badge (first INTRO_BADGE_SECONDS of every video) ---
+# Rendered as a PNG via Pillow and composited in with ffmpeg's "overlay"
+# filter, rather than ffmpeg's own "drawtext"/"drawbox" filters — this
+# machine's Homebrew ffmpeg build has no freetype support (confirmed via
+# `ffmpeg -filters`/a direct run: "No such filter: 'drawtext'"), so drawtext
+# isn't actually available here regardless of filter syntax. Pillow sidesteps
+# that entirely and gives pixel-level control (anti-aliased text, proper
+# centering via textbbox) that drawtext's own layout primitives don't.
+#
+# A fixed system font rather than anything bundled in the repo — fine since
+# this whole pipeline is already tied to this one Mac (local dev server,
+# launchd schedule, etc.), same assumption the rest of the jobs make.
+INTRO_BADGE_FONT = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+INTRO_BADGE_SECONDS = 2
+INTRO_BADGE_BAR_HEIGHT = 110      # px, each of the two team bars
+INTRO_BADGE_BAR_MARGIN_X = 40     # px, left/right inset from the video edges
+INTRO_BADGE_FONT_SIZE = 40
+INTRO_BADGE_VS_SIZE = (130, 70)   # px, (width, height) of the center VS badge
+INTRO_BADGE_VS_FONT_SIZE = 34
+INTRO_BADGE_VS_BG = "black"
+INTRO_BADGE_VS_FG = "white"
+# A white outline around each bar/the VS badge so the boundary between them
+# stays visible even when two teams share (or nearly share) a primary color
+# — e.g. the Blackhawks and Bruins are both black — which would otherwise
+# merge the away/home bars and the VS badge into one indistinguishable block.
+INTRO_BADGE_BORDER_COLOR = "white"
+INTRO_BADGE_BORDER_WIDTH = 4
+
+
+def _badge_layout():
+    """Pixel geometry shared by the PNG renderer and (if ever needed again)
+    anything else that wants to know where the badge sits on the frame."""
+    mid_y = VIDEO_HEIGHT // 2
+    bar_w = VIDEO_WIDTH - 2 * INTRO_BADGE_BAR_MARGIN_X
+    away_y0 = mid_y - INTRO_BADGE_BAR_HEIGHT
+    home_y0 = mid_y
+    vs_w, vs_h = INTRO_BADGE_VS_SIZE
+    vs_x0 = (VIDEO_WIDTH - vs_w) // 2
+    vs_y0 = mid_y - vs_h // 2
+    return bar_w, away_y0, home_y0, vs_x0, vs_y0, vs_w, vs_h
+
+
+def render_badge_png(sport, away_team, home_team, out_path):
+    """Render the away-team/VS/home-team badge to a transparent PNG at
+    out_path — team-colored bars stacked across the vertical middle of the
+    frame (api/utils/team_colors.py; sports without curated colors —
+    currently NCAAF/NCAAB — get that module's neutral slate/white fallback).
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    away_colors = get_team_colors(sport, convert_team_name(away_team))
+    home_colors = get_team_colors(sport, convert_team_name(home_team))
+    bar_w, away_y0, home_y0, vs_x0, vs_y0, vs_w, vs_h = _badge_layout()
+
+    img = Image.new("RGBA", (VIDEO_WIDTH, VIDEO_HEIGHT), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(INTRO_BADGE_FONT, INTRO_BADGE_FONT_SIZE)
+    vs_font = ImageFont.truetype(INTRO_BADGE_FONT, INTRO_BADGE_VS_FONT_SIZE)
+
+    def centered_text(text, font, color, box_x0, box_y0, box_w, box_h):
+        # textbbox's own (left, top) offset isn't (0, 0) for most fonts —
+        # subtract it too, or "centered" text drifts off-center by a few px.
+        left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+        x = box_x0 + (box_w - (right - left)) / 2 - left
+        y = box_y0 + (box_h - (bottom - top)) / 2 - top
+        draw.text((x, y), text, font=font, fill=color)
+
+    draw.rectangle(
+        [INTRO_BADGE_BAR_MARGIN_X, away_y0, INTRO_BADGE_BAR_MARGIN_X + bar_w, away_y0 + INTRO_BADGE_BAR_HEIGHT],
+        fill=away_colors["primary"], outline=INTRO_BADGE_BORDER_COLOR, width=INTRO_BADGE_BORDER_WIDTH,
+    )
+    draw.rectangle(
+        [INTRO_BADGE_BAR_MARGIN_X, home_y0, INTRO_BADGE_BAR_MARGIN_X + bar_w, home_y0 + INTRO_BADGE_BAR_HEIGHT],
+        fill=home_colors["primary"], outline=INTRO_BADGE_BORDER_COLOR, width=INTRO_BADGE_BORDER_WIDTH,
+    )
+    draw.rectangle(
+        [vs_x0, vs_y0, vs_x0 + vs_w, vs_y0 + vs_h],
+        fill=INTRO_BADGE_VS_BG, outline=INTRO_BADGE_BORDER_COLOR, width=INTRO_BADGE_BORDER_WIDTH,
+    )
+
+    centered_text(away_team.upper(), font, away_colors["secondary"], INTRO_BADGE_BAR_MARGIN_X, away_y0, bar_w, INTRO_BADGE_BAR_HEIGHT)
+    centered_text(home_team.upper(), font, home_colors["secondary"], INTRO_BADGE_BAR_MARGIN_X, home_y0, bar_w, INTRO_BADGE_BAR_HEIGHT)
+    centered_text("VS", vs_font, INTRO_BADGE_VS_FG, vs_x0, vs_y0, vs_w, vs_h)
+
+    img.save(out_path)
+    return out_path
 
 
 def load_games(date_str):
@@ -224,10 +319,14 @@ def _static_filter(per_scene_duration):
     )
 
 
-def render_multi_scene_video(scenes, audio_path, out_path, total_duration):
+def render_multi_scene_video(scenes, audio_path, out_path, total_duration, badge=None):
     """scenes: list of {"image": Path, "kind": "zoom_out" | "static"}, played
     back-to-back in order, each taking an equal share of total_duration, with
     an xfade slide transition between consecutive scenes.
+
+    badge: optional (sport, away_team, home_team) tuple — when given, burns
+    in the intro team/VS badge (see intro_badge_filter) over the first
+    INTRO_BADGE_SECONDS of the final concatenated output.
     """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     n = len(scenes)
@@ -256,21 +355,41 @@ def render_multi_scene_video(scenes, audio_path, out_path, total_duration):
         chain = out_label
         running_offset += per_scene - t
 
-    filter_complex = ";".join(filter_parts + xfade_parts)
+    badge_parts = []
+    badge_png = None
+    audio_input_index = n
+    if badge:
+        sport, away_team, home_team = badge
+        badge_png = out_path.with_name(f".badge_{out_path.stem}.png")
+        render_badge_png(sport, away_team, home_team, badge_png)
+        badge_input_index = n
+        audio_input_index = n + 1
+        inputs += ["-loop", "1", "-i", str(badge_png)]
+        badge_parts.append(
+            f"[{chain}][{badge_input_index}:v]overlay=0:0:"
+            f"enable='between(t\\,0\\,{INTRO_BADGE_SECONDS})'[vbadge]"
+        )
+        chain = "vbadge"
+
+    filter_complex = ";".join(filter_parts + xfade_parts + badge_parts)
 
     cmd = [
         "ffmpeg", "-y",
         *inputs,
         "-i", str(audio_path),
         "-filter_complex", filter_complex,
-        "-map", f"[{chain}]", "-map", f"{n}:a",
+        "-map", f"[{chain}]", "-map", f"{audio_input_index}:a",
         "-c:v", "libx264", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         "-t", f"{total_duration:.3f}",
         "-shortest",
         str(out_path),
     ]
-    subprocess.run(cmd, capture_output=True, text=True, check=True)
+    try:
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
+    finally:
+        if badge_png is not None:
+            badge_png.unlink(missing_ok=True)
     return out_path
 
 
@@ -303,7 +422,12 @@ def build_variant(game, date_str, script_key, suffix):
     synthesize_voiceover(text, audio_path)
     duration = get_audio_duration(audio_path)
 
-    render_multi_scene_video(scenes, audio_path, video_path, duration)
+    matchup = game["matchup"]
+    # Falls back to "mlb" for older script JSONs written before "sport" was
+    # stored in the payload, matching the same fallback used elsewhere
+    # (e.g. mlb_generate_trend_video_screenshots.py's capture_game).
+    badge = (game.get("sport", "mlb"), matchup["away_team"], matchup["home_team"])
+    render_multi_scene_video(scenes, audio_path, video_path, duration, badge=badge)
     return video_path, None
 
 

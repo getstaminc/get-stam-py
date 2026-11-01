@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import create_engine, text
 import shared_utils
+from shared_utils import convert_to_eastern
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgres://", "postgresql://")
@@ -125,7 +126,24 @@ def backfill_date_range(start_date: str, end_date: str):
     try:
         while current <= end:
             date_str = current.strftime("%Y-%m-%d")
-            events = get_day_schedule(date_str)
+            raw_events = get_day_schedule(date_str)
+            # get_day_schedule's 18:00Z anchor also surfaces far-future events
+            # already posted to the board (confirmed live: querying a mid-
+            # December date returns Dec 25/26 marquee games too). Matching
+            # later uses date_str for the DB lookup, not each event's own
+            # commence_time -- so a leaked future event must never reach that
+            # match, or it could in principle overwrite today's correct row
+            # if the same two teams happen to play the identical home/away
+            # matchup again within the schedule lookahead window. Filter to
+            # only events whose own commence_time actually falls on date_str
+            # (Eastern calendar date, matching nba_games_1.game_date's own
+            # convention) before any further processing.
+            events = [
+                e for e in raw_events
+                if str(convert_to_eastern(
+                    datetime.fromisoformat(e["commence_time"].replace("Z", "+00:00"))
+                ).date()) == date_str
+            ]
             if events:
                 # Group events by unique commence_time to share odds snapshots.
                 by_commence_time = {}

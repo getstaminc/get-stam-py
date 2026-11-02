@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 """
 Daily Data Integrity Report
-Compares yesterday's final games (ESPN) against our DB row counts, and
-flags player-prop completeness gaps for NBA/NFL/MLB/NHL.
+Compares yesterday's final games (ESPN) against our DB row counts, flags
+player-prop completeness gaps for NBA/NFL/MLB/NHL, and flags any team
+appearing in more than one game on the same date (MLB excluded, since
+doubleheaders are legitimate there) -- a same-day repeat for every other
+sport means either a duplicate row or a team-name-mapping collision.
 Runs every morning via Heroku Scheduler, after the nightly seed jobs:
   python jobs/send_data_integrity_report.py
 """
@@ -184,7 +187,43 @@ def _check_prop_completeness(engine, cfg, target_date):
     return {"sport": cfg["display"], "applicable": True, "missing_games": missing_games}
 
 
-def _build_html(games_results, prop_results, target_date):
+def _check_duplicate_teams(engine, cfg, target_date):
+    """Flag any team_id appearing in more than one game on target_date for
+    this sport. A real team plays at most once per day -- MLB is the one
+    exception (legitimate doubleheaders) and is skipped entirely. Any other
+    repeat signals either a duplicate row (same real game inserted twice,
+    often with home/away reversed) or a team-name-mapping collision (two
+    different schools merged onto one code) -- both are worth a human
+    looking at the exact games listed."""
+    if cfg["key"] == "mlb":
+        return {"sport": cfg["display"], "applicable": False, "duplicates": []}
+
+    sql = f"""
+        SELECT home_team_id, away_team_id, home_team_name, away_team_name
+        FROM {cfg['table']} WHERE {cfg['date_col']} = :d
+    """
+    params = {"d": target_date}
+    if cfg["league_filter"] is not None:
+        sql += " AND league = :league"
+        params["league"] = cfg["league_filter"]
+
+    with engine.connect() as conn:
+        rows = conn.execute(text(sql), params).fetchall()
+
+    appearances = {}
+    for home_id, away_id, home_name, away_name in rows:
+        appearances.setdefault(home_id, []).append(f"{away_name} @ {home_name}")
+        appearances.setdefault(away_id, []).append(f"{away_name} @ {home_name}")
+
+    duplicates = [
+        {"team_id": team_id, "games": games}
+        for team_id, games in appearances.items()
+        if len(games) > 1
+    ]
+    return {"sport": cfg["display"], "applicable": True, "duplicates": duplicates}
+
+
+def _build_html(games_results, prop_results, dup_results, target_date):
     games_rows = "".join(
         f"<tr><td>{r['sport']}</td>"
         f"<td>{r['espn_count'] if r['espn_count'] is not None else 'ERROR'}</td>"
@@ -238,6 +277,30 @@ def _build_html(games_results, prop_results, target_date):
             </table>
         """)
 
+    dup_sections = []
+    total_dups = 0
+    for r in dup_results:
+        if not r["applicable"]:
+            continue
+        if r.get("error"):
+            dup_sections.append(f"<h4>{r['sport']}</h4><p style=\"color:#d93025\">⚠️ Check failed: {r['error']}</p>")
+            continue
+        dups = r["duplicates"]
+        total_dups += len(dups)
+        if not dups:
+            continue
+        rows = "".join(
+            f"<tr><td>{d['team_id']}</td><td>{'<br>'.join(d['games'])}</td></tr>"
+            for d in dups
+        )
+        dup_sections.append(f"""
+            <h4>{r['sport']} ({len(dups)} team(s) appearing more than once)</h4>
+            <table border="1" cellpadding="6" cellspacing="0">
+                <tr><th>team_id</th><th>Games on {target_date}</th></tr>
+                {rows}
+            </table>
+        """)
+
     return f"""
         <div style="font-family: sans-serif;">
             <h2>Data Integrity Report — {target_date}</h2>
@@ -252,6 +315,12 @@ def _build_html(games_results, prop_results, target_date):
 
             <h3>Player Props Completeness ({total_missing} gap(s) across NBA/NFL/MLB/NHL)</h3>
             {''.join(prop_sections)}
+
+            <h3>Same Team Twice in One Day ({total_dups} occurrence(s), MLB excluded)</h3>
+            <p>A team playing twice on the same date usually means a duplicate row (the
+            same real game inserted twice, often with home/away reversed) or a
+            team-name-mapping bug (two different schools merged onto one code).</p>
+            {''.join(dup_sections) if dup_sections else '<p>None found.</p>'}
         </div>
     """
 
@@ -293,10 +362,27 @@ def run():
 
     total_prop_gaps = sum(len(r["missing_games"]) for r in prop_results if r["applicable"])
     total_prop_errors = sum(1 for r in prop_results if r.get("error"))
-    subject_prefix = "🚨 " if (total_mismatches or total_prop_gaps or total_prop_errors) else ""
+
+    dup_results = []
+    for cfg in SPORTS_CONFIG:
+        try:
+            result = _check_duplicate_teams(engine, cfg, target_date)
+            dup_results.append(result)
+            if result["applicable"] and result["duplicates"]:
+                print(f"[integrity-report] {cfg['display']} duplicate-team check: "
+                      f"{len(result['duplicates'])} team(s) appearing more than once")
+        except Exception as e:
+            print(f"[integrity-report] {cfg['display']} duplicate-team check error (non-fatal): {e}")
+            dup_results.append({"sport": cfg["display"], "applicable": True, "duplicates": [],
+                                 "error": str(e)})
+
+    total_dups = sum(len(r["duplicates"]) for r in dup_results if r["applicable"])
+
+    subject_prefix = "🚨 " if (total_mismatches or total_prop_gaps or total_prop_errors or total_dups) else ""
     subject = (f"{subject_prefix}Data Integrity Report {target_date} — "
-               f"{total_mismatches} games mismatch(es), {total_prop_gaps} prop gap(s)")
-    html = _build_html(games_results, prop_results, target_date)
+               f"{total_mismatches} games mismatch(es), {total_prop_gaps} prop gap(s), "
+               f"{total_dups} same-day-duplicate team(s)")
+    html = _build_html(games_results, prop_results, dup_results, target_date)
 
     ok, err = EmailService.send_digest_to_one(REPORT_RECIPIENT, subject, html)
     if ok:

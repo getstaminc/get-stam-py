@@ -449,7 +449,12 @@ def seed_yesterdays_ncaaf_games():
             season_type = event.get("season", {}).get("type")
             playoffs = (season_type == 3) if season_type is not None else None
             neutral_site = comp.get("neutralSite")
-            game_site = None if neutral_site is None else ("neutral" if neutral_site else "home")
+            # ncaaf_games.game_site is NOT NULL (confirmed via information_schema) -- both
+            # False and an unknown/missing neutralSite must map to 'home', never None.
+            # Writing SQL NULL here would crash the whole run (all games share one
+            # transaction) on any event missing this field -- this exact bug was already
+            # found and fixed once during the NFL migration; do not reintroduce it.
+            game_site = "neutral" if neutral_site else "home"
 
             home_qs = [int(ls.get("displayValue", 0)) for ls in home_c.get("linescores", [])] or None
             away_qs = [int(ls.get("displayValue", 0)) for ls in away_c.get("linescores", [])] or None

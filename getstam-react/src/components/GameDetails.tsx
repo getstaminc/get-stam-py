@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Accordion, AccordionSummary, AccordionDetails, CircularProgress, Button } from "@mui/material";
-import MatchupOddsCard from "./MatchupOddsCard";
 import GameLogTable from "./GameLogTable";
 import { getSportType } from "../types/gameTypes";
 import TeamRankings from "./TeamRankings";
@@ -416,10 +415,6 @@ const GameDetails: React.FC<GameDetailsProps> = ({
           );
         })()
       )}
-
-      <Box sx={{ mt: 4, maxWidth: 900, mx: "auto", px: { xs: 1, sm: 0 } }}>
-        <MatchupOddsCard game={game} pitcherData={pitcherData} sport={teamPageSport} />
-      </Box>
 
       {/* Tabs for Recent Performance and Player Props */}
       <Box sx={{ maxWidth: 900, mx: "auto", mt: 3, px: { xs: 1, sm: 0 } }}>

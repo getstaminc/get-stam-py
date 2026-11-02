@@ -434,7 +434,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
   if (allTrends.length === 0 && marketRows.length === 0 && !topCollisionTrend) return null;
 
   return (
-    <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, pt: 4, mb: 2 }}>
+    <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 0 }, pt: 4, mb: 2 }}>
       {marketRows.length > 0 && (
         <Box
           data-testid="market-cards-grid"

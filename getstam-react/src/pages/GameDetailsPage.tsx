@@ -4,6 +4,7 @@ import { CircularProgress, Box, Typography } from "@mui/material";
 import GameDetails from "../components/GameDetails";
 import TrendAnalysisSection from "../components/TrendAnalysisSection";
 import GameFAQSection from "../components/GameFAQSection";
+import MatchupOddsCard from "../components/MatchupOddsCard";
 import { useGame } from "../contexts/GameContext";
 import { convertTeamNameBySport, convertSportKeyForDatabase } from "../utils/teamNameConverter";
 import { decodeGameId } from "../utils/gameIdCrypto";
@@ -12,6 +13,7 @@ import SEO from "../components/SEO";
 import { GameWithTrends } from "../utils/trendAnalysis";
 import { buildMatchupSlug, parseMatchupSlug } from "../utils/teamSlugUtils";
 import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
+import { getSportType } from "../types/gameTypes";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -548,6 +550,9 @@ const GameDetailsPage: React.FC = () => {
     ? `/game-details/${sport}/${canonicalSlug}`
     : `/game-details/${sport}?game_id=${encodedGameId}`;
 
+  const urlSport = getSportType(sportKey || "");
+  const teamPageSport: string | undefined = ['nba', 'nfl', 'mlb', 'nhl', 'ncaaf', 'ncaab'].includes(urlSport) ? urlSport : undefined;
+
   return (
     <div>
       <SEO
@@ -555,11 +560,18 @@ const GameDetailsPage: React.FC = () => {
         description={seoDescription}
         canonicalPath={canonicalPath}
       />
-      <Box sx={{ display: { xs: 'none', sm: 'block' }, maxWidth: 900, mx: 'auto', px: { xs: 1, sm: 0 }, pt: 2, fontSize: '0.75rem', color: tokens.text.secondary }}>
+      <Box sx={{ display: { xs: 'none', sm: 'block' }, maxWidth: 900, mx: 'auto', px: { xs: 2, sm: 0 }, pt: 2, fontSize: '0.75rem', color: tokens.text.secondary }}>
         {displaySport} › Games ›{' '}
         <Box component="span" sx={{ color: tokens.text.primary, fontWeight: 600 }}>
           {awayTeam} vs {homeTeam}
         </Box>
+      </Box>
+      <Box sx={{ mt: 4, maxWidth: 900, mx: "auto", px: { xs: 2, sm: 0 } }}>
+        <MatchupOddsCard
+          game={gameData}
+          pitcherData={getGamePitcherData(gameData)}
+          sport={teamPageSport}
+        />
       </Box>
       <TrendAnalysisSection
         gameTrends={gameTrends}

@@ -165,7 +165,7 @@ def convert_team_name_ncaab(full_team_name):
         "Furman Paladins": "FURM",
         "George Mason Patriots": "GMASN",
         "George Washington Colonials": "GW",
-        "Georgetown Hoyas": "GEOR",
+        "Georgetown Hoyas": "GT",  # "GEOR" is Georgia (SEC); Georgetown (Big East) is "GT"
         "Georgia Southern Eagles": "GASO",
         "Georgia Tech Yellow Jackets": "GATEC",
         "Gonzaga Bulldogs": "GONZ",
@@ -210,7 +210,7 @@ def convert_team_name_ncaab(full_team_name):
         "Massachusetts Minutemen": "MASS",
         "McNeese Cowboys": "MCNST",
         "Mercer Bears": "MER",
-        "Merrimack Warriors": "MERH",
+        "Merrimack Warriors": "MW",  # "MERH" is Mercyhurst (NEC); Merrimack (MAAC) is "MW"
         "Miami (OH) RedHawks": "MIAOH",
         "Miami Hurricanes": "MIAFL",
         "Michigan Wolverines": "MICH",
@@ -331,7 +331,7 @@ def convert_team_name_ncaab(full_team_name):
         "Western Carolina Catamounts": "WCAR",
         "Western Kentucky Hilltoppers": "WKY",
         "Western Michigan Broncos": "WMICH",
-        "William & Mary Tribe": "WILLI",
+        "William & Mary Tribe": "WMMRY",  # "WILLI" is Western Illinois (OVC); W&M (CAA) is "WMMRY"
         "Winthrop Eagles": "WINTH",
         "Wisconsin Badgers": "WISC",
         "Wofford Terriers": "WOFF",
@@ -422,9 +422,9 @@ def convert_team_name_ncaab(full_team_name):
         "Green Bay Phoenix": "WIGB",
         "Indiana Hoosiers": "IND",
         "Iowa Hawkeyes": "IOWA",
-        "Kansas City Roos": "KC",
+        "Kansas City Roos": "UMKC",  # "KC" is the retired legacy row (last game 2025-01-25); the active row is "UMKC"
         "Kennesaw State Owls": "KENST",
-        "Louisville Cardinals": "LOU",
+        "Louisville Cardinals": "LOUVI",  # "LOU" is an empty stray row (0 games); Louisville (ACC) is "LOUVI"
         "Marist Red Foxes": "MARIS",
         "Marquette Golden Eagles": "MARQ",
         "Memphis Tigers": "MEM",
@@ -433,7 +433,7 @@ def convert_team_name_ncaab(full_team_name):
         "Nebraska Cornhuskers": "NEB",
         "Nevada Wolf Pack": "NEV",
         "Northeastern Huskies": "NE",  # distinct from UConn ("UCONN"), Washington ("WGTON"), N. Illinois ("NOILL") and Houston Christian ("HOUBA") Huskies entries above
-        "Northern Arizona Lumberjacks": "NAZ",
+        "Northern Arizona Lumberjacks": "NOAR",  # "NAZ" is a stray row (4 games); N. Arizona (Big Sky) is "NOAR"
         "Northwestern Wildcats": "NWEST",
         "Oakland Golden Grizzlies": "OAK",
         "Ohio Bobcats": "OHIO",
@@ -444,14 +444,19 @@ def convert_team_name_ncaab(full_team_name):
         "Saint Louis Billikens": "STL",
         "Siena Saints": "SIENA",
         "South Dakota Coyotes": "SDAK",
-        "Tarleton State Texans": "TARL",
+        "Tarleton State Texans": "TST",  # "TARL" is a stray row (1 game); Tarleton State (WAC) is "TST"
         "The Citadel Bulldogs": "CITDL",
         "Toledo Rockets": "TOL",
         "UAB Blazers": "UAB",
         "UCLA Bruins": "UCLA",
         "Valparaiso Beacons": "VAL",
         "Wagner Seahawks": "WAGNR",
-        "Youngstown State Penguins": "YOUST"
+        "Youngstown State Penguins": "YOUST",
+        # Schools whose `teams` row was previously squatted on by a wrong mapping
+        # above; verified against the live roster + conference-matched game history.
+        "Kent State Golden Flashes": "KST",  # MAC; distinct from Kennesaw State ("KENST") and Kansas State ("KANST")
+        "Mercyhurst Lakers": "MERH",  # NEC; code freed by the Merrimack -> "MW" fix
+        "Western Illinois Leathernecks": "WILLI"  # OVC; code freed by the William & Mary -> "WMMRY" fix
     }
 
 

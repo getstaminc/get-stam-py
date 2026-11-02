@@ -24,12 +24,40 @@ NCAAF-specific complications that don't exist for the pro sports:
    same root cause as the NBA migration's Hawks/Clippers bugs, just a larger
    blast radius here.
 
-**Decision (confirmed with the user, given both findings): full migration**
-— fix the real naming bugs, migrate all 259 teams. FBS games get full Odds
-API lines; FCS games get ESPN scores with odds fields left NULL wherever
-Odds API has no line for that specific game (which is most FCS games — Odds
-API's NCAAF coverage is overwhelmingly FBS, with only occasional marquee FCS
-games like North Dakota State carrying a market).
+**Decision (revised after live verification — see below): two-job hybrid,
+not a full source cutover.** The original plan ("full migration, FCS odds
+fields go NULL where Odds API has no line") was tested directly against 6
+real FCS-vs-FCS games already in `ncaaf_games` (Dartmouth/Harvard,
+Cornell/Lehigh, Princeton/Cornell, etc.) — **none of the six even appeared
+in Odds API's game list at all**, not merely "no market." SDQL currently
+provides real `home_line`/`away_line`/`total` for virtually every FCS game,
+including small-conference matchups (Ivy League, SWAC) Odds API doesn't
+track at all. A full cutover would be a confirmed, substantial regression
+for FCS, not a theoretical one.
+
+Chosen design: **fix the naming bugs and migrate scores/enrichment to
+Odds API + ESPN as the primary source for everything (same as NFL/NBA)**,
+but add a second, later-scheduled job that queries SDQL for the same date
+and **fills in only whatever is still NULL** after the first job ran — never
+overwrites a value the first job already got from Odds API/ESPN. This
+keeps Odds API/ESPN authoritative wherever they have data (effectively all
+of FBS, plus whatever FCS games either source happens to cover) and uses
+SDQL strictly as a fallback for the gaps, mostly FCS lines.
+
+This does **not** reduce SDQL call frequency — the fallback job still needs
+the same daily "fetch all of yesterday's games" SDQL call the current job
+already makes, since SDQL doesn't support querying for only specific
+missing games. What changes is SDQL's role: primary source for everything
+→ fallback source only for whatever the free sources couldn't cover.
+
+**Scheduling, two separate daily jobs** (per user: data availability differs
+by time of day for each source):
+- `jobs/ncaaf_odds_api_seed_yesterdays_games.py` — Odds API + ESPN, primary
+  insert. Scheduled ~10:00 AM UTC (4am local).
+- `jobs/ncaaf_sdql_fallback_fill.py` — SDQL fallback fill, runs after the
+  first job and only updates NULL columns on existing rows (or inserts a
+  game from scratch if even ESPN's broad `groups=81` scoreboard missed it
+  entirely — expected to be rare). Scheduled ~6:00 PM UTC (noon local).
 
 **Separately discovered, NOT part of this migration's scope**: a real,
 current data gap — `ncaaf_games` has zero rows for 2026-10-24, a Saturday
@@ -92,63 +120,72 @@ separate investigation/backfill, not addressed here.
   The implementation task must re-derive this list fresh against the current `shared_utils.py` and current `teams` table state (not just copy this list blindly), since this spec's research is a point-in-time snapshot.
 - **Odds API NCAAF coverage confirmed FBS-heavy**: of 104 distinct teams seen
   in 3 days of live Odds API scores, 103 were FBS and only 1 was FCS (North
-  Dakota State) — consistent with "FCS games mostly get NULL odds fields"
-  being the expected, not exceptional, outcome for this sport.
+  Dakota State). Confirmed directly against 6 real FCS-vs-FCS games already
+  in `ncaaf_games`: none appeared in Odds API's historical odds game list at
+  all for their actual date. This gap is exactly what job 2's SDQL fallback
+  exists to close — see the revised Decision above.
 - **Field-by-field gap check**: every column the current SDQL job writes has
-  a confirmed Odds API or ESPN equivalent for FBS games; for FCS games,
-  score/quarter-score fields still come from ESPN, odds-derived fields are
-  expected to be NULL more often than not (lenient policy, not a gap to
-  "fix" — this is a real, permanent characteristic of FCS betting-market
-  coverage, not a bug).
+  a confirmed Odds API or ESPN equivalent for FBS games. For FCS games where
+  Odds API/ESPN come up short, job 2's SDQL fallback is expected to supply
+  real values for most of them — matching current data richness rather than
+  accepting a permanent gap.
 
-| `ncaaf_games` column | Old (SDQL) source | New source |
-|---|---|---|
-| `home_points`/`away_points` | SDQL | Odds API `scores` (FBS); ESPN boxscore score (FCS fallback — see Decisions) |
-| `home_line`/`away_line` | SDQL | Odds API `spreads` market (FBS only in practice) |
-| `total` | SDQL | Odds API `totals` market `point` (FBS only in practice) |
-| `home_money_line`/`away_money_line` | SDQL | Odds API `h2h` market (FBS only in practice) |
-| `home/away_quarter_scores` | SDQL | ESPN `linescores` |
-| `home/away_first/second_half_points` | computed | same computation (ESPN-sourced) |
-| `home/away_overtime_points` | SDQL 5th quarter value | ESPN 5th `linescores` entry (same pattern proven for NFL/NBA; college OT can have 2+ periods — same accepted limitation as NFL/NBA: only the first OT period is captured) |
-| `playoffs` | SDQL | ESPN `season.type == 3` |
-| `game_site` (`'home'`/`'neutral'`) | SDQL | ESPN `neutralSite` flag (same as NFL) |
-| `start_time` | SDQL's own HHMM string | Odds API `commence_time` (ISO8601 UTC → ET) |
-| `total_points`, `total_margin` | computed | same computation |
-| `odds_event_id` | column doesn't exist today | Odds API event `id` (new column, this migration) |
+| `ncaaf_games` column | Old (SDQL) source | New primary source | Fallback (job 2, SDQL) |
+|---|---|---|---|
+| `home_points`/`away_points` | SDQL | Odds API `scores`; ESPN `competitor.score` if Odds API lacks the game | SDQL, only if the row/column is still NULL |
+| `home_line`/`away_line` | SDQL | Odds API `spreads` market | SDQL fills NULL (expected for most FCS games) |
+| `total` | SDQL | Odds API `totals` market `point` | SDQL fills NULL |
+| `home_money_line`/`away_money_line` | SDQL | Odds API `h2h` market | SDQL fills NULL |
+| `home/away_quarter_scores` | SDQL | ESPN `linescores` | SDQL fills NULL if ESPN also missed it |
+| `home/away_first/second_half_points` | computed | same computation (ESPN-sourced) | recomputed in job 2 if SDQL supplied quarter scores job 1 didn't have |
+| `home/away_overtime_points` | SDQL 5th quarter value | ESPN 5th `linescores` entry (college OT can have 2+ periods — same accepted limitation as NFL/NBA: only the first OT period is captured) | same recompute path as above |
+| `playoffs` | SDQL | ESPN `season.type == 3` | SDQL fills NULL |
+| `game_site` (`'home'`/`'neutral'`) | SDQL | ESPN `neutralSite` flag (same as NFL) | SDQL fills NULL |
+| `start_time` | SDQL's own HHMM string | Odds API `commence_time` (ISO8601 UTC → ET) | SDQL's own HHMM parsing (same conversion the old job already does), only if still NULL |
+| `total_points`, `total_margin` | computed | same computation | recomputed in job 2 if job 1 left points NULL and SDQL supplied them |
+| `odds_event_id` | column doesn't exist today | Odds API event `id` (new column, this migration) | never set by job 2 — SDQL has no equivalent id, this column simply stays NULL for SDQL-only games |
 
-**Open question for FBS games where Odds API has the score but ESPN
-enrichment fails to match**: same lenient policy as NFL — insert with score/
-lines from Odds API, leave quarter-scores/playoffs/game_site NULL. **Open
-question for games that only appear on ESPN's `groups=81` broad scoreboard
-and have NO Odds API score at all (most FCS games)**: ESPN's own
-`competitor.score` field (confirmed available directly on scoreboard/summary
-responses, same field used in the original `DELETE_afcon_espn_scoreboard_example.py`
-reference) becomes the only score source for these games — this is a new
-code path NFL/NBA never needed, since Odds API's `scores` endpoint was
-always sufficient there.
+**Lenient policy, both jobs**: never drop a game over missing data in either
+direction. Job 1 inserts whatever Odds API/ESPN found, NULL elsewhere. Job 2
+never overwrites a non-NULL value — it only fills gaps, and only inserts a
+brand-new row if the game is missing entirely after job 1 (expected to be
+rare, since ESPN's broad `groups=81` scoreboard should catch nearly
+everything SDQL would have found too).
 
 ## Decisions made during design review
 
-- **Full migration, all 259 teams** (user-confirmed, given the findings above).
+- **Two-job hybrid, all 259 teams** — not a full SDQL cutover (see Decision
+  above). Odds API + ESPN are the primary source for every team; SDQL is a
+  scheduled-later fallback that only fills NULLs, never overwrites.
 - **New migration**: add `ncaaf_games.odds_event_id` (nullable `String(100)`
   + unique constraint), same shape as NBA's.
 - **Scope via existing teams roster, not ESPN's group semantics**: pull
   `groups=90` + `groups=81` scoreboard results, filter to games where both
   teams resolve (via a corrected `convert_team_name`) to an existing row in
   `teams WHERE sport='NCAAF'`. Unmatched-team games are silently skipped.
-- **Dual-source scores**: Odds API `scores` for games it covers (effectively
-  all FBS); ESPN's own `competitor.score` for games Odds API has no line for
-  (effectively most FCS games) — this is the one real structural addition
-  beyond the NFL/NBA job template.
+  The SDQL fallback job matches the same way SDQL always has (its own
+  short-name strings against the `teams` table directly, no `convert_team_name`
+  involved on that side — unchanged from the current job).
+- **Dual-source scores in job 1**: Odds API `scores` for games it covers;
+  ESPN's own `competitor.score` for games Odds API has no line for at all —
+  this is the one real structural addition beyond the NFL/NBA job template.
 - **Neutral-site handling**: derive `game_site` from ESPN's `neutralSite`
-  flag, same as NFL (not NBA's hardcoded `'home'`).
-- **Bundle the team-name mapping fixes into this migration's own task** —
-  they block correct matching for both the Odds API and ESPN paths equally.
-- **Lenient insert/matching policies**: same as NFL/NBA — never drop a game
-  over missing odds or failed ESPN enrichment.
+  flag, same as NFL (not NBA's hardcoded `'home'`); SDQL fallback uses its
+  own `site` field exactly as the current job does, only when still NULL.
+- **Bundle the team-name mapping fixes into job 1's task** — they block
+  correct matching for both the Odds API and ESPN paths equally. SDQL's own
+  matching (direct short-name string match) is unaffected and unchanged.
+- **Scheduling**: job 1 (`ncaaf_odds_api_seed_yesterdays_games.py`) at
+  ~10:00 AM UTC (4am local); job 2 (`ncaaf_sdql_fallback_fill.py`) at
+  ~6:00 PM UTC (noon local) — per the user's operational knowledge that
+  Odds API's data is reliably available earlier in the day than SDQL's.
 - **The 2026-10-24 data gap is explicitly out of scope** — flagged for
   separate follow-up, not fixed as part of this migration.
 - **Go-forward only** — no backfill of existing `ncaaf_games` rows.
+- **SDQL is not retired for NCAAF** — its daily call frequency is unchanged
+  from today (still fetches the full day's games, since SDQL has no
+  "only these specific games" query mode); only its *role* changes, from
+  primary source to fallback-for-gaps.
 
 ## Explicitly out of scope
 

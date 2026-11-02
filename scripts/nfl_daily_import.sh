@@ -7,8 +7,12 @@
 # from the Odds API and would run fine on Heroku, but we do them here too so the
 # whole NFL pipeline lives in one place.
 #
-# Scheduled by ~/Library/LaunchAgents/com.getstam.nfl-daily-import.plist (6:00 AM
-# local). If the Mac is asleep at 6:00, launchd runs it once on the next wake.
+# UNSCHEDULED as of 2026-11-01 — the launchd plist that ran this (6:00 AM
+# local) and the morning-wake-bridge plist that kept the Mac awake for it
+# were both removed. This script and the jobs it calls still work fine run
+# by hand; to reschedule, recreate a plist pointing at this script (see git
+# history for com.getstam.nfl-daily-import.plist) and re-add a pmset wake
+# time early enough to cover it.
 #
 # - Odds:   yesterday only  (Odds API credits — keep the window tight)
 # - Actuals/defense: last 3 days  (ESPN is free — wide window covers a missed run)

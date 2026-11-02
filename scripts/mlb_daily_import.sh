@@ -6,9 +6,12 @@
 # hits site.api.espn.com) fails on Heroku. This stopped Aug 3 2026. Odds come from
 # the Odds API and are fine on Heroku, but we do the whole pipeline here.
 #
-# Scheduled by ~/Library/LaunchAgents/com.getstam.mlb-daily-import.plist (4:00 AM
-# local). If the Mac is asleep at 4:00, launchd runs it once on the next wake.
-# (Wake schedule + a caffeinate bridge job cover this — see that plist.)
+# UNSCHEDULED as of 2026-11-01 — the launchd plist that ran this (4:00 AM
+# local) and the morning-wake-bridge plist that kept the Mac awake for it
+# were both removed. This script and the jobs it calls still work fine run
+# by hand; to reschedule, recreate a plist pointing at this script (see git
+# history for com.getstam.mlb-daily-import.plist) and re-add a pmset wake
+# time early enough to cover it.
 #
 # - Orchestrator (odds + actuals): yesterday only  (Odds API credits)
 # - Extra actuals-only catch-up:    last 3 days     (ESPN is free)

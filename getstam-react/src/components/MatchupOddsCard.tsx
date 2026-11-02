@@ -73,9 +73,9 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
       }}
     >
       <Box>
-        <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1.0625rem' }, fontWeight: 700 }}>{homeValue}</Typography>
+        <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1.0625rem' }, fontWeight: 600, ...tokens.tabularNums }}>{homeValue}</Typography>
         {homeOpened && (
-          <Typography sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' }, color: tokens.text.tertiary }}>
+          <Typography sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' }, color: tokens.text.tertiary, ...tokens.tabularNums }}>
             Opened {homeOpened}
           </Typography>
         )}
@@ -84,8 +84,8 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
         <Typography
           sx={{
             fontSize: { xs: '0.5625rem', sm: '0.6875rem' },
-            fontWeight: 700,
-            letterSpacing: '0.1em',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
             textTransform: 'uppercase',
             color: tokens.text.secondary,
           }}
@@ -95,9 +95,9 @@ const MatchupOddsCard: React.FC<MatchupOddsCardProps> = ({ game, pitcherData, sp
         {centerExtra}
       </Box>
       <Box sx={{ textAlign: 'right' }}>
-        <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1.0625rem' }, fontWeight: 700 }}>{awayValue}</Typography>
+        <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1.0625rem' }, fontWeight: 600, ...tokens.tabularNums }}>{awayValue}</Typography>
         {awayOpened && (
-          <Typography sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' }, color: tokens.text.tertiary }}>
+          <Typography sx={{ fontSize: { xs: '0.625rem', sm: '0.75rem' }, color: tokens.text.tertiary, ...tokens.tabularNums }}>
             Opened {awayOpened}
           </Typography>
         )}

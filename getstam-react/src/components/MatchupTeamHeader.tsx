@@ -83,7 +83,7 @@ const MatchupTeamHeader: React.FC<MatchupTeamHeaderProps> = ({ team, side, sport
           minWidth: 0,
         }}
       >
-        <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+        <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, fontFamily: tokens.font.heading }}>
           {canLink ? (
             <Link to={getTeamPageLink(sport!, team)} style={{ textDecoration: 'none', color: 'inherit' }}>
               {team}

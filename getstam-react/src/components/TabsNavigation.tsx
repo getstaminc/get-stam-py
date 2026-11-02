@@ -5,6 +5,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -13,6 +14,7 @@ import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
+import { Link } from "react-router-dom";
 import styles from "./css/Navigation.module.css";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -151,7 +153,42 @@ const TabsNavigation: React.FC = () => {
   );
 
   return (
-    <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "transparent", display: "flex", alignItems: "center" }}>
+    <Box sx={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 1100,
+      borderBottom: '1px solid #e6e7e3',
+      bgcolor: '#fff',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+      display: 'flex',
+      alignItems: 'center',
+      px: { xs: 1.5, sm: 2 },
+    }}>
+
+      {/* Logo */}
+      <Box
+        component={Link}
+        to="/"
+        sx={{
+          textDecoration: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          flexShrink: 0,
+          mr: { xs: 1, sm: 3 },
+          py: 1.25,
+        }}
+      >
+        <Typography sx={{ fontWeight: 400, lineHeight: 1.15, fontSize: '1.1rem' }}>
+          <Box component="span" sx={{ color: '#888', fontWeight: 400 }}>get</Box>
+          <Box component="span" sx={{ color: '#007bff', fontWeight: 900, fontSize: '1.35rem', ml: '2px', letterSpacing: 1 }}>STAM</Box>
+        </Typography>
+        <Typography sx={{ fontSize: '0.7rem', color: '#6b7280', letterSpacing: '0.01em', lineHeight: 1 }}>
+          Stats That Actually Matter
+        </Typography>
+      </Box>
+
+      {/* Nav — flex: 1 */}
       <Box sx={{ flex: 1 }}>
         {isMobile ? (
           <>
@@ -160,7 +197,6 @@ const TabsNavigation: React.FC = () => {
                 onClick={() => navigate('/')}
                 disableRipple
                 sx={{
-                  ml: 1,
                   textTransform: 'none',
                   fontWeight: isHome ? 700 : 500,
                   color: isHome ? 'primary.main' : 'text.secondary',
@@ -172,7 +208,7 @@ const TabsNavigation: React.FC = () => {
                   minWidth: 0,
                 }}
               >
-                HOME
+                Home
               </Button>
               <Button
                 onClick={toggleDrawer(true)}
@@ -188,21 +224,21 @@ const TabsNavigation: React.FC = () => {
                   minWidth: 0,
                 }}
               >
-                MORE SPORTS
+                Sports ▾
               </Button>
             </Box>
             <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-              <Box sx={{ width: 260, pt:3, px:1 }} role="presentation">
+              <Box sx={{ width: 260, pt: 3, px: 1 }} role="presentation">
                 <List>
                   {inSeasonSports.map((sport) => (
                     sport.leagues && sport.leagues.length > 0 ? (
-                      <Box key={sport.name} sx={{ px:1, py:0.5 }}>
+                      <Box key={sport.name} sx={{ px: 1, py: 0.5 }}>
                         <ListItem disablePadding>
-                          <ListItemText primary={sport.name} sx={{ pl:1, fontWeight:700 }} />
+                          <ListItemText primary={sport.name} sx={{ pl: 1 }} primaryTypographyProps={{ fontWeight: 700 }} />
                         </ListItem>
                         {sport.leagues.map((league) => (
                           <ListItem key={league.path} disablePadding>
-                            <ListItemButton sx={{ pl:4 }} onClick={() => handleDrawerItemClick(league.path)}>
+                            <ListItemButton sx={{ pl: 4 }} onClick={() => handleDrawerItemClick(league.path)}>
                               <ListItemText primary={league.name} />
                             </ListItemButton>
                           </ListItem>
@@ -217,7 +253,7 @@ const TabsNavigation: React.FC = () => {
                     )
                   ))}
                 </List>
-                <Divider sx={{ my:1 }} />
+                <Divider sx={{ my: 1 }} />
                 <List>
                   {offSeasonSports.map((sport) => (
                     <ListItem key={sport.name} disablePadding>
@@ -226,18 +262,23 @@ const TabsNavigation: React.FC = () => {
                       </ListItemButton>
                     </ListItem>
                   ))}
+                  <ListItem disablePadding>
+                    <ListItemButton onClick={() => handleDrawerItemClick('/feature-requests')}>
+                      <ListItemText primary="Feature Requests" />
+                    </ListItemButton>
+                  </ListItem>
                 </List>
               </Box>
             </Drawer>
           </>
         ) : (
           <>
-            <Tabs value={currentTab} onChange={(e,v) => handleTabChange(e as any, v as number)} textColor="primary" indicatorColor="primary">
+            <Tabs value={currentTab} onChange={(e, v) => handleTabChange(e as any, v as number)} textColor="primary" indicatorColor="primary">
               <Tab label="Home" onClick={() => navigate("/")} />
               {inSeasonSports.map((sport) => (
                 sport.leagues && sport.leagues.length > 0 ? (
                   <Tab key={sport.name} label={sport.name} onMouseDown={() => setSuppressNextChange(true)} onClick={(e) => { setAnchorEl(e.currentTarget as HTMLElement); setAnchorSport(sport.name); }} />
-                  ) : (
+                ) : (
                   <Tab key={sport.name} label={sport.name} onClick={() => sport.path && navigate(sport.path)} />
                 )
               ))}
@@ -246,14 +287,12 @@ const TabsNavigation: React.FC = () => {
               )}
             </Tabs>
 
-            {/* Off-season menu (when anchor is set but no sport-specific dropdown active) */}
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl) && !anchorSport} onClose={handleClose}>
               {offSeasonSports.map((sport) => (
                 <MenuItem key={sport.name} onClick={() => handleMenuItemClick(sport.path)}>{sport.name}</MenuItem>
               ))}
             </Menu>
 
-            {/* League dropdown for sports with leagues */}
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl) && Boolean(anchorSport)} onClose={handleClose}>
               {anchorSport && (() => {
                 const sport = inSeasonSports.find((s) => s.name === anchorSport);
@@ -267,47 +306,20 @@ const TabsNavigation: React.FC = () => {
         )}
       </Box>
 
-      {!isMobile && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml:2 }}>
-          <Button color="inherit" disableRipple sx={{ minHeight:48, textTransform:'none', fontWeight:500 }} onClick={() => navigate('/feature-requests')}>Feature Requests</Button>
-          {accountControls}
-        </Box>
-      )}
-
-      {isMobile && (
-        <Button
-          variant="outlined"
-          color="inherit"
-          disableRipple
-          aria-label="feature-requests"
-          onClick={() => navigate('/feature-requests')}
-          sx={{
-            ml: 1,
-            mt: 1,
-            mb: 1,
-            mr: 1,
-            textTransform: 'none',
-            fontWeight: 600,
-            borderRadius: 2,
-            px: 2,
-            color: '#333',
-            borderColor: '#e0e0e0',
-            bgcolor: 'transparent',
-            '&:hover': {
-              bgcolor: '#f5f5f5',
-              borderColor: '#bdbdbd',
-            },
-          }}
-        >
-          FEATURE REQUESTS
-        </Button>
-      )}
-
-      {isMobile && (
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-          {accountControls}
-        </Box>
-      )}
+      {/* Right controls */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+        {!isMobile && (
+          <Button
+            color="inherit"
+            disableRipple
+            sx={{ minHeight: 48, textTransform: 'none', fontWeight: 500, fontSize: '0.875rem', color: 'text.secondary' }}
+            onClick={() => navigate('/feature-requests')}
+          >
+            Feature Requests
+          </Button>
+        )}
+        {accountControls}
+      </Box>
 
       <AuthDialog open={authDialogOpen} onClose={() => setAuthDialogOpen(false)} />
       <UpgradeDialog open={upgradeDialogOpen} onClose={() => setUpgradeDialogOpen(false)} />

@@ -1,7 +1,12 @@
 // Shared design tokens for the Game Details page redesign.
-// Source of truth for exact values: the design handoff README
-// (~/Downloads/design_handoff_game_details/README.md, "Design tokens" section).
 export const gameDetailsTokens = {
+  // — Typography —
+  font: {
+    heading: "'Manrope', sans-serif",
+    body:    "'Manrope', sans-serif",
+  },
+  // fontVariantNumeric to apply to odds, scores, percentages, stats
+  tabularNums: { fontVariantNumeric: 'tabular-nums' as const, fontFamily: "'Manrope', sans-serif" },
   cardBg: '#ffffff',
   cardBorder: '#e6e7e3',
   cardRadius: 16,

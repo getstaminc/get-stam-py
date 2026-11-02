@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { Box, Button, Chip, CircularProgress, Container, Typography } from "@mui/material";
 import SEO from "../components/SEO";
+import SportIcon from "../components/SportIcon";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
 import { sports } from "../configs/sportsConfig";
 import TrendInsightCard, { getConfidenceScore } from "../components/TrendInsightCard";
@@ -39,9 +40,7 @@ const SPORT_CONFIG: Record<
 const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 4, NBA: 3, NHL: 2, MLB: 1 };
 const homepagePriority = (name: string) => HOMEPAGE_PRIORITY[name] ?? 0;
 
-// Soccer gets its own per-league homepage sections (EPL, LA LIGA, etc. rather than one
-// blended "SOCCER" section) — the grouped sportsConfig "SOCCER" entry has no single
-// path/apiKey of its own, so these are built separately rather than via SPORT_CONFIG.
+// Keep league-specific API and detail routes when combining the soccer feed.
 const SOCCER_LEAGUES: { name: string; urlKey: string; apiKey: string }[] = [
   { name: "EPL",         urlKey: "epl",         apiKey: "soccer_epl" },
   { name: "LA LIGA",     urlKey: "laliga",       apiKey: "soccer_spain_la_liga" },
@@ -116,6 +115,7 @@ interface SportSectionProps {
   apiKey: string;
   historicalKey: string;
   minTrendLength: number;
+  leagues?: typeof SOCCER_LEAGUES;
   onReport: (hasActiveGames: boolean, maxScore: number) => void;
 }
 
@@ -125,10 +125,11 @@ function SportSection({
   apiKey,
   historicalKey,
   minTrendLength,
+  leagues,
   onReport,
 }: SportSectionProps) {
   const [loading, setLoading] = useState(true);
-  const [gamesWithTrends, setGamesWithTrends] = useState<GameWithTrends[]>([]);
+  const [gamesWithTrends, setGamesWithTrends] = useState<(GameWithTrends & { leagueUrlKey?: string; leagueName?: string })[]>([]);
   const [playerStreaksByTeam, setPlayerStreaksByTeam] = useState<Record<string, PlayerStreak[]>>({});
   const onReportRef = useRef(onReport);
   onReportRef.current = onReport;
@@ -139,8 +140,18 @@ function SportSection({
 
     (async () => {
       try {
-        const games = await fetchGames(apiKey, dateStr);
-        const trends = await fetchTrends(games, apiKey, historicalKey, minTrendLength);
+        const sources = leagues ?? [{ name, urlKey, apiKey }];
+        const results = await Promise.all(sources.map(async (source) => {
+          const games = await fetchGames(source.apiKey, dateStr);
+          const trends = await fetchTrends(
+            games, source.apiKey, leagues ? `soccer/${source.urlKey}` : historicalKey, minTrendLength,
+          );
+          return { games, trends: trends.map((trend) => ({
+            ...trend, leagueUrlKey: source.urlKey, leagueName: source.name,
+          })) };
+        }));
+        const games = results.flatMap((result) => result.games);
+        const trends = results.flatMap((result) => result.trends);
         if (cancelled) return;
         const active = trends.filter((gwt) => !gwt.game.completed && gwt.hasTrends);
         setGamesWithTrends(active);
@@ -170,7 +181,7 @@ function SportSection({
     return () => { cancelled = true; };
   // onReport intentionally omitted — held in ref to avoid re-triggering the fetch
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, historicalKey, minTrendLength]);
+  }, [apiKey, historicalKey, minTrendLength, leagues, name, urlKey]);
 
   if (loading) {
     return (
@@ -183,21 +194,21 @@ function SportSection({
   if (gamesWithTrends.length === 0) return null;
 
   return (
-    <Box sx={{ mb: 4 }}>
+    <Box id={leagues ? "soccer" : urlKey} sx={{ mb: 4, scrollMarginTop: 100 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <Typography
           sx={{ fontSize: "0.75rem", fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "#245c38" }}
         >
           {name}
         </Typography>
-        <Button
+        {!leagues && <Button
           component={Link}
           to={`/${urlKey}`}
           size="small"
           sx={{ fontWeight: 800, fontSize: "0.8rem", color: "#245c38" }}
         >
           All {name} games →
-        </Button>
+        </Button>}
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
         {gamesWithTrends.map((gwt) => {
@@ -226,14 +237,15 @@ function SportSection({
                 { team: game.away?.team ?? "", streaks: playerStreaksByTeam[game.away?.team] ?? [] },
               ].filter(g => g.team && g.streaks.length > 0)
             : [];
-          const detailsLink = buildGameDetailsLink(urlKey, game);
+          const gameSport = gwt.leagueUrlKey ?? urlKey;
+          const detailsLink = buildGameDetailsLink(gameSport, game);
           return (
             <TrendInsightCard
-              key={game.game_id}
+              key={`${gameSport}-${game.game_id}`}
               game={{ home: game.home, away: game.away, totals: game.totals, commence_time: game.commence_time }}
               trends={allTrends}
               detailsLink={detailsLink}
-              sport={urlKey}
+              sport={gameSport}
               playerStreaks={streaks}
             />
           );
@@ -255,16 +267,15 @@ export default function HomePage() {
         ...SPORT_CONFIG[s.name],
       })),
     ...(soccerInSeason
-      ? SOCCER_LEAGUES.map((league) => ({
-          name: league.name,
-          urlKey: league.urlKey,
-          apiKey: league.apiKey,
-          historicalKey: `soccer/${league.urlKey}`,
-          minTrendLength: SOCCER_MIN_TREND_LENGTH,
-        }))
+      ? [{
+          name: "SOCCER", urlKey: "soccer", apiKey: "soccer",
+          historicalKey: "soccer", minTrendLength: SOCCER_MIN_TREND_LENGTH,
+          leagues: SOCCER_LEAGUES,
+        }]
       : []),
   ].sort((a, b) => homepagePriority(b.name) - homepagePriority(a.name));
 
+  const [selectedSport, setSelectedSport] = useState("All");
   const [reportedCount, setReportedCount] = useState(0);
   const [hasAnyActiveGames, setHasAnyActiveGames] = useState(false);
   const [sectionScores, setSectionScores] = useState<Record<string, number>>({});
@@ -369,18 +380,36 @@ export default function HomePage() {
               color: "#0d1117",
               fontSize: { xs: "2.2rem", md: "3rem" },
               letterSpacing: "-0.02em",
-              mb: 2,
+              mb: 1.5,
             }}
           >
             Today's Trends
           </Typography>
+          <Typography
+            sx={{
+              fontSize: { xs: "0.9375rem", md: "1.0625rem" },
+              color: "#4b5563",
+              lineHeight: 1.6,
+              mb: 2,
+            }}
+          >
+            <Box component="span" sx={{ fontWeight: 700, color: "#0d1117" }}>getSTAM</Box>
+            {" "}
+            <Box component="span" sx={{ color: "#6b7280" }}>(Stats That Actually Matter)</Box>
+            {" "}helps sports fans analyze historical betting trends, head-to-head
+            records, moneyline performance, against-the-spread results, over/under trends, and
+            historical odds across MLB, NFL, NBA, NHL, NCAAF, NCAAB, and soccer.
+          </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+            <Chip label="All" clickable onClick={() => setSelectedSport("All")}
+              color={selectedSport === "All" ? "primary" : "default"} size="small" />
             {inSeasonSports.map((sport) => (
               <Chip
                 key={sport.name}
-                label={sport.name}
-                component={Link}
-                to={`/${sport.urlKey}`}
+                label={sport.name === "SOCCER" ? "Soccer" : sport.name}
+                icon={<SportIcon sport={sport.name} />}
+                onClick={() => setSelectedSport(sport.name)}
+                aria-pressed={selectedSport === sport.name}
                 clickable
                 size="small"
                 sx={{
@@ -388,7 +417,9 @@ export default function HomePage() {
                   fontSize: "0.72rem",
                   letterSpacing: "0.05em",
                   borderColor: "#c5cae9",
-                  color: "#3949ab",
+                  color: "#111827",
+                  bgcolor: selectedSport === sport.name ? "#e8eaf6" : "transparent",
+                  "& .MuiChip-icon": { color: "#111827" },
                   "&:hover": { bgcolor: "#e8eaf6", borderColor: "#9fa8da" },
                 }}
                 variant="outlined"
@@ -397,19 +428,14 @@ export default function HomePage() {
           </Box>
         </Box>
 
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          GetStam helps sports fans analyze historical betting trends, head-to-head
-          records, moneyline performance, against-the-spread results, over/under trends, and
-          historical odds across MLB, NFL, NBA, NHL, NCAAF, NCAAB, and soccer.
-        </Typography>
-
         {/* Sport sections — sorted by max confidence score once all have loaded */}
         {sortedSports.map((sport) => (
-          <SportSection
-            key={sport.name}
-            {...sport}
-            onReport={(hasGames, maxScore) => handleSectionReport(sport.name, hasGames, maxScore)}
-          />
+          <Box key={sport.name} sx={{ display: selectedSport === "All" || selectedSport === sport.name ? "block" : "none" }}>
+            <SportSection
+              {...sport}
+              onReport={(hasGames, maxScore) => handleSectionReport(sport.name, hasGames, maxScore)}
+            />
+          </Box>
         ))}
 
         {/* Email subscription */}

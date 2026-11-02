@@ -10,3 +10,8 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+/* Tabular numerals — apply to any element displaying odds, scores, or stats */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

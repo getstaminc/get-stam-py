@@ -94,8 +94,13 @@ def fill_yesterdays_ncaaf_games_from_sdql():
             for row in conn.execute(text("SELECT team_id, team_name FROM teams WHERE sport = 'NCAAF'")).mappings()
         }
 
-        filled = 0
-        inserted = 0
+        # SDQL emits one row per team for a neutral-site game, and BOTH rows pass
+        # the site filter in get_yesterdays_sdql_games with home/away reversed
+        # (e.g. "Georgia vs Florida" and "Florida vs Georgia" for the same real
+        # game). Resolve team ids first, then dedupe by (date, the two teams
+        # involved) so each real game is only processed once below.
+        deduped_games = []
+        seen_keys = set()
         for game in games:
             if game.get('points') is None or game.get('o:points') is None:
                 continue
@@ -104,6 +109,22 @@ def fill_yesterdays_ncaaf_games_from_sdql():
             away_team_id = teams_dict.get(game['o:team'])
             if home_team_id is None or away_team_id is None:
                 continue
+
+            key = (game['date'], frozenset({home_team_id, away_team_id}))
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+
+            game['_home_team_id'] = home_team_id
+            game['_away_team_id'] = away_team_id
+            deduped_games.append(game)
+
+        filled = 0
+        inserted = 0
+        skipped_reversed = 0
+        for game in deduped_games:
+            home_team_id = game['_home_team_id']
+            away_team_id = game['_away_team_id']
 
             try:
                 home_qs = json.loads(game['quarter scores']) if game.get('quarter scores') else None
@@ -128,26 +149,33 @@ def fill_yesterdays_ncaaf_games_from_sdql():
             if start_time_raw and start_time_raw != 0:
                 start_time = convert_sdql_start_time_to_time(str(start_time_raw))
 
-            total_value = game['total'] if game.get('total') not in (None, '-') else None
+            total_raw = game.get('total')
+            total_value = total_raw if isinstance(total_raw, (int, float)) else None
+            home_line_raw = game.get('line')
+            away_line_raw = game.get('o:line')
+            home_line = home_line_raw if isinstance(home_line_raw, (int, float)) else None
+            away_line = away_line_raw if isinstance(away_line_raw, (int, float)) else None
             home_money_raw = game.get('money line')
             away_money_raw = game.get('o:money line')
             home_money = int(home_money_raw) if isinstance(home_money_raw, (int, float)) else None
             away_money = int(away_money_raw) if isinstance(away_money_raw, (int, float)) else None
 
             existing = conn.execute(text("""
-                SELECT game_id FROM ncaaf_games
-                WHERE game_date = :game_date AND home_team_id = :home_team_id AND away_team_id = :away_team_id
+                SELECT game_id, home_team_id, away_team_id FROM ncaaf_games
+                WHERE game_date = :game_date
+                  AND ((home_team_id = :home_team_id AND away_team_id = :away_team_id)
+                       OR (home_team_id = :away_team_id AND away_team_id = :home_team_id))
             """), {
                 "game_date": game['date'], "home_team_id": home_team_id, "away_team_id": away_team_id,
             }).fetchone()
 
             params = {
-                "game_date": game['date'], "game_site": game.get('site'),
+                "game_date": game['date'], "game_site": game.get('site') or 'home',
                 "home_team_id": home_team_id, "away_team_id": away_team_id,
                 "home_team_name": game['team'], "away_team_name": game['o:team'],
                 "home_points": game['points'], "away_points": game['o:points'],
                 "total_points": game['points'] + game['o:points'], "total_margin": game.get('margin'),
-                "home_line": game.get('line'), "away_line": game.get('o:line'),
+                "home_line": home_line, "away_line": away_line,
                 "home_quarter_scores": json.dumps(home_qs) if home_qs is not None else None,
                 "away_quarter_scores": json.dumps(away_qs) if away_qs is not None else None,
                 "home_first_half_points": home_first_half, "away_first_half_points": away_first_half,
@@ -158,31 +186,42 @@ def fill_yesterdays_ncaaf_games_from_sdql():
             }
 
             if existing:
-                conn.execute(text("""
-                    UPDATE ncaaf_games SET
-                        game_site = COALESCE(game_site, :game_site),
-                        home_points = COALESCE(home_points, :home_points),
-                        away_points = COALESCE(away_points, :away_points),
-                        total_points = COALESCE(total_points, :total_points),
-                        total_margin = COALESCE(total_margin, :total_margin),
-                        home_line = COALESCE(home_line, :home_line),
-                        away_line = COALESCE(away_line, :away_line),
-                        home_quarter_scores = COALESCE(home_quarter_scores, :home_quarter_scores),
-                        away_quarter_scores = COALESCE(away_quarter_scores, :away_quarter_scores),
-                        home_first_half_points = COALESCE(home_first_half_points, :home_first_half_points),
-                        away_first_half_points = COALESCE(away_first_half_points, :away_first_half_points),
-                        home_second_half_points = COALESCE(home_second_half_points, :home_second_half_points),
-                        away_second_half_points = COALESCE(away_second_half_points, :away_second_half_points),
-                        home_overtime_points = COALESCE(home_overtime_points, :home_overtime_points),
-                        away_overtime_points = COALESCE(away_overtime_points, :away_overtime_points),
-                        home_money_line = COALESCE(home_money_line, :home_money_line),
-                        away_money_line = COALESCE(away_money_line, :away_money_line),
-                        playoffs = COALESCE(playoffs, :playoffs),
-                        start_time = COALESCE(start_time, :start_time),
-                        total = COALESCE(total, :total)
-                    WHERE game_id = :game_id
-                """), {**params, "game_id": existing[0]})
-                filled += 1
+                existing_game_id, existing_home_id, existing_away_id = existing
+                if existing_home_id == home_team_id and existing_away_id == away_team_id:
+                    conn.execute(text("""
+                        UPDATE ncaaf_games SET
+                            game_site = COALESCE(game_site, :game_site),
+                            home_points = COALESCE(home_points, :home_points),
+                            away_points = COALESCE(away_points, :away_points),
+                            total_points = COALESCE(total_points, :total_points),
+                            total_margin = COALESCE(total_margin, :total_margin),
+                            home_line = COALESCE(home_line, :home_line),
+                            away_line = COALESCE(away_line, :away_line),
+                            home_quarter_scores = COALESCE(home_quarter_scores, :home_quarter_scores),
+                            away_quarter_scores = COALESCE(away_quarter_scores, :away_quarter_scores),
+                            home_first_half_points = COALESCE(home_first_half_points, :home_first_half_points),
+                            away_first_half_points = COALESCE(away_first_half_points, :away_first_half_points),
+                            home_second_half_points = COALESCE(home_second_half_points, :home_second_half_points),
+                            away_second_half_points = COALESCE(away_second_half_points, :away_second_half_points),
+                            home_overtime_points = COALESCE(home_overtime_points, :home_overtime_points),
+                            away_overtime_points = COALESCE(away_overtime_points, :away_overtime_points),
+                            home_money_line = COALESCE(home_money_line, :home_money_line),
+                            away_money_line = COALESCE(away_money_line, :away_money_line),
+                            playoffs = COALESCE(playoffs, :playoffs),
+                            start_time = COALESCE(start_time, :start_time),
+                            total = COALESCE(total, :total)
+                        WHERE game_id = :game_id
+                    """), {**params, "game_id": existing_game_id})
+                    filled += 1
+                else:
+                    # Existing row has home/away reversed relative to this SDQL
+                    # row (the other half of a neutral-site mirrored pair, or a
+                    # pre-existing row seeded with the opposite orientation).
+                    # Filling would mean writing this row's "home" values into
+                    # the existing row's "away" columns -- a full field swap --
+                    # which isn't worth the complexity/corruption risk for a
+                    # betting-line-only fill. Leave it exactly as job 1 left it.
+                    skipped_reversed += 1
             else:
                 conn.execute(text("""
                     INSERT INTO ncaaf_games (
@@ -202,7 +241,8 @@ def fill_yesterdays_ncaaf_games_from_sdql():
                 inserted += 1
 
         conn.commit()
-        print(f"Done. Rows filled (existing, NULL-only): {filled}. Rows inserted fresh: {inserted}.")
+        print(f"Done. Rows filled (existing, NULL-only): {filled}. Rows inserted fresh: {inserted}. "
+              f"Rows skipped (reversed neutral-site duplicate): {skipped_reversed}.")
     except Exception as e:
         print(f"Error during SDQL fallback fill: {e}")
         conn.rollback()

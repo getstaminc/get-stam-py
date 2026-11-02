@@ -8,6 +8,12 @@ scoreboard should have caught nearly everything SDQL finds for D-I; non-D-I
 games depend on this job for everything), inserts it fresh from SDQL with
 odds_event_id left NULL.
 
+Final scores are NOT required to fill an existing row -- SDQL often has
+lines/total before it has points, and job 1 has already supplied points for
+every row it wrote, so this job's real work is the lines. Points are only
+required on the fresh-INSERT path, where home_points/away_points are NOT
+NULL columns.
+
 SDQL's NCAABB query has no quarter/half-score field at all -- this job
 never touches home/away_quarter_scores or the half/OT point columns; those
 stay NULL if job 1's ESPN enrichment also missed them.
@@ -95,10 +101,17 @@ def fill_yesterdays_ncaab_games_from_sdql():
         # Resolve team ids and dedupe SDQL's per-team mirrored rows for
         # neutral-site games BEFORE processing -- same (date, frozenset of
         # team ids) key used for NCAAF's equivalent fix.
+        #
+        # NOTE: points are deliberately NOT required here. In the two-job
+        # architecture job 1 (ESPN + Odds API) already supplies points for every
+        # row it writes, so this job's real work is filling home_line/away_line/
+        # total/money lines/playoffs/game_site -- which SDQL frequently has
+        # BEFORE it has final scores. Gating the whole candidate on points meant
+        # this job almost always had nothing to do. The points requirement now
+        # applies only to the fresh-INSERT path below (home_points/away_points
+        # are NOT NULL columns).
         resolved = {}
         for game in games:
-            if game.get('points') is None or game.get('o:points') is None:
-                continue
             home_team_id = teams_dict.get(game['team'])
             away_team_id = teams_dict.get(game['o:team'])
             if home_team_id is None or away_team_id is None:
@@ -109,11 +122,19 @@ def fill_yesterdays_ncaab_games_from_sdql():
         filled = 0
         inserted = 0
         skipped_duplicate = 0
+        skipped_no_points = 0
         for (_, _), candidates in resolved.items():
             game, home_team_id, away_team_id = candidates[0]
 
             def to_number(value):
                 return value if isinstance(value, (int, float)) else None
+
+            home_points = game.get('points')
+            away_points = game.get('o:points')
+            has_points = home_points is not None and away_points is not None
+            # SDQL can have lines/total before it has final scores -- don't blow up
+            # the shared transaction on None + None.
+            total_points = (home_points + away_points) if has_points else None
 
             total_value = to_number(game.get('total'))
             home_line = to_number(game.get('line'))
@@ -125,8 +146,8 @@ def fill_yesterdays_ncaab_games_from_sdql():
                 "game_date": game['date'], "game_site": game.get('site') or 'home',
                 "home_team_id": home_team_id, "away_team_id": away_team_id,
                 "home_team_name": game['team'], "away_team_name": game['o:team'],
-                "home_points": game['points'], "away_points": game['o:points'],
-                "total_points": game['points'] + game['o:points'], "total_margin": game.get('margin'),
+                "home_points": home_points, "away_points": away_points,
+                "total_points": total_points, "total_margin": game.get('margin'),
                 "home_line": home_line, "away_line": away_line,
                 "home_money_line": home_money, "away_money_line": away_money,
                 "playoffs": bool(game.get('playoffs', 0)), "total": total_value,
@@ -140,6 +161,11 @@ def fill_yesterdays_ncaab_games_from_sdql():
             }).fetchone()
 
             if exact:
+                # Fill path: runs regardless of whether SDQL has points yet. Every
+                # column is COALESCE'd, so a None bind is a safe no-op for that
+                # column -- including home_points/away_points/total_points, which
+                # job 1 has already populated on any row it wrote (and which are
+                # NOT NULL anyway, so COALESCE can never pick the None).
                 conn.execute(text("""
                     UPDATE ncaab_games SET
                         game_site = COALESCE(game_site, :game_site),
@@ -172,6 +198,13 @@ def fill_yesterdays_ncaab_games_from_sdql():
                 skipped_duplicate += 1
                 continue
 
+            # Fresh-INSERT path only: home_points/away_points are NOT NULL, so a
+            # row SDQL doesn't yet have final scores for cannot be inserted. Leave
+            # it for a later run (or for job 1) rather than crashing the batch.
+            if not has_points:
+                skipped_no_points += 1
+                continue
+
             conn.execute(text("""
                 INSERT INTO ncaab_games (
                     game_date, game_site, home_team_id, away_team_id, home_team_name, away_team_name,
@@ -187,7 +220,8 @@ def fill_yesterdays_ncaab_games_from_sdql():
 
         conn.commit()
         print(f"Done. Rows filled (existing, NULL-only): {filled}. Rows inserted fresh: {inserted}. "
-              f"Duplicate neutral-site rows skipped: {skipped_duplicate}.")
+              f"Duplicate neutral-site rows skipped: {skipped_duplicate}. "
+              f"New games skipped (SDQL has no final score yet): {skipped_no_points}.")
     except Exception as e:
         print(f"Error during SDQL fallback fill: {e}")
         conn.rollback()

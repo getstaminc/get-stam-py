@@ -336,7 +336,122 @@ def convert_team_name_ncaab(full_team_name):
         "Wisconsin Badgers": "WISC",
         "Wofford Terriers": "WOFF",
         "Wyoming Cowboys": "WYOM",
-        "Yale Bulldogs": "YALE"
+        "Yale Bulldogs": "YALE",
+
+        # --- Aliases for ESPN's current displayName spellings (added 2026-11-02, NCAAB Odds API migration) ---
+        # "St"/"State" abbreviation differences vs. the entries above (same schools, same codes).
+        "Alabama State Hornets": "ALAST",
+        "Alcorn State Braves": "ALCST",
+        "App State Mountaineers": "APPST",  # ESPN shortened "Appalachian State" to "App State"
+        "Arizona State Sun Devils": "ARZST",
+        "Cal State Bakersfield Roadrunners": "CALSB",
+        "Cal State Fullerton Titans": "CSFUL",
+        "Cal State Northridge Matadors": "CSNOR",
+        "California Baptist Lancers": "CALBA",
+        "Chicago State Cougars": "CHIST",
+        "Colorado State Rams": "COLST",
+        "Coppin State Eagles": "COPST",
+        "Delaware State Hornets": "DELST",
+        "East Tennessee State Buccaneers": "ETENS",
+        "Florida State Seminoles": "FSU",
+        "Fresno State Bulldogs": "FRSNO",
+        "Georgia State Panthers": "GAST",
+        "Indiana State Sycamores": "INDST",
+        "Jackson State Tigers": "JCKST",
+        "Jacksonville State Gamecocks": "JACST",
+        "Kansas State Wildcats": "KANST",
+        "Michigan State Spartans": "MCHST",
+        "Mississippi State Bulldogs": "MISST",
+        "Montana State Bobcats": "MONST",
+        "Morehead State Eagles": "MORST",
+        "Morgan State Bears": "MORGS",
+        "Murray State Racers": "MURST",
+        "New Mexico State Aggies": "NMEXS",
+        "Norfolk State Spartans": "NORST",
+        "North Dakota State Bison": "NODAK",
+        "Northern Colorado Bears": "NOCOL",
+        "Northwestern State Demons": "NWST",
+        "Oregon State Beavers": "ORST",
+        "Portland State Vikings": "PORST",
+        "Sacramento State Hornets": "SACST",
+        "San Diego State Aztecs": "SDST",
+        "San José State Spartans": "SJST",
+        "South Carolina State Bulldogs": "SCST",
+        "South Dakota State Jackrabbits": "SDS",
+        "Southeast Missouri State Redhawks": "SEMST",
+        "Tennessee State Tigers": "TENST",
+        "Wichita State Shockers": "WIST",
+        "Wright State Raiders": "WGHST",
+
+        # Renamed mascots / rebranded short names (same school, same code).
+        "Army Black Knights": "ARMY",
+        "Boston University Terriers": "BU",
+        "East Texas A&M Lions": "TXCOM",  # Texas A&M-Commerce renamed to East Texas A&M in 2024
+        "Gardner-Webb Runnin' Bulldogs": "GARDW",
+        "George Washington Revolutionaries": "GW",  # mascot renamed from Colonials in 2023
+        "Grambling Tigers": "GRAMB",
+        "Grand Canyon Lopes": "GC",  # mascot renamed from Antelopes
+        "IU Indianapolis Jaguars": "INDPU",  # IUPUI renamed to IU Indianapolis in 2024
+        "Little Rock Trojans": "ARKLR",  # school dropped "Arkansas-" from its own branding
+        "Long Beach State Beach": "LBST",  # mascot renamed from 49ers
+        "Long Island University Sharks": "LIU",
+        "Loyola Chicago Ramblers": "LOCHI",
+        "LSU New Orleans Privateers": "NO",  # University of New Orleans, now under the LSU system brand
+        "Maryland Eastern Shore Hawks": "MDESH",
+        "Mississippi Valley State Delta Devils": "MSVAS",
+        "Mount St. Mary's Mountaineers": "MSTM",
+        "Nicholls Colonels": "NICST",  # school dropped "State" from its own branding
+        "Omaha Mavericks": "NEBO",  # school dropped "Nebraska" from its own branding
+        "Prairie View A&M Panthers": "PVAM",
+        "Queens University Royals": "Royals",
+        "Saint Francis Red Wolves": "STFRP",  # Saint Francis (PA) mascot renamed from Red Flash
+        "Sam Houston Bearkats": "SHOUS",  # school dropped "State" from its own branding
+        "Seattle U Redhawks": "SEA",
+        "Texas A&M-Corpus Christi Islanders": "TXCC",
+        "UAlbany Great Danes": "ALBNY",
+        "UT Martin Skyhawks": "TNMA",
+
+        # Schools entirely missing from the map above despite already having a row in `teams`
+        # (verified by cross-checking recent ncaab_games opponents against each team's real conference).
+        "Bradley Braves": "BRAD",
+        "Cleveland State Vikings": "CLEST",
+        "Drake Bulldogs": "DRAKE",
+        "Evansville Purple Aces": "EVANS",
+        "Florida Atlantic Owls": "FLATL",
+        "Florida International Panthers": "FLINT",
+        "Green Bay Phoenix": "WIGB",
+        "Indiana Hoosiers": "IND",
+        "Iowa Hawkeyes": "IOWA",
+        "Kansas City Roos": "KC",
+        "Kennesaw State Owls": "KENST",
+        "Louisville Cardinals": "LOU",
+        "Marist Red Foxes": "MARIS",
+        "Marquette Golden Eagles": "MARQ",
+        "Memphis Tigers": "MEM",
+        "Minnesota Golden Gophers": "MIN",
+        "Missouri State Bears": "MSU",  # joined Conference USA in 2025; confirmed via C-USA opponents in ncaab_games
+        "Nebraska Cornhuskers": "NEB",
+        "Nevada Wolf Pack": "NEV",
+        "Northeastern Huskies": "NE",  # distinct from UConn ("UCONN"), Washington ("WGTON"), N. Illinois ("NOILL") and Houston Christian ("HOUBA") Huskies entries above
+        "Northern Arizona Lumberjacks": "NAZ",
+        "Northwestern Wildcats": "NWEST",
+        "Oakland Golden Grizzlies": "OAK",
+        "Ohio Bobcats": "OHIO",
+        "Oregon Ducks": "ORE",
+        "Quinnipiac Bobcats": "QUINN",
+        "Radford Highlanders": "RAD",
+        "Sacred Heart Pioneers": "SACHT",
+        "Saint Louis Billikens": "STL",
+        "Siena Saints": "SIENA",
+        "South Dakota Coyotes": "SDAK",
+        "Tarleton State Texans": "TARL",
+        "The Citadel Bulldogs": "CITDL",
+        "Toledo Rockets": "TOL",
+        "UAB Blazers": "UAB",
+        "UCLA Bruins": "UCLA",
+        "Valparaiso Beacons": "VAL",
+        "Wagner Seahawks": "WAGNR",
+        "Youngstown State Penguins": "YOUST"
     }
 
 

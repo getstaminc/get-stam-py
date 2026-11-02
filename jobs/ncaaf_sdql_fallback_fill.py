@@ -129,8 +129,10 @@ def fill_yesterdays_ncaaf_games_from_sdql():
                 start_time = convert_sdql_start_time_to_time(str(start_time_raw))
 
             total_value = game['total'] if game.get('total') not in (None, '-') else None
-            home_money = game.get('money line') if isinstance(game.get('money line'), int) else None
-            away_money = game.get('o:money line') if isinstance(game.get('o:money line'), int) else None
+            home_money_raw = game.get('money line')
+            away_money_raw = game.get('o:money line')
+            home_money = int(home_money_raw) if isinstance(home_money_raw, (int, float)) else None
+            away_money = int(away_money_raw) if isinstance(away_money_raw, (int, float)) else None
 
             existing = conn.execute(text("""
                 SELECT game_id FROM ncaaf_games

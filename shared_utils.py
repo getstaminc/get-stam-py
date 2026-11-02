@@ -670,7 +670,8 @@ def convert_team_name(full_team_name):
         'Stetson Hatters': 'STET',
         'Southern Utah Thunderbirds': 'SUT',
         'Syracuse Orange': 'SYR',
-        'Tarleton State Texans': 'TARL',  # key was 'Tarleton State' (missing the mascot word), which never matches ESPN's full displayName
+        'Tarleton State': 'TARL',  # kept: api/utils/team_slugs.py:122 hardcodes this literal string and relies on it mapping to 'TARL'
+        'Tarleton State Texans': 'TARL',  # ESPN's full displayName (old key alone never matches it, since it's missing the mascot word)
         'Chattanooga Mocs': 'TCHA',
         'TCU Horned Frogs': 'TCU',
         'Temple Owls': 'TEM',

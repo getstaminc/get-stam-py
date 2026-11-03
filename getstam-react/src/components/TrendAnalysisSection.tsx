@@ -83,7 +83,7 @@ const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | n
               {confidence.label}
             </Box>
           )}
-          <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: trendColor, lineHeight: 1.3 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: trendColor, lineHeight: 1.3, fontFamily: tokens.font.heading }}>
             {title}
           </Typography>
         </Box>
@@ -103,7 +103,7 @@ const TrendDetailCard: React.FC<{ trend: TrendResult; dataSinceYear?: number | n
             <Typography sx={{ fontSize: "0.78rem", color: "#64748b" }}>
               {continued} out of {sample_size} historical instances{dataSinceYear ? ` since ${dataSinceYear}` : ""}
             </Typography>
-            <Typography sx={{ fontSize: "1rem", fontWeight: 800, color: trendColor }}>
+            <Typography sx={{ fontSize: "1rem", fontWeight: 700, color: trendColor, ...tokens.tabularNums }}>
               {pct}%
             </Typography>
           </Box>
@@ -172,14 +172,14 @@ const MarketTrendCard: React.FC<{
         '&:hover': { borderColor: '#c9ccc5', boxShadow: tokens.shadowHover },
       }}
     >
-      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: tokens.text.secondary }}>
+      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: tokens.text.secondary }}>
         {MARKET_CARD_TITLES[marketKey]}
       </Typography>
-      <Typography sx={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+      <Typography sx={{ fontSize: '2.5rem', fontWeight: 700, letterSpacing: '-0.03em', ...tokens.tabularNums, fontFamily: tokens.font.heading }}>
         {pct}%
       </Typography>
-      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600 }}>{marketCardLabel(marketKey, entry, game)}</Typography>
-      <Typography sx={{ fontSize: '0.8125rem', color: tokens.text.secondary }}>
+      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, fontFamily: tokens.font.heading }}>{marketCardLabel(marketKey, entry, game)}</Typography>
+      <Typography sx={{ fontSize: '0.8125rem', color: tokens.text.secondary, ...tokens.tabularNums }}>
         {wins}-{losses} ({entry.sample_size} games)
       </Typography>
       <Box sx={{ height: 6, borderRadius: '3px', bgcolor: tokens.trackBg2, overflow: 'hidden', mt: 0.5 }}>
@@ -334,14 +334,14 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
           {dimension === 'total' ? (
             <>
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.03em', ...tokens.tabularNums, fontFamily: tokens.font.heading }}>
                   {pct}%
                 </Typography>
                 <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>OVER</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
                 <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>UNDER</Typography>
-                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.03em', ...tokens.tabularNums, fontFamily: tokens.font.heading }}>
                   {otherPct}%
                 </Typography>
               </Box>
@@ -349,14 +349,14 @@ const CollisionCard: React.FC<{ trend: TrendResult; sportKey: string }> = ({ tre
           ) : (
             <>
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.03em', ...tokens.tabularNums, fontFamily: tokens.font.heading }}>
                   {pct}%
                 </Typography>
                 <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{home_trend.team} {verb}</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
                 <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{away_trend.team} {verb}</Typography>
-                <Typography sx={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+                <Typography sx={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.03em', ...tokens.tabularNums, fontFamily: tokens.font.heading }}>
                   {otherPct}%
                 </Typography>
               </Box>
@@ -434,7 +434,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
   if (allTrends.length === 0 && marketRows.length === 0 && !topCollisionTrend) return null;
 
   return (
-    <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, pt: 4, mb: 2 }}>
+    <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 0 }, pt: 4, mb: 2 }}>
       {marketRows.length > 0 && (
         <Box
           data-testid="market-cards-grid"
@@ -451,7 +451,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
         const visibleTrends = showAllTrends ? allTrends : allTrends.slice(0, 2);
         return (
           <>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: tokens.text.primary }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: tokens.text.primary }}>
               More trends
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>

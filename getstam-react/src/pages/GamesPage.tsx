@@ -493,7 +493,7 @@ const GamesPage = () => {
           align="center"
           sx={{ mb: 3, color: "#9e9e9e" }}
         >
-          {!isHistoricalDate && visibleGames.length > 0 && `${visibleGames.length} games today`}
+          {!isHistoricalDate && visibleGames.length > 0 && `${visibleGames.length} ${visibleGames.length === 1 ? 'game' : 'games'} today`}
           {!isHistoricalDate && visibleGames.length > 0 && dataSinceYear && " · "}
           {dataSinceYear && `Data since ${dataSinceYear}`}
           {!dataSinceYear && !isHistoricalDate && "* Only games with betting odds data will display"}

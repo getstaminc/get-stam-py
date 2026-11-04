@@ -165,7 +165,7 @@ def convert_team_name_ncaab(full_team_name):
         "Furman Paladins": "FURM",
         "George Mason Patriots": "GMASN",
         "George Washington Colonials": "GW",
-        "Georgetown Hoyas": "GEOR",
+        "Georgetown Hoyas": "GT",  # "GEOR" is Georgia (SEC); Georgetown (Big East) is "GT"
         "Georgia Southern Eagles": "GASO",
         "Georgia Tech Yellow Jackets": "GATEC",
         "Gonzaga Bulldogs": "GONZ",
@@ -210,7 +210,7 @@ def convert_team_name_ncaab(full_team_name):
         "Massachusetts Minutemen": "MASS",
         "McNeese Cowboys": "MCNST",
         "Mercer Bears": "MER",
-        "Merrimack Warriors": "MERH",
+        "Merrimack Warriors": "MW",  # "MERH" is Mercyhurst (NEC); Merrimack (MAAC) is "MW"
         "Miami (OH) RedHawks": "MIAOH",
         "Miami Hurricanes": "MIAFL",
         "Michigan Wolverines": "MICH",
@@ -331,12 +331,132 @@ def convert_team_name_ncaab(full_team_name):
         "Western Carolina Catamounts": "WCAR",
         "Western Kentucky Hilltoppers": "WKY",
         "Western Michigan Broncos": "WMICH",
-        "William & Mary Tribe": "WILLI",
+        "William & Mary Tribe": "WMMRY",  # "WILLI" is Western Illinois (OVC); W&M (CAA) is "WMMRY"
         "Winthrop Eagles": "WINTH",
         "Wisconsin Badgers": "WISC",
         "Wofford Terriers": "WOFF",
         "Wyoming Cowboys": "WYOM",
-        "Yale Bulldogs": "YALE"
+        "Yale Bulldogs": "YALE",
+
+        # --- Aliases for ESPN's current displayName spellings (added 2026-11-02, NCAAB Odds API migration) ---
+        # "St"/"State" abbreviation differences vs. the entries above (same schools, same codes).
+        "Alabama State Hornets": "ALAST",
+        "Alcorn State Braves": "ALCST",
+        "App State Mountaineers": "APPST",  # ESPN shortened "Appalachian State" to "App State"
+        "Arizona State Sun Devils": "ARZST",
+        "Cal State Bakersfield Roadrunners": "CALSB",
+        "Cal State Fullerton Titans": "CSFUL",
+        "Cal State Northridge Matadors": "CSNOR",
+        "California Baptist Lancers": "CALBA",
+        "Chicago State Cougars": "CHIST",
+        "Colorado State Rams": "COLST",
+        "Coppin State Eagles": "COPST",
+        "Delaware State Hornets": "DELST",
+        "East Tennessee State Buccaneers": "ETENS",
+        "Florida State Seminoles": "FSU",
+        "Fresno State Bulldogs": "FRSNO",
+        "Georgia State Panthers": "GAST",
+        "Indiana State Sycamores": "INDST",
+        "Jackson State Tigers": "JCKST",
+        "Jacksonville State Gamecocks": "JACST",
+        "Kansas State Wildcats": "KANST",
+        "Michigan State Spartans": "MCHST",
+        "Mississippi State Bulldogs": "MISST",
+        "Montana State Bobcats": "MONST",
+        "Morehead State Eagles": "MORST",
+        "Morgan State Bears": "MORGS",
+        "Murray State Racers": "MURST",
+        "New Mexico State Aggies": "NMEXS",
+        "Norfolk State Spartans": "NORST",
+        "North Dakota State Bison": "NODAK",
+        "Northern Colorado Bears": "NOCOL",
+        "Northwestern State Demons": "NWST",
+        "Oregon State Beavers": "ORST",
+        "Portland State Vikings": "PORST",
+        "Sacramento State Hornets": "SACST",
+        "San Diego State Aztecs": "SDST",
+        "San José State Spartans": "SJST",
+        "South Carolina State Bulldogs": "SCST",
+        "South Dakota State Jackrabbits": "SDS",
+        "Southeast Missouri State Redhawks": "SEMST",
+        "Tennessee State Tigers": "TENST",
+        "Wichita State Shockers": "WIST",
+        "Wright State Raiders": "WGHST",
+
+        # Renamed mascots / rebranded short names (same school, same code).
+        "Army Black Knights": "ARMY",
+        "Boston University Terriers": "BU",
+        "East Texas A&M Lions": "TXCOM",  # Texas A&M-Commerce renamed to East Texas A&M in 2024
+        "Gardner-Webb Runnin' Bulldogs": "GARDW",
+        "George Washington Revolutionaries": "GW",  # mascot renamed from Colonials in 2023
+        "Grambling Tigers": "GRAMB",
+        "Grand Canyon Lopes": "GC",  # mascot renamed from Antelopes
+        "IU Indianapolis Jaguars": "INDPU",  # IUPUI renamed to IU Indianapolis in 2024
+        "Little Rock Trojans": "ARKLR",  # school dropped "Arkansas-" from its own branding
+        "Long Beach State Beach": "LBST",  # mascot renamed from 49ers
+        "Long Island University Sharks": "LIU",
+        "Loyola Chicago Ramblers": "LOCHI",
+        "LSU New Orleans Privateers": "NO",  # University of New Orleans, now under the LSU system brand
+        "Maryland Eastern Shore Hawks": "MDESH",
+        "Mississippi Valley State Delta Devils": "MSVAS",
+        "Mount St. Mary's Mountaineers": "MSTM",
+        "Nicholls Colonels": "NICST",  # school dropped "State" from its own branding
+        "Omaha Mavericks": "NEBO",  # school dropped "Nebraska" from its own branding
+        "Prairie View A&M Panthers": "PVAM",
+        "Queens University Royals": "Royals",
+        "Saint Francis Red Wolves": "STFRP",  # Saint Francis (PA) mascot renamed from Red Flash
+        "Sam Houston Bearkats": "SHOUS",  # school dropped "State" from its own branding
+        "Seattle U Redhawks": "SEA",
+        "Texas A&M-Corpus Christi Islanders": "TXCC",
+        "UAlbany Great Danes": "ALBNY",
+        "UT Martin Skyhawks": "TNMA",
+
+        # Schools entirely missing from the map above despite already having a row in `teams`
+        # (verified by cross-checking recent ncaab_games opponents against each team's real conference).
+        "Bradley Braves": "BRAD",
+        "Cleveland State Vikings": "CLEST",
+        "Drake Bulldogs": "DRAKE",
+        "Evansville Purple Aces": "EVANS",
+        "Florida Atlantic Owls": "FLATL",
+        "Florida International Panthers": "FLINT",
+        "Green Bay Phoenix": "WIGB",
+        "Indiana Hoosiers": "IND",
+        "Iowa Hawkeyes": "IOWA",
+        "Kansas City Roos": "UMKC",  # "KC" is the retired legacy row (last game 2025-01-25); the active row is "UMKC"
+        "Kennesaw State Owls": "KENST",
+        "Louisville Cardinals": "LOUVI",  # "LOU" is an empty stray row (0 games); Louisville (ACC) is "LOUVI"
+        "Marist Red Foxes": "MARIS",
+        "Marquette Golden Eagles": "MARQ",
+        "Memphis Tigers": "MEM",
+        "Minnesota Golden Gophers": "MIN",
+        "Missouri State Bears": "MSU",  # joined Conference USA in 2025; confirmed via C-USA opponents in ncaab_games
+        "Nebraska Cornhuskers": "NEB",
+        "Nevada Wolf Pack": "NEV",
+        "Northeastern Huskies": "NE",  # distinct from UConn ("UCONN"), Washington ("WGTON"), N. Illinois ("NOILL") and Houston Christian ("HOUBA") Huskies entries above
+        "Northern Arizona Lumberjacks": "NOAR",  # "NAZ" is a stray row (4 games); N. Arizona (Big Sky) is "NOAR"
+        "Northwestern Wildcats": "NWEST",
+        "Oakland Golden Grizzlies": "OAK",
+        "Ohio Bobcats": "OHIO",
+        "Oregon Ducks": "ORE",
+        "Quinnipiac Bobcats": "QUINN",
+        "Radford Highlanders": "RAD",
+        "Sacred Heart Pioneers": "SACHT",
+        "Saint Louis Billikens": "STL",
+        "Siena Saints": "SIENA",
+        "South Dakota Coyotes": "SDAK",
+        "Tarleton State Texans": "TST",  # "TARL" is a stray row (1 game); Tarleton State (WAC) is "TST"
+        "The Citadel Bulldogs": "CITDL",
+        "Toledo Rockets": "TOL",
+        "UAB Blazers": "UAB",
+        "UCLA Bruins": "UCLA",
+        "Valparaiso Beacons": "VAL",
+        "Wagner Seahawks": "WAGNR",
+        "Youngstown State Penguins": "YOUST",
+        # Schools whose `teams` row was previously squatted on by a wrong mapping
+        # above; verified against the live roster + conference-matched game history.
+        "Kent State Golden Flashes": "KST",  # MAC; distinct from Kennesaw State ("KENST") and Kansas State ("KANST")
+        "Mercyhurst Lakers": "MERH",  # NEC; code freed by the Merrimack -> "MW" fix
+        "Western Illinois Leathernecks": "WILLI"  # OVC; code freed by the William & Mary -> "WMMRY" fix
     }
 
 
@@ -344,15 +464,6 @@ def convert_team_name_ncaab(full_team_name):
 
 def convert_team_name(full_team_name):
     team_map = {
-        # NBA fixes: a stray triple-quoted "commented out" block further down
-        # (search '# NCAA basketball') silently corrupts whichever entry sits
-        # right after it, via Python's implicit adjacent-string-literal
-        # concatenation — the real key ends up being that whole block's text
-        # glued onto the intended key, so lookups for the plain team name
-        # never match. Added here, far from that block, instead of trying to
-        # fix the entries in place.
-        'Atlanta Hawks': 'Hawks',
-        'LA Clippers': 'Clippers',
         # MLB Teams
         'Arizona Diamondbacks': 'Diamondbacks',
         'Atlanta Braves': 'Braves',
@@ -436,6 +547,7 @@ def convert_team_name(full_team_name):
         'Los Angeles Kings': 'Kings',
         'Minnesota Wild': 'Wild',
         'Montréal Canadiens': 'Canadiens',
+        'Montreal Canadiens': 'Canadiens',  # ESPN's spelling (no accent) vs. the line above
         'Nashville Predators': 'Predators',
         'New Jersey Devils': 'Devils',
         'New York Islanders': 'Islanders',
@@ -446,6 +558,7 @@ def convert_team_name(full_team_name):
         'San Jose Sharks': 'Sharks',
         'Seattle Kraken': 'Kraken',
         'St Louis Blues': 'Blues',
+        'St. Louis Blues': 'Blues',  # ESPN's spelling (with period) vs. the line above
         'Tampa Bay Lightning': 'Lightning',
         'Toronto Maple Leafs': 'Maple Leafs',
         'Utah Mammoth': 'Mammoth',
@@ -463,9 +576,11 @@ def convert_team_name(full_team_name):
         'Arkansas State Red Wolves': 'AKST',
         'Alabama Crimson Tide': 'ALA',
         'Alabama A&M Bulldogs': 'ALAM',
-        'Albany Great Danes': 'ALBS', # There are two entries for Albany Great Danes
+        'Albany Great Danes': 'ALBY', # There are two entries for Albany Great Danes; value was 'ALBS' which does not exist in the teams table, corrected to match DB
+        'UAlbany Great Danes': 'ALBY',  # ESPN's current displayName
         'Alcorn State Braves': 'ALCN',
         'Appalachian State Mountaineers': 'APP',
+        'App State Mountaineers': 'APP',  # ESPN's current shortened displayName
         'Arkansas Razorbacks': 'ARK',
         'Army Black Knights': 'ARMY',
         'Arizona Wildcats': 'ARZ',
@@ -476,12 +591,15 @@ def convert_team_name(full_team_name):
         'Boston College Eagles': 'BCOL',
         'Boise State Broncos': 'BOIS',
         'Bowling Green Falcons': 'BOWL',
+        'Brown Bears': 'BRO',  # was missing entirely; team exists in teams table under this code
         'Bryant Bulldogs': 'BRY',
         'Bucknell Bison': 'BUCK',
         'Buffalo Bulls': 'BUF',
+        'Butler Bulldogs': 'BUT',  # was missing entirely; team exists in teams table under this code
         'BYU Cougars': 'BYU',
         'California Golden Bears': 'CAL',
         'Campbell Camels': 'CAMP',
+        'Campbell Fighting Camels': 'CAMP',  # ESPN's current displayName
         'Central Arkansas Bears': 'CARK',
         'Central Connecticut Blue Devils': 'CCON',
         'UC Davis Aggies': 'CDAV',
@@ -495,6 +613,7 @@ def convert_team_name(full_team_name):
         'Colorado Buffaloes': 'COLO',
         'Columbia Lions': 'COLU',
         'Connecticut Huskies': 'CON',
+        'UConn Huskies': 'CON',  # ESPN's current displayName
         'Bethune-Cookman Wildcats': 'COOK',
         'Cornell Big Red': 'COR',
         'Colorado State Rams': 'COST',
@@ -520,20 +639,25 @@ def convert_team_name(full_team_name):
         'Florida A&M Rattlers': 'FAM',
         'Florida Atlantic Owls': 'FATL',
         'Florida International Golden Panthers': 'FINT',
+        'Florida International Panthers': 'FINT',  # ESPN's current displayName (dropped "Golden")
         'Florida Gators': 'FLA',
         'Florida State Seminoles': 'FLST',
         'Fordham Rams': 'FORD',
         'Fresno State Bulldogs': 'FRES',
         'Furman Paladins': 'FUR',
         'Gardner-Webb Bulldogs': 'GARD',
+        "Gardner-Webb Runnin' Bulldogs": 'GARD',  # ESPN's current displayName
         'Georgia State Panthers': 'GAST',
         'Georgia Bulldogs': 'GEO',
         'Grambling Tigers': 'GRAM',
         'Georgia Southern Eagles': 'GSOU',
         'Georgia Tech Yellow Jackets': 'GTCH',
         'Georgetown Hoyas': 'GTWN',
+        'Hampton Pirates': 'HAMP',  # was missing entirely; team exists in teams table under this code
         'Hawaii Rainbow Warriors': 'HAW',
+        "Hawai'i Rainbow Warriors": 'HAW',  # ESPN's current displayName (with apostrophe)
         'Houston Baptist Huskies': 'HBU',
+        'Houston Christian Huskies': 'HBU',  # Houston Baptist renamed to Houston Christian in 2021; ESPN uses the new name
         'Holy Cross Crusaders': 'HCR',
         'Houston Cougars': 'HOU',
         'Howard Bison': 'HOW',
@@ -557,7 +681,9 @@ def convert_team_name(full_team_name):
         'Kentucky Wildcats': 'KTKY',
         'Lafayette Leopards': 'LAF',
         'Lamar Cardinals': 'LAMA',
+        'Lehigh Mountain Hawks': 'LEH',  # was missing entirely; team exists in teams table under this code
         'Liberty Flames': 'LIB',
+        'Lindenwood Lions': 'LIND',  # was missing entirely; team exists in teams table under this code
         'Long Island University Sharks': 'LIU',
         'Louisiana Ragin\' Cajuns': 'LLAF',
         'UL Monroe Warhawks': 'LMON',
@@ -568,11 +694,12 @@ def convert_team_name(full_team_name):
         'Marist Red Foxes': 'MAR',
         'Maryland Terrapins': 'MARY',
         'UMass Minutemen': 'MAS',
+        'Massachusetts Minutemen': 'MAS',  # ESPN's current displayName (no "U" prefix)
         'Michigan State Spartans': 'MCST',
         'Memphis Tigers': 'MEM',
         'Mercer Bears': 'MER',
         'Miami Hurricanes': 'MIAF',
-        'Miami (OH) RedHawks': 'MIAOH',
+        'Miami (OH) RedHawks': 'MIAO',  # DB stores 'MIAO' (no trailing H); dict previously had 'MIAOH' which matches no row
         'Michigan Wolverines': 'MICH',
         'Minnesota Golden Gophers': 'MIN',
         'Ole Miss Rebels': 'MIS',
@@ -581,6 +708,7 @@ def convert_team_name(full_team_name):
         'Monmouth Hawks': 'MONM',
         'Montana State Bobcats': 'MONS',
         'Montana Grizzlies': 'MONT',
+        'Morehead State Eagles': 'MORE',  # was missing entirely; team exists in teams table under this code
         'Morgan State Bears': 'MORG',
         'Merrimack Warriors': 'MRR',
         'Marshall Thundering Herd': 'MRSH',
@@ -624,8 +752,10 @@ def convert_team_name(full_team_name):
         'Penn State Nittany Lions': 'PNST',
         'Portland State Vikings': 'POST',
         'Presbyterian College Blue Hose': 'PRES',
+        'Presbyterian Blue Hose': 'PRES',  # ESPN's current displayName (dropped "College")
         'Princeton Tigers': 'PRIN',
         'Prairie View Panthers': 'PRVW',
+        'Prairie View A&M Panthers': 'PRVW',  # ESPN's current displayName
         'Purdue Boilermakers': 'PUR',
         'Rice Owls': 'RICE',
         'Richmond Spiders': 'RICH',
@@ -637,16 +767,22 @@ def convert_team_name(full_team_name):
         'South Carolina Gamecocks': 'SCAR',
         'South Carolina State Bulldogs': 'SCST',
         'South Dakota State Jackrabbits': 'SDKS',
+        'San Diego Toreros': 'SAND',  # was missing entirely; team exists in teams table under this code
         'San Diego State Aztecs': 'SDST',
         'Southeastern Louisiana Lions': 'SELA',
+        'SE Louisiana Lions': 'SELA',  # ESPN's abbreviated displayName used in some feeds
         'Southeast Missouri State Red Hawks': 'SEMST',
+        'Southeast Missouri State Redhawks': 'SEMST',  # ESPN's current displayName ("Redhawks" one word)
         'Stephen F. Austin Lumberjacks': 'SFAN',
         'South Florida Bulls': 'SFL',
         'St Francis (PA) Red Flash': 'SFPA',
         'Sam Houston State Bearkats': 'SHST',
+        'Sam Houston Bearkats': 'SHST',  # ESPN's current displayName (dropped "State")
         'Southern Illinois Salukis': 'SIL',
         'San Jose State Spartans': 'SJST',
+        'San José State Spartans': 'SJST',  # ESPN's current displayName (with accent)
         'Southern Mississippi Golden Eagles': 'SMIS',
+        'Southern Miss Golden Eagles': 'SMIS',  # ESPN's current shortened displayName
         'SMU Mustangs': 'SMU',
         'Southern Jaguars': 'SOU',
         'Stanford Cardinal': 'STAN',
@@ -654,7 +790,8 @@ def convert_team_name(full_team_name):
         'Stetson Hatters': 'STET',
         'Southern Utah Thunderbirds': 'SUT',
         'Syracuse Orange': 'SYR',
-        'Tarleton State': 'TARL',
+        'Tarleton State': 'TARL',  # kept: api/utils/team_slugs.py:122 hardcodes this literal string and relies on it mapping to 'TARL'
+        'Tarleton State Texans': 'TARL',  # ESPN's full displayName (old key alone never matches it, since it's missing the mascot word)
         'Chattanooga Mocs': 'TCHA',
         'TCU Horned Frogs': 'TCU',
         'Temple Owls': 'TEM',
@@ -670,6 +807,7 @@ def convert_team_name(full_team_name):
         'Towson Tigers': 'TWSN',
         'Texas A&M Aggies': 'TXAM',
         'Texas A&M-Commerce Lions': 'TXAMC',
+        'East Texas A&M Lions': 'TXAMC',  # school renamed in 2023; keep the old entry too in case historical data still uses the old name
         'Texas Southern Tigers': 'TXSO',
         'Texas State Bobcats': 'TXST',
         'Texas Tech Red Raiders': 'TXT',
@@ -708,8 +846,8 @@ def convert_team_name(full_team_name):
         'Yale Bulldogs': 'YALE',
         'Youngstown State Penguins': 'YST', 
 
-
         #NBA teams
+        'Atlanta Hawks': 'Hawks',
         'Boston Celtics': 'Celtics',
         'Brooklyn Nets': 'Nets',
         'Charlotte Hornets': 'Hornets',
@@ -722,6 +860,7 @@ def convert_team_name(full_team_name):
         'Houston Rockets': 'Rockets',
         'Indiana Pacers': 'Pacers',
         'Los Angeles Clippers': 'Clippers',
+        'LA Clippers': 'Clippers',  # ESPN's displayName for the Clippers
         'Los Angeles Lakers': 'Lakers',
         'Memphis Grizzlies': 'Grizzlies',
         'Miami Heat': 'Heat',

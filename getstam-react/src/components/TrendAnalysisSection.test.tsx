@@ -42,6 +42,35 @@ describe('TrendAnalysisSection market cards', () => {
     expect(screen.getByText('Over')).toBeInTheDocument();
   });
 
+  it('sizes the market cards grid to the actual number of cards, not a fixed 3 columns', () => {
+    const { rerender } = render(
+      <TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+    // gameTrends fixture has all 3 markets
+    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(3, 1fr)' });
+
+    const twoMarkets: GameWithTrends = {
+      ...gameTrends,
+      marketOverview: {
+        spread: gameTrends.marketOverview!.spread,
+        total: gameTrends.marketOverview!.total,
+      },
+    };
+    rerender(
+      <TrendAnalysisSection gameTrends={twoMarkets} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(2, 1fr)' });
+
+    const oneMarket: GameWithTrends = {
+      ...gameTrends,
+      marketOverview: { total: gameTrends.marketOverview!.total },
+    };
+    rerender(
+      <TrendAnalysisSection gameTrends={oneMarket} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(1, 1fr)' });
+  });
+
   it('no longer renders the old "What the numbers suggest" banner', () => {
     render(
       <TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
@@ -98,7 +127,13 @@ describe('TrendAnalysisSection collision card', () => {
     expect(screen.getByText('Lost 3 straight on the road')).toBeInTheDocument();
     expect(screen.getByText('72%')).toBeInTheDocument();
     expect(screen.getByText('28%')).toBeInTheDocument();
-    expect(screen.getByText('18 historical meetings')).toBeInTheDocument();
+    // The sample-size line must be traceable to which streaks produced it, not
+    // just "N historical meetings" on its own -- a generic (team-less) streak
+    // qualifier is folded into that same sentence, since the sample is pooled
+    // across whichever teams hit this streak type/length, not just today's two.
+    expect(
+      screen.getByText('18 historical meetings when a 5-game win streak at home team meets a 3-game loss streak on the road team')
+    ).toBeInTheDocument();
   });
 
   it('renders nothing for the collision card when there are no collision trends', () => {
@@ -172,7 +207,7 @@ describe('TrendAnalysisSection remaining trends list', () => {
     const collisionTrend = {
       type: 'win_streak' as const,
       count: 5,
-      description: 'collision description',
+      description: "Brewers' 5-game win streak at home meets Rays' 3-game loss streak on the road — ...",
       continuation_rate: 0.72,
       sample_size: 18,
       home_trend: { team: 'Milwaukee Brewers', type: 'win_streak' as const, count: 5, venue: 'venue_specific' as const },
@@ -193,7 +228,14 @@ describe('TrendAnalysisSection remaining trends list', () => {
     render(<TrendAnalysisSection gameTrends={trends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />);
 
     expect(screen.getByText('More trends')).toBeInTheDocument();
-    expect(screen.getAllByText(/Brewers covered 4 straight spreads|collision description/).length).toBe(1);
+    // otherTrend shows once, in the More Trends list.
+    expect(screen.getAllByText('Brewers covered 4 straight spreads').length).toBe(1);
+    // collisionTrend's generic streak qualifier shows once, folded into the
+    // CollisionCard's sample-size sentence -- it must not also be duplicated
+    // into the More Trends list below.
+    expect(
+      screen.getAllByText(/a 5-game win streak at home team meets a 3-game loss streak on the road team/).length
+    ).toBe(1);
   });
 
   it('collapses to 2 trends with a "View More ▾" toggle when there are more than 2', async () => {

@@ -20,7 +20,7 @@ import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { Link } from "react-router-dom";
 import SEO from "../components/SEO";
 import EmailSubscribeForm from "../components/EmailSubscribeForm";
-import HistoricalGames from "../components/HistoricalGames";
+import GameLogTable from "../components/GameLogTable";
 import { encodeGameId } from "../utils/gameIdCrypto";
 import DailyDigestContent from "../components/DailyDigestContent";
 
@@ -146,21 +146,21 @@ function GamePreviewSection({ post }: { post: BlogPost }) {
 
       {tab === 0 && (
         <Box>
-          <HistoricalGames title={`${home_team} — Last 5 Games`} games={game_data.home_last_5} teamName={home_team} sportType={sportType as any} sport={sport} />
-          <HistoricalGames title={`${away_team} — Last 5 Games`} games={game_data.away_last_5} teamName={away_team} sportType={sportType as any} sport={sport} />
+          <GameLogTable title={`${home_team} — Last 5 Games`} games={game_data.home_last_5} teamName={home_team} sportType={sportType as any} sport={sport} />
+          <GameLogTable title={`${away_team} — Last 5 Games`} games={game_data.away_last_5} teamName={away_team} sportType={sportType as any} sport={sport} />
         </Box>
       )}
       {tab === 1 && (
-        <HistoricalGames title={`${home_team} — Last 5 Home Games`} games={game_data.home_home_last_5} teamName={home_team} sportType={sportType as any} sport={sport} />
+        <GameLogTable title={`${home_team} — Last 5 Home Games`} games={game_data.home_home_last_5} teamName={home_team} sportType={sportType as any} sport={sport} />
       )}
       {tab === 2 && (
-        <HistoricalGames title={`${away_team} — Last 5 Away Games`} games={game_data.away_away_last_5} teamName={away_team} sportType={sportType as any} sport={sport} />
+        <GameLogTable title={`${away_team} — Last 5 Away Games`} games={game_data.away_away_last_5} teamName={away_team} sportType={sportType as any} sport={sport} />
       )}
 
       {game_data.h2h_last_5.length > 0 && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="h6" gutterBottom>Head to Head</Typography>
-          <HistoricalGames title={`${away_team} @ ${home_team} — Last 5 H2H`} games={game_data.h2h_last_5} teamName={home_team} isHeadToHead sportType={sportType as any} sport={sport} />
+          <GameLogTable title={`${away_team} @ ${home_team} — Last 5 H2H`} games={game_data.h2h_last_5} teamName={home_team} isHeadToHead sportType={sportType as any} sport={sport} />
         </Box>
       )}
 

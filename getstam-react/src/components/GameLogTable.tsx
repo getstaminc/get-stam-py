@@ -32,10 +32,8 @@ type DerivedGameData = {
   totalLine: number | null;
 };
 
-// Same per-sport field mapping as components/HistoricalGames.tsx's getGameData —
-// duplicated here deliberately (see Task 7 Interfaces note / spec): GameLogTable
-// is a separate, Game-Details-only component so HistoricalGames can stay
-// untouched for TeamPage/BlogPostPage.
+// The shared recent-games table -- used on Game Details, Team pages, and the
+// daily-digest blog post preview.
 function getGameData(game: HistoricalGame, sportType: SportType): DerivedGameData {
   switch (sportType) {
     case 'nfl':
@@ -276,13 +274,13 @@ const GameLogTable: React.FC<GameLogTableProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {isHeadToHead && h2hOpponentName ? (
             <Box sx={{ display: 'flex' }}>
-              <TeamLogo sportKey={sport || sportType} teamName={teamName} size={28} border="2px solid #fff" />
+              <TeamLogo sportKey={sport || sportType} teamName={teamName} size={24} border="2px solid #fff" />
               <Box sx={{ ml: '-8px' }}>
-                <TeamLogo sportKey={sport || sportType} teamName={h2hOpponentName} size={28} border="2px solid #fff" />
+                <TeamLogo sportKey={sport || sportType} teamName={h2hOpponentName} size={24} border="2px solid #fff" />
               </Box>
             </Box>
           ) : (
-            <TeamLogo sportKey={sport || sportType} teamName={teamName} size={28} />
+            <TeamLogo sportKey={sport || sportType} teamName={teamName} size={24} />
           )}
           <Box sx={{ textAlign: 'left' }}>
             <Typography sx={{ fontSize: '0.875rem', fontWeight: 700 }}>{title}</Typography>

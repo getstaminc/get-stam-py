@@ -115,15 +115,6 @@ export interface GameData {
 
 export type SportType = 'nfl' | 'ncaaf' | 'mlb' | 'soccer' | 'worldcup' | 'nba' | 'nhl' | 'ncaab';
 
-export type HistoricalGamesProps = {
-  title: string;
-  games: HistoricalGame[];
-  loading?: boolean;
-  teamName?: string;
-  isHeadToHead?: boolean;
-  sportType: SportType;
-};
-
 // Helper function to convert API sport key to our SportType
 export const getSportType = (sportKey: string): SportType => {
   const sportMap: { [key: string]: SportType } = {

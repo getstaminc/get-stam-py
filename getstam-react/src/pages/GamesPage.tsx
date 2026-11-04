@@ -11,14 +11,14 @@ import {
 } from "@mui/material";
 import { useGame } from "../contexts/GameContext";
 import { useAuth } from "../contexts/AuthContext";
-import GameOdds, { shouldDisplayGame } from "../components/GameOdds";
+import MatchupOddsCard from "../components/MatchupOddsCard";
+import { shouldDisplayGame } from "../utils/gameDisplay";
 import GamesWithTrends from "../components/GamesWithTrends";
 import PastGamesDisplay from "../components/PastGamesDisplay";
 import { GameWithTrends } from "../utils/trendAnalysis";
 import { fetchPitcherData, getPitcherDataForGame } from "../utils/mlbUtils";
 import SEO from "../components/SEO";
-import { encodeGameId } from "../utils/gameIdCrypto";
-import { getMatchupPageLink, MATCHUP_SLUG_SPORTS } from "../utils/teamSlugUtils";
+import { buildGameDetailsLink } from "../utils/teamSlugUtils";
 
 // Map URL sport (e.g. "nfl") to Odds API sport key
 const SPORT_URL_TO_API_KEY: { [key: string]: string } = {
@@ -224,7 +224,7 @@ const GamesPage = () => {
   const [activeView, setActiveView] = useState<"all" | "trends">(isTrends ? "trends" : "all");
   const [games, setGames] = useState<any[]>([]);
   // Games with no posted odds AND no final score (e.g. scheduled a day or more out)
-  // render nothing in GameOdds — derive the visible subset here so the count/empty-
+  // render nothing in MatchupOddsCard — derive the visible subset here so the count/empty-
   // state/grid all agree, instead of "N games today" with a silently blank grid
   // underneath. Completed games still count as visible even once odds clear.
   const visibleGames = games.filter(shouldDisplayGame);
@@ -493,7 +493,7 @@ const GamesPage = () => {
           align="center"
           sx={{ mb: 3, color: "#9e9e9e" }}
         >
-          {!isHistoricalDate && visibleGames.length > 0 && `${visibleGames.length} games today`}
+          {!isHistoricalDate && visibleGames.length > 0 && `${visibleGames.length} ${visibleGames.length === 1 ? 'game' : 'games'} today`}
           {!isHistoricalDate && visibleGames.length > 0 && dataSinceYear && " · "}
           {dataSinceYear && `Data since ${dataSinceYear}`}
           {!dataSinceYear && !isHistoricalDate && "* Only games with betting odds data will display"}
@@ -607,12 +607,9 @@ const GamesPage = () => {
 
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
           {!isHistoricalDate && activeView === "all" && games.map((match) => {
-            const detailsLink =
-              MATCHUP_SLUG_SPORTS.has(urlSport) && match.home?.team && match.away?.team && match.commence_time
-                ? getMatchupPageLink(urlSport, match.away.team, match.home.team, match.commence_time)
-                : `/game-details/${urlSport}?game_id=${encodeGameId(match.game_id)}`;
+            const detailsLink = buildGameDetailsLink(urlSport, match);
             return (
-              <GameOdds
+              <MatchupOddsCard
                 key={match.game_id}
                 game={{
                   home: match.home,

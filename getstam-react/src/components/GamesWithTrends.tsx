@@ -3,8 +3,7 @@ import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Tooltip, Li
 import LockIcon from "@mui/icons-material/Lock";
 import { useLocation } from "react-router-dom";
 import { GameWithTrends, TrendResult } from "../utils/trendAnalysis";
-import { encodeGameId } from "../utils/gameIdCrypto";
-import { getMatchupPageLink, MATCHUP_SLUG_SPORTS } from "../utils/teamSlugUtils";
+import { buildGameDetailsLink } from "../utils/teamSlugUtils";
 import TrendInsightCard, { getConfidenceScore } from "./TrendInsightCard";
 import { useAuth } from "../contexts/AuthContext";
 import UpgradeDialog from "./UpgradeDialog";
@@ -172,10 +171,7 @@ const GamesWithTrends: React.FC<GamesWithTrendsProps> = ({
 
           if (allTrends.length === 0) return null;
 
-          const detailsLink =
-            MATCHUP_SLUG_SPORTS.has(urlSport) && game.home?.team && game.away?.team && game.commence_time
-              ? getMatchupPageLink(urlSport, game.away.team, game.home.team, game.commence_time)
-              : `/game-details/${urlSport}?game_id=${encodeGameId(game.game_id)}`;
+          const detailsLink = buildGameDetailsLink(urlSport, game);
 
           return (
             <TrendInsightCard

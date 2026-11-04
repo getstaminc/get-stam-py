@@ -13,7 +13,8 @@ Two passes:
      current 53-man roster — practice squad, just-cut, etc.)
   2. From ESPN's current team rosters (authoritative; overwrites pass 1).
 
-Run locally — site.api.espn.com 403s Heroku's datacenter IPs. No args.
+Designed to be scheduled daily (e.g., via Heroku Scheduler) to keep player-team
+assignments up to date. No args.
 """
 
 import os

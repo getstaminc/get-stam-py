@@ -152,7 +152,7 @@ describe('GameLogTable', () => {
       </MemoryRouter>
     );
     // Cowboys (away): 25 pts + (-3) line = 22 > Eagles' 14 -> covered
-    expect(screen.getByText('-3')).toHaveStyle({ backgroundColor: '#e3f4ea' });
+    expect(screen.getByText('-3')).toHaveStyle({ backgroundColor: '#d3ecdf' });
 
     rerender(
       <MemoryRouter>
@@ -160,6 +160,6 @@ describe('GameLogTable', () => {
       </MemoryRouter>
     );
     // Brewers (away): 6 runs > Dodgers' 4 -> won straight up -> moneyline hit
-    expect(screen.getByText('+130')).toHaveStyle({ backgroundColor: '#e3f4ea' });
+    expect(screen.getByText('+130')).toHaveStyle({ backgroundColor: '#d3ecdf' });
   });
 });

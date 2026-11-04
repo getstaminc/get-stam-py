@@ -23,7 +23,7 @@ alembic upgrade head
 alembic revision --autogenerate -m "description"
 
 # Run a data ingestion job (e.g., seed yesterday's NBA games)
-python jobs/nba_seed_yesterdays_games.py
+python jobs/nba_odds_api_seed_yesterdays_games.py
 ```
 
 ### Frontend (React)

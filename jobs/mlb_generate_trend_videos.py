@@ -65,6 +65,7 @@ Output:
 import os
 import sys
 import json
+import time
 import asyncio
 import subprocess
 from pathlib import Path
@@ -99,6 +100,13 @@ TTS_VOICE = os.getenv("TTS_VOICE", "en-US-ChristopherNeural")
 # post-process time-stretch), so pitch stays natural. "+0%" is the neutral
 # speaking pace edge-tts defaults to; bump this to tighten up the pacing.
 TTS_RATE = os.getenv("TTS_RATE", "+20%")
+# A single edge-tts call occasionally flakes on its own (e.g. "No audio was
+# received" — a different failure than the 2026-10 403 outage, which hit
+# every single call) and succeeds moments later with no other change — so
+# retry a few times before falling back to piper, which should only kick in
+# when edge-tts is genuinely down, not for one transient blip.
+EDGE_TTS_MAX_ATTEMPTS = 3
+EDGE_TTS_RETRY_DELAY_SECONDS = 3
 
 # --- piper settings (only used when TTS_ENGINE=piper) ---
 # en_US-ryan-high picked after comparing several candidates by ear — see
@@ -268,13 +276,22 @@ def synthesize_voiceover(text, out_path):
     # TTS_ENGINE == "edge" (default): try the better-sounding neural voice
     # first, but never let an edge-tts outage (unofficial API, breaks
     # whenever Microsoft changes something server-side — see TTS_ENGINE's
-    # comment) take the whole daily pipeline down. Fall back to piper
-    # automatically and keep going rather than failing the video.
-    try:
-        asyncio.run(_synthesize_edge(text, TTS_VOICE, TTS_RATE, out_path))
-    except Exception as e:
-        print(f"  [TTS] edge-tts failed ({e}); falling back to piper for this voiceover.")
-        _synthesize_piper(text, out_path)
+    # comment) take the whole daily pipeline down. A few retries first
+    # absorb the one-off flakes (see EDGE_TTS_MAX_ATTEMPTS) — piper only
+    # takes over once edge-tts has failed every attempt in a row.
+    last_err = None
+    for attempt in range(1, EDGE_TTS_MAX_ATTEMPTS + 1):
+        try:
+            asyncio.run(_synthesize_edge(text, TTS_VOICE, TTS_RATE, out_path))
+            return out_path
+        except Exception as e:
+            last_err = e
+            print(f"  [TTS] edge-tts attempt {attempt}/{EDGE_TTS_MAX_ATTEMPTS} failed: {e}")
+            if attempt < EDGE_TTS_MAX_ATTEMPTS:
+                time.sleep(EDGE_TTS_RETRY_DELAY_SECONDS)
+
+    print(f"  [TTS] edge-tts failed {EDGE_TTS_MAX_ATTEMPTS}/{EDGE_TTS_MAX_ATTEMPTS} attempts ({last_err}); falling back to piper for this voiceover.")
+    _synthesize_piper(text, out_path)
     return out_path
 
 

@@ -41,6 +41,18 @@ def resolve_return_base(origin):
     return SITE_BASE_URL
 
 
+def resolve_return_path(path):
+    """Path to send the user back to after Stripe — the page they started on. Only plain
+    same-site paths are accepted ("//host" or backslashes could point off-site); else home."""
+    if isinstance(path, str) and path.startswith("/") and not path.startswith("//") and "\\" not in path:
+        return path
+    return "/"
+
+
+def _with_param(path, param):
+    return f"{path}{'&' if '?' in path else '?'}{param}"
+
+
 def _get_conn():
     return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -55,18 +67,19 @@ def _sget(obj, key, default=None):
 class BillingService:
 
     @staticmethod
-    def create_checkout_session(user, start_trial=True, origin=None):
+    def create_checkout_session(user, start_trial=True, origin=None, return_path=None):
         """Returns (checkout_url, error). start_trial=False charges immediately with no trial period.
-        origin is the caller's Origin header — the user is returned to that host when it's known."""
-        base = resolve_return_base(origin)
+        origin is the caller's Origin header — the user is returned to that host when it's known —
+        and return_path the page they started checkout from (home if missing or not same-site)."""
+        return_url = f"{resolve_return_base(origin)}{resolve_return_path(return_path)}"
         try:
             kwargs = {
                 "mode": "subscription",
                 "line_items": [{"price": STRIPE_PRICE_ID, "quantity": 1}],
                 "client_reference_id": str(user["id"]),
                 "metadata": {"user_id": str(user["id"])},
-                "success_url": f"{base}/mlb/trends?checkout=success",
-                "cancel_url": f"{base}/mlb/trends?checkout=cancel",
+                "success_url": _with_param(return_url, "checkout=success"),
+                "cancel_url": _with_param(return_url, "checkout=cancel"),
             }
             if start_trial:
                 kwargs["subscription_data"] = {"trial_period_days": 7}
@@ -82,14 +95,14 @@ class BillingService:
             return None, str(e)
 
     @staticmethod
-    def create_portal_session(user, origin=None):
+    def create_portal_session(user, origin=None, return_path=None):
         """Returns (portal_url, error)."""
         if not user.get("stripe_customer_id"):
             return None, "no_stripe_customer"
         try:
             session = stripe.billing_portal.Session.create(
                 customer=user["stripe_customer_id"],
-                return_url=f"{resolve_return_base(origin)}/mlb/trends",
+                return_url=f"{resolve_return_base(origin)}{resolve_return_path(return_path)}",
             )
             return session.url, None
         except Exception as e:

@@ -33,6 +33,9 @@ SPORT_CONFIG: Dict[str, Dict[str, str]] = {
     # 'ln' was never selected, so every game was skipped as missing spread data).
     'ncaaf': {'table': 'ncaaf_games', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
               'home_spread': 'home_line', 'away_spread': 'away_line'},
+    # ncaab_games has the same columns as ncaaf_games (home_line/away_line are a real spread).
+    'ncaab': {'table': 'ncaab_games', 'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
+              'home_spread': 'home_line', 'away_spread': 'away_line'},
     'nfl':   {'table': 'nfl_games',   'home_score': 'home_points', 'away_score': 'away_points', 'total_col': 'total', 'time_col': 'start_time',
               'home_spread': 'home_line', 'away_spread': 'away_line'},
     # Soccer is scoped per-league (not one shared 'soccer' pool) — mixing e.g. EPL and
@@ -401,6 +404,19 @@ def _continuation_stats_team(
     return continued, total, ml_stats
 
 
+def _team_stats_cached(ctx: Dict, trend_type: str, target_length: int):
+    """_continuation_stats_team memoized on the (process-lifetime) context.
+
+    The scan walks every team's full history, and enrichment asks for the same
+    (trend_type, length) pair once per trend — ~230 times for a 43-game NCAAB slate.
+    """
+    memo = ctx.setdefault('_team_stats_memo', {})
+    key = (trend_type, target_length)
+    if key not in memo:
+        memo[key] = _continuation_stats_team(ctx.get('team_games', {}), trend_type, target_length)
+    return memo[key]
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -444,9 +460,7 @@ def get_streak_stats(
             return None
 
         if h2h_mode == 'team':
-            continued, total, _ = _continuation_stats_team(
-                ctx.get('team_games', {}), trend_type, streak_length
-            )
+            continued, total, _ = _team_stats_cached(ctx, trend_type, streak_length)
         else:
             games_key = 'home_h2h_games' if h2h_mode == 'home_h2h' else 'gen_h2h_games'
             continued, total, _ = _continuation_stats(
@@ -500,9 +514,7 @@ def get_streak_context(
             all_team_games = ctx.get('team_games', {})
             if not all_team_games:
                 return ''
-            continued, total, ml_stats = _continuation_stats_team(
-                all_team_games, trend_type, streak_length,
-            )
+            continued, total, ml_stats = _team_stats_cached(ctx, trend_type, streak_length)
         else:
             games_key = 'home_h2h_games' if h2h_mode == 'home_h2h' else 'gen_h2h_games'
             all_pair_games = ctx.get(games_key, {})

@@ -23,7 +23,7 @@ def _client():
 
 
 def test_anonymous_request_clamped_to_5(auth_headers):
-    with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value=None), \
+    with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value=None), \
          patch("api.routes.historical.mlb_trends.MLBTrendsService.analyze_multiple_games_trends", return_value=([], None)) as mock_analyze:
         resp = _client().post(
             "/api/historical/trends/mlb",
@@ -36,7 +36,7 @@ def test_anonymous_request_clamped_to_5(auth_headers):
 
 
 def test_free_plan_user_clamped_to_5(auth_headers):
-    with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value={"plan": "free", "subscription_status": None}), \
+    with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value={"plan": "free", "subscription_status": None}), \
          patch("api.routes.historical.mlb_trends.MLBTrendsService.analyze_multiple_games_trends", return_value=([], None)):
         resp = _client().post(
             "/api/historical/trends/mlb",
@@ -48,7 +48,7 @@ def test_free_plan_user_clamped_to_5(auth_headers):
 
 def test_canceled_pro_user_clamped_to_5(auth_headers):
     """plan='pro' alone isn't enough -- a lapsed subscription must fall back to free limits."""
-    with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value=CANCELED_USER), \
+    with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value=CANCELED_USER), \
          patch("api.routes.historical.mlb_trends.MLBTrendsService.analyze_multiple_games_trends", return_value=([], None)):
         resp = _client().post(
             "/api/historical/trends/mlb",
@@ -59,7 +59,7 @@ def test_canceled_pro_user_clamped_to_5(auth_headers):
 
 
 def test_active_pro_user_allowed_10(auth_headers):
-    with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value=PRO_USER), \
+    with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value=PRO_USER), \
          patch("api.routes.historical.mlb_trends.MLBTrendsService.analyze_multiple_games_trends", return_value=([], None)) as mock_analyze:
         resp = _client().post(
             "/api/historical/trends/mlb",
@@ -71,7 +71,7 @@ def test_active_pro_user_allowed_10(auth_headers):
 
 
 def test_trialing_pro_user_allowed_10(auth_headers):
-    with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value=TRIALING_USER), \
+    with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value=TRIALING_USER), \
          patch("api.routes.historical.mlb_trends.MLBTrendsService.analyze_multiple_games_trends", return_value=([], None)):
         resp = _client().post(
             "/api/historical/trends/mlb",
@@ -83,7 +83,7 @@ def test_trialing_pro_user_allowed_10(auth_headers):
 
 def test_low_request_is_not_raised_to_the_max(auth_headers):
     """Clamping is an upper bound only -- a pro user asking for 3 should get 3, not 10."""
-    with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value=PRO_USER), \
+    with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value=PRO_USER), \
          patch("api.routes.historical.mlb_trends.MLBTrendsService.analyze_multiple_games_trends", return_value=([], None)) as mock_analyze:
         resp = _client().post(
             "/api/historical/trends/mlb",
@@ -99,11 +99,11 @@ def test_cache_key_differs_for_free_vs_pro_on_identical_payload(auth_headers):
     body = {"games": GAMES, "minTrendLength": 10}
 
     with app.test_request_context("/api/historical/trends/mlb", method="POST", json=body):
-        with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value=None):
+        with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value=None):
             anon_key = make_mlb_trends_cache_key()
 
     with app.test_request_context("/api/historical/trends/mlb", method="POST", json=body):
-        with patch("api.routes.historical.mlb_trends.get_current_user_optional", return_value=PRO_USER):
+        with patch("api.routes.historical.trend_length_gate.get_current_user_optional", return_value=PRO_USER):
             pro_key = make_mlb_trends_cache_key()
 
     assert anon_key != pro_key

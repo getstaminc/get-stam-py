@@ -49,6 +49,7 @@ from api.routes.webhooks.youtube_webhook import youtube_webhook_bp
 from api.routes.blog import blog_bp
 from api.routes.admin_blog import admin_blog_bp
 from api.routes.subscribers import subscribers_bp
+from api.routes.dev_config import dev_config_bp
 from api.routes.auth import auth_bp
 from api.routes.billing import billing_bp
 from api.routes.webhooks.stripe_webhook import stripe_webhook_bp
@@ -132,6 +133,7 @@ app.register_blueprint(youtube_webhook_bp)
 app.register_blueprint(blog_bp)
 app.register_blueprint(admin_blog_bp)
 app.register_blueprint(subscribers_bp)
+app.register_blueprint(dev_config_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(billing_bp)
 app.register_blueprint(stripe_webhook_bp)
@@ -253,10 +255,13 @@ def _get_matchup_for_meta(sport, slug):
     away_name = resolve_team_slug(sport, m.group('away'))
     home_name = resolve_team_slug(sport, m.group('home'))
     matchup = None
-    if away_name and home_name:
+    if sport in _SPORT_TEAMS:
         occurrence = int(m.group('n')) if m.group('n') else 1
         sport_key = convert_sport_url_to_api_key(sport)
-        result, _err = GameService.resolve_matchup(sport_key, away_name, home_name, m.group('date'), occurrence)
+        result, _err = GameService.resolve_matchup(
+            sport_key, away_name, home_name, m.group('date'), occurrence,
+            away_slug=m.group('away'), home_slug=m.group('home'),
+        )
         if result:
             game = result.get('game') or {}
             matchup = {

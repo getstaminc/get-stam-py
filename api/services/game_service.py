@@ -228,17 +228,28 @@ class GameService:
         return None, None, None
 
     @staticmethod
-    def resolve_matchup(sport_key, away_odds_name, home_odds_name, date_str, occurrence=1):
+    def resolve_matchup(sport_key, away_odds_name, home_odds_name, date_str, occurrence=1,
+                        away_slug=None, home_slug=None):
         """Resolve (sport, away team, home team, ET date, occurrence) -> game identity.
         Tries live Odds API data first, then falls back to the sport's historical DB table
         (for games that have aged out of the Odds API's lookback window).
+
+        A team name may be None when its slug isn't in SPORT_TEAMS (e.g. the long tail of
+        NCAAB programs); pass its slug and the live path matches on the slug instead.
+        The DB fallback needs real names, so such games only resolve while live.
         Returns ({"game_id":..., "source": "live"|"db", "game": {...}}, None) or (None, error)."""
+        from ..utils.team_slugs import team_slug
+
+        def same_team(odds_name, name, slug):
+            return odds_name == name if name else team_slug(odds_name) == slug
+
         # Live path: reuse the existing today/date games flow, filter by team names.
         result, err = GameService.get_games_for_date(sport_key, date_str)
         if not err and result:
             matches = [
                 g for g in result['games']
-                if g['away']['team'] == away_odds_name and g['home']['team'] == home_odds_name
+                if same_team(g['away']['team'], away_odds_name, away_slug)
+                and same_team(g['home']['team'], home_odds_name, home_slug)
             ]
             matches.sort(key=lambda g: g.get('commence_time') or '')
             if len(matches) >= occurrence:
@@ -248,6 +259,8 @@ class GameService:
         # DB fallback: exact match by team names + date against the sport's historical table.
         # The *_games tables store short/abbreviated names (e.g. "Yankees", "IND"), not the
         # full Odds-API names used everywhere else in this flow — convert before querying.
+        if not away_odds_name or not home_odds_name:
+            return None, 'Game not found'
         service_cls, away_score_field, home_score_field = GameService._get_matchup_db_service(sport_key)
         if not service_cls:
             return None, 'Sport not supported'

@@ -9,6 +9,9 @@ import { gameDetailsTokens as tokens } from '../utils/gameDetailsTokens';
 import { getTeamColors } from '../utils/teamColors';
 import { convertTeamNameBySport } from '../utils/teamNameConverter';
 import { getSportType } from '../types/gameTypes';
+import { getValueRead } from '../utils/valueRead';
+import { useAuth } from '../contexts/AuthContext';
+import { ValueVerdictLine, ValueReadPreviewDialog } from './ValueRead';
 
 interface TrendAnalysisSectionProps {
   gameTrends: GameWithTrends | null;
@@ -148,7 +151,12 @@ const MarketTrendCard: React.FC<{
   entry: MarketOverviewEntry;
   game: any;
   sportKey: string;
-}> = ({ marketKey, entry, game, sportKey }) => {
+  onUnlockValue: () => void;
+}> = ({ marketKey, entry, game, sportKey, onUnlockValue }) => {
+  const { isPro } = useAuth();
+  // Pregame only — a value read against a live or closed price is meaningless.
+  const isPregame = game?.home?.score == null && game?.away?.score == null;
+  const read = isPregame ? getValueRead(marketKey, entry, game) : null;
   const pct = Math.round(entry.probability * 100);
   const wins = Math.round(entry.probability * entry.sample_size);
   const losses = entry.sample_size - wins;
@@ -182,9 +190,18 @@ const MarketTrendCard: React.FC<{
       <Typography sx={{ fontSize: '0.8125rem', color: tokens.text.secondary, ...tokens.tabularNums }}>
         {wins}-{losses} ({entry.sample_size} games)
       </Typography>
-      <Box sx={{ height: 6, borderRadius: '3px', bgcolor: tokens.trackBg2, overflow: 'hidden', mt: 0.5 }}>
-        <Box sx={{ height: '100%', width: `${pct}%`, bgcolor: barColor, borderRadius: '3px' }} />
+      <Box sx={{ position: 'relative', mt: 0.5 }}>
+        <Box sx={{ height: 6, borderRadius: '3px', bgcolor: tokens.trackBg2, overflow: 'hidden' }}>
+          <Box sx={{ height: '100%', width: `${pct}%`, bgcolor: barColor, borderRadius: '3px' }} />
+        </Box>
+        {read && isPro && (
+          <Box
+            data-testid="break-even-tick"
+            sx={{ position: 'absolute', top: -3, bottom: -3, left: `${read.breakEven * 100}%`, width: 2, bgcolor: tokens.text.primary, borderRadius: 1 }}
+          />
+        )}
       </Box>
+      <ValueVerdictLine read={read} isPro={isPro} onUnlock={onUnlockValue} />
       {contributing.length > 0 && (
         <Box sx={{ mt: 0.75 }}>
           <Typography sx={{ fontSize: '0.75rem', color: tokens.text.secondary, fontWeight: 600 }}>
@@ -393,6 +410,7 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
   sportKey = 'baseball_mlb',
 }) => {
   const [showAllTrends, setShowAllTrends] = useState(false);
+  const [valuePreviewOpen, setValuePreviewOpen] = useState(false);
 
   if (loading) {
     return (
@@ -438,13 +456,14 @@ const TrendAnalysisSection: React.FC<TrendAnalysisSectionProps> = ({
       {marketRows.length > 0 && (
         <Box
           data-testid="market-cards-grid"
-          sx={{ display: 'grid', gridTemplateColumns: `repeat(${marketRows.length}, 1fr)`, gap: '14px', mb: 3 }}
+          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: `repeat(${marketRows.length}, 1fr)` }, gap: '14px', mb: 3 }}
         >
           {marketRows.map(({ key, entry }) => (
-            <MarketTrendCard key={key} marketKey={key} entry={entry} game={game} sportKey={sportKey} />
+            <MarketTrendCard key={key} marketKey={key} entry={entry} game={game} sportKey={sportKey} onUnlockValue={() => setValuePreviewOpen(true)} />
           ))}
         </Box>
       )}
+      <ValueReadPreviewDialog open={valuePreviewOpen} onClose={() => setValuePreviewOpen(false)} sport={sportKey} />
       {topCollisionTrend && <CollisionCard trend={topCollisionTrend} sportKey={sportKey} />}
       {allTrends.length > 0 && (() => {
         const hasMore = allTrends.length > 2;

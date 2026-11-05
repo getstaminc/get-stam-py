@@ -5,6 +5,26 @@ const API_BASE_URL =
   (process.env.NODE_ENV === "development" ? "http://127.0.0.1:5000" : "https://www.getstam.com");
 const API_KEY = process.env.REACT_APP_API_KEY || "";
 const TOKEN_STORAGE_KEY = "getstam_auth_token";
+const DEV_PLAN_STORAGE_KEY = "getstam_dev_plan";
+
+/** The page to come back to after Stripe Checkout/Portal, minus any earlier ?checkout= result. */
+const currentReturnPath = (): string => {
+  const params = new URLSearchParams(window.location.search);
+  params.delete("checkout");
+  const query = params.toString();
+  return `${window.location.pathname}${query ? `?${query}` : ""}`;
+};
+
+export type DevPlanOverride = 'real' | 'free' | 'pro';
+
+const readDevPlan = (): DevPlanOverride => {
+  try {
+    const v = localStorage.getItem(DEV_PLAN_STORAGE_KEY);
+    return v === 'free' || v === 'pro' ? v : 'real';
+  } catch {
+    return 'real';
+  }
+};
 
 export interface AuthUser {
   id: number;
@@ -42,6 +62,10 @@ interface AuthContextType {
   startCheckout: (startTrial?: boolean) => Promise<AuthResult>;
   openBillingPortal: () => Promise<AuthResult>;
   redeemCode: (code: string) => Promise<AuthResult>;
+  /** True only when the backend runs with FLASK_ENV=development (see /api/dev/config). */
+  devTools: boolean;
+  devPlan: DevPlanOverride;
+  setDevPlan: (plan: DevPlanOverride) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -149,7 +173,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const res = await fetch(`${API_BASE_URL}/api/billing/checkout-session`, {
       method: "POST",
       headers: { "X-API-KEY": API_KEY, "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ trial: startTrial }),
+      body: JSON.stringify({ trial: startTrial, return_path: currentReturnPath() }),
     });
     if (!res.ok) return { success: false, error: await parseError(res, "Could not start checkout") };
     const data = await res.json();
@@ -174,7 +198,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!token) return { success: false, error: "not_logged_in" };
     const res = await fetch(`${API_BASE_URL}/api/billing/portal-session`, {
       method: "POST",
-      headers: { "X-API-KEY": API_KEY, "Authorization": `Bearer ${token}` },
+      headers: { "X-API-KEY": API_KEY, "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ return_path: currentReturnPath() }),
     });
     if (!res.ok) return { success: false, error: await parseError(res, "Could not open billing portal") };
     const data = await res.json();
@@ -182,10 +207,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: true };
   }, [token]);
 
-  const isPro = user?.plan === 'pro';
+  // Dev-only plan override: lets you preview the free vs Pro UI on any page.
+  // Frontend-only — backend gates (e.g. MLB trend length) still use the real plan.
+  const [devTools, setDevTools] = useState(false);
+  const [devPlan, setDevPlanState] = useState<DevPlanOverride>(readDevPlan);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/dev/config`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setDevTools(!!data?.dev_tools))
+      .catch(() => {});
+  }, []);
+
+  const setDevPlan = useCallback((plan: DevPlanOverride) => {
+    try { localStorage.setItem(DEV_PLAN_STORAGE_KEY, plan); } catch {}
+    setDevPlanState(plan);
+  }, []);
+
+  const realIsPro = user?.plan === 'pro';
+  const isPro = devTools && devPlan !== 'real' ? devPlan === 'pro' : realIsPro;
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, isPro, requestCode, verifyCode, logout, updateProfile, startCheckout, openBillingPortal, redeemCode }}>
+    <AuthContext.Provider value={{ user, token, loading, isPro, requestCode, verifyCode, logout, updateProfile, startCheckout, openBillingPortal, redeemCode, devTools, devPlan, setDevPlan }}>
       {children}
     </AuthContext.Provider>
   );

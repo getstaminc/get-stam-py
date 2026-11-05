@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from cache import cache
 from ..services.database_service import DatabaseService
 from ..services.game_service import GameService
-from ..utils.team_slugs import resolve_team_slug
+from ..utils.team_slugs import resolve_team_slug, SPORT_TEAMS
 from ..external_requests.odds_api import convert_sport_url_to_api_key
 
 load_dotenv()
@@ -107,13 +107,17 @@ def resolve_matchup(sport, away_slug, home_slug, date):
     sport's historical DB table for aged-out games."""
     occurrence = request.args.get('n', 1, type=int)
 
+    if sport not in SPORT_TEAMS:
+        return jsonify({'error': 'Unknown sport'}), 404
+
+    # Slugs missing from SPORT_TEAMS (most NCAAB programs) are matched against live games instead.
     away_name = resolve_team_slug(sport, away_slug)
     home_name = resolve_team_slug(sport, home_slug)
-    if not away_name or not home_name:
-        return jsonify({'error': 'Unknown team slug for this sport'}), 404
 
     sport_key = convert_sport_url_to_api_key(sport)
-    result, error = GameService.resolve_matchup(sport_key, away_name, home_name, date, occurrence)
+    result, error = GameService.resolve_matchup(
+        sport_key, away_name, home_name, date, occurrence, away_slug=away_slug, home_slug=home_slug,
+    )
     if error or not result:
         return jsonify({'error': error or 'Game not found'}), 404
 

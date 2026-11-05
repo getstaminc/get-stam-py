@@ -35,7 +35,7 @@ def test_checkout_session_defaults_to_trial(auth_headers):
             headers={**auth_headers, "Authorization": "Bearer tok"},
         )
     assert resp.status_code == 200
-    mock_create.assert_called_once_with(FAKE_USER, start_trial=True, origin=None)
+    mock_create.assert_called_once_with(FAKE_USER, start_trial=True, origin=None, return_path=None)
 
 
 def test_checkout_session_can_skip_trial(auth_headers):
@@ -47,7 +47,7 @@ def test_checkout_session_can_skip_trial(auth_headers):
             headers={**auth_headers, "Authorization": "Bearer tok"},
         )
     assert resp.status_code == 200
-    mock_create.assert_called_once_with(FAKE_USER, start_trial=False, origin=None)
+    mock_create.assert_called_once_with(FAKE_USER, start_trial=False, origin=None, return_path=None)
 
 
 def test_redeem_code_success(auth_headers):
@@ -83,3 +83,14 @@ def test_redeem_code_invalid_returns_400(auth_headers):
             headers={**auth_headers, "Authorization": "Bearer tok"},
         )
     assert resp.status_code == 400
+
+
+def test_checkout_session_passes_return_path(auth_headers):
+    with patch("api.services.auth_service.AuthService.verify_token", return_value=FAKE_USER), \
+         patch("api.services.billing_service.BillingService.create_checkout_session", return_value=("https://stripe.test/session", None)) as mock_create:
+        _client().post(
+            "/api/billing/checkout-session",
+            json={"return_path": "/nba/trends?date=20261105"},
+            headers={**auth_headers, "Authorization": "Bearer tok"},
+        )
+    mock_create.assert_called_once_with(FAKE_USER, start_trial=True, origin=None, return_path="/nba/trends?date=20261105")

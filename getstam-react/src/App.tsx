@@ -8,6 +8,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import TabsNavigation from "./components/TabsNavigation";
 import SiteFooter from "./components/SiteFooter";
 import ScrollToTop from "./components/ScrollToTop";
+import DevPlanSwitch from "./components/DevPlanSwitch";
 import { usePageView } from "./hooks/usePageView";
 import { GameProvider } from "./contexts/GameContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -37,6 +38,7 @@ function AppContent() {
   return (
     <>
       <ScrollToTop />
+      <DevPlanSwitch />
       <TabsNavigation />
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Routes>

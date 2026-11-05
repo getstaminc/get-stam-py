@@ -70,7 +70,9 @@ describe('TrendInsightCard', () => {
       mockIsPro = false;
       renderWithOverview();
       await userEvent.click(screen.getByText(/see what value reads show/i));
-      expect(await screen.findByText(/Example · Knicks vs Hornets/)).toBeInTheDocument();
+      // sport="mlb" → MLB examples, not another sport's
+      expect(await screen.findByText(/Example · Yankees vs Athletics/)).toBeInTheDocument();
+      expect(screen.queryByText(/Example · Knicks vs Hornets/)).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /unlock with pro/i })).toBeInTheDocument();
     });
 

@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from cache import cache
 from ...services.historical.nba_trends_service import NBATrendsService
 from ...services.historical.trend_enrichment import enrich_game_trends
+from .trend_length_gate import gated_min_trend_length
 
 
 nba_trends_bp = Blueprint('nba_trends', __name__)
@@ -22,7 +23,7 @@ def make_nba_trends_cache_key(*args, **kwargs):
     game_ids_str = '|'.join(game_ids)
     game_ids_hash = hashlib.md5(game_ids_str.encode()).hexdigest()[:8]
     enrich_flag = 'e1' if data.get('enrich') else 'e0'
-    min_len = data.get('minTrendLength', data.get('min_trend_length', 3))
+    min_len = gated_min_trend_length(data.get('minTrendLength', data.get('min_trend_length', 3)))
     return f"nba_trends:{game_ids_hash}:{enrich_flag}:m{min_len}"
 
 
@@ -37,7 +38,7 @@ def analyze_nba_trends():
         
         games = data['games']
         limit = data.get('limit', 5)
-        min_trend_length = data.get('minTrendLength', data.get('min_trend_length', 3))
+        min_trend_length = gated_min_trend_length(data.get('minTrendLength', data.get('min_trend_length', 3)))
         enrich = data.get('enrich', False)
 
         results, error = NBATrendsService.analyze_multiple_games_trends(

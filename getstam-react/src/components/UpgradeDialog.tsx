@@ -84,7 +84,7 @@ const UpgradeDialog: React.FC<UpgradeDialogProps> = ({ open, onClose }) => {
               ) : (
                 <>
                   <Typography variant="body1">
-                    <strong>$4.99/month</strong> — unlock deeper trend filters and more. Cancel anytime.
+                    <strong>$9.99/month</strong> — unlock Value Reads, deeper trend filters and more. Cancel anytime.
                   </Typography>
 
                   <Button

@@ -4,6 +4,56 @@ import userEvent from '@testing-library/user-event';
 import TrendAnalysisSection from './TrendAnalysisSection';
 import { GameWithTrends } from '../utils/trendAnalysis';
 
+let mockIsPro = false;
+jest.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ isPro: mockIsPro, user: null }),
+}));
+
+describe('TrendAnalysisSection value reads', () => {
+  // Brewers -187 needs 65.2%; 0.80 over n=40 shrinks to ~0.77 → VALUE.
+  const pricedGame = {
+    home: { team: 'Milwaukee Brewers', score: null, odds: { h2h: -187, spread_point: -1.5, spread_price: 129 } },
+    away: { team: 'Tampa Bay Rays', score: null, odds: { h2h: 154, spread_point: 1.5, spread_price: -156 } },
+    totals: {},
+  };
+  const trendsWithMoneyline: GameWithTrends = {
+    game: pricedGame,
+    homeTeamTrends: [], awayTeamTrends: [], headToHeadTrends: [],
+    marketOverview: {
+      moneyline: { lean: 'Milwaukee Brewers', probability: 0.8, trend_count: 1, sample_size: 40, contributing_trends: [] },
+    },
+    hasTrends: true,
+  };
+  const renderSection = (g: any = pricedGame) => render(
+    <TrendAnalysisSection gameTrends={{ ...trendsWithMoneyline, game: g }} loading={false} game={g} minTrendLength={3} sportKey="baseball_mlb" />
+  );
+
+  it('shows the verdict, break-even line, and tick to Pro users', () => {
+    mockIsPro = true;
+    renderSection();
+    expect(screen.getByText('VALUE')).toBeInTheDocument();
+    expect(screen.getByText('-187 needs 65.2% to break even')).toBeInTheDocument();
+    expect(screen.getByTestId('break-even-tick')).toBeInTheDocument();
+  });
+
+  it('shows a locked teaser without the real numbers to free users and opens the preview', async () => {
+    mockIsPro = false;
+    renderSection();
+    expect(screen.queryByText('VALUE')).not.toBeInTheDocument();
+    expect(screen.queryByText(/-187 needs/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('break-even-tick')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /unlock value read/i }));
+    // sportKey="baseball_mlb" → MLB examples
+    expect(await screen.findByText(/Example · Yankees vs Athletics/)).toBeInTheDocument();
+  });
+
+  it('hides value reads once the game has a score', () => {
+    mockIsPro = true;
+    renderSection({ ...pricedGame, home: { ...pricedGame.home, score: 3 }, away: { ...pricedGame.away, score: 1 } });
+    expect(screen.queryByText('VALUE')).not.toBeInTheDocument();
+  });
+});
+
 const game = {
   home: { team: 'Milwaukee Brewers', score: null, odds: { spread_point: -1.5 } },
   away: { team: 'Tampa Bay Rays', score: null, odds: { spread_point: 1.5 } },
@@ -42,12 +92,36 @@ describe('TrendAnalysisSection market cards', () => {
     expect(screen.getByText('Over')).toBeInTheDocument();
   });
 
+  // jsdom skips media queries in getComputedStyle, and MUI wraps every breakpoint
+  // (xs included) in one — so read the grid's columns from the CSSOM per breakpoint.
+  const gridColumnsAt = (minWidth: number) => {
+    const grid = screen.getByTestId('market-cards-grid');
+    const media = Array.from(document.styleSheets)
+      .flatMap((sheet) => Array.from(sheet.cssRules))
+      .filter((r): r is CSSMediaRule => r instanceof CSSMediaRule && r.media.mediaText.includes(`min-width:${minWidth}px`));
+    for (const m of media) {
+      for (const r of Array.from(m.cssRules) as CSSStyleRule[]) {
+        if (grid.matches(r.selectorText) && r.style.getPropertyValue('grid-template-columns')) {
+          return r.style.getPropertyValue('grid-template-columns');
+        }
+      }
+    }
+    return undefined;
+  };
+
+  it('stacks the market cards on phones', () => {
+    render(
+      <TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
+    );
+    expect(gridColumnsAt(0)).toBe('1fr');
+  });
+
   it('sizes the market cards grid to the actual number of cards, not a fixed 3 columns', () => {
     const { rerender } = render(
       <TrendAnalysisSection gameTrends={gameTrends} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
     );
     // gameTrends fixture has all 3 markets
-    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(3, 1fr)' });
+    expect(gridColumnsAt(600)).toBe('repeat(3, 1fr)');
 
     const twoMarkets: GameWithTrends = {
       ...gameTrends,
@@ -59,7 +133,7 @@ describe('TrendAnalysisSection market cards', () => {
     rerender(
       <TrendAnalysisSection gameTrends={twoMarkets} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
     );
-    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(2, 1fr)' });
+    expect(gridColumnsAt(600)).toBe('repeat(2, 1fr)');
 
     const oneMarket: GameWithTrends = {
       ...gameTrends,
@@ -68,7 +142,7 @@ describe('TrendAnalysisSection market cards', () => {
     rerender(
       <TrendAnalysisSection gameTrends={oneMarket} loading={false} game={game} minTrendLength={3} sportKey="baseball_mlb" />
     );
-    expect(screen.getByTestId('market-cards-grid')).toHaveStyle({ gridTemplateColumns: 'repeat(1, 1fr)' });
+    expect(gridColumnsAt(600)).toBe('repeat(1, 1fr)');
   });
 
   it('no longer renders the old "What the numbers suggest" banner', () => {

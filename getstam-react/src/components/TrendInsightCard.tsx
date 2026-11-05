@@ -34,7 +34,7 @@ const MARKET_ROWS: { key: keyof MarketOverview; label: string }[] = [
 ];
 
 // showValue: only pregame — a value read against a live or closed price is meaningless.
-const MarketOverviewCard: React.FC<{ overview: MarketOverview; game: any; showValue: boolean }> = ({ overview, game, showValue }) => {
+const MarketOverviewCard: React.FC<{ overview: MarketOverview; game: any; showValue: boolean; sport: string }> = ({ overview, game, showValue, sport }) => {
   const { isPro } = useAuth();
   const [previewOpen, setPreviewOpen] = useState(false);
   const rows = MARKET_ROWS.filter((r) => overview[r.key]);
@@ -71,9 +71,7 @@ const MarketOverviewCard: React.FC<{ overview: MarketOverview; game: any; showVa
           </Box>
         );
       })}
-      {anyRead && (isPro ? (
-        <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8" }}>Tick = break-even rate from today's price</Typography>
-      ) : (
+      {anyRead && !isPro && (
         <Typography
           component="button"
           type="button"
@@ -82,8 +80,8 @@ const MarketOverviewCard: React.FC<{ overview: MarketOverview; game: any; showVa
         >
           See what Value Reads show →
         </Typography>
-      ))}
-      {!isPro && <ValueReadPreviewDialog open={previewOpen} onClose={() => setPreviewOpen(false)} />}
+      )}
+      {!isPro && <ValueReadPreviewDialog open={previewOpen} onClose={() => setPreviewOpen(false)} sport={sport} />}
     </Box>
   );
 };
@@ -251,7 +249,7 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, marke
         />
       </Box>
 
-      {hasOverview && <MarketOverviewCard overview={marketOverview!} game={game} showValue={!hasScore} />}
+      {hasOverview && <MarketOverviewCard overview={marketOverview!} game={game} showValue={!hasScore} sport={sport} />}
 
       {hasOverview && (
         <Box sx={{ mx: 2, mb: 1, display: "flex", justifyContent: "flex-end" }}>

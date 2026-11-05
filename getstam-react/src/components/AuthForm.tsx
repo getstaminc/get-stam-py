@@ -18,8 +18,12 @@ import { useAuth, SignupIntent } from "../contexts/AuthContext";
 type Mode = "login" | "signup";
 type Step = "plan" | "nudge" | "email" | "code";
 
-const FREE_FEATURES = ["Trend filters up to 5+ games", "Full scores & odds", "Access to all sports"];
-const PRO_FEATURES = ["Everything in Free", "Extended trend filters (7+, 10+ games)"];
+const FREE_FEATURES = ["Trend filters up to 5+ games (7+ for college)", "Full scores & odds", "Access to all sports"];
+const PRO_FEATURES = [
+  "Everything in Free",
+  "Value Reads: VALUE / FAIR / PASS on today's odds",
+  "Extended trend filters (7+, 10+ games)",
+];
 const PRO_COMING_SOON = ["AI GetSTAM Analysis for games"];
 
 interface AuthFormProps {
@@ -161,7 +165,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Box sx={{ border: "2px solid", borderColor: "primary.main", borderRadius: 1, p: 2 }}>
               <Typography variant="subtitle1" fontWeight={700}>Pro</Typography>
-              <Typography variant="body2" color="text.secondary">$4.99/month · 7-day free trial</Typography>
+              <Typography variant="body2" color="text.secondary">$9.99/month · 7-day free trial</Typography>
               <FeatureList features={PRO_FEATURES} comingSoon={PRO_COMING_SOON} />
               <Button fullWidth variant="contained" onClick={choosePro}>Continue with Pro</Button>
             </Box>

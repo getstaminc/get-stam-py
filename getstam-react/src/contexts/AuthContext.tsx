@@ -7,6 +7,14 @@ const API_KEY = process.env.REACT_APP_API_KEY || "";
 const TOKEN_STORAGE_KEY = "getstam_auth_token";
 const DEV_PLAN_STORAGE_KEY = "getstam_dev_plan";
 
+/** The page to come back to after Stripe Checkout/Portal, minus any earlier ?checkout= result. */
+const currentReturnPath = (): string => {
+  const params = new URLSearchParams(window.location.search);
+  params.delete("checkout");
+  const query = params.toString();
+  return `${window.location.pathname}${query ? `?${query}` : ""}`;
+};
+
 export type DevPlanOverride = 'real' | 'free' | 'pro';
 
 const readDevPlan = (): DevPlanOverride => {
@@ -165,7 +173,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const res = await fetch(`${API_BASE_URL}/api/billing/checkout-session`, {
       method: "POST",
       headers: { "X-API-KEY": API_KEY, "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ trial: startTrial }),
+      body: JSON.stringify({ trial: startTrial, return_path: currentReturnPath() }),
     });
     if (!res.ok) return { success: false, error: await parseError(res, "Could not start checkout") };
     const data = await res.json();
@@ -190,7 +198,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!token) return { success: false, error: "not_logged_in" };
     const res = await fetch(`${API_BASE_URL}/api/billing/portal-session`, {
       method: "POST",
-      headers: { "X-API-KEY": API_KEY, "Authorization": `Bearer ${token}` },
+      headers: { "X-API-KEY": API_KEY, "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ return_path: currentReturnPath() }),
     });
     if (!res.ok) return { success: false, error: await parseError(res, "Could not open billing portal") };
     const data = await res.json();

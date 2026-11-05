@@ -255,10 +255,13 @@ def _get_matchup_for_meta(sport, slug):
     away_name = resolve_team_slug(sport, m.group('away'))
     home_name = resolve_team_slug(sport, m.group('home'))
     matchup = None
-    if away_name and home_name:
+    if sport in _SPORT_TEAMS:
         occurrence = int(m.group('n')) if m.group('n') else 1
         sport_key = convert_sport_url_to_api_key(sport)
-        result, _err = GameService.resolve_matchup(sport_key, away_name, home_name, m.group('date'), occurrence)
+        result, _err = GameService.resolve_matchup(
+            sport_key, away_name, home_name, m.group('date'), occurrence,
+            away_slug=m.group('away'), home_slug=m.group('home'),
+        )
         if result:
             game = result.get('game') or {}
             matchup = {

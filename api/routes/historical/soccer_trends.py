@@ -5,6 +5,7 @@ from cache import cache
 from ...services.historical.soccer_trends_service import SoccerTrendsService
 from ...services.historical.soccer_service import SoccerService
 from ...services.historical.trend_enrichment import enrich_game_trends
+from .trend_length_gate import gated_min_trend_length
 
 
 soccer_trends_bp = Blueprint('soccer_trends', __name__)
@@ -40,7 +41,7 @@ def make_soccer_trends_cache_key(*args, **kwargs):
     game_ids_str = '|'.join(game_ids)
     game_ids_hash = hashlib.md5(game_ids_str.encode()).hexdigest()[:8]  # First 8 chars
     enrich_flag = 'e1' if data.get('enrich') else 'e0'
-    min_len = data.get('min_trend_length', data.get('minTrendLength', 3))
+    min_len = gated_min_trend_length(data.get('min_trend_length', data.get('minTrendLength', 3)))
 
     return f"soccer_trends:{game_ids_hash}:{enrich_flag}:m{min_len}"
 
@@ -57,7 +58,7 @@ def analyze_soccer_trends():
         games = data['games']
         limit = data.get('limit', 5)
         # Support both min_trend_length and minTrendLength keys
-        min_trend_length = data.get('min_trend_length', data.get('minTrendLength', 3))
+        min_trend_length = gated_min_trend_length(data.get('min_trend_length', data.get('minTrendLength', 3)))
         sport_key = data.get('sportKey')
         enrich = data.get('enrich', False)
 
@@ -129,7 +130,7 @@ def league_trends(league_slug: str):
         sport_key = slug_to_sport_key.get(league_slug.lower())
 
         limit = int(request.args.get('limit', 50))
-        min_trend_length = int(request.args.get('min_trend_length', request.args.get('minTrendLength', 3)))
+        min_trend_length = gated_min_trend_length(request.args.get('min_trend_length', request.args.get('minTrendLength', 3)))
         enrich = request.args.get('enrich', 'true').lower() != 'false'
 
         games, error = SoccerService.get_games(limit=limit, start_date=game_date, end_date=game_date, league=league)
@@ -162,7 +163,7 @@ def analyze_soccer_trends_by_league(league_slug: str):
         data = request.get_json() or {}
         games = data.get('games')
         limit = data.get('limit', 5)
-        min_trend_length = data.get('min_trend_length', data.get('minTrendLength', 3))
+        min_trend_length = gated_min_trend_length(data.get('min_trend_length', data.get('minTrendLength', 3)))
 
         # World Cup uses a separate table — handle before the regular slug map
         if league_slug.lower() == 'worldcup':

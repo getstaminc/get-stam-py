@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from cache import cache
 from ...services.historical.ncaaf_trends_service import NCAAFTrendsService
 from ...services.historical.trend_enrichment import enrich_game_trends
+from .trend_length_gate import gated_min_trend_length
 
 
 ncaaf_trends_bp = Blueprint('ncaaf_trends', __name__)
@@ -23,7 +24,7 @@ def make_ncaaf_trends_cache_key(*args, **kwargs):
     game_ids_str = '|'.join(game_ids)
     game_ids_hash = hashlib.md5(game_ids_str.encode()).hexdigest()[:8]  # First 8 chars
     enrich_flag = 'e1' if data.get('enrich') else 'e0'
-    min_len = data.get('minTrendLength', data.get('min_trend_length', 3))
+    min_len = gated_min_trend_length(data.get('minTrendLength', data.get('min_trend_length', 3)), 'ncaaf')
 
     return f"ncaaf_trends:{game_ids_hash}:{enrich_flag}:m{min_len}"
 
@@ -39,7 +40,7 @@ def analyze_ncaaf_trends():
         
         games = data['games']
         limit = data.get('limit', 5)
-        min_trend_length = data.get('minTrendLength', data.get('min_trend_length', 3))
+        min_trend_length = gated_min_trend_length(data.get('minTrendLength', data.get('min_trend_length', 3)), 'ncaaf')
         enrich = data.get('enrich', False)
 
         # Analyze trends for all games

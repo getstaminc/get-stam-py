@@ -17,9 +17,9 @@ const API_BASE_URL =
     : "https://www.getstam.com");
 const API_KEY = process.env.REACT_APP_API_KEY || "";
 
-// Config for each sport that may appear on the homepage. MLB + NFL + NBA + NHL —
-// NCAAF/NCAAB/World Cup are intentionally left off the homepage feed. A sport
-// here still only renders if sportsConfig.ts marks it inSeason (e.g. MLB).
+// Config for each sport that may appear on the homepage. World Cup is
+// intentionally left off the homepage feed. A sport here still only renders if
+// sportsConfig.ts marks it inSeason (e.g. MLB).
 const SPORT_CONFIG: Record<
   string,
   { apiKey: string; historicalKey: string; minTrendLength: number }
@@ -31,13 +31,18 @@ const SPORT_CONFIG: Record<
   // doesn't have the same problem, so it stays at 3).
   NBA: { apiKey: "basketball_nba",       historicalKey: "nba", minTrendLength: 5 },
   NHL: { apiKey: "icehockey_nhl",        historicalKey: "nhl", minTrendLength: 3 },
+  // College slates are huge (~50 NCAAF games on a Saturday, 100+ NCAAB a day in
+  // season). 7+ keeps only the standout streaks — measured on a 51-game NCAAF
+  // Saturday: 49 games at 3+, 36 at 5+, 19 at 7+.
+  NCAAF: { apiKey: "americanfootball_ncaaf", historicalKey: "ncaaf", minTrendLength: 7 },
+  NCAAB: { apiKey: "basketball_ncaab",       historicalKey: "ncaab", minTrendLength: 7 },
 };
 
-// Fixed homepage lead order — NFL first, then NBA, then NHL, then MLB —
-// regardless of trend-strength scores. Sports not listed here fall where their
-// max trend score puts them (below the ones that are listed). A section with
-// no active games/trends still renders nothing (see SportSection below).
-const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 4, NBA: 3, NHL: 2, MLB: 1 };
+// Fixed homepage lead order — pro leagues first (NFL, NBA, NHL), then college,
+// then MLB — regardless of trend-strength scores. Sports not listed here fall
+// where their max trend score puts them (below the ones that are listed). A
+// section with no active games/trends still renders nothing (see SportSection below).
+const HOMEPAGE_PRIORITY: Record<string, number> = { NFL: 6, NBA: 5, NHL: 4, NCAAF: 3, NCAAB: 2, MLB: 1 };
 const homepagePriority = (name: string) => HOMEPAGE_PRIORITY[name] ?? 0;
 
 // Keep league-specific API and detail routes when combining the soccer feed.
@@ -280,10 +285,15 @@ export default function HomePage() {
   const [reportedCount, setReportedCount] = useState(0);
   const [hasAnyActiveGames, setHasAnyActiveGames] = useState(false);
   const [sectionScores, setSectionScores] = useState<Record<string, number>>({});
+  // Sports whose section actually has games to show today — drives the filter chips.
+  const [sportsWithGames, setSportsWithGames] = useState<Set<string>>(new Set());
 
   const handleSectionReport = useCallback((sportName: string, hasGames: boolean, maxScore: number) => {
     setReportedCount((prev) => prev + 1);
-    if (hasGames) setHasAnyActiveGames(true);
+    if (hasGames) {
+      setHasAnyActiveGames(true);
+      setSportsWithGames((prev) => new Set(prev).add(sportName));
+    }
     setSectionScores((prev) => ({ ...prev, [sportName]: maxScore }));
   }, []);
 
@@ -404,7 +414,7 @@ export default function HomePage() {
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             <Chip label="All" clickable onClick={() => setSelectedSport("All")}
               color={selectedSport === "All" ? "primary" : "default"} size="small" />
-            {inSeasonSports.map((sport) => (
+            {sortedSports.filter((sport) => sportsWithGames.has(sport.name)).map((sport) => (
               <Chip
                 key={sport.name}
                 label={sport.name === "SOCCER" ? "Soccer" : sport.name}

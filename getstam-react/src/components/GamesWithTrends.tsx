@@ -22,17 +22,18 @@ interface GamesWithTrendsProps {
   } | undefined;
 }
 
-// Above this length, MLB's filter is a Pro-only feature — free/anonymous users stay capped at 5+.
-const MLB_FREE_MAX = 5;
+// Above this length the filter is a Pro-only feature — free/anonymous users stay capped at 5+,
+// or 7+ for college (bigger slates). Mirrors api/routes/historical/trend_length_gate.py.
+const FREE_MAX = 5;
+const FREE_MAX_BY_SPORT: Record<string, number> = { ncaaf: 7, ncaab: 7 };
 
-const TrendFilter: React.FC<{ value: number; onChange: (v: number) => void; sport: string }> = ({ value, onChange, sport }) => {
+export const TrendFilter: React.FC<{ value: number; onChange: (v: number) => void; sport: string }> = ({ value, onChange, sport }) => {
   const { isPro } = useAuth();
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const freeMax = FREE_MAX_BY_SPORT[sport] ?? FREE_MAX;
 
-  const minAllowed = sport === "mlb" ? 5 : 3;
-  const allOptions = sport === "mlb" ? [5, 7, 10] : [3, 4, 5];
-  const options = allOptions.filter((n) => n >= minAllowed);
-  const showUpgrade = sport === "mlb" && !isPro;
+  const options = sport === "mlb" ? [5, 7, 10] : [3, 4, 5, 7, 10];
+  const showUpgrade = !isPro;
 
   const handleUpgradeClick = () => setUpgradeDialogOpen(true);
 
@@ -41,7 +42,7 @@ const TrendFilter: React.FC<{ value: number; onChange: (v: number) => void; spor
   // Instead: they're fully clickable, but the change handler intercepts a locked selection and
   // opens the Upgrade dialog instead of applying it, so the Select's value never actually changes.
   const handleSelectChange = (newValue: number) => {
-    if (newValue > MLB_FREE_MAX && !isPro) {
+    if (newValue > freeMax && !isPro) {
       setUpgradeDialogOpen(true);
       return;
     }
@@ -54,7 +55,7 @@ const TrendFilter: React.FC<{ value: number; onChange: (v: number) => void; spor
         <InputLabel>Min Trend Length</InputLabel>
         <Select value={value} label="Min Trend Length" onChange={(e) => handleSelectChange(e.target.value as number)}>
           {options.map((n) => {
-            const locked = n > MLB_FREE_MAX && !isPro;
+            const locked = n > freeMax && !isPro;
             return (
               <MenuItem key={n} value={n}>
                 {locked ? (

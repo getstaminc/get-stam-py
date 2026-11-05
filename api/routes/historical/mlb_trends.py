@@ -5,23 +5,10 @@ from flask import Blueprint, request, jsonify
 from cache import cache
 from ...services.historical.mlb_trends_service import MLBTrendsService
 from ...services.historical.trend_enrichment import enrich_game_trends
-from ...services.auth_service import AuthService
-from ...utils.auth_helpers import get_current_user_optional
+from .trend_length_gate import gated_min_trend_length
 
 
 mlb_trends_bp = Blueprint('mlb_trends', __name__)
-
-FREE_MAX_MIN_TREND_LENGTH = 5
-PRO_MAX_MIN_TREND_LENGTH = 10
-
-
-def _effective_max_min_trend_length():
-    """Max min-trend-length the requesting user is allowed, based on their plan."""
-    user = get_current_user_optional()
-    if AuthService.effective_plan(user) == 'pro':
-        return PRO_MAX_MIN_TREND_LENGTH
-    return FREE_MAX_MIN_TREND_LENGTH
-
 
 def make_mlb_trends_cache_key(*args, **kwargs):
     """Create a custom cache key based on game IDs, enrich flag, and the CLAMPED min trend length.
@@ -37,8 +24,7 @@ def make_mlb_trends_cache_key(*args, **kwargs):
     game_ids = sorted([game.get('game_id') for game in games if game.get('game_id')])
     game_ids_hash = hashlib.md5('|'.join(game_ids).encode()).hexdigest()[:8]
     enrich_flag = 'e1' if data.get('enrich') else 'e0'
-    requested_min_len = data.get('minTrendLength', data.get('min_trend_length', 3))
-    effective_min_len = min(requested_min_len, _effective_max_min_trend_length())
+    effective_min_len = gated_min_trend_length(data.get('minTrendLength', data.get('min_trend_length', 3)))
 
     return f"mlb_trends:{game_ids_hash}:{enrich_flag}:m{effective_min_len}"
 
@@ -54,8 +40,7 @@ def analyze_mlb_trends():
 
         games = data['games']
         limit = data.get('limit', 5)
-        min_trend_length = data.get('minTrendLength', data.get('min_trend_length', 3))
-        min_trend_length = min(min_trend_length, _effective_max_min_trend_length())
+        min_trend_length = gated_min_trend_length(data.get('minTrendLength', data.get('min_trend_length', 3)))
         enrich = data.get('enrich', False)
 
         results, error = MLBTrendsService.analyze_multiple_games_trends(

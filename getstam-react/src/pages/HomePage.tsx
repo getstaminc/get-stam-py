@@ -244,6 +244,7 @@ function SportSection({
               key={`${gameSport}-${game.game_id}`}
               game={{ home: game.home, away: game.away, totals: game.totals, commence_time: game.commence_time }}
               trends={allTrends}
+              marketOverview={gwt.marketOverview}
               detailsLink={detailsLink}
               sport={gameSport}
               playerStreaks={streaks}

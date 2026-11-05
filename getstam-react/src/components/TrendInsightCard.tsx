@@ -7,6 +7,9 @@ import { TrendResult, MarketOverview } from "../utils/trendAnalysis";
 import PlayerStreaksStrip, { TeamStreaks } from "./PlayerStreaksStrip";
 import MatchupTeamHeader, { MATCHUP_CARD_CONTAINER_SX } from "./MatchupTeamHeader";
 import { gameDetailsTokens as tokens } from "../utils/gameDetailsTokens";
+import { getValueRead } from "../utils/valueRead";
+import { useAuth } from "../contexts/AuthContext";
+import { ValueReadRow, LockedValueRow, ValueReadPreviewDialog } from "./ValueRead";
 
 export interface TrendInsightCardProps {
   game: any;
@@ -30,9 +33,16 @@ const MARKET_ROWS: { key: keyof MarketOverview; label: string }[] = [
   { key: "total", label: "Total" },
 ];
 
-const MarketOverviewCard: React.FC<{ overview: MarketOverview }> = ({ overview }) => {
+// showValue: only pregame — a value read against a live or closed price is meaningless.
+const MarketOverviewCard: React.FC<{ overview: MarketOverview; game: any; showValue: boolean }> = ({ overview, game, showValue }) => {
+  const { isPro } = useAuth();
+  const [previewOpen, setPreviewOpen] = useState(false);
   const rows = MARKET_ROWS.filter((r) => overview[r.key]);
   if (rows.length === 0) return null;
+  const reads = Object.fromEntries(
+    rows.map(({ key }) => [key, showValue ? getValueRead(key, overview[key]!, game) : null])
+  );
+  const anyRead = rows.some(({ key }) => reads[key]);
   return (
     <Box sx={{
       mx: 2, mb: 1.5, p: 1.5,
@@ -45,16 +55,35 @@ const MarketOverviewCard: React.FC<{ overview: MarketOverview }> = ({ overview }
       {rows.map(({ key, label }) => {
         const entry = overview[key]!;
         const pct = Math.round(entry.probability * 100);
+        const read = reads[key];
         return (
-          <Box key={key} sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <Typography sx={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>{label}</Typography>
-            <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
-              {entry.lean} <Box component="span" sx={{ color: "#16a34a" }}>{pct}%</Box>
-              <Box component="span" sx={{ color: "#94a3b8", fontWeight: 500, fontSize: "0.72rem" }}> ({entry.trend_count} trends, n={entry.sample_size})</Box>
-            </Typography>
+          <Box key={key}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <Typography sx={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>{label}</Typography>
+              <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
+                {entry.lean} <Box component="span" sx={{ color: "#16a34a" }}>{pct}%</Box>
+                <Box component="span" sx={{ color: "#94a3b8", fontWeight: 500, fontSize: "0.72rem" }}> ({entry.trend_count} trends, n={entry.sample_size})</Box>
+              </Typography>
+            </Box>
+            {read && (isPro
+              ? <ValueReadRow probability={entry.probability} read={read} />
+              : <LockedValueRow onUnlock={() => setPreviewOpen(true)} />)}
           </Box>
         );
       })}
+      {anyRead && (isPro ? (
+        <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8" }}>Tick = break-even rate from today's price</Typography>
+      ) : (
+        <Typography
+          component="button"
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          sx={{ alignSelf: "flex-start", fontSize: "0.72rem", fontWeight: 700, color: "#1976d2", background: "none", border: "none", cursor: "pointer", p: 0 }}
+        >
+          See what Value Reads show →
+        </Typography>
+      ))}
+      {!isPro && <ValueReadPreviewDialog open={previewOpen} onClose={() => setPreviewOpen(false)} />}
     </Box>
   );
 };
@@ -222,7 +251,7 @@ const TrendInsightCard: React.FC<TrendInsightCardProps> = ({ game, trends, marke
         />
       </Box>
 
-      {hasOverview && <MarketOverviewCard overview={marketOverview!} />}
+      {hasOverview && <MarketOverviewCard overview={marketOverview!} game={game} showValue={!hasScore} />}
 
       {hasOverview && (
         <Box sx={{ mx: 2, mb: 1, display: "flex", justifyContent: "flex-end" }}>

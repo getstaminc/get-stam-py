@@ -49,6 +49,7 @@ from api.routes.webhooks.youtube_webhook import youtube_webhook_bp
 from api.routes.blog import blog_bp
 from api.routes.admin_blog import admin_blog_bp
 from api.routes.subscribers import subscribers_bp
+from api.routes.dev_config import dev_config_bp
 from api.routes.auth import auth_bp
 from api.routes.billing import billing_bp
 from api.routes.webhooks.stripe_webhook import stripe_webhook_bp
@@ -132,6 +133,7 @@ app.register_blueprint(youtube_webhook_bp)
 app.register_blueprint(blog_bp)
 app.register_blueprint(admin_blog_bp)
 app.register_blueprint(subscribers_bp)
+app.register_blueprint(dev_config_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(billing_bp)
 app.register_blueprint(stripe_webhook_bp)

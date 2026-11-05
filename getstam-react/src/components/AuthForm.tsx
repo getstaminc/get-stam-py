@@ -14,6 +14,7 @@ import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import CheckIcon from "@mui/icons-material/Check";
 import { useAuth, SignupIntent } from "../contexts/AuthContext";
+import { accessCodeErrorMessage } from "../utils/accessCode";
 
 type Mode = "login" | "signup";
 type Step = "plan" | "nudge" | "email" | "code";
@@ -37,6 +38,9 @@ interface AuthFormProps {
    * directly at the email step. UpgradeDialog passes "signup" so a locked-feature click lands on
    * "Choose Your Plan" first — an existing user can still get to login from there. */
   defaultMode?: Mode;
+  /** Called when an access code entered on the plan step couldn't be redeemed after login. Lets a
+   * host dialog that swaps views once `user` is set (UpgradeDialog) show the error itself. */
+  onAccessCodeError?: (message: string) => void;
 }
 
 const FeatureList: React.FC<{ features: string[]; comingSoon?: string[] }> = ({ features, comingSoon }) => (
@@ -63,7 +67,7 @@ const FeatureList: React.FC<{ features: string[]; comingSoon?: string[] }> = ({ 
  * Signup is a short flow: pick a plan, optionally get nudged toward a Pro trial if Free was
  * picked, then email -> emailed 6-digit code. Entering the code is the only verification step —
  * there's no separate email-link flow, since receiving the code already proves inbox ownership. */
-const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMode = "login" }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMode = "login", onAccessCodeError }) => {
   const { requestCode, verifyCode } = useAuth();
   const [mode, setMode] = useState<Mode>(defaultMode);
   const [step, setStep] = useState<Step>(defaultMode === "signup" ? "plan" : "email");
@@ -74,6 +78,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
   const [error, setError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // An access code from the plan step: signup continues without Checkout and the code is
+  // redeemed server-side when the emailed login code is verified.
+  const [showAccessCode, setShowAccessCode] = useState(false);
+  const [accessCode, setAccessCode] = useState("");
 
   const switchMode = (next: Mode) => {
     setMode(next);
@@ -93,6 +101,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
     setStep("email");
   };
   const chooseFree = () => setStep("nudge");
+  const continueWithAccessCode = () => {
+    setIntent(null);
+    setStep("email");
+  };
   const acceptTrialNudge = () => {
     setIntent("trial");
     setStep("email");
@@ -143,9 +155,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const result = await verifyCode(email, code);
+    const result = await verifyCode(email, code, accessCode.trim() || undefined);
     setLoading(false);
     if (result.success) {
+      if (result.accessCodeError) {
+        const message = `You're logged in, but your access code didn't work: ${accessCodeErrorMessage(result.accessCodeError)}`;
+        if (onAccessCodeError) onAccessCodeError(message);
+        else setError(message);
+        return;
+      }
       if (!result.redirectingToCheckout) {
         (onLoginSuccess || onClose)();
       }
@@ -175,6 +193,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
               <FeatureList features={FREE_FEATURES} />
               <Button fullWidth variant="outlined" onClick={chooseFree}>Continue with Free</Button>
             </Box>
+            {!showAccessCode ? (
+              <Link component="button" type="button" variant="body2" onClick={() => setShowAccessCode(true)} sx={{ alignSelf: "flex-start" }}>
+                Have an access code?
+              </Link>
+            ) : (
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <TextField
+                  label="Access code"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  size="small"
+                  autoFocus
+                  fullWidth
+                />
+                <Button variant="contained" onClick={continueWithAccessCode} disabled={!accessCode.trim()}>
+                  Continue
+                </Button>
+              </Box>
+            )}
             <Link component="button" type="button" variant="body2" onClick={() => switchMode("login")} sx={{ alignSelf: "flex-start" }}>
               Already have an account? Log in
             </Link>
@@ -260,6 +297,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onClose, onLoginSuccess, defaultMod
             <Typography variant="body2" color="text.secondary">
               We'll email you a 6-digit code — no password needed.
             </Typography>
+            {accessCode.trim() && (
+              <Alert severity="info">
+                Access code <strong>{accessCode.trim().toUpperCase()}</strong> will be applied once you verify your email.
+              </Alert>
+            )}
             <TextField
               label="Email"
               type="email"

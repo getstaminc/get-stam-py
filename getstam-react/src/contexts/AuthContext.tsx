@@ -46,6 +46,9 @@ interface VerifyCodeResult extends AuthResult {
   /** True when a signup-time "trial" intent produced a Checkout session and the browser is
    * already being redirected there — the caller shouldn't also navigate anywhere itself. */
   redirectingToCheckout?: boolean;
+  /** Set when an access code was sent along but couldn't be redeemed — the login itself
+   * still succeeded. One of the redeem-code error codes (e.g. "code_fully_redeemed"). */
+  accessCodeError?: string;
 }
 
 export type SignupIntent = 'trial' | null;
@@ -56,7 +59,7 @@ interface AuthContextType {
   loading: boolean;
   isPro: boolean;
   requestCode: (email: string, intent?: SignupIntent, requireExisting?: boolean) => Promise<AuthResult>;
-  verifyCode: (email: string, code: string) => Promise<VerifyCodeResult>;
+  verifyCode: (email: string, code: string, accessCode?: string) => Promise<VerifyCodeResult>;
   logout: () => void;
   updateProfile: (updates: { timezone?: string; theme_preference?: 'light' | 'dark' }) => Promise<AuthResult>;
   startCheckout: (startTrial?: boolean) => Promise<AuthResult>;
@@ -129,15 +132,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       headers: { "X-API-KEY": API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email, intent, require_existing: requireExisting }),
     });
-    if (!res.ok) return { success: false, error: await parseError(res, "Could not send login code") };
+    if (!res.ok) {
+      // The per-IP limiter (5/hour on this route) answers 429 without our JSON error body.
+      const fallback = res.status === 429
+        ? "Too many code requests — please try again in an hour."
+        : "Could not send login code";
+      return { success: false, error: await parseError(res, fallback) };
+    }
     return { success: true };
   }, []);
 
-  const verifyCode = useCallback(async (email: string, code: string): Promise<VerifyCodeResult> => {
+  const verifyCode = useCallback(async (email: string, code: string, accessCode?: string): Promise<VerifyCodeResult> => {
     const res = await fetch(`${API_BASE_URL}/api/auth/verify-code`, {
       method: "POST",
       headers: { "X-API-KEY": API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, code }),
+      body: JSON.stringify({ email, code, access_code: accessCode || undefined, return_path: currentReturnPath() }),
     });
     if (!res.ok) return { success: false, error: await parseError(res, "That code is invalid or has expired") };
     const data = await res.json();
@@ -148,7 +157,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       window.location.href = data.checkout_url;
       return { success: true, redirectingToCheckout: true };
     }
-    return { success: true };
+    return { success: true, accessCodeError: data.access_code_error };
   }, []);
 
   const logout = useCallback(() => {

@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from ..services.auth_service import AuthService
 from ..services.billing_service import BillingService
+from ..services.access_code_service import AccessCodeService
 from ..services.email_service import EmailService
 from ..utils.auth_helpers import require_user, serialize_user
 from limiter import limiter
@@ -67,12 +68,23 @@ def verify_code():
         # Unexpected (e.g. a DB error surfaced as str(e)) — don't echo internals to the client.
         return jsonify({"error": "Could not verify login code"}), 500
 
+    # An access code entered during signup ("Have an access code?" on the plan step) is
+    # redeemed here, once the account exists, instead of sending the user to Checkout.
+    access_code_error = None
+    if data.get("access_code"):
+        redeemed_user, access_code_error = AccessCodeService.redeem(user["id"], data["access_code"])
+        if redeemed_user:
+            user = redeemed_user
+
     token = AuthService.issue_token(user)
     response = {"token": token, "user": serialize_user(user)}
+    if access_code_error:
+        response["access_code_error"] = access_code_error
 
-    if is_first_verification and user.get("signup_intent") == "trial":
+    if is_first_verification and user.get("signup_intent") == "trial" and not data.get("access_code"):
         checkout_url, checkout_error = BillingService.create_checkout_session(
-            user, start_trial=True, origin=request.headers.get("Origin")
+            user, start_trial=True, origin=request.headers.get("Origin"),
+            return_path=data.get("return_path"),
         )
         if checkout_error:
             # Non-fatal — they're still verified and logged in, just land on the site

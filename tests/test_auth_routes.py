@@ -115,7 +115,7 @@ def test_verify_code_first_verification_with_trial_intent_returns_checkout_url(a
     assert resp.status_code == 200
     body = resp.get_json()
     assert body["checkout_url"] == "https://checkout.stripe.com/fake"
-    mock_checkout.assert_called_once_with(trial_user, start_trial=True, origin=None)
+    mock_checkout.assert_called_once_with(trial_user, start_trial=True, origin=None, return_path=None)
 
 
 def test_verify_code_returning_user_with_trial_intent_skips_checkout(auth_headers):
@@ -174,3 +174,32 @@ def test_update_me_patches_profile(auth_headers):
         )
     assert resp.status_code == 200
     assert resp.get_json()["user"]["theme_preference"] == "dark"
+
+
+def test_verify_code_with_access_code_redeems_it_and_skips_checkout(auth_headers):
+    trial_user = _fake_user(signup_intent="trial")
+    comped = _fake_user(signup_intent="trial", plan="pro", subscription_status="comped")
+    with patch("api.services.auth_service.AuthService.verify_code", return_value=(trial_user, None, True)), \
+         patch("api.services.auth_service.AuthService.issue_token", return_value="tok123"), \
+         patch("api.routes.auth.AccessCodeService.redeem", return_value=(comped, None)) as mock_redeem, \
+         patch("api.services.billing_service.BillingService.create_checkout_session") as mock_checkout:
+        resp = _client().post("/api/auth/verify-code", json={"email": "a@example.com", "code": "123456", "access_code": "steph2026"}, headers=auth_headers)
+    body = resp.get_json()
+    assert resp.status_code == 200
+    mock_redeem.assert_called_once_with(1, "steph2026")
+    mock_checkout.assert_not_called()
+    assert body["user"]["plan"] == "pro"
+    assert "checkout_url" not in body and "access_code_error" not in body
+
+
+def test_verify_code_with_bad_access_code_still_logs_in_and_reports_it(auth_headers):
+    with patch("api.services.auth_service.AuthService.verify_code", return_value=(_fake_user(), None, True)), \
+         patch("api.services.auth_service.AuthService.issue_token", return_value="tok123"), \
+         patch("api.routes.auth.AccessCodeService.redeem", return_value=(None, "code_fully_redeemed")), \
+         patch("api.services.billing_service.BillingService.create_checkout_session") as mock_checkout:
+        resp = _client().post("/api/auth/verify-code", json={"email": "a@example.com", "code": "123456", "access_code": "USED"}, headers=auth_headers)
+    body = resp.get_json()
+    assert resp.status_code == 200
+    assert body["token"] == "tok123"
+    assert body["access_code_error"] == "code_fully_redeemed"
+    mock_checkout.assert_not_called()

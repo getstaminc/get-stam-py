@@ -13,6 +13,7 @@ import Link from "@mui/material/Link";
 import Divider from "@mui/material/Divider";
 import { useAuth } from "../contexts/AuthContext";
 import AuthForm from "./AuthForm";
+import { accessCodeErrorMessage } from "../utils/accessCode";
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -20,7 +21,7 @@ interface UpgradeDialogProps {
 }
 
 const UpgradeDialog: React.FC<UpgradeDialogProps> = ({ open, onClose }) => {
-  const { user, startCheckout, redeemCode } = useAuth();
+  const { user, isPro, startCheckout, redeemCode } = useAuth();
   const [loadingAction, setLoadingAction] = useState<"trial" | "purchase" | "code" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCodeField, setShowCodeField] = useState(false);
@@ -60,10 +61,7 @@ const UpgradeDialog: React.FC<UpgradeDialogProps> = ({ open, onClose }) => {
     if (result.success) {
       setCodeRedeemed(true);
     } else {
-      setError(result.error === "already_redeemed" ? "You've already redeemed an access code."
-        : result.error === "code_fully_redeemed" ? "This code has reached its redemption limit."
-        : result.error === "expired_code" ? "This code has expired."
-        : "That code isn't valid.");
+      setError(accessCodeErrorMessage(result.error));
     }
   };
 
@@ -73,13 +71,19 @@ const UpgradeDialog: React.FC<UpgradeDialogProps> = ({ open, onClose }) => {
         // Logged out: show the login/signup form right here instead of a second dialog.
         // Successful login just flips `user` truthy and this re-renders into the plans below —
         // successful signup shows its own "check your email" message and stays put.
-        <AuthForm onClose={handleClose} onLoginSuccess={() => {}} defaultMode="signup" />
+        <AuthForm
+          onClose={handleClose}
+          onLoginSuccess={() => {}}
+          defaultMode="signup"
+          onAccessCodeError={(message) => { setError(message); setShowCodeField(true); }}
+        />
       ) : (
         <>
           <DialogTitle>Upgrade to Pro</DialogTitle>
           <DialogContent dividers>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {codeRedeemed ? (
+              {/* isPro covers a code redeemed during signup, before this view was shown. */}
+              {codeRedeemed || isPro ? (
                 <Alert severity="success">You're on Pro now — enjoy!</Alert>
               ) : (
                 <>
@@ -133,7 +137,7 @@ const UpgradeDialog: React.FC<UpgradeDialogProps> = ({ open, onClose }) => {
             </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={handleClose}>{codeRedeemed ? "Close" : "Cancel"}</Button>
+            <Button onClick={handleClose}>{codeRedeemed || isPro ? "Close" : "Cancel"}</Button>
           </DialogActions>
         </>
       )}

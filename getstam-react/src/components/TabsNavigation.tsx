@@ -14,6 +14,8 @@ import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import { Link } from "react-router-dom";
 import styles from "./css/Navigation.module.css";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -123,10 +125,21 @@ const TabsNavigation: React.FC = () => {
     handleUserMenuClose();
     setUpgradeDialogOpen(true);
   };
-  const handleManageBilling = () => {
+  const [billingError, setBillingError] = React.useState<string | null>(null);
+  const handleManageBilling = async () => {
     handleUserMenuClose();
-    openBillingPortal();
+    const result = await openBillingPortal();
+    // On success the browser is already on its way to Stripe.
+    if (!result.success) {
+      setBillingError(
+        result.error === "no_stripe_customer"
+          ? "There's no Stripe subscription on this account to manage."
+          : "Couldn't open the billing portal. Please try again in a moment."
+      );
+    }
   };
+  // Pro granted by an access code has no Stripe customer, so there's nothing to manage.
+  const isComped = user?.subscription_status === "comped";
 
   const accountControls = user ? (
     <>
@@ -138,7 +151,9 @@ const TabsNavigation: React.FC = () => {
       <Menu anchorEl={userMenuAnchor} open={Boolean(userMenuAnchor)} onClose={handleUserMenuClose}>
         <MenuItem disabled sx={{ opacity: "1 !important" }}>{user.email}</MenuItem>
         <Divider />
-        {isPro ? (
+        {isPro && isComped ? (
+          <MenuItem disabled sx={{ opacity: "1 !important" }}>Pro (complimentary)</MenuItem>
+        ) : isPro ? (
           <MenuItem onClick={handleManageBilling}>Manage Billing</MenuItem>
         ) : (
           <MenuItem onClick={handleUpgrade}>Upgrade to Pro</MenuItem>
@@ -323,6 +338,10 @@ const TabsNavigation: React.FC = () => {
 
       <AuthDialog open={authDialogOpen} onClose={() => setAuthDialogOpen(false)} />
       <UpgradeDialog open={upgradeDialogOpen} onClose={() => setUpgradeDialogOpen(false)} />
+      <Snackbar open={!!billingError} autoHideDuration={6000} onClose={() => setBillingError(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}>
+        <Alert severity="error" onClose={() => setBillingError(null)}>{billingError}</Alert>
+      </Snackbar>
     </Box>
   );
 };

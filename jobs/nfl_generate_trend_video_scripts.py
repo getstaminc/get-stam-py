@@ -60,11 +60,14 @@ eastern_tz = pytz.timezone("US/Eastern")
 
 MODEL = "claude-sonnet-5"
 
-# The TikTok-safe script occasionally fails validation (e.g. Claude uses a
-# banned gambling word like "covering" on its own, independent of anything
-# in the prompt) — worth a couple of automatic retries before giving up,
-# since re-generating the same prompt usually produces clean wording.
-MAX_TIKTOK_ATTEMPTS = 3
+# A script occasionally fails validation on its own — a banned gambling word
+# the TikTok system prompt said not to use (e.g. "covering"), or Claude just
+# returning an empty/garbled "primary_trend_type" that doesn't match any
+# given trend (happened to a real NFL game 2026-11-05) — independent of
+# anything actually wrong with the prompt. Worth a couple of automatic
+# retries on either call before giving up, since re-generating the same
+# prompt usually produces a clean response.
+MAX_SCRIPT_ATTEMPTS = 3
 OUTPUT_ROOT = Path(__file__).resolve().parent.parent / "output" / "scripts"
 REQUIRED_SCRIPT_KEYS = ("hook", "script", "primary_trend_type", "secondary_trends_referenced", "estimated_word_count")
 
@@ -317,19 +320,26 @@ def _generate_script(system_prompt, prompt, valid_types, banned_pattern=None):
 def call_claude(game, ranked_trends, rankings, lookahead=False, extra_context=None):
     prompt = build_user_prompt(game, ranked_trends, rankings, lookahead=lookahead, extra_context=extra_context)
     valid_types = {t["type"] for t in ranked_trends}
-    return _generate_script(SYSTEM_PROMPT, prompt, valid_types)
+    last_err = None
+    for attempt in range(1, MAX_SCRIPT_ATTEMPTS + 1):
+        data, err = _generate_script(SYSTEM_PROMPT, prompt, valid_types)
+        if data is not None:
+            return data, None
+        last_err = err
+        print(f"  [SCRIPT RETRY] attempt {attempt}/{MAX_SCRIPT_ATTEMPTS} failed: {err}")
+    return None, last_err
 
 
 def call_claude_tiktok(game, ranked_trends, rankings, lookahead=False, extra_context=None):
     prompt = build_tiktok_user_prompt(game, ranked_trends, rankings, lookahead=lookahead, extra_context=extra_context)
     valid_types = {t["type"] for t in ranked_trends}
     last_err = None
-    for attempt in range(1, MAX_TIKTOK_ATTEMPTS + 1):
+    for attempt in range(1, MAX_SCRIPT_ATTEMPTS + 1):
         data, err = _generate_script(TIKTOK_SYSTEM_PROMPT, prompt, valid_types, banned_pattern=_TIKTOK_BANNED_PATTERN)
         if data is not None:
             return data, None
         last_err = err
-        print(f"  [TIKTOK RETRY] attempt {attempt}/{MAX_TIKTOK_ATTEMPTS} failed: {err}")
+        print(f"  [TIKTOK RETRY] attempt {attempt}/{MAX_SCRIPT_ATTEMPTS} failed: {err}")
     return None, last_err
 
 

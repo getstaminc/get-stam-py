@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL", "").replace("postgres://", "postgresql://")
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://www.getstam.com")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+ADMIN_NOTIFY_EMAIL = os.getenv("ADMIN_NOTIFY_EMAIL", "info@getstam.com")
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
@@ -51,6 +52,19 @@ def resolve_return_path(path):
 
 def _with_param(path, param):
     return f"{path}{'&' if '?' in path else '?'}{param}"
+
+
+def _notify_admin(subject, livemode, lines):
+    """Email the team about a billing event. Non-fatal — a failed send never fails the webhook.
+    Sandbox events (local `stripe listen`) are tagged [TEST] so they aren't mistaken for real money."""
+    from .email_service import EmailService
+
+    if not livemode:
+        subject = f"[TEST] {subject}"
+    html = "".join(f"<p>{line}</p>" for line in lines)
+    ok, err = EmailService.send_digest_to_one(ADMIN_NOTIFY_EMAIL, subject, html)
+    if not ok:
+        logger.error("Admin billing notification failed: %s", err)
 
 
 def _get_conn():
@@ -116,6 +130,8 @@ class BillingService:
         event_type = event["type"]
         event_created = event["created"]
         obj = event["data"]["object"]
+        previous = _sget(event["data"], "previous_attributes") or {}
+        notification = None
 
         try:
             with _get_conn() as conn:
@@ -128,15 +144,21 @@ class BillingService:
 
                     if is_new:
                         if event_type == "checkout.session.completed":
-                            BillingService._apply_checkout_completed(cur, obj, event_created)
+                            notification = BillingService._apply_checkout_completed(cur, obj, event_created)
                         elif event_type in ("customer.subscription.updated", "customer.subscription.deleted"):
-                            BillingService._apply_subscription_status(cur, obj, event_type, event_created)
+                            notification = BillingService._apply_subscription_status(
+                                cur, obj, event_type, event_created, previous
+                            )
 
                     conn.commit()
-            return True, None
         except Exception as e:
             logger.error("handle_webhook_event error: %s", e)
             return False, str(e)
+
+        # Sent only after the commit, and only for a new event, so a Stripe retry never re-sends.
+        if notification:
+            _notify_admin(notification[0], _sget(event, "livemode", False), notification[1])
+        return True, None
 
     @staticmethod
     def _apply_checkout_completed(cur, obj, event_created):
@@ -170,8 +192,17 @@ class BillingService:
         """, (_sget(obj, "customer"), subscription_id, status, trial_ends_at,
               event_created, int(user_id), event_created))
 
+        email = _sget(_sget(obj, "customer_details"), "email") or _sget(obj, "customer_email") or f"user #{user_id}"
+        if status == "trialing":
+            trial_note = f" — trial ends {trial_ends_at:%b %d, %Y}" if trial_ends_at else ""
+            return (f"New GetSTAM Pro signup (free trial): {email}",
+                    [f"{email} started a Pro free trial{trial_note}.",
+                     "They'll be charged automatically when the trial ends unless they cancel."])
+        return (f"New GetSTAM Pro subscriber: {email}",
+                [f"{email} subscribed to Pro and was charged today (status: {status})."])
+
     @staticmethod
-    def _apply_subscription_status(cur, obj, event_type, event_created):
+    def _apply_subscription_status(cur, obj, event_type, event_created, previous=None):
         customer_id = _sget(obj, "customer")
         if not customer_id:
             return
@@ -182,4 +213,13 @@ class BillingService:
             UPDATE users
             SET subscription_status = %s, trial_ends_at = %s, stripe_event_created_at = %s, updated_at = now()
             WHERE stripe_customer_id = %s AND (stripe_event_created_at IS NULL OR stripe_event_created_at <= %s)
+            RETURNING email
         """, (status, trial_ends_at, event_created, customer_id, event_created))
+
+        # A trial turning into a paying subscription is the moment money actually changes hands.
+        if _sget(previous, "status") == "trialing" and status == "active":
+            row = cur.fetchone()
+            email = (row or {}).get("email") or customer_id
+            return (f"GetSTAM Pro trial converted to paid: {email}",
+                    [f"{email}'s free trial ended and their first Pro payment went through."])
+        return None

@@ -7,7 +7,16 @@ even after a 200 was already returned. The guard is a plain
 """
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from api.services.billing_service import BillingService
+
+
+@pytest.fixture(autouse=True)
+def mock_send():
+    """Never let these tests reach Brevo; also lets tests assert on the admin notification."""
+    with patch("api.services.email_service.EmailService.send_digest_to_one", return_value=(True, None)) as m:
+        yield m
 
 CHECKOUT_EVENT = {
     "id": "evt_1",
@@ -71,7 +80,7 @@ def test_duplicate_event_skips_the_update():
     assert mock_cur.execute.call_count == 1
 
 
-def test_db_error_returns_false_with_error():
+def test_db_error_returns_false_with_error(mock_send):
     mock_conn, mock_cur = _mock_conn(rowcount=1)
     mock_cur.execute.side_effect = Exception("connection lost")
     with patch("api.services.billing_service._get_conn", return_value=mock_conn):
@@ -79,3 +88,63 @@ def test_db_error_returns_false_with_error():
 
     assert ok is False
     assert err
+    mock_send.assert_not_called()
+
+
+def _checkout_event(livemode=True):
+    obj = dict(CHECKOUT_EVENT["data"]["object"], customer_details={"email": "fan@example.com"})
+    return dict(CHECKOUT_EVENT, livemode=livemode, data={"object": obj})
+
+
+def test_trial_checkout_notifies_info(mock_send):
+    mock_conn, _ = _mock_conn(rowcount=1)
+    with patch("api.services.billing_service._get_conn", return_value=mock_conn), \
+         patch("api.services.billing_service.stripe.Subscription.retrieve",
+               return_value={"status": "trialing", "trial_end": 2000}):
+        BillingService.handle_webhook_event(_checkout_event())
+
+    to, subject, html = mock_send.call_args[0]
+    assert to == "info@getstam.com"
+    assert subject == "New GetSTAM Pro signup (free trial): fan@example.com"
+    assert "fan@example.com" in html
+
+
+def test_sandbox_checkout_is_tagged_test(mock_send):
+    mock_conn, _ = _mock_conn(rowcount=1)
+    with patch("api.services.billing_service._get_conn", return_value=mock_conn), \
+         patch("api.services.billing_service.stripe.Subscription.retrieve",
+               return_value={"status": "active", "trial_end": None}):
+        BillingService.handle_webhook_event(_checkout_event(livemode=False))
+
+    assert mock_send.call_args[0][1] == "[TEST] New GetSTAM Pro subscriber: fan@example.com"
+
+
+def test_duplicate_event_does_not_notify_again(mock_send):
+    mock_conn, _ = _mock_conn(rowcount=0)
+    with patch("api.services.billing_service._get_conn", return_value=mock_conn):
+        BillingService.handle_webhook_event(_checkout_event())
+    mock_send.assert_not_called()
+
+
+def _subscription_updated(status, previous_status):
+    return {
+        "id": "evt_2", "type": "customer.subscription.updated", "created": 3000, "livemode": True,
+        "data": {"object": {"customer": "cus_1", "status": status, "trial_end": None},
+                 "previous_attributes": {"status": previous_status}},
+    }
+
+
+def test_trial_converting_to_paid_notifies_info(mock_send):
+    mock_conn, mock_cur = _mock_conn(rowcount=1)
+    mock_cur.fetchone.return_value = {"email": "fan@example.com"}
+    with patch("api.services.billing_service._get_conn", return_value=mock_conn):
+        BillingService.handle_webhook_event(_subscription_updated("active", "trialing"))
+
+    assert mock_send.call_args[0][1] == "GetSTAM Pro trial converted to paid: fan@example.com"
+
+
+def test_other_subscription_updates_do_not_notify(mock_send):
+    mock_conn, _ = _mock_conn(rowcount=1)
+    with patch("api.services.billing_service._get_conn", return_value=mock_conn):
+        BillingService.handle_webhook_event(_subscription_updated("past_due", "active"))
+    mock_send.assert_not_called()
